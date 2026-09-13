@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#5b2b82" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235b2b82'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23f28c4b'/%3E%3Cellipse cx='21' cy='22' rx='9' ry='15' fill='white' transform='rotate(-35 21 22)'/%3E%3Cellipse cx='43' cy='22' rx='9' ry='15' fill='white' transform='rotate(35 43 22)'/%3E%3Cellipse cx='32' cy='45' rx='9' ry='14' fill='white'/%3E%3C/svg%3E" />
+    <meta
+      name="description"
+      content="Prototype hệ thống quản lý và đào tạo nghiệp vụ cho cửa hàng Sim Tím"
+    />
+    <title>Sim Tím Workspace</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <main id="login-screen" class="login-screen" aria-labelledby="login-title">
+        <section class="login-brand" aria-label="Giới thiệu Sim Tím Workspace">
+          <div class="ambient-orb orb-one"></div>
+          <div class="ambient-orb orb-two"></div>
+          <div class="brand-mark brand-mark--light" aria-hidden="true">
+            <span class="brand-petal petal-a"></span>
+            <span class="brand-petal petal-b"></span>
+            <span class="brand-petal petal-c"></span>
+            <span class="brand-center"></span>
+          </div>
+          <div class="login-brand-copy">
+            <p class="eyebrow eyebrow--light">Cửa hàng bán lẻ thế hệ mới</p>
+            <h1>Vận hành gọn gàng.<br />Học việc thật vui.</h1>
+            <p>
+              Không gian làm việc thống nhất cho bán hàng, theo dõi ca và đào tạo
+              nghiệp vụ ngay trong một trải nghiệm.
+            </p>
+            <div class="brand-highlights" aria-label="Điểm nổi bật">
+              <div><span>01</span> Bán hàng nhanh</div>
+              <div><span>02</span> Dữ liệu rõ ràng</div>
+              <div><span>03</span> Đào tạo trực quan</div>
+            </div>
+          </div>
+          <div class="pixel-shop" aria-hidden="true">
+            <div class="pixel-awning"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="pixel-sign">SIM TÍM</div>
+            <div class="pixel-window"><span></span><span></span><span></span></div>
+            <div class="pixel-door"></div>
+            <div class="pixel-plant"><b></b><b></b><i></i></div>
+          </div>
+        </section>
+
+        <section class="login-panel">
+          <div class="login-card">
+            <div class="mobile-logo">
+              <div class="brand-mark" aria-hidden="true">
+                <span class="brand-petal petal-a"></span><span class="brand-petal petal-b"></span>
+                <span class="brand-petal petal-c"></span><span class="brand-center"></span>
+              </div>
+              <strong>Sim Tím</strong>
+            </div>
+            <p class="eyebrow">Workspace dành cho nhân viên</p>
+            <h2 id="login-title">Chào mừng bạn trở lại!</h2>
+            <p class="login-subtitle">Đăng nhập để bắt đầu ca làm việc hôm nay.</p>
+
+            <form id="login-form" novalidate>
+              <label for="employee-id">Mã nhân viên</label>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" /></svg>
+                <input id="employee-id" name="employeeId" autocomplete="username" placeholder="Ví dụ: NV001" />
+              </div>
+              <div class="label-row">
+                <label for="password">Mật khẩu</label>
+                <button class="text-button" type="button" data-demo>Điền tài khoản demo</button>
+              </div>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12a1 1 0 0 1 1 1v9H5v-9a1 1 0 0 1 1-1Z" /></svg>
+                <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" />
+                <button class="icon-button password-toggle" type="button" aria-label="Hiện mật khẩu">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                </button>
+              </div>
+              <p id="login-error" class="form-error" role="alert"></p>
+              <label class="remember-check">
+                <input id="remember" type="checkbox" />
+                <span></span> Ghi nhớ đăng nhập
+              </label>
+              <button class="primary-button login-button" type="submit">
+                <span>Đăng nhập</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            </form>
+            <p class="secure-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg>
+              Phiên đăng nhập được bảo vệ và theo dõi an toàn
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <main id="workspace" class="workspace" hidden>
+        <aside class="sidebar">
+          <a class="sidebar-brand" href="#" data-view="dashboard" aria-label="Về tổng quan">
+            <div class="brand-mark" aria-hidden="true">
+              <span class="brand-petal petal-a"></span><span class="brand-petal petal-b"></span>
+              <span class="brand-petal petal-c"></span><span class="brand-center"></span>
+            </div>
+            <div><strong>Sim Tím</strong><small>STORE WORKSPACE</small></div>
+          </a>
+          <nav class="main-nav" aria-label="Điều hướng chính">
+            <p class="nav-label">VẬN HÀNH</p>
+            <button class="nav-item active" data-view="dashboard">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></svg>
+              <span>Tổng quan</span>
+            </button>
+            <button class="nav-item" data-soon="Tạo hóa đơn">
+              <svg viewBox="0 0 24 24"><path d="M3 3h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 7H6" /><circle cx="10" cy="20" r="1" /><circle cx="18" cy="20" r="1" /></svg>
+              <span>Bán hàng</span><kbd>F2</kbd>
+            </button>
+            <button class="nav-item" data-soon="Hóa đơn">
+              <svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z" /><path d="M9 7h6M9 11h6M9 15h3" /></svg>
+              <span>Hóa đơn</span>
+            </button>
+            <p class="nav-label">HÀNG HÓA</p>
+            <button class="nav-item" data-soon="Sản phẩm">
+              <svg viewBox="0 0 24 24"><path d="m3 7 9-4 9 4-9 4-9-4Z" /><path d="m3 7 9 4 9-4v10l-9 4-9-4V7Z" /><path d="M12 11v10" /></svg>
+              <span>Sản phẩm</span>
+            </button>
+            <button class="nav-item" data-soon="Tồn kho">
+              <svg viewBox="0 0 24 24"><path d="M4 9 12 4l8 5v11H4V9Z" /><path d="M8 20v-7h8v7M4 9h16" /></svg>
+              <span>Tồn kho</span><span class="nav-badge">3</span>
+            </button>
+            <button class="nav-item" data-soon="Khách hàng">
+              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4" /><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M17 14a7 7 0 0 1 5 7" /></svg>
+              <span>Khách hàng</span>
+            </button>
+          </nav>
+          <div class="sidebar-footer">
+            <button class="nav-item" data-soon="Cài đặt">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" /></svg>
+              <span>Cài đặt</span>
+            </button>
+            <div class="support-box">
+              <span>?</span><strong>Cần trợ giúp?</strong>
+              <small>Mentor Mai luôn sẵn sàng!</small>
+              <button data-training>Mở khu đào tạo</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="content-area">
+          <header class="topbar">
+            <button class="mobile-menu icon-button" aria-label="Mở menu">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+            </button>
+            <div class="store-status"><span></span><strong>Cửa hàng Sim Tím • Chi nhánh 01</strong></div>
+            <div class="topbar-actions">
+              <button class="icon-button notification-button" data-soon="Thông báo" aria-label="Thông báo">
+                <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" /></svg><span></span>
+              </button>
+              <div class="profile-block">
+                <div class="profile-avatar">LN</div>
+                <div><strong>Lan Nguyễn</strong><small>Nhân viên bán hàng</small></div>
+                <button class="icon-button profile-menu-button" aria-label="Mở menu tài khoản">
+                  <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></svg>
+                </button>
+                <div class="profile-menu" hidden>
+                  <button data-soon="Hồ sơ cá nhân">Hồ sơ cá nhân</button>
+                  <button id="logout-button">Đăng xuất</button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div id="dashboard-view" class="view dashboard-view">
+            <div class="page-heading">
+              <div><p id="today-label" class="date-label"></p><h1>Chào buổi sáng, Lan! <span>👋</span></h1><p>Sẵn sàng cho một ca làm việc thật hiệu quả nhé.</p></div>
+              <button class="primary-button new-sale" data-soon="Tạo hóa đơn">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>Tạo hóa đơn mới <kbd>F2</kbd>
+              </button>
+            </div>
+
+            <div class="metric-grid">
+              <article class="metric-card purple"><div class="metric-icon"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg></div><div><span>Doanh thu ca này</span><strong>8.420.000 ₫</strong><small class="positive">↗ 12,5% so với hôm qua</small></div><button data-soon="Báo cáo doanh thu">•••</button></article>
+              <article class="metric-card orange"><div class="metric-icon"><svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z" /><path d="M9 8h6M9 12h6" /></svg></div><div><span>Đơn hàng hôm nay</span><strong>48</strong><small>Giá trị TB: 175.400 ₫</small></div><button data-soon="Danh sách hóa đơn">•••</button></article>
+              <article class="metric-card teal"><div class="metric-icon"><svg viewBox="0 0 24 24"><path d="m3 7 9-4 9 4-9 4-9-4Z" /><path d="m3 7 9 4 9-4v10l-9 4-9-4V7Z" /></svg></div><div><span>Sản phẩm đã bán</span><strong>126</strong><small>Trên 42 mặt hàng</small></div><button data-soon="Sản phẩm đã bán">•••</button></article>
+              <article class="metric-card red"><div class="metric-icon"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3Z" /><path d="M12 9v5M12 17h.01" /></svg></div><div><span>Cảnh báo tồn kho</span><strong>03</strong><small class="warning">Cần kiểm tra sớm</small></div><button data-soon="Cảnh báo tồn kho">Xem</button></article>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="panel sales-panel">
+                <div class="panel-heading"><div><h2>Doanh thu trong ngày</h2><p>Cập nhật lần cuối lúc 10:35</p></div><div class="legend"><i></i> Hôm nay <span></span> Hôm qua</div></div>
+                <div class="chart-wrap" aria-label="Biểu đồ doanh thu theo giờ">
+                  <div class="chart-y"><span>3tr</span><span>2tr</span><span>1tr</span><span>0</span></div>
+                  <div class="chart-area">
+                    <div class="grid-line l1"></div><div class="grid-line l2"></div><div class="grid-line l3"></div>
+                    <svg viewBox="0 0 600 180" preserveAspectRatio="none" aria-hidden="true">
+                      <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7650a7" stop-opacity=".32"/><stop offset="1" stop-color="#7650a7" stop-opacity="0"/></linearGradient></defs>
+                      <path class="chart-fill" d="M0 164 C55 158 75 130 120 138 S185 155 235 110 S305 125 350 86 S430 105 470 60 S550 42 600 18 V180 H0Z" />
+                      <path class="line-old" d="M0 170 C60 160 80 150 120 154 S200 128 235 138 S310 104 350 116 S430 89 470 96 S550 77 600 70" />
+                      <path class="line-new" d="M0 164 C55 158 75 130 120 138 S185 155 235 110 S305 125 350 86 S430 105 470 60 S550 42 600 18" />
+                      <g class="chart-dots"><circle cx="0" cy="164" r="4"/><circle cx="120" cy="138" r="4"/><circle cx="235" cy="110" r="4"/><circle cx="350" cy="86" r="4"/><circle cx="470" cy="60" r="4"/><circle cx="600" cy="18" r="4"/></g>
+                    </svg>
+                    <div class="chart-x"><span>07:00</span><span>09:00</span><span>11:00</span><span>13:00</span><span>15:00</span><span>17:00</span></div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel shift-panel">
+                <div class="panel-heading"><div><h2>Ca làm việc</h2><p>Ca sáng • 07:00 — 15:00</p></div><span class="status-pill">ĐANG HOẠT ĐỘNG</span></div>
+                <div class="shift-progress"><div class="shift-progress-head"><span>Tiến độ ca</span><strong>3 giờ 42 phút</strong></div><div class="progress-track"><span></span></div><div class="shift-time"><span>07:00</span><span>15:00</span></div></div>
+                <div class="shift-stats"><div><span>Tiền đầu ca</span><strong>2.000.000 ₫</strong></div><div><span>Tiền mặt hiện tại</span><strong>5.280.000 ₫</strong></div></div>
+                <button class="secondary-button full-button" data-soon="Bàn giao ca">Xem chi tiết ca</button>
+              </section>
+
+              <section class="panel invoice-panel">
+                <div class="panel-heading"><div><h2>Hóa đơn gần đây</h2><p>5 giao dịch mới nhất trong ca</p></div><button class="text-button" data-soon="Tất cả hóa đơn">Xem tất cả →</button></div>
+                <div class="table-wrap">
+                  <table><thead><tr><th>Mã hóa đơn</th><th>Thời gian</th><th>Thanh toán</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>#HD1048</strong></td><td>10:32</td><td>Tiền mặt</td><td><strong>286.000 ₫</strong></td><td><span class="paid">Hoàn tất</span></td></tr>
+                      <tr><td><strong>#HD1047</strong></td><td>10:18</td><td>Chuyển khoản</td><td><strong>412.500 ₫</strong></td><td><span class="paid">Hoàn tất</span></td></tr>
+                      <tr><td><strong>#HD1046</strong></td><td>09:56</td><td>Tiền mặt</td><td><strong>97.000 ₫</strong></td><td><span class="paid">Hoàn tất</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel quick-panel">
+                <div class="panel-heading"><div><h2>Thao tác nhanh</h2><p>Các công việc thường dùng</p></div></div>
+                <div class="quick-grid">
+                  <button data-soon="Tra cứu sản phẩm"><span class="quick-icon purple"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg></span><strong>Tra cứu sản phẩm</strong><small>Giá & tồn kho</small></button>
+                  <button data-soon="Kiểm tra tồn"><span class="quick-icon teal"><svg viewBox="0 0 24 24"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="m3 7 9 4 9-4v10l-9 4-9-4V7Z"/></svg></span><strong>Kiểm tra tồn</strong><small>3 cảnh báo</small></button>
+                  <button data-soon="Khách hàng"><span class="quick-icon orange"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8"/></svg></span><strong>Khách hàng</strong><small>Tìm thành viên</small></button>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div id="training-view" class="view training-view" hidden>
+            <div class="training-shell">
+              <header class="training-topbar">
+                <button class="back-button" data-view="dashboard"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>Về trang quản lý</button>
+                <div class="game-brand"><span>SIM TÍM</span><strong>HỌC VIỆC PHIÊU LƯU KÝ</strong></div>
+                <div class="training-points"><span>✦</span><div><small>ĐIỂM KINH NGHIỆM</small><strong>120 XP</strong></div></div>
+              </header>
+
+              <section class="game-hero">
+                <div class="pixel-cloud cloud-a"></div><div class="pixel-cloud cloud-b"></div>
+                <div class="game-copy">
+                  <span class="game-kicker">CHƯƠNG TRÌNH ĐÀO TẠO NHÂN VIÊN</span>
+                  <h1>Sẵn sàng lên ca,<br /><em>tân binh?</em></h1>
+                  <p>Học nghiệp vụ qua những nhiệm vụ thực tế, chinh phục từng thử thách và trở thành nhân viên bán hàng chuyên nghiệp.</p>
+                  <div class="game-progress-card"><div class="game-progress-head"><strong>HÀNH TRÌNH CỦA BẠN</strong><span>1/7 CHAPTER</span></div><div class="game-progress"><i></i></div><small>Tiếp tục khám phá để nhận thêm XP!</small></div>
+                </div>
+                <div class="game-scene" aria-label="Minh họa cửa hàng 2D">
+                  <div class="scene-sun"></div>
+                  <div class="scene-shop"><div class="scene-sign">SIM TÍM</div><div class="scene-awning"><i></i><i></i><i></i><i></i><i></i></div><div class="scene-window"><span></span><span></span><span></span><b></b></div><div class="scene-door"><i></i></div></div>
+                  <div class="scene-tree"><i></i><i></i><i></i><b></b></div>
+                  <div class="scene-crate"><i></i><i></i><i></i></div>
+                  <div class="pixel-person"><span class="hair"></span><span class="head"></span><span class="body"></span><i class="leg-a"></i><i class="leg-b"></i></div>
+                  <div class="scene-ground"></div>
+                </div>
+              </section>
+
+              <section class="chapter-section">
+                <div class="chapter-heading"><div><span class="tiny-stars">✦ ✦ ✦</span><h2>Bản đồ hành trình</h2><p>Mỗi chapter là một kỹ năng cần thiết trong ca làm việc.</p></div><div class="chapter-legend"><span><i class="done-dot"></i>Đã hoàn thành</span><span><i class="open-dot"></i>Sẵn sàng</span><span><i class="lock-dot"></i>Chưa mở</span></div></div>
+                <div class="chapter-path">
+                  <div class="path-line"></div>
+                  <article class="chapter-card chapter-complete" data-chapter="1">
+                    <div class="chapter-visual visual-one"><span class="chapter-number">01</span><div class="mini-counter"><i></i><b></b></div><span class="complete-star">★</span></div>
+                    <div class="chapter-body"><span class="chapter-state">✓ ĐÃ HOÀN THÀNH</span><h3>Ngày đầu lên ca</h3><p>Làm quen không gian cửa hàng và những công việc đầu tiên.</p><div class="chapter-meta"><span>⏱ 10 phút</span><span>★ +50 XP</span></div><button class="chapter-button">Chơi lại</button></div>
+                  </article>
+                  <article class="chapter-card chapter-current" data-chapter="2">
+                    <div class="chapter-visual visual-two"><span class="chapter-number">02</span><div class="mini-customer"><i></i><b></b></div><span class="play-bubble">▶</span></div>
+                    <div class="chapter-body"><span class="chapter-state">SẴN SÀNG</span><h3>Vị khách đầu tiên</h3><p>Chào hỏi, lắng nghe và hỗ trợ khách hàng thật chuyên nghiệp.</p><div class="chapter-meta"><span>⏱ 15 phút</span><span>★ +80 XP</span></div><button class="chapter-button">Bắt đầu chapter <b>→</b></button></div>
+                  </article>
+                  <article class="chapter-card chapter-locked" data-chapter="3">
+                    <div class="chapter-visual visual-three"><span class="chapter-number">03</span><div class="mini-scan"><i></i><b></b></div><span class="lock-bubble">◆</span></div>
+                    <div class="chapter-body"><span class="chapter-state">CHƯA MỞ</span><h3>Nghệ thuật thanh toán</h3><p>Quét mã, xử lý giỏ hàng và hoàn tất giao dịch chính xác.</p><div class="chapter-meta"><span>⏱ 20 phút</span><span>★ +100 XP</span></div><button class="chapter-button">Hoàn thành chapter 02</button></div>
+                  </article>
+                  <article class="chapter-card chapter-locked" data-chapter="4">
+                    <div class="chapter-visual visual-four"><span class="chapter-number">04</span><div class="mini-box"><i></i><b></b></div><span class="lock-bubble">◆</span></div>
+                    <div class="chapter-body"><span class="chapter-state">CHƯA MỞ</span><h3>Kho hàng bí mật</h3><p>Nhận hàng, kiểm số lượng và sắp xếp mọi thứ đúng vị trí.</p><div class="chapter-meta"><span>⏱ 20 phút</span><span>★ +100 XP</span></div><button class="chapter-button">Hoàn thành chapter 03</button></div>
+                  </article>
+                  <article class="chapter-card chapter-locked" data-chapter="5">
+                    <div class="chapter-visual visual-five"><span class="chapter-number">05</span><div class="mini-calendar"><i></i><b></b></div><span class="lock-bubble">◆</span></div>
+                    <div class="chapter-body"><span class="chapter-state">CHƯA MỞ</span><h3>Cuộc đua hạn sử dụng</h3><p>Nhận diện hàng cận hạn và xử lý theo đúng quy trình.</p><div class="chapter-meta"><span>⏱ 15 phút</span><span>★ +90 XP</span></div><button class="chapter-button">Hoàn thành chapter 04</button></div>
+                  </article>
+                  <article class="chapter-card chapter-locked" data-chapter="6">
+                    <div class="chapter-visual visual-six"><span class="chapter-number">06</span><div class="mini-chat"><i></i><b></b></div><span class="lock-bubble">◆</span></div>
+                    <div class="chapter-body"><span class="chapter-state">CHƯA MỞ</span><h3>Khách hàng khó tính</h3><p>Bình tĩnh giao tiếp và xử lý những tình huống bất ngờ.</p><div class="chapter-meta"><span>⏱ 25 phút</span><span>★ +120 XP</span></div><button class="chapter-button">Hoàn thành chapter 05</button></div>
+                  </article>
+                  <article class="chapter-card chapter-locked" data-chapter="7">
+                    <div class="chapter-visual visual-seven"><span class="chapter-number">07</span><div class="mini-trophy"><i></i><b></b></div><span class="lock-bubble">◆</span></div>
+                    <div class="chapter-body"><span class="chapter-state">THỬ THÁCH CUỐI</span><h3>Một ca hoàn hảo</h3><p>Vận dụng mọi kỹ năng và chinh phục ca làm việc tổng hợp.</p><div class="chapter-meta"><span>⏱ 30 phút</span><span>★ +200 XP</span></div><button class="chapter-button">Hoàn thành chapter 06</button></div>
+                  </article>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <button class="mentor-fab" data-training aria-label="Mở khu đào tạo cùng Mentor Mai">
+          <img src="assets/mentor-mai.png" alt="Mentor Mai" />
+          <span>?</span>
+          <div class="mentor-tooltip"><strong>Mentor Mai</strong><small>Học nhanh một kỹ năng?</small></div>
+        </button>
+      </main>
+
+      <div id="modal" class="modal-backdrop" hidden>
+        <section class="update-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <button class="modal-close icon-button" aria-label="Đóng"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+          <div class="modal-illustration">
+            <span class="spark s1">✦</span><span class="spark s2">✦</span>
+            <div class="pixel-box"><i></i><i></i><b>•••</b></div>
+          </div>
+          <span class="modal-kicker">SẮP RA MẮT</span>
+          <h2 id="modal-title">Chúng mình đang hoàn thiện!</h2>
+          <p>Nội dung này đang được cập nhật,<br />vui lòng thử lại sau.</p>
+          <button class="primary-button modal-confirm">Đã hiểu</button>
+          <small>Mentor Mai sẽ báo bạn ngay khi nội dung sẵn sàng ✦</small>
+        </section>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"><span>✓</span><p></p></div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
