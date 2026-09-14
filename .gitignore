@@ -1,0 +1,6 @@
+node_modules/
+prototype-v2/dist/
+.codex_tmp/
+*.tsbuildinfo
+prototype-v2/test-results/
+prototype-v2/playwright-report/

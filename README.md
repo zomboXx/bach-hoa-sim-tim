@@ -1,5 +1,22 @@
 # Prototype Sim Tím Workspace
 
+## Bản mới theo kiến trúc đã thống nhất
+
+Prototype 02 nằm tại [prototype-v2](prototype-v2/README.md), dùng Vue 3 + TypeScript + Vite để đánh giá hướng frontend đề xuất. Đây chưa phải quyết định khóa stack của nhóm.
+
+```powershell
+cd prototype-v2
+npm ci
+npm run build
+npm run preview
+```
+
+Mở `http://127.0.0.1:4174`. Xem [phạm vi và API contract](prototype-v2/ARCHITECTURE.md).
+
+Bản cũ bên dưới được giữ tại commit `46ce071` và vẫn chạy độc lập bằng các file ở thư mục gốc.
+
+## Bản đầu tiên
+
 Prototype giao diện quản lý cửa hàng dành cho **nhân viên bán hàng**, kết hợp khu đào tạo nghiệp vụ 2D.
 
 ## Chạy prototype
