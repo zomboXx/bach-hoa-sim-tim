@@ -3,7 +3,7 @@ name: build-and-test
 on:
   pull_request:
   push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   prototype-v2:
@@ -22,4 +22,3 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run test:e2e
-
