@@ -1,0 +1,114 @@
+@startuml
+title ERD logic - Tài khoản, phân quyền, đồng bộ và audit
+
+hide circle
+hide methods
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor #EAF5FC
+  BorderColor #35566F
+}
+
+entity "core.organizations" as organizations {
+  * id : uuid <<PK>>
+  * code : varchar <<UQ>>
+}
+
+entity "core.stores" as stores {
+  * id : uuid <<PK>>
+  * organization_id : uuid <<FK>>
+  * code : varchar
+}
+
+entity "iam.users" as users {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * username : varchar
+  * password_hash : varchar
+  * full_name : varchar
+  * status : varchar
+  * version : bigint
+}
+
+entity "iam.roles" as roles {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+}
+
+entity "iam.permissions" as permissions {
+  * id : uuid <<PK>>
+  --
+  * code : varchar <<UQ>>
+  * description : varchar
+}
+
+entity "iam.user_roles" as user_roles {
+  * user_id : uuid <<PK, FK>>
+  * role_id : uuid <<PK, FK>>
+  * store_id : uuid <<PK, FK>>
+  * assigned_at : timestamptz
+  * assigned_by : uuid <<FK>>
+}
+
+entity "iam.role_permissions" as role_permissions {
+  * role_id : uuid <<PK, FK>>
+  * permission_id : uuid <<PK, FK>>
+}
+
+entity "sync.processed_operations" as processed_operations {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * client_operation_id : uuid
+  * actor_user_id : uuid <<FK>>
+  device_id : varchar
+  * operation_type : varchar
+  * aggregate_type : varchar
+  aggregate_id : uuid
+  base_version : bigint
+  * status : varchar
+  request_hash : varchar
+  result_data : jsonb
+  error_code : varchar
+  * received_at : timestamptz
+  processed_at : timestamptz
+}
+
+entity "audit.audit_logs" as auditLog {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  store_id : uuid <<FK>>
+  actor_user_id : uuid <<FK>>
+  * action : varchar
+  * entity_type : varchar
+  * entity_id : uuid
+  old_values : jsonb
+  new_values : jsonb
+  reason : varchar
+  correlation_id : uuid
+  * occurred_at : timestamptz
+}
+
+organizations ||--o{ stores
+organizations ||--o{ users
+organizations ||--o{ roles
+users ||--o{ user_roles
+roles ||--o{ user_roles
+stores ||--o{ user_roles
+roles ||--o{ role_permissions
+permissions ||--o{ role_permissions
+organizations ||--o{ processed_operations
+stores ||--o{ processed_operations
+users ||--o{ processed_operations
+organizations ||--o{ auditLog
+stores "0..1" -- "0..*" auditLog
+users "0..1" -- "0..*" auditLog
+
+@enduml

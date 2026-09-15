@@ -1,0 +1,55 @@
+name: Backlog item
+description: Công việc yêu cầu, thiết kế, triển khai, kiểm thử hoặc báo cáo
+title: "[MODULE] "
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Ưu tiên
+      options: [P0, P1, P2]
+    validations:
+      required: true
+  - type: input
+    id: requirement
+    attributes:
+      label: Yêu cầu hoặc pain point nguồn
+      placeholder: "Ví dụ: FR-REC-05 / PP-02"
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Kết quả cần tạo
+      description: Ghi kết quả có thể review, không chỉ tên hoạt động.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Tiêu chí chấp nhận
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: Reviewer
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Phụ thuộc và phạm vi ảnh hưởng
+      description: Issue, API, bảng dữ liệu và file dự kiến thay đổi.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Bằng chứng hoàn thành
+      description: PR, test, ảnh/video demo hoặc tài liệu cần cập nhật.
+

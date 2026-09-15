@@ -66,7 +66,15 @@ Service Worker chỉ lưu giao diện/tài nguyên công khai; không biến cá
 
 ## Godot và một kịch bản bắt buộc
 
-Kịch bản mẫu: nhận 20 hộp sữa, kiểm tra 2 hộp hỏng, từ chối 2, nhập 18. Godot sau này đảm nhiệm di chuyển/tương tác/hiển thị chỉ dẫn; backend đánh giá thao tác bằng cùng service nhập hàng nhưng repository/phạm vi phiên đào tạo riêng. PWA hiện chỉ minh họa các bước và phản hồi; hoàn thành trên đây không được tính là kịch bản Godot cuối kỳ đã hoàn tất.
+Đã điều chỉnh theo phản hồi người dùng: đào tạo phải là nhập vai trong cửa hàng 2D, không phải biểu mẫu nghiệp vụ đặt cạnh hình minh họa. Prototype hiện có ca “Ca đầu tiên ở Sim Tím” với ba nhóm kỹ năng:
+
+1. Di chuyển đến khách, chào hỏi, lắng nghe và xác nhận nhu cầu.
+2. Tới kệ chọn đúng hàng, mang đến quầy, quét từng món và trả đúng tiền thừa.
+3. Phát hiện hàng hết hạn tại tủ mát, mang tới khu xử lý, gắn nhãn và bàn giao cho mentor.
+
+`TrainingGame.vue` quản lý trạng thái phiên riêng gồm vị trí, bước nhiệm vụ, hội thoại, đồ vật đang cầm và kết quả; `world.ts` phụ trách va chạm và tìm đường trên lưới. Chỉ nhân vật ở ô kề mới tương tác được; nhấp mục tiêu khiến nhân vật đi qua các ô trống trước khi mở hội thoại. Dùng WASD/phím mũi tên + E, hoặc thao tác chạm. Module không import adapter nghiệp vụ hay ghi IndexedDB của cửa hàng, vì vậy thao tác luyện tập không làm thay đổi dữ liệu vận hành.
+
+Đây là game 2D chơi được trong trình duyệt để kiểm chứng trải nghiệm, triển khai bằng Vue/SVG. Khi tích hợp Godot, chuyển các scene/nhân vật/điều khiển sang engine; backend đánh giá hành động theo service nghiệp vụ trong phạm vi phiên riêng. Chưa có Godot runtime hoặc lưu kết quả qua backend trong bản này; không coi đó là đã hoàn thành phần Godot cuối kỳ.
 
 Không tự thêm chapter thứ hai hoặc tuyến cốt truyện. Camera, lưu kết quả và offline production còn thuộc phần mở rộng cần ưu tiên sau.
 

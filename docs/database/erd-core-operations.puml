@@ -1,0 +1,294 @@
+@startuml
+title ERD logic - Nghiệp vụ bán hàng và tồn kho
+
+hide circle
+hide methods
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor #EAF5FC
+  BorderColor #35566F
+}
+
+entity "core.organizations" as organizations {
+  * id : uuid <<PK>>
+  --
+  * code : varchar <<UQ>>
+  * name : varchar
+  * status : varchar
+}
+
+entity "core.stores" as stores {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  * status : varchar
+}
+
+entity "catalog.categories" as categories {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  parent_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  * status : varchar
+}
+
+entity "catalog.units" as units {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  * precision_scale : smallint
+}
+
+entity "catalog.products" as products {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * category_id : uuid <<FK>>
+  * base_unit_id : uuid <<FK>>
+  * sku : varchar
+  * name : varchar
+  * tracks_expiry : boolean
+  * status : varchar
+  * version : bigint
+}
+
+entity "catalog.product_barcodes" as product_barcodes {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * barcode : varchar
+  * is_primary : boolean
+}
+
+entity "catalog.suppliers" as suppliers {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  phone : varchar
+  email : varchar
+  * status : varchar
+}
+
+entity "catalog.product_prices" as product_prices {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * sale_price : numeric(14,2)
+  * effective_from : timestamptz
+  effective_to : timestamptz
+}
+
+entity "inventory.goods_receipts" as receipts {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * supplier_id : uuid <<FK>>
+  * receipt_no : varchar
+  * status : varchar
+  * received_at : timestamptz
+  * created_by : uuid <<FK>>
+  confirmed_by : uuid <<FK>>
+  * version : bigint
+}
+
+entity "inventory.goods_receipt_lines" as receipt_lines {
+  * id : uuid <<PK>>
+  --
+  * receipt_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * delivered_quantity : numeric(14,3)
+  * accepted_quantity : numeric(14,3)
+  * rejected_quantity : numeric(14,3)
+  * unit_cost : numeric(14,2)
+  supplier_lot_number : varchar
+  expiry_date : date
+  rejection_reason : varchar
+}
+
+entity "inventory.product_batches" as batches {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * receipt_line_id : uuid <<FK>>
+  * internal_batch_code : varchar
+  supplier_lot_number : varchar
+  * received_date : date
+  expiry_date : date
+  * status : varchar
+}
+
+entity "inventory.inventory_balances" as balances {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * product_batch_id : uuid <<FK, UQ>>
+  * quantity_on_hand : numeric(14,3)
+  * version : bigint
+}
+
+entity "inventory.stock_movements" as stockMovement {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * product_batch_id : uuid <<FK>>
+  * movement_type : varchar
+  * quantity_delta : numeric(14,3)
+  * source_type : varchar
+  * source_id : uuid
+  reversed_movement_id : uuid <<FK>>
+  * occurred_at : timestamptz
+  * actor_user_id : uuid <<FK>>
+}
+
+entity "inventory.stocktakes" as stocktakes {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * stocktake_no : varchar
+  * status : varchar
+  * started_by : uuid <<FK>>
+  submitted_at : timestamptz
+  approved_by : uuid <<FK>>
+  * version : bigint
+}
+
+entity "inventory.stocktake_lines" as stocktake_lines {
+  * id : uuid <<PK>>
+  --
+  * stocktake_id : uuid <<FK>>
+  * product_batch_id : uuid <<FK>>
+  * system_quantity : numeric(14,3)
+  counted_quantity : numeric(14,3)
+  difference_quantity : numeric(14,3)
+  * base_version : bigint
+}
+
+entity "sales.promotions" as promotions {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  * discount_type : varchar
+  * discount_value : numeric(14,2)
+  * starts_at : timestamptz
+  * ends_at : timestamptz
+  * status : varchar
+}
+
+entity "sales.promotion_products" as promotion_products {
+  * promotion_id : uuid <<PK, FK>>
+  * product_id : uuid <<PK, FK>>
+}
+
+entity "sales.promotion_batches" as promotion_batches {
+  * promotion_id : uuid <<PK, FK>>
+  * product_batch_id : uuid <<PK, FK>>
+}
+
+entity "sales.invoices" as invoices {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * invoice_no : varchar
+  * status : varchar
+  * sold_by : uuid <<FK>>
+  * sold_at : timestamptz
+  * subtotal : numeric(14,2)
+  * discount_total : numeric(14,2)
+  * grand_total : numeric(14,2)
+  * paid_total : numeric(14,2)
+  voided_by : uuid <<FK>>
+  void_reason : varchar
+  * version : bigint
+}
+
+entity "sales.invoice_lines" as invoice_lines {
+  * id : uuid <<PK>>
+  --
+  * invoice_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * sku_snapshot : varchar
+  * product_name_snapshot : varchar
+  * quantity : numeric(14,3)
+  * unit_price : numeric(14,2)
+  * discount_amount : numeric(14,2)
+  * line_total : numeric(14,2)
+  applied_promotion_id : uuid <<FK>>
+}
+
+entity "sales.invoice_line_batches" as invoice_line_batches {
+  * invoice_line_id : uuid <<PK, FK>>
+  * product_batch_id : uuid <<PK, FK>>
+  * quantity : numeric(14,3)
+}
+
+entity "sales.payments" as payments {
+  * id : uuid <<PK>>
+  --
+  * invoice_id : uuid <<FK>>
+  * method : varchar
+  * status : varchar
+  * amount : numeric(14,2)
+  reference_code : varchar
+  * paid_at : timestamptz
+}
+
+organizations ||--o{ stores
+organizations ||--o{ categories
+organizations ||--o{ units
+organizations ||--o{ products
+organizations ||--o{ suppliers
+stores ||--o{ product_prices
+categories ||--o{ categories : parent
+categories ||--o{ products
+units ||--o{ products
+products ||--o{ product_barcodes
+products ||--o{ product_prices
+stores ||--o{ receipts
+suppliers ||--o{ receipts
+receipts ||--|{ receipt_lines
+products ||--o{ receipt_lines
+receipt_lines "1" -- "0..1" batches
+products ||--o{ batches
+stores ||--o{ batches
+batches ||--|| balances
+batches ||--o{ stockMovement
+stockMovement "0..1" -- "0..*" stockMovement : reverses
+stores ||--o{ stocktakes
+stocktakes ||--|{ stocktake_lines
+batches ||--o{ stocktake_lines
+stores ||--o{ promotions
+promotions ||--o{ promotion_products
+products ||--o{ promotion_products
+promotions ||--o{ promotion_batches
+batches ||--o{ promotion_batches
+stores ||--o{ invoices
+invoices ||--|{ invoice_lines
+products ||--o{ invoice_lines
+promotions "0..1" -- "0..*" invoice_lines
+invoice_lines ||--|{ invoice_line_batches
+batches ||--o{ invoice_line_batches
+invoices ||--o{ payments
+
+@enduml

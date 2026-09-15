@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import TrainingGame from "./training/TrainingGame.vue";
 import {
   accounts,
   available,
@@ -421,25 +422,6 @@ const statuses = {
   APPROVED: "Đã duyệt",
   CONFLICT: "Tồn đã đổi · cần kiểm lại",
 };
-const training = reactive({ step: 0, received: 20, feedback: "", done: false });
-function trainingNext() {
-  if (training.step === 0) {
-    training.step = 1;
-    return;
-  }
-  if (training.step === 1) {
-    training.step = 2;
-    return;
-  }
-  if (training.received !== 18) {
-    training.feedback =
-      "Có 2 hộp bị hỏng. Chỉ ghi nhận 18 hộp đạt yêu cầu vào kho nhé.";
-    return;
-  }
-  training.done = true;
-  training.feedback =
-    "Chính xác! Nhận 18 hộp, từ chối 2 hộp hỏng và ghi nhận lý do. Bạn đã hoàn thành bài thực hành.";
-}
 </script>
 
 <template>
@@ -520,6 +502,11 @@ function trainingNext() {
       </div>
     </section>
   </div>
+  <TrainingGame
+    v-else-if="route === 'training'"
+    :employee-name="user.name"
+    @exit="go('dashboard')"
+  />
   <div v-else class="workspace">
     <aside :class="['sidebar', { open: menu }]">
       <a href="#" class="brand" @click.prevent="go('dashboard')"
@@ -709,8 +696,8 @@ function trainingNext() {
               <p class="eyebrow">HỌC VIỆC CÙNG MENTOR MAI</p>
               <h2>Làm thử trước. Tự tin hơn khi lên ca.</h2>
               <p>
-                Thực hành nhận hàng, phát hiện hàng hỏng và ghi nhận đúng số
-                lượng.
+                Nhập vai nhân viên: gặp khách, bán hàng tại quầy và xử lý hàng
+                hóa trong cửa hàng 2D.
               </p>
             </div>
             <button class="secondary" @click="go('training')">
@@ -1370,124 +1357,6 @@ function trainingNext() {
               </div>
               <b>{{ available(state, p.id) }}</b>
             </div>
-          </div></template
-        >
-
-        <template v-else-if="route === 'training'"
-          ><div class="page-head">
-            <div>
-              <p class="eyebrow">KHÔNG GIAN THỰC HÀNH RIÊNG</p>
-              <h1>Học việc cùng Mentor Mai.</h1>
-              <p>Một kịch bản trọng tâm: nhận hàng đúng quy trình.</p>
-            </div>
-            <span class="pill">Dữ liệu thực hành độc lập</span>
-          </div>
-          <div class="training-layout">
-            <section class="training-scene">
-              <div class="scene-title">SIM TÍM <span>KHU TIẾP NHẬN</span></div>
-              <div class="shelves">
-                <div v-for="n in 3"><span v-for="k in 4">▣</span></div>
-              </div>
-              <div class="floor-tiles"></div>
-              <div class="crate crate-a">20<br /><small>HỘP SỮA</small></div>
-              <div class="crate crate-b">!</div>
-              <div class="game-person"><i></i><b></b><span></span></div>
-              <div class="scene-caption">
-                {{
-                  training.step === 0
-                    ? "1 · Tiếp cận kiện hàng"
-                    : training.step === 1
-                      ? "2 · Kiểm tra bao bì"
-                      : "3 · Ghi nhận số lượng"
-                }}
-              </div>
-              <span class="demo-scene-label"
-                >Minh họa luồng tương tác · chưa nhúng Godot</span
-              >
-            </section>
-            <section class="card training-dialog">
-              <div class="mentor-title">
-                <img src="/mentor.png" alt="Mentor Mai" />
-                <div>
-                  <small>NGƯỜI HƯỚNG DẪN</small>
-                  <h2>Mentor Mai</h2>
-                </div>
-                <span>✦</span>
-              </div>
-              <div class="lesson-progress">
-                <i
-                  :style="{
-                    width:
-                      (training.done ? 100 : ((training.step + 1) / 3) * 80) +
-                      '%',
-                  }"
-                ></i>
-              </div>
-              <h2>
-                {{
-                  training.done
-                    ? "Hoàn thành bài thực hành!"
-                    : training.step === 0
-                      ? "Một kiện hàng vừa đến."
-                      : training.step === 1
-                        ? "Hãy kiểm tra trước khi nhận."
-                        : "Bao nhiêu hộp được nhập kho?"
-                }}
-              </h2>
-              <p>
-                {{
-                  training.step === 0
-                    ? "Nhà cung cấp giao 20 hộp sữa. Cùng chị kiểm tra hàng trước khi đưa vào kho nhé."
-                    : training.step === 1
-                      ? "Bạn phát hiện 2 hộp bị rách và rò sữa. Tách riêng 2 hộp hỏng để từ chối, còn lại 18 hộp đạt yêu cầu."
-                      : "Điền số lượng đạt yêu cầu. Phiên này không làm thay đổi tồn kho hay doanh thu của cửa hàng."
-                }}
-              </p>
-              <label v-if="training.step === 2 && !training.done"
-                >Số lượng nhập kho<input
-                  v-model.number="training.received"
-                  type="number"
-                  min="0"
-                  max="20"
-              /></label>
-              <p
-                v-if="training.feedback"
-                :class="training.done ? 'success-message' : 'error'"
-                role="status"
-              >
-                {{ training.feedback }}
-              </p>
-              <button
-                v-if="!training.done"
-                class="primary wide"
-                @click="trainingNext"
-              >
-                {{
-                  training.step === 0
-                    ? "Kiểm tra kiện hàng"
-                    : training.step === 1
-                      ? "Ghi nhận hàng đạt yêu cầu"
-                      : "Xác nhận nhập kho"
-                }}
-                →</button
-              ><button
-                v-else
-                class="secondary wide"
-                @click="
-                  Object.assign(training, {
-                    step: 0,
-                    received: 20,
-                    feedback: '',
-                    done: false,
-                  })
-                "
-              >
-                Thực hành lại ↻</button
-              ><small class="training-note"
-                >Bản mô phỏng giao diện. Phiên Godot và lưu kết quả qua backend
-                sẽ được tích hợp sau.</small
-              >
-            </section>
           </div></template
         >
       </div>

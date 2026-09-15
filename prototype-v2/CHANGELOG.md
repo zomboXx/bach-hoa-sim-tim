@@ -1,5 +1,13 @@
 # Bàn giao prototype 02
 
+## Điều chỉnh trải nghiệm đào tạo theo phản hồi người dùng
+
+- Thay màn minh họa nhận hàng + biểu mẫu bằng cửa hàng 2D chơi được, tách toàn màn hình khỏi dashboard.
+- Người chơi điều khiển nhân viên bằng bàn phím hoặc cảm ứng; nhấp mục tiêu sẽ tìm đường, đi tới và tương tác khi đứng kề. Có va chạm với kệ/quầy/tường.
+- Một ca liền mạch bao gồm giao tiếp với khách, chọn hàng, quét/thanh toán/trả tiền thừa, phát hiện hàng hết hạn, di chuyển hàng tới khu xử lý và báo cáo mentor.
+- NPC phản hồi các lựa chọn sai; tiến độ và giỏ cầm tay thay đổi theo hành động. Có hướng dẫn, xác nhận thoát, tổng kết và chơi lại.
+- Dữ liệu phiên game nằm riêng trong component; không ghi hóa đơn, tồn kho hoặc phiếu nhận thật. Game trình duyệt hiện dùng Vue/SVG; Godot vẫn là bước tích hợp sau.
+
 ## 2026-09-14 — Codex hỗ trợ triển khai theo yêu cầu người dùng
 
 - Bản đầu đã lưu nguyên trạng tại `46ce071` trên main, không push.

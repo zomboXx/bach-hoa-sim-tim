@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Nhân viên bán hàng" as Cashier
+actor "Nhân viên kho/hàng hóa" as Stocker
+actor "Quản lý cửa hàng" as Manager
+
+rectangle "Bán hàng và tồn kho" {
+  usecase "Tiếp nhận hàng" as Receive
+  usecase "Kiểm tra dữ liệu lô" as CheckBatch
+  usecase "Ghi nhận sai lệch\nhàng giao" as DeliveryDiff
+  usecase "Cập nhật tồn và\nghi biến động" as UpdateStock
+
+  usecase "Thực hiện kiểm kê" as Stocktake
+  usecase "Tính chênh lệch" as CalcDiff
+  usecase "Duyệt điều chỉnh tồn" as ApproveAdjust
+
+  usecase "Lập và thanh toán\nhóa đơn" as Sale
+  usecase "Nhận diện sản phẩm" as IdentifyProduct
+  usecase "Kiểm tra tồn và hạn" as ValidateStock
+  usecase "Tính giá và khuyến mãi" as CalculateTotal
+  usecase "Xác định khách hàng\nthành viên" as Member
+  usecase "Lưu thanh toán, hóa đơn\nvà giảm tồn" as CommitSale
+  usecase "Hủy hóa đơn" as CancelSale
+}
+
+Stocker --> Receive
+Stocker --> Stocktake
+Cashier --> Sale
+Manager --> ApproveAdjust
+Manager --> CancelSale
+
+Receive .> CheckBatch : <<include>>
+Receive .> UpdateStock : <<include>>
+DeliveryDiff .> Receive : <<extend>>
+
+Stocktake .> CalcDiff : <<include>>
+ApproveAdjust .> Stocktake : <<extend>>
+ApproveAdjust .> UpdateStock : <<include>>
+
+Sale .> IdentifyProduct : <<include>>
+Sale .> ValidateStock : <<include>>
+Sale .> CalculateTotal : <<include>>
+Sale .> CommitSale : <<include>>
+Member .> Sale : <<extend>>
+CancelSale .> UpdateStock : <<include>>
+@enduml
+

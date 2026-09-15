@@ -1,5 +1,10 @@
 # Prototype Sim Tím Workspace
 
+Quy trình nhóm, phân công, Scrum và backlog được quản lý tại
+[docs/project-management](docs/project-management/README.md). Điều kiện để tạo
+baseline qua lần merge đầu tiên nằm trong
+[MERGE_01.md](docs/project-management/MERGE_01.md).
+
 ## Bản mới theo kiến trúc đã thống nhất
 
 Prototype 02 nằm tại [prototype-v2](prototype-v2/README.md), dùng Vue 3 + TypeScript + Vite để đánh giá hướng frontend đề xuất. Đây chưa phải quyết định khóa stack của nhóm.

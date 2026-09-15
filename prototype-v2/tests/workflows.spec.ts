@@ -1,5 +1,144 @@
-import { test, expect } from "@playwright/test";
-test("changed inventory requires recount instead of overwriting stock", async ({ page }) => {
+import { test, expect, type Page } from "@playwright/test";
+
+test("touch controls stop on release; exit and re-entry reset the practice session", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
+  await page
+    .getByRole("button", { name: "Mở đào tạo cùng Mentor Mai", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Bắt đầu ca thực hành/ }).click();
+  const control = await page
+    .getByRole("button", { name: "Đi phải", exact: true })
+    .boundingBox();
+  await page.mouse.move(
+    control!.x + control!.width / 2,
+    control!.y + control!.height / 2,
+  );
+  await page.mouse.down();
+  await expect(page.locator(".world-player")).not.toHaveAttribute(
+    "data-x",
+    "10",
+  );
+  await page.mouse.up();
+  const x = await page.locator(".world-player").getAttribute("data-x");
+  await page.waitForTimeout(300); // More than two movement ticks: releasing must stop motion.
+  await expect(page.locator(".world-player")).toHaveAttribute("data-x", x!);
+  await page.getByRole("button", { name: "Về cửa hàng", exact: false }).click();
+  await expect(
+    page.getByRole("heading", { name: "Rời ca thực hành?" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Tiếp tục chơi", exact: true })
+    .click();
+  await expect(page.locator(".world-player")).toHaveAttribute("data-x", x!);
+  await page.getByRole("button", { name: "Về cửa hàng", exact: false }).click();
+  await page.getByRole("button", { name: "Rời ca", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Mở đào tạo cùng Mentor Mai", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Bắt đầu ca thực hành/ }).click();
+  await expect(page.locator(".world-player")).toHaveAttribute("data-x", "10");
+  await expect(page.locator(".world-player")).toHaveAttribute(
+    "data-stage",
+    "greet",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+async function playShift(page: Page) {
+  await page
+    .getByRole("button", { name: "Bắt đầu ca thực hành", exact: false })
+    .click();
+  const game = page.locator(".world-player");
+  await expect(game).toHaveAttribute("data-x", "10");
+  await page.keyboard.press("ArrowDown");
+  await expect(game).toHaveAttribute("data-y", "12");
+  await page.keyboard.press("ArrowDown");
+  await expect(game).toHaveAttribute("data-y", "12"); // wall collision
+  for (let i = 0; i < 4; i++) await page.keyboard.press("ArrowRight");
+  for (let i = 0; i < 2; i++) await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("e");
+  await page
+    .getByRole("button", { name: /Chị cứ lấy loại đang giảm giá/ })
+    .click();
+  await expect(page.locator(".choice-feedback")).toContainText(
+    "chưa chắc phù hợp",
+  );
+  await expect(game).toHaveAttribute("data-stage", "greet");
+  await page
+    .getByRole("button", { name: /Dạ, chị muốn 2 hộp sữa ít đường/ })
+    .click();
+  await page.getByRole("button", { name: /Tiếp tục trong cửa hàng/ }).click();
+  await page
+    .getByRole("button", { name: "Đi đến Kệ sữa & đồ uống", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Lấy 2 hộp sữa ít đường/ }).click();
+  await page.getByRole("button", { name: /Tiếp tục trong cửa hàng/ }).click();
+  await expect(page.locator(".bag-panel")).toContainText("× 2");
+  await page
+    .getByRole("button", { name: "Đi đến Quầy thanh toán", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Quét hộp sữa 1", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: /Nhận tiền từ khách/ }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Quét hộp sữa 2", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Nhận tiền từ khách/ }).click();
+  await page.getByRole("button", { name: /Trả 2.000đ/ }).click();
+  await expect(page.locator(".choice-feedback")).toContainText("3.000");
+  await page
+    .getByRole("button", { name: /Em gửi chị 3.000đ tiền thừa/ })
+    .click();
+  await page.getByRole("button", { name: /Tiếp tục trong cửa hàng/ }).click();
+  await page
+    .getByRole("button", { name: "Đi đến Tủ mát", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Giảm giá để bán nhanh/ }).click();
+  await expect(page.locator(".choice-feedback")).toContainText(
+    "không được tiếp tục bán",
+  );
+  await page.getByRole("button", { name: /Lấy hộp hết hạn khỏi tủ/ }).click();
+  await page.getByRole("button", { name: /Tiếp tục trong cửa hàng/ }).click();
+  await expect(page.locator(".bag-panel")).toContainText("Sữa chua hết hạn");
+  await page
+    .getByRole("button", { name: "Đi đến Khu hàng cần xử lý", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Đặt vào khay riêng/ }).click();
+  await page.getByRole("button", { name: /Tiếp tục trong cửa hàng/ }).click();
+  await page
+    .getByRole("button", { name: "Đi đến Mentor Mai", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: /Em đã bán đúng hàng cho khách/ })
+    .click();
+  await page.getByRole("button", { name: /Kết thúc ca/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Một ca làm, ba kỹ năng." }),
+  ).toBeVisible();
+  await expect(page.locator(".complete-skills")).toContainText(
+    "Giao tiếp & tư vấn",
+  );
+  await expect(page.locator(".complete-skills")).toContainText(
+    "Thanh toán & tiền thừa",
+  );
+  await expect(page.locator(".complete-skills")).toContainText(
+    "Hàng hết hạn & bàn giao",
+  );
+}
+test("changed inventory requires recount instead of overwriting stock", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Quản lý cửa hàng QL001" }).click();
   await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
@@ -17,12 +156,15 @@ test("changed inventory requires recount instead of overwriting stock", async ({
   await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).click();
   await expect(page.locator(".count-row")).toContainText("Tồn đã đổi");
   await nav.getByRole("button", { name: /Tồn kho & lô hàng/ }).click();
-  await expect(page.locator("tr").filter({ hasText: "LO01" })).toContainText("47");
+  await expect(page.locator("tr").filter({ hasText: "LO01" })).toContainText(
+    "47",
+  );
 });
 test("receive → sell → invoice → offline count → approval; training isolation", async ({
   page,
   context,
 }) => {
+  test.setTimeout(90000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
@@ -94,17 +236,10 @@ test("receive → sell → invoice → offline count → approval; training isol
   await nav
     .getByRole("button", { name: "Đào tạo nghiệp vụ", exact: false })
     .click();
-  await page.getByRole("button", { name: "Kiểm tra kiện hàng" }).click();
-  await page.getByRole("button", { name: "Ghi nhận hàng đạt yêu cầu" }).click();
-  await page.getByRole("button", { name: "Xác nhận nhập kho" }).click();
-  await expect(page.getByRole("status").first()).toContainText(
-    "Có 2 hộp bị hỏng",
-  );
-  await page.getByLabel("Số lượng nhập kho").fill("18");
-  await page.getByRole("button", { name: "Xác nhận nhập kho" }).click();
-  await expect(
-    page.getByText("Hoàn thành bài thực hành!", { exact: true }),
-  ).toBeVisible();
+  await playShift(page);
+  await page
+    .getByRole("button", { name: "Trở về cửa hàng", exact: false })
+    .click();
   await page.getByRole("button", { name: "Mở menu", exact: true }).click();
   await nav
     .getByRole("button", { name: "Tồn kho & lô hàng", exact: false })

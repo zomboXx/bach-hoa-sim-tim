@@ -1,0 +1,68 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Người dùng\nhệ thống" as User
+actor "Nhân viên\nbán hàng" as Cashier
+actor "Nhân viên kho/\nhàng hóa" as Stocker
+actor "Quản lý\ncửa hàng" as Manager
+actor "Quản trị viên" as Admin
+actor "Nhân viên mới/\nNgười học" as Trainee
+
+Cashier --|> User
+Stocker --|> User
+Manager --|> User
+Admin --|> User
+Trainee --|> User
+
+rectangle "Hệ thống quản lý bán hàng và tồn kho" {
+  usecase "Đăng nhập/đăng xuất" as UCAuth
+
+  package "Hàng hóa và kho" {
+    usecase "Quản lý danh mục\nvà sản phẩm" as UCCatalog
+    usecase "Tiếp nhận hàng" as UCReceive
+    usecase "Tra cứu tồn và lô" as UCStock
+    usecase "Theo dõi hạn sử dụng" as UCExpiry
+    usecase "Kiểm kê" as UCStocktake
+    usecase "Duyệt điều chỉnh tồn" as UCAdjust
+  }
+
+  package "Bán hàng" {
+    usecase "Lập và thanh toán\nhóa đơn" as UCSale
+    usecase "Hủy hóa đơn" as UCCancel
+    usecase "Quản lý khuyến mãi" as UCPromo
+  }
+
+  package "Quản trị và báo cáo" {
+    usecase "Xem báo cáo" as UCReport
+    usecase "Xem lịch sử/audit" as UCAudit
+    usecase "Quản lý tài khoản\nvà vai trò" as UCAccount
+  }
+
+  usecase "Đồng bộ thao tác\nđang chờ" as UCSync
+
+  package "Hỗ trợ đào tạo" {
+    usecase "Thực hiện kịch bản\nđào tạo" as UCTrain
+    usecase "Xem kết quả\nđào tạo" as UCTrainResult
+  }
+}
+
+User --> UCAuth
+User --> UCSync
+Cashier --> UCSale
+Stocker --> UCReceive
+Stocker --> UCStock
+Stocker --> UCExpiry
+Stocker --> UCStocktake
+Manager --> UCCatalog
+Manager --> UCAdjust
+Manager --> UCCancel
+Manager --> UCPromo
+Manager --> UCReport
+Manager --> UCAudit
+Manager --> UCTrainResult
+Admin --> UCAccount
+Admin --> UCAudit
+Trainee --> UCTrain
+Trainee --> UCTrainResult
+@enduml

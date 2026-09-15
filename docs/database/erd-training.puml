@@ -1,0 +1,103 @@
+@startuml
+title ERD logic - Dữ liệu mô phỏng đào tạo
+
+hide circle
+hide methods
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor #EEE8F8
+  BorderColor #66527C
+}
+
+entity "core.organizations" as organizations {
+  * id : uuid <<PK>>
+  * code : varchar <<UQ>>
+}
+
+entity "iam.users" as users {
+  * id : uuid <<PK>>
+  * organization_id : uuid <<FK>>
+  * username : varchar
+}
+
+entity "training.scenarios" as scenarios {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * code : varchar
+  * name : varchar
+  * scenario_version : integer
+  * status : varchar
+  * fixture_data : jsonb
+  * created_at : timestamptz
+}
+
+entity "training.scenario_steps" as scenario_steps {
+  * id : uuid <<PK>>
+  --
+  * scenario_id : uuid <<FK>>
+  * step_order : integer
+  * action_type : varchar
+  target_key : varchar
+  * instruction_text : text
+  * validation_rule : jsonb
+  * score_weight : numeric(8,2)
+  hint_text : text
+}
+
+entity "training.sessions" as trainingSession {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * scenario_id : uuid <<FK>>
+  * scenario_version : integer
+  * learner_user_id : uuid <<FK>>
+  * attempt_number : integer
+  * status : varchar
+  * state_data : jsonb
+  * started_at : timestamptz
+  completed_at : timestamptz
+  total_score : numeric(8,2)
+}
+
+entity "training.session_actions" as sessionAction {
+  * id : uuid <<PK>>
+  --
+  * session_id : uuid <<FK>>
+  scenario_step_id : uuid <<FK>>
+  * action_sequence : integer
+  * action_type : varchar
+  target_key : varchar
+  action_data : jsonb
+  * evaluation_status : varchar
+  feedback_text : text
+  * occurred_at : timestamptz
+}
+
+entity "training.session_results" as sessionResult {
+  * id : uuid <<PK>>
+  --
+  * session_id : uuid <<FK>>
+  * metric_code : varchar
+  * score : numeric(8,2)
+  * passed : boolean
+  detail_data : jsonb
+}
+
+organizations ||--o{ users
+organizations ||--o{ scenarios
+organizations ||--o{ trainingSession
+scenarios ||--|{ scenario_steps
+scenarios ||--o{ trainingSession
+users ||--o{ trainingSession : learner
+trainingSession ||--o{ sessionAction
+scenario_steps "0..1" -- "0..*" sessionAction
+trainingSession ||--o{ sessionResult
+
+note bottom of trainingSession
+  Không có khóa ngoại từ schema training
+  đến hóa đơn, phiếu nhận, lô hoặc tồn vận hành.
+end note
+
+@enduml
