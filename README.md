@@ -1,50 +1,53 @@
-# Prototype Sim Tím Workspace
+# Bách Hóa Sim Tím
 
-Quy trình nhóm, phân công, Scrum và backlog được quản lý tại
-[docs/project-management](docs/project-management/README.md). Điều kiện để tạo
-baseline qua lần merge đầu tiên nằm trong
-[MERGE_01.md](docs/project-management/MERGE_01.md).
+Ứng dụng quản lý bán hàng và tồn kho cho một cửa hàng bán lẻ, kết hợp mô phỏng đào tạo nghiệp vụ. Repository hiện lấy **Sprint 0 — Prototype 02** làm baseline: Vue 3, TypeScript, Vite, IndexedDB và Playwright; backend và Godot thuộc các sprint tiếp theo, không được xem là đã có trong baseline này.
 
-## Bản mới theo kiến trúc đã thống nhất
+## Bắt đầu nhanh
 
-Prototype 02 nằm tại [prototype-v2](prototype-v2/README.md), dùng Vue 3 + TypeScript + Vite để đánh giá hướng frontend đề xuất. Đây chưa phải quyết định khóa stack của nhóm.
+Yêu cầu Node.js 22 (tối thiểu 20.19).
 
 ```powershell
 cd prototype-v2
 npm ci
-npm run build
-npm run preview
+npm run dev
 ```
 
-Mở `http://127.0.0.1:4174`. Xem [phạm vi và API contract](prototype-v2/ARCHITECTURE.md).
+Mở `http://127.0.0.1:5174`. Các tài khoản demo dùng chung mật khẩu `demo123`:
 
-Bản cũ bên dưới được giữ tại commit `46ce071` và vẫn chạy độc lập bằng các file ở thư mục gốc.
+| Tài khoản | Vai trò |
+| --- | --- |
+| `NV001` | Nhân viên bán hàng |
+| `KHO001` | Nhân viên hàng hóa |
+| `QL001` | Quản lý cửa hàng |
 
-## Bản đầu tiên
-
-Prototype giao diện quản lý cửa hàng dành cho **nhân viên bán hàng**, kết hợp khu đào tạo nghiệp vụ 2D.
-
-## Chạy prototype
-
-Không cần cài dependency. Tại thư mục dự án, chạy:
+## Kiểm chứng baseline
 
 ```powershell
-npx serve .
+cd prototype-v2
+npm run verify
 ```
 
-Sau đó mở địa chỉ do terminal cung cấp. Có thể mở `index.html` trực tiếp, nhưng chạy qua local server sẽ ổn định hơn.
+Lệnh này chạy kiểm tra kiểu dữ liệu, production build và toàn bộ Playwright E2E. Xem tiêu chí merge tại [MERGE_01.md](docs/project-management/MERGE_01.md).
 
-## Tài khoản demo
+## Cấu trúc repository
 
-- Mã nhân viên: `NV001`
-- Mật khẩu: `demo123`
+```text
+prototype-v2/       PWA đang được phát triển và kiểm thử
+docs/               Yêu cầu, thiết kế, quản lý dự án và biên bản
+.github/             CI, Issue template và Pull Request template
+.agents/skills/      Workflow dùng lại cho Codex trong repository
+.codex/              Cấu hình và hàng rào an toàn cho Codex
+archive/             Prototype cũ chỉ giữ để truy vết
+```
 
-## Luồng nên thử
+- [Bản đồ tài liệu](docs/README.md)
+- [Hướng dẫn đóng góp](CONTRIBUTING.md)
+- [Kiến trúc và giới hạn Prototype 02](prototype-v2/ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
+- [Nhật ký đóng góp](CONTRIBUTION_LOG.md)
 
-1. Đăng nhập bằng tài khoản demo.
-2. Xem dashboard ca làm việc của nhân viên bán hàng.
-3. Nhấn avatar **Mentor Mai** có dấu `?` ở góc phải.
-4. Xem 7 chapter trên bản đồ đào tạo.
-5. Nhấn bất kỳ nút chapter nào để xem thông báo nội dung đang cập nhật.
+## Trạng thái và giới hạn
 
-Đây là prototype giao diện chạy hoàn toàn ở phía trình duyệt, chưa có backend hay dữ liệu thật.
+Baseline chạy hoàn toàn trong trình duyệt. Đăng nhập, phân quyền, API, thanh toán và đồng bộ máy chủ đang được mô phỏng; dữ liệu nằm trong browser profile hiện tại. Không sử dụng tài khoản demo hoặc dữ liệu prototype cho môi trường thật.
+
+Prototype đời đầu đã được chuyển vào [archive/prototype-v1](archive/prototype-v1/README.md). Nó không thuộc build, test hoặc đường phát triển hiện tại.

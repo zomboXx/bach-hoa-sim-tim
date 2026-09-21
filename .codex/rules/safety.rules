@@ -1,0 +1,29 @@
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Preserve local work; use a scoped, recoverable alternative.",
+)
+
+prefix_rule(
+    pattern = ["git", "push", ["--force", "--force-with-lease", "-f"]],
+    decision = "forbidden",
+    justification = "Do not rewrite shared repository history.",
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Publishing repository changes requires an explicit owner decision.",
+)
+
+prefix_rule(
+    pattern = ["git", "clean", ["-f", "-fd", "-fx", "-fdx"]],
+    decision = "prompt",
+    justification = "Review exact untracked targets with `git clean -n` before deletion.",
+)
+
+prefix_rule(
+    pattern = ["docker", "compose", "down", "-v"],
+    decision = "forbidden",
+    justification = "This removes persisted database volumes; use `docker compose down` unless data deletion is explicitly requested.",
+)

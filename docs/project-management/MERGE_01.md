@@ -2,6 +2,13 @@
 
 Merge 01 tạo baseline để nhóm bắt đầu phát triển backend. Đây là prototype phía trình duyệt; không tuyên bố đã có REST server, PostgreSQL hoặc runtime Godot.
 
+## Trạng thái kỹ thuật ngày 21/09/2026
+
+- Project Owner đã yêu cầu chốt Sprint 0 làm baseline trên `main`.
+- `npm run verify` đạt production build và **4/4 Playwright E2E** trước lẫn sau khi chuẩn hóa repository.
+- GitHub Actions sẽ kiểm chứng lại cùng lệnh khi thay đổi được push.
+- Việc điền tên owner/reviewer và xác nhận demo trên máy thành viên khác vẫn là đầu việc quản trị nhóm; không được suy diễn từ kết quả local.
+
 ## Chức năng phải chạy
 
 - Đăng nhập demo theo ba vai trò và ẩn chức năng không có quyền.
@@ -32,4 +39,3 @@ Kết quả yêu cầu: build thành công và 4/4 bài E2E đạt.
 - [ ] Một thành viên khác đã chạy bản demo trên máy của họ.
 - [ ] Tài liệu phân tích và backlog được review.
 - [ ] PR được ít nhất một thành viên khác chấp thuận.
-

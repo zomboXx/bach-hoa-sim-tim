@@ -1,4 +1,4 @@
-# Sim Tím Workspace · Prototype 02
+# Sim Tím Workspace · Prototype 02 (Sprint 0 baseline)
 
 Bản giao diện tương tác theo hướng **hệ thống client–server triển khai tập trung, có khả năng phát triển theo mô hình SaaS**. Thử frontend Vue 3 + TypeScript + Vite; không khóa stack, phân công hoặc cam kết xây dựng SaaS đa doanh nghiệp.
 
@@ -9,11 +9,10 @@ Node.js 22.12 trở lên (hoặc Node 20.19+).
 ```powershell
 cd prototype-v2
 npm ci
-npm run build
-npm run preview
+npm run dev
 ```
 
-Mở **http://127.0.0.1:4174**. Preview dùng bản build, có Service Worker để thử offline. `npm run dev` dùng cổng 5174 cho phát triển giao diện, không đăng ký Service Worker mới. Nếu đổi mã nguồn khi đang xem preview, cần build lại và tải lại trang.
+Mở **http://127.0.0.1:5174**. Lệnh `npm run dev` không đăng ký Service Worker mới. Để kiểm tra production build và offline cache, chạy `npm run build`, sau đó `npm run preview` và mở **http://127.0.0.1:4174**. Nếu đổi mã nguồn khi đang xem preview, cần build lại và tải lại trang.
 
 ## Tài khoản demo
 
@@ -51,8 +50,7 @@ Quyền ở frontend chỉ giúp trình diễn; backend thật phải xác thự
 ## Kiểm thử
 
 ```powershell
-npm run build
-npm run test:e2e
+npm run verify
 ```
 
 Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), khởi chạy preview nếu cổng 4174 chưa được dùng. Có kiểm tra nhận hàng/bán hàng/FEFO, giá khuyến mãi, hóa đơn, reload offline, đồng bộ, duyệt tồn, cách ly đào tạo, đăng nhập sai và quyền giao diện.
@@ -66,6 +64,6 @@ Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), k
 - `src/api.ts`: kiểu dữ liệu, adapter demo, đăng nhập mẫu, giao dịch bán hàng và lưu trữ.
 - `public/sw.js`: chỉ cache tài nguyên giao diện công khai cùng origin; không cache API nghiệp vụ.
 - `ARCHITECTURE.md`: ranh giới client/backend/Godot và API contract dự kiến.
-- `CHANGELOG.md`: bàn giao và giới hạn của bản này.
+- `../CHANGELOG.md`: lịch sử thay đổi của toàn repository.
 
-Hình mentor tái sử dụng từ `../assets/mentor-mai.png`; không phát sinh asset ImageGen mới trong bản 02.
+Hình mentor trong `public/mentor.png` được kế thừa từ prototype đầu; nguồn lịch sử nằm tại `../archive/prototype-v1/assets/mentor-mai.png`.

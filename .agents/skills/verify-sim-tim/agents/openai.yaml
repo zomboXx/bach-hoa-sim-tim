@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Sim Tím"
+  short_description: "Verify repository changes before review or merge"
+  default_prompt: "Use $verify-sim-tim to verify the current repository changes and report remaining risks."

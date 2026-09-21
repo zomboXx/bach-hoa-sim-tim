@@ -23,9 +23,15 @@ Ghi lệnh và kết quả kiểm thử:
 
 ```
 
+## Tài liệu và tương thích
+
+- [ ] Đã cập nhật `CHANGELOG.md`, hoặc thay đổi này không cần changelog
+- [ ] Đã cập nhật yêu cầu/thiết kế/hướng dẫn chạy liên quan
+- [ ] Đã mô tả ảnh hưởng tương thích API, dữ liệu hoặc offline; không ảnh hưởng thì ghi N/A
+- [ ] Không chứa secret, dữ liệu thật, build output hoặc cache công cụ
+
 ## Review
 
 - Owner:
 - Reviewer:
 - Rủi ro hoặc giới hạn còn lại:
-

@@ -251,7 +251,7 @@ Godot đào tạo 2D ──────┘                  ├── xác thự
 - Kết nối PWA với REST API và thay dữ liệu trình duyệt bằng dữ liệu tập trung.
 - Runtime Godot và tích hợp phiên đào tạo với backend.
 
-<!-- Nguồn: prototype-v2/README.md, prototype-v2/CHANGELOG.md và kết quả kiểm tra cục bộ -->
+<!-- Nguồn: prototype-v2/README.md, CHANGELOG.md và kết quả kiểm tra cục bộ -->
 
 ---
 
@@ -328,7 +328,7 @@ Tóm tắt kết quả đã hoàn thành.
 - Không dùng số dòng để tự suy ra tỷ lệ đóng góp hoặc chất lượng công việc.
 - Đầu ra do công cụ AI tạo chỉ được tính cho thành viên sau khi người đó kiểm tra, chỉnh sửa và chịu trách nhiệm tích hợp.
 
-<!-- Nguồn: CONTRIBUTION_LOG.md và prototype-v2/CHANGELOG.md. Quy tắc nghiệm thu cần nhóm xác nhận. -->
+<!-- Nguồn: CONTRIBUTION_LOG.md và CHANGELOG.md. Quy tắc nghiệm thu cần nhóm xác nhận. -->
 
 ---
 
