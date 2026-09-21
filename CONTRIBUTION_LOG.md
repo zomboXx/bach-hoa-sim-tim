@@ -22,6 +22,18 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Đức Phát - 2026-09-21 21:28:26
+
+Làm rõ mốc hiện tại là baseline Sprint 0 đã nghiệm thu và chỉ là điểm xuất phát để cả nhóm triển khai Sprint 1; không ghi nhận nhầm kế hoạch nền tảng thành implementation đã hoàn thành.
+
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +1 -1
+- `docs/architecture/adr/`: +4 -4
+- `docs/project/`: +2 -2
+- `CONTRIBUTION_LOG.md`: +12 -0
+---
+
+---
 Nguyễn Đức Phát - 2026-09-21 20:52:23
 
 Chốt baseline sạch để nhóm bắt đầu Sprint 1: giữ PWA Sprint 0 đã kiểm thử làm code active duy nhất, tổ chức lại repository và tài liệu, xác lập ownership, ADR, kế hoạch kickoff, lệnh root, lint/format và CI. Code thử nghiệm Sprint 1 không được nhập vào baseline này.

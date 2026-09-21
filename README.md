@@ -1,6 +1,6 @@
 # Bách Hóa Sim Tím
 
-Baseline để nhóm bắt đầu Sprint 1 của hệ thống quản lý bán hàng và tồn kho. Phần đã được nghiệm thu là PWA Sprint 0 dùng Vue 3, TypeScript, Vite, IndexedDB và Playwright. API, PostgreSQL và Godot chưa thuộc baseline; chúng chỉ được thêm qua backlog item và Pull Request có owner, reviewer và kiểm thử.
+Đây là baseline đã hoàn thành và nghiệm thu của Sprint 0, đồng thời là điểm xuất phát để cả nhóm triển khai Sprint 1. Code active đã được nghiệm thu chỉ gồm PWA dùng Vue 3, TypeScript, Vite, IndexedDB và Playwright. API, PostgreSQL và Godot chưa thuộc baseline; chúng chỉ được thêm trong Sprint 1 qua backlog item và Pull Request có owner, reviewer và kiểm thử.
 
 ## Bắt đầu nhanh
 

@@ -1,6 +1,6 @@
 # Biên bản chấp nhận baseline Sprint 0
 
-Baseline này là điểm xuất phát để nhóm bắt đầu Sprint 1. Đây là prototype phía trình duyệt; không tuyên bố đã có REST server, PostgreSQL hoặc runtime Godot.
+Đây là baseline Sprint 0 đã nghiệm thu và là điểm xuất phát để nhóm bắt đầu Sprint 1. Baseline chỉ có prototype phía trình duyệt; không tuyên bố đã có REST server, PostgreSQL hoặc runtime Godot.
 
 ## Trạng thái kỹ thuật ngày 21/09/2026
 

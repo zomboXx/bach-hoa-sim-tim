@@ -1,4 +1,4 @@
-# ADR 0001 Repository layout for Sprint 1
+# ADR 0001 Repository layout tại baseline Sprint 0
 
 - Status: Accepted
 - Date: 2026-09-21
@@ -6,7 +6,7 @@
 
 ## Context
 
-Sprint 1 cần nhiều người làm web, API, dữ liệu và QA song song. Cấu trúc theo tên prototype và tài liệu trộn chung làm ownership, đường dẫn CI và trạng thái tài liệu khó hiểu.
+Sau Sprint 0, nhóm cần một cấu trúc ổn định để nhiều người làm web, API, dữ liệu và QA song song trong Sprint 1. Cấu trúc theo tên prototype và tài liệu trộn chung làm ownership, đường dẫn CI và trạng thái tài liệu khó hiểu.
 
 ## Decision
 

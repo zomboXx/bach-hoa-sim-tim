@@ -1,4 +1,4 @@
-# Sprint 1 kickoff baseline
+# Khởi động Sprint 1 từ baseline Sprint 0
 
 ## Mục tiêu
 
