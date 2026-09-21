@@ -1,53 +1,26 @@
-# Bách Hóa Sim Tím
+# Bách Hóa Sim Tím — Sprint 1
 
-Ứng dụng quản lý bán hàng và tồn kho cho một cửa hàng bán lẻ, kết hợp mô phỏng đào tạo nghiệp vụ. Repository hiện lấy **Sprint 0 — Prototype 02** làm baseline: Vue 3, TypeScript, Vite, IndexedDB và Playwright; backend và Godot thuộc các sprint tiếp theo, không được xem là đã có trong baseline này.
+Hệ thống quản lý bán hàng và tồn kho cho một cửa hàng bán lẻ, kết hợp mô phỏng đào tạo nghiệp vụ. Bản Sprint 1 tích hợp Vue PWA, Spring Boot API, PostgreSQL/Flyway và Godot Chapter 0; trạng thái này đang chờ hardening và review trước khi nhập `main`.
 
-## Bắt đầu nhanh
-
-Yêu cầu Node.js 22 (tối thiểu 20.19).
+## Chạy môi trường Sprint 1
 
 ```powershell
+docker compose up -d
+mvn -f backend/pom.xml spring-boot:run
+pwsh -File scripts/export-training.ps1 -Godot "duong-dan-godot-console.exe"
 cd prototype-v2
 npm ci
 npm run dev
 ```
 
-Mở `http://127.0.0.1:5174`. Các tài khoản demo dùng chung mật khẩu `demo123`:
+Mở `http://127.0.0.1:5174`. Tài khoản bán hàng mẫu là `NV001` / `demo123`.
 
-| Tài khoản | Vai trò |
-| --- | --- |
-| `NV001` | Nhân viên bán hàng |
-| `KHO001` | Nhân viên hàng hóa |
-| `QL001` | Quản lý cửa hàng |
+## Tài liệu chính
 
-## Kiểm chứng baseline
-
-```powershell
-cd prototype-v2
-npm run verify
-```
-
-Lệnh này chạy kiểm tra kiểu dữ liệu, production build và toàn bộ Playwright E2E. Xem tiêu chí merge tại [MERGE_01.md](docs/project-management/MERGE_01.md).
-
-## Cấu trúc repository
-
-```text
-prototype-v2/       PWA đang được phát triển và kiểm thử
-docs/               Yêu cầu, thiết kế, quản lý dự án và biên bản
-.github/             CI, Issue template và Pull Request template
-.agents/skills/      Workflow dùng lại cho Codex trong repository
-.codex/              Cấu hình và hàng rào an toàn cho Codex
-archive/             Prototype cũ chỉ giữ để truy vết
-```
-
+- [Hướng dẫn và phạm vi Sprint 1](docs/SPRINT_1.md)
+- [Mô hình dữ liệu và REST contract](docs/DATA_MODEL.md)
+- [Vai trò và Chapter 0](docs/ROLES_AND_CHAPTER_0.md)
 - [Bản đồ tài liệu](docs/README.md)
-- [Hướng dẫn đóng góp](CONTRIBUTING.md)
-- [Kiến trúc và giới hạn Prototype 02](prototype-v2/ARCHITECTURE.md)
-- [Changelog](CHANGELOG.md)
-- [Nhật ký đóng góp](CONTRIBUTION_LOG.md)
+- [Quy trình đóng góp](CONTRIBUTING.md)
 
-## Trạng thái và giới hạn
-
-Baseline chạy hoàn toàn trong trình duyệt. Đăng nhập, phân quyền, API, thanh toán và đồng bộ máy chủ đang được mô phỏng; dữ liệu nằm trong browser profile hiện tại. Không sử dụng tài khoản demo hoặc dữ liệu prototype cho môi trường thật.
-
-Prototype đời đầu đã được chuyển vào [archive/prototype-v1](archive/prototype-v1/README.md). Nó không thuộc build, test hoặc đường phát triển hiện tại.
+Sprint 0 đã được chốt trên `main`. Prototype đời đầu được lưu tại `archive/prototype-v1/`; không phát triển tính năng mới trong thư mục lưu trữ.

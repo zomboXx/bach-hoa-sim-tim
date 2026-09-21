@@ -1,4 +1,8 @@
-# Kiến trúc và hợp đồng tích hợp dự kiến
+# Trạng thái cập nhật Sprint 1
+
+Bản hiện tại đã có Spring Boot/PostgreSQL thật và Godot Chapter 0; contract hiện hành tại [DATA_MODEL.md](../docs/DATA_MODEL.md), phạm vi/giới hạn tại [SPRINT_1.md](../docs/SPRINT_1.md).
+
+## Lịch sử: Kiến trúc và hợp đồng tích hợp dự kiến
 
 Ngày cập nhật: 2026-09-14. Theo định hướng người dùng vừa chốt; stack và phân công vẫn là đề xuất, chưa xác nhận năng lực của cả bốn thành viên.
 

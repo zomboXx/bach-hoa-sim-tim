@@ -21,6 +21,8 @@ Mục tiêu: thống nhất cấu trúc làm việc và giữ một prototype c�
 
 Mục tiêu: PWA đăng nhập và đọc danh mục từ API/CSDL thật.
 
+Cập nhật triển khai: xem [bản giao kỹ thuật Sprint 1](../SPRINT_1.md). BE/FE/DB/QA đã có hiện thực để review trên nhánh `codex/sprint-1-central-api-chapter-0`; chưa tự đóng sprint. Theo yêu cầu mới, Chapter 0 Godot được đưa lên sớm; Chapter 1–6 vẫn placeholder, không đánh dấu TRN-02 của Sprint 4 đã hoàn tất.
+
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
 | REQ-01 | Xác nhận phạm vi P1 và các mục `Cần khảo sát` | P0 | TV1 | Cả nhóm | GOV-01 | Có biên bản quyết định và cập nhật SRS |
@@ -77,4 +79,3 @@ Mục tiêu: một kịch bản đào tạo hoàn chỉnh, bản release candida
 - Nhiều cửa hàng/kho trung tâm vận hành đồng thời.
 - Khách hàng thành viên và đổi điểm nếu khảo sát không chứng minh cần cho MVP.
 - Chapter kinh dị, AI khách hàng, combat và toàn bộ cốt truyện.
-

@@ -1,4 +1,4 @@
-const CACHE = "simtim-prototype-v2-shell-2";
+const CACHE = "simtim-prototype-v2-shell-sprint1";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {

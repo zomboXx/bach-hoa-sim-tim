@@ -1,5 +1,5 @@
 @startuml
-title ERD logic - Tài khoản, phân quyền, đồng bộ và audit
+title Sơ đồ quan hệ - Tài khoản, phân quyền, đồng bộ và nhật ký
 
 hide circle
 hide methods
@@ -99,7 +99,8 @@ entity "audit.audit_logs" as auditLog {
 organizations ||--o{ stores
 organizations ||--o{ users
 organizations ||--o{ roles
-users ||--o{ user_roles
+users ||--o{ user_roles : user_id
+users ||--o{ user_roles : assigned_by
 roles ||--o{ user_roles
 stores ||--o{ user_roles
 roles ||--o{ role_permissions

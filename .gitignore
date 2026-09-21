@@ -14,7 +14,7 @@ prototype-v2/playwright-report/
 .DS_Store
 Thumbs.db
 
-# Future module build output
+# Generated module output
 backend/target/
 godot/.godot/
 godot/assets/*.translation

@@ -2,6 +2,6 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 export default defineConfig({
   plugins: [vue()],
-  server: { port: 5174 },
-  preview: { port: 4174 },
+  server: { port: 5174, proxy: { "/api": "http://127.0.0.1:8080" } },
+  preview: { port: 4174, proxy: { "/api": "http://127.0.0.1:8080" } },
 });
