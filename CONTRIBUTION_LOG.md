@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Đức Phát - 2026-09-21 20:52:23
+
+Chốt baseline sạch để nhóm bắt đầu Sprint 1: giữ PWA Sprint 0 đã kiểm thử làm code active duy nhất, tổ chức lại repository và tài liệu, xác lập ownership, ADR, kế hoạch kickoff, lệnh root, lint/format và CI. Code thử nghiệm Sprint 1 không được nhập vào baseline này.
+
+- `.github/`: +47 -4
+- `apps/web/`: +3379 -2497; 1 binary di chuyển nguyên trạng
+- `archive/`: +1 -1
+- `contracts/`: +5 -0
+- `docs/`: +188 -116; 7 binary di chuyển nguyên trạng
+- `infra/`: +3 -0
+- `AGENTS.md`, `README.md` và cấu hình root: +50 -30
+- `scripts/`: +101 -0
+- `services/`: +5 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
 Codex (AI hỗ trợ; chờ Project Owner xác nhận người chịu trách nhiệm) - 2026-09-21 14:16:48
 
 Chuẩn hóa Sprint 0 thành baseline có thể bàn giao: lưu trữ prototype cũ, thiết lập quy trình cộng tác/Codex, thống nhất cổng kiểm chứng với CI và cập nhật tài liệu trước khi tích hợp `main`. Mục này không tự quy đổi thành đóng góp của thành viên cho đến khi người chịu trách nhiệm review và xác nhận.

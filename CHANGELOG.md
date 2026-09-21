@@ -4,11 +4,21 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+## 0.2.1 — 2026-09-21
+
 ### Changed
 
+- Tổ chức baseline theo `apps`, `services`, `contracts`, `infra`, `scripts`, `docs` và `archive`; chỉ PWA Sprint 0 là code active đã nghiệm thu.
+- Ghi nhận bốn thành viên và CODEOWNERS, bổ sung ADR cùng kế hoạch kickoff để chia PR Sprint 1 theo dependency rõ ràng.
+- Thêm lệnh root `setup`, `dev`, `verify`, `clean`; CI tách repository policy và web baseline gate.
+- Bổ sung ESLint, Prettier và kiểm tra link nội bộ; chuẩn hóa đường dẫn tài liệu theo product, architecture, project, deliverables và archive.
 - Chuẩn hóa cấu trúc repository: chuyển Prototype 01 vào `archive/prototype-v1/` và đưa changelog lên root.
 - Bổ sung bản đồ tài liệu, hướng dẫn đóng góp, quy tắc agent, EditorConfig, Git attributes và cấu hình Codex an toàn.
 - Thêm skill `verify-sim-tim` và lệnh `npm run verify` dùng chung giữa máy phát triển và CI.
+
+### Fixed
+
+- Bổ sung key ổn định cho các danh sách Vue/SVG để tránh tái sử dụng DOM sai khi dữ liệu thay đổi.
 
 ## 0.2.0 — 2026-09-14
 

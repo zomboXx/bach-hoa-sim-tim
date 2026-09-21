@@ -1,0 +1,12 @@
+# Repository governance
+* @zomboXx
+
+# Sprint workstreams
+/apps/web/ @thinguyen135 @zomboXx
+/services/ @nguyentrung01ute-ui @zomboXx
+/contracts/ @zomboXx @nguyentrung01ute-ui @thinguyen135
+/infra/ @nguyentrung01ute-ui @zomboXx
+/docs/product/ @zomboXx
+/docs/architecture/ @zomboXx @nguyentrung01ute-ui
+/docs/testing/ @VanChien11-02 @zomboXx
+/.github/ @zomboXx @VanChien11-02

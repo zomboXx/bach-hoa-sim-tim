@@ -1,15 +1,14 @@
 # Bách Hóa Sim Tím
 
-Ứng dụng quản lý bán hàng và tồn kho cho một cửa hàng bán lẻ, kết hợp mô phỏng đào tạo nghiệp vụ. Repository hiện lấy **Sprint 0 — Prototype 02** làm baseline: Vue 3, TypeScript, Vite, IndexedDB và Playwright; backend và Godot thuộc các sprint tiếp theo, không được xem là đã có trong baseline này.
+Baseline để nhóm bắt đầu Sprint 1 của hệ thống quản lý bán hàng và tồn kho. Phần đã được nghiệm thu là PWA Sprint 0 dùng Vue 3, TypeScript, Vite, IndexedDB và Playwright. API, PostgreSQL và Godot chưa thuộc baseline; chúng chỉ được thêm qua backlog item và Pull Request có owner, reviewer và kiểm thử.
 
 ## Bắt đầu nhanh
 
-Yêu cầu Node.js 22 (tối thiểu 20.19).
+Yêu cầu Git, PowerShell 7 và Node.js 22.
 
 ```powershell
-cd prototype-v2
-npm ci
-npm run dev
+pwsh -File scripts/setup.ps1
+pwsh -File scripts/dev.ps1
 ```
 
 Mở `http://127.0.0.1:5174`. Các tài khoản demo dùng chung mật khẩu `demo123`:
@@ -23,17 +22,20 @@ Mở `http://127.0.0.1:5174`. Các tài khoản demo dùng chung mật khẩu `d
 ## Kiểm chứng baseline
 
 ```powershell
-cd prototype-v2
-npm run verify
+pwsh -File scripts/verify.ps1
 ```
 
-Lệnh này chạy kiểm tra kiểu dữ liệu, production build và toàn bộ Playwright E2E. Xem tiêu chí merge tại [MERGE_01.md](docs/project-management/MERGE_01.md).
+Lệnh này kiểm tra whitespace/link, ESLint, Prettier, TypeScript, production build và toàn bộ Playwright E2E. Xem [cổng baseline](docs/project/governance/MERGE_01.md) và [kế hoạch khởi động Sprint 1](docs/project/SPRINT_1_KICKOFF.md).
 
 ## Cấu trúc repository
 
 ```text
-prototype-v2/       PWA đang được phát triển và kiểm thử
-docs/               Yêu cầu, thiết kế, quản lý dự án và biên bản
+apps/web/           PWA Sprint 0 và điểm bắt đầu frontend Sprint 1
+services/           Nơi đặt dịch vụ khi backlog item khởi tạo được duyệt
+contracts/          Hợp đồng liên module, luôn ghi trạng thái draft/accepted
+infra/              Hạ tầng local đi cùng dịch vụ sở hữu
+docs/               Product, kiến trúc, quản trị dự án, kiểm thử và lịch sử
+scripts/            Lệnh setup/dev/verify/clean được hỗ trợ
 .github/             CI, Issue template và Pull Request template
 .agents/skills/      Workflow dùng lại cho Codex trong repository
 .codex/              Cấu hình và hàng rào an toàn cho Codex
@@ -42,7 +44,7 @@ archive/             Prototype cũ chỉ giữ để truy vết
 
 - [Bản đồ tài liệu](docs/README.md)
 - [Hướng dẫn đóng góp](CONTRIBUTING.md)
-- [Kiến trúc và giới hạn Prototype 02](prototype-v2/ARCHITECTURE.md)
+- [Kiến trúc và giới hạn PWA](apps/web/ARCHITECTURE.md)
 - [Changelog](CHANGELOG.md)
 - [Nhật ký đóng góp](CONTRIBUTION_LOG.md)
 
@@ -50,4 +52,4 @@ archive/             Prototype cũ chỉ giữ để truy vết
 
 Baseline chạy hoàn toàn trong trình duyệt. Đăng nhập, phân quyền, API, thanh toán và đồng bộ máy chủ đang được mô phỏng; dữ liệu nằm trong browser profile hiện tại. Không sử dụng tài khoản demo hoặc dữ liệu prototype cho môi trường thật.
 
-Prototype đời đầu đã được chuyển vào [archive/prototype-v1](archive/prototype-v1/README.md). Nó không thuộc build, test hoặc đường phát triển hiện tại.
+Prototype đời đầu nằm trong [archive/prototype-v1](archive/prototype-v1/README.md). Code Sprint 1 thử nghiệm trước baseline được giữ ngoài `main` để tham khảo, không được xem là nguồn sự thật hay tự động ghi nhận là đóng góp đã nghiệm thu.

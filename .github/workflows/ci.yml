@@ -1,23 +1,52 @@
-name: build-and-test
+name: baseline-quality
 
 on:
   pull_request:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: baseline-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  prototype-v2:
+  repository-policy:
+    name: Repository policy
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check committed whitespace
+        run: git show --check --format=oneline HEAD
+      - name: Check local Markdown links
+        shell: pwsh
+        run: ./scripts/check-markdown-links.ps1
+
+  web-baseline:
+    name: Web baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
-        working-directory: prototype-v2
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: prototype-v2/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-test-failure
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          if-no-files-found: ignore

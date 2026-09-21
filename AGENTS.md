@@ -30,21 +30,25 @@ The agent may inspect files, edit the requested scope and run local validation w
 
 ## Repository layout
 
-- `prototype-v2/`: active Sprint 0 PWA baseline. Read `prototype-v2/AGENTS.md` before editing it.
+- `apps/web/`: approved Sprint 0 PWA baseline. Read `apps/web/AGENTS.md` before editing it.
+- `services/`: server modules created by an accepted backlog item; no API implementation is part of this baseline.
+- `contracts/`: proposed/accepted cross-module interfaces, with status stated in each document.
+- `infra/`: reproducible local infrastructure introduced with the owning service.
 - `docs/`: project records. Use `docs/README.md` to determine authority and status.
+- `scripts/`: supported root commands for setup, development and verification.
 - `archive/`: read-only historical implementations; do not add features there.
 - `.github/`: team workflow and CI.
 - `.agents/skills/`: reusable repository workflows.
 
 ## Verification
 
-For Sprint 0 frontend changes, run from `prototype-v2/`:
+Run the baseline gate from repository root:
 
 ```text
-npm run verify
+pwsh -File scripts/verify.ps1
 ```
 
-Run narrower checks while iterating, but run the complete relevant gate before handoff. If a future backend or Godot module is present, follow its own checked-in instructions and CI rather than assuming Sprint 0 commands cover it.
+Run narrower checks while iterating, but run the complete relevant gate before handoff. Each future service must add its own checked-in verification to the root gate and CI in the same PR.
 
 ## Documentation and handoff
 

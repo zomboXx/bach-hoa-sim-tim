@@ -1,10 +1,11 @@
 node_modules/
-prototype-v2/dist/
+apps/web/dist/
 .codex_tmp/
 .codex-artifacts/
 *.tsbuildinfo
-prototype-v2/test-results/
-prototype-v2/playwright-report/
+apps/web/test-results/
+apps/web/playwright-report/
+rendered/
 
 # Local configuration and logs
 .env
@@ -15,7 +16,7 @@ prototype-v2/playwright-report/
 Thumbs.db
 
 # Future module build output
-backend/target/
-godot/.godot/
-godot/assets/*.translation
-prototype-v2/public/training/
+services/api/target/
+apps/training-godot/.godot/
+apps/training-godot/assets/*.translation
+apps/web/public/training/

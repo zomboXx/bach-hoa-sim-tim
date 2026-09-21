@@ -2,8 +2,8 @@
 
 ## Chuẩn bị môi trường
 
-1. Cài Node.js 22 và Git.
-2. Clone repository, tạo nhánh từ `main` và chạy `npm ci` trong `prototype-v2/`.
+1. Cài Git, PowerShell 7 và Node.js 22.
+2. Clone repository, tạo nhánh từ `main` và chạy `pwsh -File scripts/setup.ps1`.
 3. Đọc [`docs/README.md`](docs/README.md), backlog item và `AGENTS.md` gần phần mã sẽ sửa.
 
 ## Quy trình công việc
@@ -16,11 +16,10 @@
 
 Khuyến nghị Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:` và `ci:`.
 
-## Cổng chất lượng Sprint 0
+## Cổng chất lượng baseline
 
 ```powershell
-cd prototype-v2
-npm run verify
+pwsh -File scripts/verify.ps1
 ```
 
 Nếu không chạy được một kiểm tra, ghi rõ lệnh, nguyên nhân và rủi ro trong PR; không ghi chung chung là “chưa test”.

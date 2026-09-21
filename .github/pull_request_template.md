@@ -12,6 +12,7 @@ Closes #
 
 ## Kiểm thử
 
+- [ ] `pwsh -File scripts/verify.ps1` đạt, hoặc đã ghi rõ cổng module thay thế/bổ sung
 - [ ] Build đạt
 - [ ] Test tự động liên quan đạt
 - [ ] Đã kiểm thử thủ công trên thiết bị/viewport phù hợp
@@ -34,4 +35,5 @@ Ghi lệnh và kết quả kiểm thử:
 
 - Owner:
 - Reviewer:
+- Backlog item/Issue:
 - Rủi ro hoặc giới hạn còn lại:

@@ -7,7 +7,7 @@ description: Verify changes in the Bách Hóa Sim Tím repository before review 
 
 Inspect the current diff and map changed files to the relevant module. Read the root and nearest module `AGENTS.md`, then run the narrowest checks that cover the change.
 
-For the Sprint 0 PWA baseline, run `npm run verify` from `prototype-v2/`. If only documentation or repository metadata changed, still run `git diff --check` and validate links/paths affected by moves.
+Run `pwsh -File scripts/verify.ps1` from the repository root for the complete baseline gate. If only documentation or repository metadata changed, still run `git diff --check` and `scripts/check-markdown-links.ps1`.
 
 Do not fix unrelated failures or delete artifacts merely to obtain a green result. Stop and report when verification requires missing credentials, unavailable external services or a destructive reset.
 
