@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ben0m8bieofa1"
+
+[deps]
+
+files=["res://assets/crop_manifest.category.translation", "res://assets/crop_manifest.x.translation", "res://assets/crop_manifest.y.translation", "res://assets/crop_manifest.width.translation", "res://assets/crop_manifest.height.translation", "res://assets/crop_manifest.filename.translation"]
+
+source_file="res://assets/crop_manifest.csv"
+dest_files=["res://assets/crop_manifest.category.translation", "res://assets/crop_manifest.x.translation", "res://assets/crop_manifest.y.translation", "res://assets/crop_manifest.width.translation", "res://assets/crop_manifest.height.translation", "res://assets/crop_manifest.filename.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

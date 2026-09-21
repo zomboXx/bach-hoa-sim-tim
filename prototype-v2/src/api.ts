@@ -1,12 +1,27 @@
 // Demo adapter: replace with REST requests when the server contract is implemented.
 // All data here is device-local. This is not authentication or server authorization.
-export type Role = "sales" | "stock" | "manager";
+export type Role = "admin" | "accountant" | "manager" | "sales" | "stock";
+export const roleNames: Record<Role, string> = {
+  admin: "Admin / Chủ cửa hàng",
+  accountant: "Kế toán",
+  manager: "Quản lý cửa hàng",
+  sales: "Nhân viên bán hàng / Thu ngân",
+  stock: "Nhân viên kho",
+};
+export const startPage: Record<Role, string> = {
+  admin: "dashboard",
+  accountant: "finance",
+  manager: "approvals",
+  sales: "sale",
+  stock: "receive",
+};
 export interface User {
   id: string;
   name: string;
   role: Role;
 }
 export interface Product {
+  active?: boolean;
   id: string;
   name: string;
   barcode: string;
@@ -16,12 +31,14 @@ export interface Product {
   emoji: string;
 }
 export interface Batch {
+  version?: number;
   id: string;
   productId: string;
   quantity: number;
   expiry: string;
 }
 export interface Supplier {
+  active?: boolean;
   id: string;
   name: string;
   phone: string;
@@ -43,6 +60,7 @@ export interface Movement {
   reference: string;
 }
 export interface Count {
+  baseVersion?: number;
   id: string;
   at: string;
   productId: string;
@@ -53,6 +71,7 @@ export interface Count {
   status: "PENDING" | "REVIEW" | "APPROVED" | "CONFLICT";
 }
 export interface State {
+  categories?: { id: string; name: string; active: boolean }[];
   products: Product[];
   batches: Batch[];
   suppliers: Supplier[];
@@ -187,6 +206,8 @@ export const accounts: User[] = [
   { id: "NV001", name: "Lan Nguyễn", role: "sales" },
   { id: "KHO001", name: "Minh Trần", role: "stock" },
   { id: "QL001", name: "An Phạm", role: "manager" },
+  { id: "ADMIN001", name: "Chủ cửa hàng", role: "admin" },
+  { id: "KT001", name: "Thu Hà", role: "accountant" },
 ];
 export function login(id: string, password: string): User {
   const user = accounts.find((a) => a.id === id.trim().toUpperCase());
@@ -195,23 +216,32 @@ export function login(id: string, password: string): User {
   return user;
 }
 export const permissions: Record<Role, string[]> = {
-  sales: ["dashboard", "sale", "invoices", "products", "inventory", "training"],
-  stock: [
-    "dashboard",
-    "products",
-    "suppliers",
-    "receive",
-    "inventory",
-    "count",
-    "training",
-  ],
-  manager: [
+  sales: ["sale", "invoices", "training"],
+  accountant: ["finance", "invoices", "training"],
+  stock: ["receive", "inventory", "warehouse_orders", "training"],
+  admin: [
     "dashboard",
     "sale",
     "invoices",
     "products",
     "suppliers",
     "receive",
+    "inventory",
+    "count",
+    "promotions",
+    "reports",
+    "finance",
+    "approvals",
+    "warehouse_orders",
+    "system",
+    "training",
+  ],
+  manager: [
+    "dashboard",
+    "approvals",
+    "invoices",
+    "products",
+    "suppliers",
     "inventory",
     "count",
     "promotions",

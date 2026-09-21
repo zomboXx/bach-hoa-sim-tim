@@ -6,11 +6,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  prototype-v2:
+  sprint-one:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: prototype-v2
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: simtim
+          POSTGRES_USER: simtim
+          POSTGRES_PASSWORD: simtim-local-only
+        ports: ['5433:5432']
+        options: --health-cmd "pg_isready -U simtim -d simtim" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,7 +25,48 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: prototype-v2/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Create isolated test database
+        env:
+          PGPASSWORD: simtim-local-only
+        run: createdb -h 127.0.0.1 -p 5433 -U simtim simtim_test
+      - run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Install Godot and matching Web templates
+        run: |
+          curl -fL --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz -o /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          unzip -q -j /tmp/templates.tpz 'templates/web_nothreads_*.zip' templates/version.txt -d "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+      - name: Validate and export Chapter 0
+        run: |
+          godot --headless --path godot --editor --import
+          godot --headless --path godot --script res://tests/tour_test.gd
+          mkdir -p prototype-v2/public/training
+          godot --headless --path godot --export-release Web
+      - name: Start API
+        run: |
+          java -jar backend/target/store-api-0.3.0.jar > /tmp/simtim-api.log 2>&1 &
+          for i in {1..40}; do curl -fsS http://127.0.0.1:8080/api/health && exit 0; sleep 1; done
+          cat /tmp/simtim-api.log
+          exit 1
       - run: npm ci
+        working-directory: prototype-v2
       - run: npx playwright install --with-deps chromium
+        working-directory: prototype-v2
       - run: npm run build
+        working-directory: prototype-v2
       - run: npm run test:e2e
+        working-directory: prototype-v2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sprint-one-test-evidence
+          path: |
+            prototype-v2/test-results
+            backend/target/surefire-reports

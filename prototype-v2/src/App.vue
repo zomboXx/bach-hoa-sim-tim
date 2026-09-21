@@ -1,12 +1,27 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
-import TrainingGame from "./training/TrainingGame.vue";
+import TrainingGame from "./training/ChapterLobby.vue";
+import RoleWorkspace from "./RoleWorkspace.vue";
+import InvoiceEditor from "./InvoiceEditor.vue";
+import {
+  apiMode,
+  ApiError,
+  request,
+  serverLogin,
+  serverLogout,
+  serverState,
+  emptyState,
+  queueFor,
+  saveQueue,
+} from "./server";
 import {
   accounts,
   available,
   checkout,
   login,
   permissions,
+  roleNames,
+  startPage,
   persist,
   price,
   readState,
@@ -29,13 +44,18 @@ const online = ref(navigator.onLine);
 const simulateOffline = ref(false);
 const connected = computed(() => online.value && !simulateOffline.value);
 const credentials = reactive({ id: "NV001", password: "demo123" });
-const roleNames = {
-  sales: "Nhân viên bán hàng",
-  stock: "Nhân viên hàng hóa",
-  manager: "Quản lý cửa hàng",
-};
+const homePage = computed(() =>
+  user.value ? startPage[user.value.role] : "sale",
+);
+const canManage = computed(
+  () => !!user.value && ["admin", "manager"].includes(user.value.role),
+);
 const nav = [
   ["dashboard", "Tổng quan", "◫"],
+  ["approvals", "Trung tâm phê duyệt", "✓"],
+  ["finance", "Không gian kế toán", "₫"],
+  ["system", "Chủ cửa hàng", "⚙"],
+  ["warehouse_orders", "Phiếu xuất & điều chuyển", "⇄"],
   ["sale", "Bán hàng", "＋"],
   ["invoices", "Hóa đơn", "▤"],
   ["products", "Sản phẩm", "▦"],
@@ -101,23 +121,96 @@ function go(id: string) {
   error.value = "";
   window.scrollTo(0, 0);
 }
-function signIn() {
+async function signIn() {
+  if (busy.value) return;
+  busy.value = true;
   try {
     if (!connected.value)
       throw Error("Cần kết nối để bắt đầu phiên đăng nhập.");
-    user.value = login(credentials.id, credentials.password);
-    sessionStorage.setItem("simtim-v2-user", user.value.id);
-    go("dashboard");
+    const authenticated = apiMode
+      ? await serverLogin(credentials.id, credentials.password)
+      : login(credentials.id, credentials.password);
+    state.value = apiMode
+      ? await serverState(authenticated.id)
+      : await readState();
+    user.value = authenticated;
+    if (!apiMode) sessionStorage.setItem("simtim-v2-user", user.value.id);
+    go(homePage.value);
     error.value = "";
   } catch (e) {
     error.value = (e as Error).message;
+  } finally {
+    busy.value = false;
   }
 }
-function signOut() {
+async function signOut() {
+  if (busy.value) return;
+  if (apiMode) {
+    try {
+      await serverLogout();
+    } catch (e) {
+      error.value = (e as Error).message;
+      notify(error.value);
+      return;
+    }
+    state.value = emptyState();
+  }
   user.value = undefined;
   sessionStorage.removeItem("simtim-v2-user");
   cart.value = [];
   error.value = "";
+}
+const retries = new Map<string, string>();
+async function mutate(path: string, body?: unknown, method = "POST") {
+  if (busy.value || !user.value) return false;
+  if (!connected.value) {
+    notify("Thao tác này cần kết nối máy chủ.");
+    return false;
+  }
+  busy.value = true;
+  error.value = "";
+  // Keep the same operation ID after an uncertain network failure; avoid double invoices/receipts.
+  const signature = method + path + JSON.stringify(body);
+  const key = retries.get(signature) || crypto.randomUUID();
+  retries.set(signature, key);
+  try {
+    await request(path, method, body, key);
+    retries.delete(signature);
+    try {
+      state.value = await serverState(user.value.id);
+      notify("Đã lưu trên máy chủ.");
+    } catch {
+      notify(
+        "Đã lưu trên máy chủ nhưng chưa tải lại được dữ liệu. Nhấn Làm mới trước thao tác tiếp theo.",
+      );
+    }
+    return true;
+  } catch (e) {
+    if (e instanceof ApiError && e.status !== 0) retries.delete(signature);
+    if (e instanceof ApiError && e.status === 401) {
+      user.value = undefined;
+      state.value = emptyState();
+    }
+    error.value = (e as Error).message;
+    notify(error.value);
+    return false;
+  } finally {
+    busy.value = false;
+  }
+}
+async function refresh() {
+  if (!user.value || busy.value) return;
+  busy.value = true;
+  try {
+    state.value = apiMode
+      ? await serverState(user.value.id)
+      : await readState();
+    notify("Đã tải lại dữ liệu.");
+  } catch (e) {
+    notify((e as Error).message);
+  } finally {
+    busy.value = false;
+  }
 }
 async function change(
   action: (s: State) => void,
@@ -150,6 +243,38 @@ async function change(
 }
 async function sync() {
   if (!connected.value || !pending.value || busy.value) return;
+  // Preserve legacy queues after a role change, but never submit without permission.
+  if (!canManage.value) return;
+  if (apiMode && user.value) {
+    busy.value = true;
+    try {
+      const owner = user.value.id;
+      let rows = await queueFor(owner);
+      for (const row of [...rows]) {
+        await request(
+          "/counts",
+          "POST",
+          {
+            batchId: row.batchId,
+            expected: row.expected,
+            actual: row.actual,
+            baseVersion: row.baseVersion || 0,
+            note: row.note,
+          },
+          row.id,
+        );
+        rows = rows.filter((r) => r.id !== row.id);
+        await saveQueue(owner, rows);
+      }
+      state.value = await serverState(owner);
+      notify("Đã đồng bộ phiếu kiểm kê lên máy chủ.");
+    } catch (e) {
+      notify((e as Error).message);
+    } finally {
+      busy.value = false;
+    }
+    return;
+  }
   await change((s) => {
     for (const c of s.counts.filter((c) => c.status === "PENDING")) {
       const b = s.batches.find((b) => b.id === c.batchId);
@@ -167,9 +292,22 @@ function toggleNetwork() {
 }
 onMounted(async () => {
   try {
-    state.value = await readState();
-    const saved = sessionStorage.getItem("simtim-v2-user");
-    user.value = accounts.find((a) => a.id === saved);
+    if (apiMode) {
+      state.value = emptyState();
+      try {
+        const me = await request<User>("/me");
+        state.value = await serverState(me.id);
+        user.value = me;
+      } catch (e) {
+        if (!(e instanceof ApiError && e.status === 401))
+          error.value = (e as Error).message;
+      }
+    } else {
+      state.value = await readState();
+      const saved = sessionStorage.getItem("simtim-v2-user");
+      user.value = accounts.find((a) => a.id === saved);
+    }
+    if (user.value) go(homePage.value);
     if (connected.value) void sync();
   } catch {
     error.value =
@@ -185,14 +323,11 @@ onUnmounted(() => {
 });
 const query = ref("");
 const category = ref("Tất cả");
-const categories = computed(() => [
-  "Tất cả",
-  ...new Set(state.value?.products.map((p) => p.category)),
-]);
 const filtered = computed(
   () =>
     state.value?.products.filter(
       (p) =>
+        (p.active !== false || route.value === "products") &&
         (category.value === "Tất cả" || p.category === category.value) &&
         `${p.name} ${p.id} ${p.barcode}`
           .toLocaleLowerCase("vi")
@@ -206,15 +341,13 @@ const total = computed(() =>
   cart.value.reduce(
     (n, l) =>
       n +
-      price(
-        state.value!,
-        state.value!.products.find((p) => p.id === l.id)!,
-      ) *
+      price(state.value!, state.value!.products.find((p) => p.id === l.id)!) *
         l.quantity,
     0,
   ),
 );
 function add(id: string) {
+  if (busy.value) return;
   if (!connected.value) return notify("Bán hàng cần kết nối.");
   const row = cart.value.find((l) => l.id === id);
   if (available(state.value!, id) < (row?.quantity || 0) + 1)
@@ -222,13 +355,39 @@ function add(id: string) {
   if (row) row.quantity++;
   else cart.value.push({ id, quantity: 1 });
 }
-function quantity(id: string, delta: number) {
-  const row = cart.value.find((l) => l.id === id)!;
-  if (delta > 0) add(id);
-  else if (row.quantity > 1) row.quantity--;
-  else cart.value = cart.value.filter((l) => l.id !== id);
+function setQuantity(id: string, value: number) {
+  if (
+    busy.value ||
+    !connected.value ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  )
+    return;
+  const row = cart.value.find((l) => l.id === id);
+  if (!row) return;
+  if (value === 0) {
+    cart.value = cart.value.filter((l) => l.id !== id);
+    return;
+  }
+  if (value > available(state.value!, id))
+    return notify("Không đủ tồn còn hạn để bán.");
+  row.quantity = value;
 }
 async function pay() {
+  if (apiMode) {
+    if (
+      await mutate("/invoices", {
+        lines: cart.value,
+        method: method.value.replace(" (mô phỏng)", ""),
+        tendered: cash.value,
+      })
+    ) {
+      cart.value = [];
+      cash.value = 0;
+      go("invoices");
+    }
+    return;
+  }
   if (method.value === "Tiền mặt" && cash.value < total.value)
     return notify("Số tiền khách đưa chưa đủ.");
   if (
@@ -243,6 +402,7 @@ async function pay() {
 }
 const modal = ref<HTMLDialogElement>();
 const dialogType = ref("");
+const editingId = ref("");
 const selectedInvoice = ref<State["invoices"][number]>();
 const form = reactive({
   name: "",
@@ -256,19 +416,53 @@ const form = reactive({
   end: today(),
 });
 function openDialog(type: string) {
+  editingId.value = "";
   dialogType.value = type;
   error.value = "";
   Object.assign(form, { name: "", barcode: "", phone: "", price: 0 });
   modal.value?.showModal();
+}
+function editCatalog(type: string, item: { id: string; name: string }) {
+  openDialog(type);
+  editingId.value = item.id;
+  Object.assign(form, item);
+}
+async function deactivate(kind: string, id: string) {
+  if (
+    confirm("Ngừng sử dụng mục này? Lịch sử đã ghi nhận vẫn được giữ nguyên.")
+  )
+    await mutate("/" + kind + "/" + id, undefined, "DELETE");
 }
 function closeDialog() {
   modal.value?.close();
   error.value = "";
 }
 async function submitDialog() {
+  if (apiMode) {
+    const kind = {
+      product: "products",
+      supplier: "suppliers",
+      category: "categories",
+      promotion: "promotions",
+    }[dialogType.value];
+    const body =
+      dialogType.value === "promotion"
+        ? { productId: form.productId, percent: form.percent, end: form.end }
+        : Object.fromEntries(
+            Object.entries(form).map(([k, v]) => [k, String(v)]),
+          );
+    if (
+      await mutate(
+        "/" + kind + (editingId.value ? "/" + editingId.value : ""),
+        body,
+        editingId.value ? "PUT" : "POST",
+      )
+    )
+      closeDialog();
+    return;
+  }
   const ok = await change((s) => {
-    if (user.value?.role !== "manager")
-      throw Error("Chỉ quản lý được thay đổi danh mục.");
+    if (!canManage.value) throw Error("Chỉ quản lý được thay đổi danh mục.");
     if (dialogType.value === "product") {
       if (!form.name.trim() || !form.barcode.trim() || form.price <= 0)
         throw Error("Điền tên, mã vạch và giá bán lớn hơn 0.");
@@ -314,6 +508,13 @@ const receipt = reactive({
   note: "",
 });
 async function receive() {
+  if (apiMode) {
+    if (await mutate("/receipts", receipt)) {
+      receipt.lot = "";
+      receipt.note = "";
+    }
+    return;
+  }
   const ok = await change((s) => {
     if (!permissions[user.value!.role].includes("receive"))
       throw Error("Không có quyền nhận hàng.");
@@ -366,6 +567,42 @@ const countBatch = computed(() =>
   state.value?.batches.find((b) => b.id === count.batch),
 );
 async function saveCount() {
+  if (apiMode && user.value && countBatch.value) {
+    if (!Number.isInteger(count.actual) || count.actual < 0)
+      return notify("Số thực tế phải là số nguyên không âm.");
+    const b = countBatch.value;
+    const body = {
+      batchId: b.id,
+      expected: b.quantity,
+      actual: count.actual,
+      baseVersion: b.version || 0,
+      note: count.note,
+    };
+    if (connected.value) {
+      if (await mutate("/counts", body)) count.note = "";
+    } else {
+      try {
+        const row: Count = {
+          ...body,
+          id: crypto.randomUUID(),
+          productId: b.productId,
+          status: "PENDING",
+          at: new Date().toISOString(),
+        };
+        const queue = await queueFor(user.value.id);
+        queue.push(row);
+        await saveQueue(user.value.id, queue);
+        state.value!.counts.unshift(row);
+        count.note = "";
+        notify("Đã lưu phiếu offline trên thiết bị.");
+      } catch {
+        notify(
+          "Không lưu được phiếu offline. Hãy cho phép lưu trữ trên thiết bị.",
+        );
+      }
+    }
+    return;
+  }
   if (
     await change(
       (s) => {
@@ -394,8 +631,12 @@ async function saveCount() {
     count.note = "";
 }
 async function approve(c: Count) {
+  if (apiMode) {
+    await mutate("/counts/" + c.id + "/approve");
+    return;
+  }
   await change((s) => {
-    if (user.value?.role !== "manager") throw Error("Chỉ quản lý được duyệt.");
+    if (!canManage.value) throw Error("Chỉ quản lý/chủ cửa hàng được duyệt.");
     const row = s.counts.find((x) => x.id === c.id)!;
     if (row.status !== "REVIEW")
       throw Error("Phiếu không ở trạng thái chờ duyệt.");
@@ -459,7 +700,9 @@ const statuses = {
     </section>
     <section class="login-form">
       <div class="login-inner">
-        <span class="pill">BẢN TRẢI NGHIỆM 02</span>
+        <span class="pill">{{
+          apiMode ? "SPRINT 01 · CỬA HÀNG MẪU" : "DEMO · DỮ LIỆU CỤC BỘ"
+        }}</span>
         <h2>Chào mừng trở lại.</h2>
         <p>Đăng nhập để bắt đầu ca làm việc của bạn.</p>
         <form @submit.prevent="signIn">
@@ -476,7 +719,7 @@ const statuses = {
               required
           /></label>
           <p v-if="error" role="alert" class="error">{{ error }}</p>
-          <button class="primary wide">
+          <button class="primary wide" :disabled="busy">
             Vào không gian làm việc <span>→</span>
           </button>
         </form>
@@ -495,8 +738,12 @@ const statuses = {
             ><b>{{ a.id }}</b>
           </button>
           <p>
-            Mật khẩu chung: <b>demo123</b>. Xác thực được mô phỏng; dữ liệu demo
-            lưu trên thiết bị này.
+            Tài khoản cửa hàng mẫu: <b>demo123</b>.
+            {{
+              apiMode
+                ? "Xác thực và phân quyền tại máy chủ. Dữ liệu lưu trong PostgreSQL."
+                : "Chế độ demo riêng: xác thực mô phỏng, lưu trên thiết bị."
+            }}
           </p>
         </div>
       </div>
@@ -505,11 +752,11 @@ const statuses = {
   <TrainingGame
     v-else-if="route === 'training'"
     :employee-name="user.name"
-    @exit="go('dashboard')"
+    @exit="go(homePage)"
   />
   <div v-else class="workspace">
     <aside :class="['sidebar', { open: menu }]">
-      <a href="#" class="brand" @click.prevent="go('dashboard')"
+      <a href="#" class="brand" @click.prevent="go(homePage)"
         ><img src="/icon.svg" alt="" />sim tím<span>WORKSPACE</span></a
       >
       <div class="store">
@@ -564,8 +811,14 @@ const statuses = {
       </header>
       <div class="demo-strip">
         <span
-          ><b>PROTOTYPE</b> Dữ liệu trên thiết bị · đồng bộ với API mô
-          phỏng</span
+          ><b>{{ apiMode ? "SPRINT 01" : "DEMO" }}</b>
+          {{
+            apiMode
+              ? "API trung tâm · PostgreSQL · 01 cửa hàng mẫu"
+              : "Dữ liệu cục bộ · API mô phỏng"
+          }}</span
+        ><button @click="refresh" :disabled="busy || !connected">
+          Làm mới ↻</button
         ><button @click="toggleNetwork">
           {{ simulateOffline ? "Kết nối lại" : "Thử mất mạng" }} ↔
         </button>
@@ -575,7 +828,20 @@ const statuses = {
         khác cần kết nối. <b v-if="pending">{{ pending }} phiếu chờ đồng bộ.</b>
       </div>
       <div class="page">
-        <template v-if="route === 'dashboard'">
+        <RoleWorkspace
+          v-if="
+            ['finance', 'system', 'approvals', 'warehouse_orders'].includes(
+              route,
+            )
+          "
+          :route="route"
+          :user="user"
+          :state="state"
+          :busy="busy || !connected"
+          @go="go"
+          @approve="approve"
+        />
+        <template v-else-if="route === 'dashboard'">
           <div class="page-head">
             <div>
               <p class="eyebrow">{{ dateText }}</p>
@@ -587,10 +853,12 @@ const statuses = {
             </div>
             <button
               class="primary"
-              @click="go(user.role === 'stock' ? 'receive' : 'sale')"
+              @click="go(user.role === 'manager' ? 'approvals' : 'sale')"
             >
               {{
-                user.role === "stock" ? "↓ Nhận hàng mới" : "+ Tạo đơn bán hàng"
+                user.role === "manager"
+                  ? "✓ Xem yêu cầu cần duyệt"
+                  : "+ Tạo đơn bán hàng"
               }}
             </button>
           </div>
@@ -693,7 +961,7 @@ const statuses = {
               <img src="/mentor.png" alt="Chị mentor tóc cam đeo kính" />
             </div>
             <div>
-              <p class="eyebrow">HỌC VIỆC CÙNG MENTOR MAI</p>
+              <p class="eyebrow">HỌC VIỆC CÙNG CHỊ LINH</p>
               <h2>Làm thử trước. Tự tin hơn khi lên ca.</h2>
               <p>
                 Nhập vai nhân viên: gặp khách, bán hàng tại quầy và xử lý hàng
@@ -737,135 +1005,19 @@ const statuses = {
           </div>
         </template>
 
-        <template v-else-if="route === 'sale'"
-          ><div class="page-head">
-            <div>
-              <p class="eyebrow">QUẦY THU NGÂN</p>
-              <h1>Một giỏ hàng, một niềm vui.</h1>
-              <p>Hàng còn hạn được xuất theo lô hết hạn sớm nhất.</p>
-            </div>
-            <span class="pill">{{ cart.length }} mặt hàng</span>
-          </div>
-          <div class="pos-layout">
-            <section>
-              <div class="search-bar">
-                <span>⌕</span
-                ><input
-                  v-model="query"
-                  placeholder="Tìm tên hoặc nhập mã vạch…"
-                  aria-label="Tìm sản phẩm bán hàng"
-                  @keydown.enter="filtered.length === 1 && add(filtered[0].id)"
-                />
-              </div>
-              <div class="filters">
-                <button
-                  v-for="c in categories"
-                  :key="c"
-                  :class="{ active: category === c }"
-                  @click="category = c"
-                >
-                  {{ c }}
-                </button>
-              </div>
-              <div class="product-grid">
-                <button
-                  v-for="p in filtered"
-                  :key="p.id"
-                  class="product-card"
-                  :disabled="!connected || available(state, p.id) === 0"
-                  @click="add(p.id)"
-                >
-                  <div class="product-picture">
-                    <span>{{ p.emoji }}</span
-                    ><i v-if="price(state, p) < p.price">Ưu đãi</i>
-                  </div>
-                  <small>{{ p.category }}</small>
-                  <h3>{{ p.name }}</h3>
-                  <p>
-                    {{ money(price(state, p)) }}
-                    <del v-if="price(state, p) < p.price">{{
-                      money(p.price)
-                    }}</del>
-                  </p>
-                  <footer>
-                    <span
-                      >Còn {{ available(state, p.id) }}
-                      {{ p.unit.toLowerCase() }}</span
-                    ><b>＋</b>
-                  </footer>
-                </button>
-              </div>
-              <p v-if="!filtered.length" class="empty">
-                Không tìm thấy sản phẩm phù hợp.
-              </p>
-            </section>
-            <section class="card cart">
-              <div class="card-head">
-                <h2>Đơn hàng hiện tại</h2>
-                <span>▤</span>
-              </div>
-              <div v-if="!cart.length" class="empty">
-                <div class="empty-icon">＋</div>
-                <p>Chọn sản phẩm để bắt đầu.</p>
-              </div>
-              <div v-for="l in cart" :key="l.id" class="cart-row">
-                <div>
-                  <b>{{ name(l.id) }}</b
-                  ><small>{{
-                    money(
-                      price(
-                        state,
-                        state.products.find((p) => p.id === l.id)!,
-                      ),
-                    )
-                  }}</small>
-                </div>
-                <div class="stepper">
-                  <button
-                    :aria-label="'Giảm ' + name(l.id)"
-                    @click="quantity(l.id, -1)"
-                  >
-                    −</button
-                  ><span>{{ l.quantity }}</span
-                  ><button
-                    :aria-label="'Tăng ' + name(l.id)"
-                    @click="quantity(l.id, 1)"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <div class="cart-bottom">
-                <div class="total">
-                  <span>Tổng thanh toán</span><b>{{ money(total) }}</b>
-                </div>
-                <label
-                  >Phương thức<select v-model="method">
-                    <option>Tiền mặt</option>
-                    <option>Chuyển khoản (mô phỏng)</option>
-                  </select></label
-                ><label v-if="method === 'Tiền mặt'"
-                  >Khách đưa<input
-                    v-model.number="cash"
-                    type="number"
-                    min="0"
-                    step="500"
-                    placeholder="0"
-                /></label>
-                <p v-if="method === 'Tiền mặt'" class="change">
-                  Tiền thừa <b>{{ money(Math.max(0, cash - total)) }}</b>
-                </p>
-                <button
-                  class="primary wide"
-                  :disabled="!cart.length || !connected || busy"
-                  @click="pay"
-                >
-                  Xác nhận thanh toán →
-                </button>
-              </div>
-            </section>
-          </div></template
-        >
+        <InvoiceEditor
+          v-else-if="route === 'sale'"
+          :state="state"
+          :cart="cart"
+          :connected="connected"
+          :busy="busy"
+          :total="total"
+          v-model:method="method"
+          v-model:cash="cash"
+          @add="add"
+          @quantity="setQuantity"
+          @pay="pay"
+        />
 
         <template v-else-if="route === 'products'"
           ><div class="page-head">
@@ -875,7 +1027,7 @@ const statuses = {
               <p>Một danh mục thống nhất cho bán hàng và tồn kho.</p>
             </div>
             <button
-              v-if="user.role === 'manager'"
+              v-if="canManage"
               class="primary"
               @click="openDialog('product')"
             >
@@ -899,6 +1051,7 @@ const statuses = {
                   <th>Danh mục</th>
                   <th>Giá bán</th>
                   <th>Khả dụng</th>
+                  <th v-if="apiMode && canManage">Quản lý</th>
                 </tr>
               </thead>
               <tbody>
@@ -920,13 +1073,43 @@ const statuses = {
                       >{{ available(state, p.id) }} {{ p.unit }}</span
                     >
                   </td>
+                  <td v-if="apiMode && canManage">
+                    <template v-if="p.active !== false"
+                      ><button @click="editCatalog('product', p)">Sửa</button>
+                      <button @click="deactivate('products', p.id)">
+                        Ngừng bán
+                      </button></template
+                    >
+                    <span v-else>Đã ngừng bán</span>
+                  </td>
                 </tr>
               </tbody>
             </table>
             <div v-if="!filtered.length" class="empty">
               Không tìm thấy sản phẩm.
             </div>
-          </div></template
+          </div>
+          <section
+            v-if="apiMode && canManage"
+            class="card"
+            style="padding: 20px; margin-top: 20px"
+          >
+            <h2>Danh mục sản phẩm</h2>
+            <button @click="openDialog('category')">＋ Thêm danh mục</button>
+            <div
+              v-for="c in state.categories?.filter((c) => c.active)"
+              :key="c.id"
+              class="receipt-line"
+            >
+              <span>{{ c.name }}</span>
+              <div>
+                <button @click="editCatalog('category', c)">Sửa</button>
+                <button @click="deactivate('categories', c.id)">
+                  Ngừng dùng
+                </button>
+              </div>
+            </div>
+          </section></template
         >
 
         <template v-else-if="route === 'suppliers'"
@@ -937,7 +1120,7 @@ const statuses = {
               <p>Thông tin liên hệ cho từng lần nhận hàng.</p>
             </div>
             <button
-              v-if="user.role === 'manager'"
+              v-if="canManage"
               class="primary"
               @click="openDialog('supplier')"
             >
@@ -953,7 +1136,15 @@ const statuses = {
               <span class="supplier-icon">♧</span><small>{{ s.id }}</small>
               <h2>{{ s.name }}</h2>
               <p>{{ s.phone }}</p>
-              <span class="status">Đang hợp tác</span>
+              <span class="status">{{
+                s.active === false ? "Ngừng hợp tác" : "Đang hợp tác"
+              }}</span>
+              <div v-if="apiMode && canManage && s.active !== false">
+                <button @click="editCatalog('supplier', s)">Sửa</button>
+                <button @click="deactivate('suppliers', s.id)">
+                  Ngừng dùng
+                </button>
+              </div>
             </article>
           </div></template
         >
@@ -973,14 +1164,30 @@ const statuses = {
             <form class="card form-card" @submit.prevent="receive">
               <h2>Phiếu nhận hàng mới</h2>
               <label
-                >Nhà cung cấp<select v-model="receipt.supplier">
-                  <option v-for="s in state.suppliers" :value="s.id">
+                >Nhà cung cấp<select
+                  v-model="receipt.supplier"
+                  aria-label="Nhà cung cấp"
+                >
+                  <option
+                    v-for="s in state.suppliers.filter(
+                      (s) => s.active !== false,
+                    )"
+                    :value="s.id"
+                  >
                     {{ s.name }}
                   </option>
                 </select></label
               ><label
-                >Sản phẩm<select v-model="receipt.product">
-                  <option v-for="p in state.products" :value="p.id">
+                >Sản phẩm<select
+                  v-model="receipt.product"
+                  aria-label="Sản phẩm"
+                >
+                  <option
+                    v-for="p in state.products.filter(
+                      (p) => p.active !== false,
+                    )"
+                    :value="p.id"
+                  >
                     {{ p.name }}
                   </option>
                 </select></label
@@ -1054,11 +1261,7 @@ const statuses = {
               <h1>Biết rõ hàng của mình.</h1>
               <p>Lô hết hạn được loại khỏi tồn khả dụng khi bán hàng.</p>
             </div>
-            <button
-              v-if="user.role !== 'sales'"
-              class="primary"
-              @click="go('count')"
-            >
+            <button v-if="canManage" class="primary" @click="go('count')">
               ☑ Kiểm kê ngay
             </button>
           </div>
@@ -1151,7 +1354,10 @@ const statuses = {
             <form class="card form-card" @submit.prevent="saveCount">
               <h2>Ghi nhận kiểm kê</h2>
               <label
-                >Chọn lô hàng<select v-model="count.batch">
+                >Chọn lô hàng<select
+                  v-model="count.batch"
+                  aria-label="Chọn lô hàng"
+                >
                   <option v-for="b in state.batches" :value="b.id">
                     {{ name(b.productId) }} · {{ b.id }}
                   </option>
@@ -1189,7 +1395,11 @@ const statuses = {
               </button>
             </form>
             <section class="card form-card">
-              <h2>Phiếu trên thiết bị</h2>
+              <h2>
+                {{
+                  apiMode ? "Phiếu kiểm kê & hàng đợi" : "Phiếu trên thiết bị"
+                }}
+              </h2>
               <p v-if="!state.counts.length" class="empty">
                 Chưa có phiếu kiểm kê.
               </p>
@@ -1214,7 +1424,7 @@ const statuses = {
                 </p>
                 <small>{{ c.note }}</small
                 ><button
-                  v-if="user.role === 'manager' && c.status === 'REVIEW'"
+                  v-if="canManage && c.status === 'REVIEW'"
                   class="secondary"
                   :disabled="!connected || busy"
                   @click="approve(c)"
@@ -1237,7 +1447,11 @@ const statuses = {
               <h1>Hóa đơn</h1>
               <p>Giá và mức giảm được giữ tại thời điểm giao dịch.</p>
             </div>
-            <button class="primary" @click="go('sale')">
+            <button
+              v-if="permissions[user.role].includes('sale')"
+              class="primary"
+              @click="go('sale')"
+            >
               ＋ Đơn bán hàng mới
             </button>
           </div>
@@ -1303,7 +1517,13 @@ const statuses = {
             <div>
               <p class="eyebrow">SỐ LIỆU TỪ VẬN HÀNH</p>
               <h1>Báo cáo cửa hàng</h1>
-              <p>Doanh thu hôm nay và tồn kho hiện tại từ dữ liệu demo.</p>
+              <p>
+                {{
+                  apiMode
+                    ? "Doanh thu hôm nay và tồn kho hiện tại từ máy chủ."
+                    : "Doanh thu hôm nay và tồn kho hiện tại từ dữ liệu demo."
+                }}
+              </p>
             </div>
             <span class="pill">{{ today() }}</span>
           </div>
@@ -1362,13 +1582,15 @@ const statuses = {
       </div>
       <footer class="page-footer">
         <span>Sim Tím Workspace</span
-        ><span>Một cửa hàng mẫu · Prototype 02</span>
+        ><span
+          >Một cửa hàng mẫu · {{ apiMode ? "Sprint 01" : "Demo cục bộ" }}</span
+        >
       </footer>
     </main>
     <button
       v-if="route !== 'training'"
       class="mentor-fab"
-      aria-label="Mở đào tạo cùng Mentor Mai"
+      aria-label="Mở đào tạo cùng chị Linh"
       @click="go('training')"
     >
       <img src="/mentor.png" alt="" /><span>?</span>
@@ -1403,17 +1625,39 @@ const statuses = {
         <h2>
           {{
             dialogType === "product"
-              ? "Thêm sản phẩm"
+              ? editingId
+                ? "Sửa sản phẩm"
+                : "Thêm sản phẩm"
               : dialogType === "supplier"
-                ? "Thêm nhà cung cấp"
-                : "Thiết lập ưu đãi"
+                ? editingId
+                  ? "Sửa nhà cung cấp"
+                  : "Thêm nhà cung cấp"
+                : dialogType === "category"
+                  ? "Danh mục sản phẩm"
+                  : "Thiết lập ưu đãi"
           }}
         </h2>
+        <label v-if="dialogType === 'category'"
+          >Tên danh mục<input v-model="form.name" required maxlength="120"
+        /></label>
         <template v-if="dialogType === 'product'"
           ><label>Tên sản phẩm<input v-model="form.name" required /></label
           ><label>Mã vạch<input v-model="form.barcode" required /></label>
           <div class="form-row">
-            <label>Danh mục<input v-model="form.category" required /></label
+            <label
+              >Danh mục<select
+                v-if="apiMode"
+                v-model="form.category"
+                aria-label="Danh mục"
+                required
+              >
+                <option
+                  v-for="c in state?.categories?.filter((c) => c.active)"
+                  :value="c.name"
+                >
+                  {{ c.name }}
+                </option></select
+              ><input v-else v-model="form.category" required /></label
             ><label>Đơn vị<input v-model="form.unit" required /></label>
           </div>
           <label

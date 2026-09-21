@@ -1,6 +1,13 @@
 node_modules/
 prototype-v2/dist/
 .codex_tmp/
+.codex-artifacts/
 *.tsbuildinfo
 prototype-v2/test-results/
 prototype-v2/playwright-report/
+backend/target/
+godot/.godot/
+godot/assets/*.translation
+prototype-v2/public/training/
+.env
+.env.local

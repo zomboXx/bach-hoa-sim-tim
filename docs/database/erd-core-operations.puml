@@ -1,5 +1,5 @@
 @startuml
-title ERD logic - Nghiệp vụ bán hàng và tồn kho
+title Sơ đồ quan hệ - Nghiệp vụ bán hàng và tồn kho
 
 hide circle
 hide methods
@@ -25,6 +25,13 @@ entity "core.stores" as stores {
   * code : varchar
   * name : varchar
   * status : varchar
+}
+
+entity "iam.users" as users {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * username : varchar
 }
 
 entity "catalog.categories" as categories {
@@ -153,6 +160,7 @@ entity "inventory.stock_movements" as stockMovement {
   * source_type : varchar
   * source_id : uuid
   reversed_movement_id : uuid <<FK>>
+  disposal_line_id : uuid <<FK, UQ>>
   * occurred_at : timestamptz
   * actor_user_id : uuid <<FK>>
 }
@@ -179,6 +187,42 @@ entity "inventory.stocktake_lines" as stocktake_lines {
   counted_quantity : numeric(14,3)
   difference_quantity : numeric(14,3)
   * base_version : bigint
+}
+
+entity "inventory.stock_disposals" as disposals {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * store_id : uuid <<FK>>
+  * disposal_no : varchar
+  * status : varchar
+  * reason : varchar
+  * created_by : uuid <<FK>>
+  approved_by : uuid <<FK>>
+  * created_at : timestamptz
+  approved_at : timestamptz
+  * version : bigint
+}
+
+entity "inventory.stock_disposal_lines" as disposal_lines {
+  * id : uuid <<PK>>
+  --
+  * disposal_id : uuid <<FK>>
+  * product_batch_id : uuid <<FK>>
+  * quantity : numeric(14,3)
+  reason : varchar
+}
+
+entity "sales.members" as members {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * member_code : varchar
+  * full_name : varchar
+  * phone : varchar
+  email : varchar
+  * status : varchar
+  * joined_at : timestamptz
 }
 
 entity "sales.promotions" as promotions {
@@ -210,6 +254,7 @@ entity "sales.invoices" as invoices {
   --
   * organization_id : uuid <<FK>>
   * store_id : uuid <<FK>>
+  member_id : uuid <<FK>>
   * invoice_no : varchar
   * status : varchar
   * sold_by : uuid <<FK>>
@@ -254,11 +299,37 @@ entity "sales.payments" as payments {
   * paid_at : timestamptz
 }
 
+entity "sales.loyalty_point_transactions" as pointTransactions {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * member_id : uuid <<FK>>
+  * invoice_id : uuid <<FK>>
+  * transaction_type : varchar
+  * points_delta : integer
+  reversed_transaction_id : uuid <<FK, UQ>>
+  * occurred_at : timestamptz
+  * actor_user_id : uuid <<FK>>
+}
+
 organizations ||--o{ stores
+organizations ||--o{ users
 organizations ||--o{ categories
 organizations ||--o{ units
 organizations ||--o{ products
+organizations ||--o{ product_barcodes
 organizations ||--o{ suppliers
+organizations ||--o{ product_prices
+organizations ||--o{ receipts
+organizations ||--o{ batches
+organizations ||--o{ balances
+organizations ||--o{ stockMovement
+organizations ||--o{ stocktakes
+organizations ||--o{ disposals
+organizations ||--o{ promotions
+organizations ||--o{ invoices
+organizations ||--o{ members
+organizations ||--o{ pointTransactions
 stores ||--o{ product_prices
 categories ||--o{ categories : parent
 categories ||--o{ products
@@ -267,28 +338,48 @@ products ||--o{ product_barcodes
 products ||--o{ product_prices
 stores ||--o{ receipts
 suppliers ||--o{ receipts
-receipts ||--|{ receipt_lines
+users ||--o{ receipts : created_by
+users "0..1" -- "0..*" receipts : confirmed_by
+receipts ||--o{ receipt_lines
 products ||--o{ receipt_lines
 receipt_lines "1" -- "0..1" batches
 products ||--o{ batches
 stores ||--o{ batches
 batches ||--|| balances
+stores ||--o{ balances
 batches ||--o{ stockMovement
+stores ||--o{ stockMovement
+users ||--o{ stockMovement : actor_user_id
 stockMovement "0..1" -- "0..*" stockMovement : reverses
 stores ||--o{ stocktakes
-stocktakes ||--|{ stocktake_lines
+users ||--o{ stocktakes : started_by
+users "0..1" -- "0..*" stocktakes : approved_by
+stocktakes ||--o{ stocktake_lines
 batches ||--o{ stocktake_lines
+stores ||--o{ disposals
+users ||--o{ disposals : created_by
+users "0..1" -- "0..*" disposals : approved_by
+disposals ||--o{ disposal_lines
+batches ||--o{ disposal_lines
+disposal_lines "0..1" -- "0..1" stockMovement : disposal_line_id
 stores ||--o{ promotions
 promotions ||--o{ promotion_products
 products ||--o{ promotion_products
 promotions ||--o{ promotion_batches
 batches ||--o{ promotion_batches
 stores ||--o{ invoices
-invoices ||--|{ invoice_lines
+members "0..1" -- "0..*" invoices : member_id
+users ||--o{ invoices : sold_by
+users "0..1" -- "0..*" invoices : voided_by
+invoices ||--o{ invoice_lines
 products ||--o{ invoice_lines
 promotions "0..1" -- "0..*" invoice_lines
-invoice_lines ||--|{ invoice_line_batches
+invoice_lines ||--o{ invoice_line_batches
 batches ||--o{ invoice_line_batches
 invoices ||--o{ payments
+members ||--o{ pointTransactions
+invoices ||--o{ pointTransactions
+users ||--o{ pointTransactions : actor_user_id
+pointTransactions "0..1" -- "0..1" pointTransactions : reverses
 
 @enduml

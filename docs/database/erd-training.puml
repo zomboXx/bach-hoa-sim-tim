@@ -1,5 +1,5 @@
 @startuml
-title ERD logic - Dữ liệu mô phỏng đào tạo
+title Sơ đồ quan hệ - Dữ liệu mô phỏng đào tạo
 
 hide circle
 hide methods
@@ -88,7 +88,7 @@ entity "training.session_results" as sessionResult {
 organizations ||--o{ users
 organizations ||--o{ scenarios
 organizations ||--o{ trainingSession
-scenarios ||--|{ scenario_steps
+scenarios ||--o{ scenario_steps
 scenarios ||--o{ trainingSession
 users ||--o{ trainingSession : learner
 trainingSession ||--o{ sessionAction

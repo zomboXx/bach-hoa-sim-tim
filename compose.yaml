@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: simtim
+      POSTGRES_USER: simtim
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-simtim-local-only}
+    volumes:
+      - simtim_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simtim -d simtim"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  simtim_pg:

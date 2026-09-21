@@ -1,4 +1,25 @@
-# Prototype Sim Tím Workspace
+# Sim Tím Workspace — Sprint 1
+
+Bản hiện tại gồm **Vue PWA + Spring Boot API + PostgreSQL/Flyway + Godot Chapter 0**.
+Đọc [hướng dẫn chạy, kiểm thử và phạm vi Sprint 1](docs/SPRINT_1.md) và
+[mô hình dữ liệu / REST contract](docs/DATA_MODEL.md) trước khi chạy.
+
+```powershell
+docker compose up -d
+mvn -f backend/pom.xml spring-boot:run
+# Terminal khác, sau khi cài Godot 4.6.3 và Web export templates:
+pwsh -File scripts/export-training.ps1 -Godot "duong-dan-godot-console.exe"
+cd prototype-v2
+npm ci
+npm run dev
+```
+
+Mở `http://127.0.0.1:5174`; NV001 / demo123 là nhân viên bán hàng mẫu.
+Mở ảnh mentor `?` → Chapter 0 để chơi; Chapter 1–6 hiện thông báo đang cập nhật.
+Đã tách 5 role; xem [ma trận quyền và phạm vi hiện thực](docs/ROLES_AND_CHAPTER_0.md). Chapter 0 có nhân vật 4 hướng, 6 điểm khám phá và 3 câu xác nhận.
+Không có thanh toán thật, SaaS đa tenant hoặc toàn bộ chapter nghiệp vụ.
+
+## Lịch sử prototype (không phải hướng dẫn cho bản API hiện tại)
 
 Quy trình nhóm, phân công, Scrum và backlog được quản lý tại
 [docs/project-management](docs/project-management/README.md). Điều kiện để tạo

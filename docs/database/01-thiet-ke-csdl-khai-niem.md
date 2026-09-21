@@ -17,12 +17,12 @@ Thiết kế ưu tiên năm thuộc tính:
 | Mã | Quyết định thiết kế | Lý do |
 |---|---|---|
 | DB-01 | Có bảng `organizations` và `stores`, dù MVP chỉ tạo một bản ghi cho mỗi bảng. | Chuẩn bị khóa phạm vi dữ liệu cho hướng phát triển SaaS mà chưa triển khai quản lý tenant hoàn chỉnh. |
-| DB-02 | Mọi bảng nghiệp vụ mang `organization_id`; bảng phát sinh tại cửa hàng có thêm `store_id`. | Hỗ trợ lọc dữ liệu theo tenant và cửa hàng ngay từ API. |
+| DB-02 | Bảng nghiệp vụ chính mang `organization_id`; bảng phát sinh tại cửa hàng có thêm `store_id`. Bảng chi tiết nhận phạm vi từ chứng từ cha. | Hỗ trợ lọc dữ liệu theo tenant và cửa hàng ngay từ API. |
 | DB-03 | Tồn hiện tại được lưu trong `inventory_balances`; lịch sử bất biến được lưu trong `stock_movements`. Hai bảng được cập nhật trong cùng transaction. | Vừa tra cứu nhanh, vừa có lịch sử để đối chiếu và dựng lại số tồn. |
 | DB-04 | Mỗi lượng hàng nhập tạo một `product_batch`. Với sản phẩm không yêu cầu người dùng nhập lô, backend sinh mã lô nội bộ và ẩn chi tiết này trên giao diện thông thường. | Mọi đơn vị tồn đều có nguồn nhận hàng, thuận lợi cho FEFO, hủy hóa đơn và truy vết. |
 | DB-05 | Một tồn chung được quản lý cho toàn cửa hàng; chưa tách vị trí kho và kệ. | Chức năng bổ sung kệ hiện không thuộc phạm vi cuối kỳ đã khóa. |
 | DB-06 | Bản offline đầu tiên áp dụng cho kiểm kê. IndexedDB giữ bản nháp phía PWA; PostgreSQL chỉ lưu yêu cầu đã gửi và kết quả xử lý. | Giới hạn bài toán xung đột và phù hợp danh sách Should have. |
-| DB-07 | Khách hàng thành viên và điểm thưởng chưa nằm trong mô hình MVP. | Phạm vi mới không liệt kê chức năng này trong Must have hoặc Should have. |
+| DB-07 | Hóa đơn có thể gắn khách hàng thành viên; điểm thưởng được lưu thành các giao dịch cộng hoặc đảo có thể truy vết. | Bảo đảm dữ liệu cho nghiệp vụ xác định thành viên và hoàn tác điểm khi hủy hóa đơn. |
 | DB-08 | Dữ liệu đào tạo đặt trong PostgreSQL schema `training`; dữ liệu vận hành đặt trong các schema còn lại. | Tách dữ liệu rõ ràng nhưng vẫn dùng chung kết nối, API và tài khoản người học. |
 | DB-09 | Bảng đã phát sinh giao dịch không bị xóa vật lý; dùng trạng thái và nghiệp vụ đảo/hủy. | Giữ tính truy vết của hóa đơn, phiếu nhận và biến động tồn. |
 | DB-10 | Khóa chính dùng UUID; thời gian dùng `timestamptz`; tiền dùng `numeric(14,2)`; số lượng dùng `numeric(14,3)`. | Phù hợp môi trường phân tán, tránh sai số tiền và hỗ trợ hàng có số lượng lẻ. |
@@ -35,7 +35,7 @@ Thiết kế ưu tiên năm thuộc tính:
 | `iam` | Tài khoản và phân quyền | `users`, `roles`, `permissions`, `user_roles`, `role_permissions` |
 | `catalog` | Danh mục, sản phẩm, mã vạch, nhà cung cấp và giá | `categories`, `units`, `products`, `product_barcodes`, `suppliers`, `product_prices` |
 | `inventory` | Nhận hàng, lô, tồn, biến động, kiểm kê và loại bỏ hàng | `goods_receipts`, `goods_receipt_lines`, `product_batches`, `inventory_balances`, `stock_movements`, `stocktakes`, `stocktake_lines`, `stock_disposals`, `stock_disposal_lines` |
-| `sales` | Khuyến mãi, hóa đơn và thanh toán | `promotions`, `promotion_products`, `promotion_batches`, `invoices`, `invoice_lines`, `invoice_line_batches`, `payments` |
+| `sales` | Thành viên, điểm thưởng, khuyến mãi, hóa đơn và thanh toán | `members`, `loyalty_point_transactions`, `promotions`, `promotion_products`, `promotion_batches`, `invoices`, `invoice_lines`, `invoice_line_batches`, `payments` |
 | `sync` | Chống xử lý lặp và ghi kết quả đồng bộ | `processed_operations` |
 | `audit` | Nhật ký thao tác nhạy cảm | `audit_logs` |
 | `training` | Kịch bản, phiên, hành động và kết quả đào tạo | `scenarios`, `scenario_steps`, `sessions`, `session_actions`, `session_results` |
@@ -82,6 +82,10 @@ Quy trình xác nhận phiếu nhận phải chạy trong một transaction:
 
 `stock_movements` không được cập nhật hoặc xóa sau khi ghi. Nếu cần sửa sai, hệ thống tạo biến động ngược có tham chiếu đến biến động gốc.
 
+Hàng hỏng hoặc hết hạn được lập thành `stock_disposals` và các dòng `stock_disposal_lines` theo lô. Chứng từ có người lập, lý do và người duyệt. Khi duyệt, hệ thống giảm số dư tồn của từng lô và tạo biến động `DISPOSAL` tham chiếu dòng xử lý trong cùng một transaction; chứng từ nháp không làm thay đổi tồn.
+
+Số chứng từ xử lý là duy nhất theo `(organization_id, store_id, disposal_no)`.
+
 ### 4.4. Kiểm kê và offline
 
 `stocktakes` quản lý vòng đời một đợt kiểm kê: `DRAFT`, `IN_PROGRESS`, `SUBMITTED`, `APPROVED`, `REJECTED` hoặc `CANCELLED`. `stocktake_lines` lưu số hệ thống tại thời điểm mở phiên, số thực tế và chênh lệch theo lô.
@@ -94,6 +98,10 @@ Khi quản lý duyệt chênh lệch, backend tạo `stock_movements` loại `ST
 
 `invoices` lưu chứng từ bán hàng. `invoice_lines` giữ tên, SKU, đơn giá và mức giảm tại thời điểm bán để lịch sử không thay đổi khi danh mục hoặc giá được sửa. `invoice_line_batches` ghi số lượng được xuất từ từng lô; backend ưu tiên lô còn hạn gần nhất theo FEFO khi người dùng không chọn lô thủ công.
 
+`members` lưu hồ sơ khách hàng thành viên trong phạm vi tổ chức. `invoices.member_id` là khóa ngoại tùy chọn để gắn thành viên vào hóa đơn. `loyalty_point_transactions` lưu từng lần cộng hoặc đảo điểm gắn với hóa đơn; số điểm hiện tại được tính từ tổng `points_delta` của thành viên. Giao dịch điểm đã ghi không bị sửa hoặc xóa; hủy hóa đơn tạo giao dịch đảo tham chiếu giao dịch cộng điểm ban đầu.
+
+Mã thành viên là duy nhất theo `(organization_id, member_code)`. Mỗi hóa đơn có tối đa một giao dịch cộng và một giao dịch đảo điểm; `reversed_transaction_id` là duy nhất khi có giá trị.
+
 Khuyến mãi được tách thành `promotions`, `promotion_products` và `promotion_batches`. Nhờ đó chương trình thông thường có thể áp dụng theo sản phẩm, còn giảm giá hàng cận hạn có thể giới hạn chính xác theo lô mà không dùng khóa ngoại đa hình.
 
 Quy trình hoàn tất hóa đơn phải chạy trong một transaction:
@@ -103,9 +111,10 @@ Quy trình hoàn tất hóa đơn phải chạy trong một transaction:
 3. Chụp giá, khuyến mãi và tổng tiền vào `invoice_lines`.
 4. Ghi `payments` ở trạng thái phù hợp.
 5. Giảm tồn và tạo `stock_movements` loại `SALE`.
-6. Chuyển hóa đơn sang `COMPLETED`.
+6. Ghi giao dịch cộng điểm nếu hóa đơn gắn thành viên.
+7. Chuyển hóa đơn sang `COMPLETED`.
 
-Hủy hóa đơn đã hoàn tất không xóa dữ liệu. Hệ thống đổi trạng thái, lưu lý do và tạo biến động `SALE_VOID` để hoàn tồn theo đúng các lô đã xuất.
+Hủy hóa đơn đã hoàn tất không xóa dữ liệu. Hệ thống đổi trạng thái, lưu lý do, tạo biến động `SALE_VOID` để hoàn tồn theo đúng các lô đã xuất và ghi giao dịch đảo điểm nếu có phát sinh điểm.
 
 ### 4.6. Báo cáo và audit
 
@@ -135,6 +144,10 @@ Các bảng đào tạo không tham chiếu đến hóa đơn, phiếu nhận, l
 | C-08 | Mỗi `client_operation_id` chỉ được xử lý một lần trong phạm vi tổ chức. |
 | C-09 | Bản ghi tham chiếu `organization_id` và `store_id` phải thuộc cùng một tenant. |
 | C-10 | Dữ liệu `training` không được tạo khóa ngoại đến bảng giao dịch vận hành. |
+| C-11 | Hóa đơn gắn thành viên phải tham chiếu thành viên thuộc cùng tổ chức; mỗi giao dịch điểm tham chiếu hóa đơn và thành viên tương ứng. |
+| C-12 | Chứng từ xử lý hàng hỏng/hết hạn được duyệt phải có ít nhất một dòng; số lượng xử lý dương và không vượt tồn khả dụng của lô. |
+| C-13 | Giao dịch đảo điểm tham chiếu đúng giao dịch cộng điểm ban đầu; mỗi giao dịch cộng chỉ được đảo một lần. |
+| C-14 | Phiếu nhận đã xác nhận và hóa đơn đã hoàn tất phải có ít nhất một dòng; chứng từ nháp có thể chưa có dòng. |
 
 Các ràng buộc liên quan nhiều bảng được thực thi trong service transaction và kiểm thử tích hợp; các điều kiện cục bộ được đặt bằng `NOT NULL`, `CHECK`, `UNIQUE` và `FOREIGN KEY` trong PostgreSQL.
 
@@ -154,7 +167,7 @@ Các ràng buộc liên quan nhiều bảng được thực thi trong service tr
 
 ## 8. Thành phần hoãn khỏi mô hình MVP
 
-Các bảng sau chỉ bổ sung khi phạm vi được mở lại: khách hàng thành viên, lịch sử điểm, quy đổi điểm, vị trí kho/kệ, điều chuyển giữa vị trí, trả hàng, nhiều chi nhánh đồng thời, subscription, tenant onboarding và cấu hình gói dịch vụ.
+Các bảng sau chỉ bổ sung khi phạm vi được mở lại: quy đổi điểm để thanh toán, vị trí kho/kệ, điều chuyển giữa vị trí, trả hàng, nhiều chi nhánh đồng thời, subscription, tenant onboarding và cấu hình gói dịch vụ.
 
 ## 9. Trình tự chuyển sang thiết kế vật lý
 
@@ -164,4 +177,3 @@ Các bảng sau chỉ bổ sung khi phạm vi được mở lại: khách hàng 
 4. Chia Flyway migration theo `V1__core_and_iam`, `V2__catalog`, `V3__inventory`, `V4__sales`, `V5__sync_audit` và `V6__training`.
 5. Tạo dữ liệu mẫu cho một tổ chức, một cửa hàng và bốn vai trò.
 6. Kiểm thử transaction xuyên suốt: nhận hàng → tăng tồn → bán hàng → giảm tồn → báo cáo.
-

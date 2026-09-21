@@ -1,4 +1,8 @@
-# Sim Tím Workspace · Prototype 02
+# Frontend Sprint 1
+
+Mặc định gọi Spring Boot API. Xem [hướng dẫn Sprint 1](../docs/SPRINT_1.md) để chạy PostgreSQL, backend và export Godot trước khi build. Nội dung prototype bên dưới được giữ làm lịch sử; chế độ local chỉ bật khi đặt `VITE_DATA_MODE=demo`.
+
+## Lịch sử: Sim Tím Workspace · Prototype 02
 
 Bản giao diện tương tác theo hướng **hệ thống client–server triển khai tập trung, có khả năng phát triển theo mô hình SaaS**. Thử frontend Vue 3 + TypeScript + Vite; không khóa stack, phân công hoặc cam kết xây dựng SaaS đa doanh nghiệp.
 
