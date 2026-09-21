@@ -30,21 +30,27 @@ The agent may inspect files, edit the requested scope and run local validation w
 
 ## Repository layout
 
-- `prototype-v2/`: active Sprint 0 PWA baseline. Read `prototype-v2/AGENTS.md` before editing it.
+- `apps/web/`: Vue PWA. Read `apps/web/AGENTS.md` before editing it.
+- `apps/training-godot/`: isolated Godot training client. Read its local `AGENTS.md`.
+- `services/api/`: Spring Boot API and Flyway migrations. Read its local `AGENTS.md`.
+- `contracts/`: reviewed HTTP, error and authorization contracts shared by clients and API.
 - `docs/`: project records. Use `docs/README.md` to determine authority and status.
+- `infra/`: local infrastructure definitions; never commit real credentials or data.
+- `scripts/`: supported repository entry points for setup, development and verification.
+- `tools/`: maintainers' reproducible document/asset utilities, not runtime code.
 - `archive/`: read-only historical implementations; do not add features there.
 - `.github/`: team workflow and CI.
 - `.agents/skills/`: reusable repository workflows.
 
 ## Verification
 
-For Sprint 0 frontend changes, run from `prototype-v2/`:
+Run the repository gate from the root:
 
 ```text
-npm run verify
+pwsh -File scripts/verify.ps1
 ```
 
-Run narrower checks while iterating, but run the complete relevant gate before handoff. If a future backend or Godot module is present, follow its own checked-in instructions and CI rather than assuming Sprint 0 commands cover it.
+Run narrower module checks while iterating, but run the complete relevant gate before handoff. A contract change requires both provider and consumer checks.
 
 ## Documentation and handoff
 

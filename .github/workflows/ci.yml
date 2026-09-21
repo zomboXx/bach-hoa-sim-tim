@@ -13,9 +13,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sprint-one:
+  repository-policy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check whitespace
+        run: git show --check --format=oneline HEAD
+      - name: Check Markdown links
+        shell: pwsh
+        run: ./scripts/check-markdown-links.ps1
+      - name: Validate OpenAPI contract
+        run: npx --yes @redocly/cli@2.53.3 lint contracts/openapi.yaml
+
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17
@@ -27,11 +40,6 @@ jobs:
         options: --health-cmd "pg_isready -U simtim -d simtim" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: prototype-v2/package-lock.json
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -41,7 +49,19 @@ jobs:
         env:
           PGPASSWORD: simtim-local-only
         run: createdb -h 127.0.0.1 -p 5433 -U simtim simtim_test
-      - run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Verify API
+        run: mvn -B -ntp -f services/api/pom.xml verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-evidence
+          path: services/api/target/surefire-reports
+
+  training:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
       - name: Install Godot and matching Web templates
         run: |
           curl -fL --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -o /tmp/godot.zip
@@ -50,28 +70,81 @@ jobs:
           curl -fL --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz -o /tmp/templates.tpz
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           unzip -q -j /tmp/templates.tpz 'templates/web_nothreads_*.zip' templates/version.txt -d "$HOME/.local/share/godot/export_templates/4.6.3.stable"
-      - name: Validate and export Chapter 0
+      - name: Test and export Chapter 0
         run: |
-          godot --headless --path godot --editor --import
-          godot --headless --path godot --script res://tests/tour_test.gd
-          mkdir -p prototype-v2/public/training
-          godot --headless --path godot --export-release Web
+          godot --headless --path apps/training-godot --editor --import
+          godot --headless --path apps/training-godot --script res://tests/tour_test.gd
+          mkdir -p apps/web/public/training
+          godot --headless --path apps/training-godot --export-release Web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: training-web-export
+          path: apps/web/public/training
+
+  web-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+        working-directory: apps/web
+      - run: npm run lint
+        working-directory: apps/web
+      - run: npm run format:check
+        working-directory: apps/web
+      - run: npm run build
+        working-directory: apps/web
+
+  integration:
+    needs: [repository-policy, api, training, web-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: simtim
+          POSTGRES_USER: simtim
+          POSTGRES_PASSWORD: simtim-local-only
+        ports: ['5433:5432']
+        options: --health-cmd "pg_isready -U simtim -d simtim" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: training-web-export
+          path: apps/web/public/training
+      - name: Package API
+        run: mvn -B -ntp -DskipTests -f services/api/pom.xml package
       - name: Start API
         run: |
-          java -jar backend/target/store-api-0.3.0.jar > /tmp/simtim-api.log 2>&1 &
-          for i in {1..40}; do curl -fsS http://127.0.0.1:8080/api/health && exit 0; sleep 1; done
+          java -jar services/api/target/store-api-0.3.0.jar > /tmp/simtim-api.log 2>&1 &
+          for i in {1..60}; do curl -fsS http://127.0.0.1:8080/api/health && exit 0; sleep 1; done
           cat /tmp/simtim-api.log
           exit 1
       - run: npm ci
-        working-directory: prototype-v2
+        working-directory: apps/web
       - run: npx playwright install --with-deps chromium
-        working-directory: prototype-v2
+        working-directory: apps/web
       - run: npm run verify
-        working-directory: prototype-v2
+        working-directory: apps/web
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sprint-one-test-evidence
-          path: |
-            prototype-v2/test-results
-            backend/target/surefire-reports
+          name: integration-test-evidence
+          path: apps/web/test-results

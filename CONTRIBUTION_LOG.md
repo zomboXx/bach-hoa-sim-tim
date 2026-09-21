@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Đức Phát - 2026-09-21 20:30:30
+
+Khôi phục Sprint 1 và chuẩn hóa nền tảng phát triển trước khi nhóm bắt đầu: tổ chức monorepo theo module triển khai, xác lập owner/reviewer, bổ sung contract và ADR, chuẩn hóa frontend, script root, CI nhiều cổng và tài liệu vận hành. Các prototype cũ được lưu trữ để truy vết; không xóa lịch sử dự án.
+
+- `.github/`: +110 -22
+- `apps/training-godot/`: +10 -2; 5 binary di chuyển nguyên trạng
+- `apps/web/` và `archive/prototype-v2-training/`: +3435 -2522; 2 binary di chuyển nguyên trạng
+- `archive/prototype-v1/README.md`: +1 -1
+- `contracts/`: +330 -0
+- `docs/`: +121 -81; 8 binary di chuyển nguyên trạng
+- `infra/`: +1 -0
+- `AGENTS.md`, `README.md` và cấu hình root: +43 -29
+- `scripts/`: +192 -7
+- `services/api/`: +10 -0
+- `tools/`: +272 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 Codex (AI hỗ trợ; chờ Project Owner xác nhận người chịu trách nhiệm) - 2026-09-21 14:16:48
 
 Chuẩn hóa Sprint 0 thành baseline có thể bàn giao: lưu trữ prototype cũ, thiết lập quy trình cộng tác/Codex, thống nhất cổng kiểm chứng với CI và cập nhật tài liệu trước khi tích hợp `main`. Mục này không tự quy đổi thành đóng góp của thành viên cho đến khi người chịu trách nhiệm review và xác nhận.

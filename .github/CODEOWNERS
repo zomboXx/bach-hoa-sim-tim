@@ -1,0 +1,15 @@
+# Default owner and repository governance
+* @zomboXx
+
+# Product modules
+/apps/web/ @thinguyen135 @zomboXx
+/services/api/ @nguyentrung01ute-ui @zomboXx
+/apps/training-godot/ @VanChien11-02 @zomboXx
+
+# Shared contracts and architecture require cross-module review
+/contracts/ @zomboXx @nguyentrung01ute-ui @thinguyen135
+/docs/architecture/ @zomboXx @nguyentrung01ute-ui
+/docs/product/ @zomboXx
+/docs/testing/ @VanChien11-02 @zomboXx
+/infra/ @nguyentrung01ute-ui @zomboXx
+/.github/ @zomboXx @VanChien11-02

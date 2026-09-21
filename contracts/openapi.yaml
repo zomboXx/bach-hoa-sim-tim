@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: Bách Hóa Sim Tím API
+  version: 0.3.0
+  description: Implemented Sprint 1 HTTP contract. Authentication uses a server session and mutating requests require the CSRF header returned by `/csrf`.
+servers:
+  - url: /api
+tags:
+  - name: Session
+  - name: Catalog
+  - name: Operations
+  - name: Training
+security:
+  - sessionCookie: []
+paths:
+  /health:
+    get:
+      summary: Check API and database health
+      tags: [Session]
+      security: []
+      responses:
+        '200': { description: API and PostgreSQL are available, content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+  /csrf:
+    get:
+      summary: Get a CSRF token
+      tags: [Session]
+      security: []
+      responses:
+        '200': { description: CSRF token and header name, content: { application/json: { schema: { $ref: '#/components/schemas/Csrf' } } } }
+  /auth/login:
+    post:
+      summary: Create a user session
+      tags: [Session]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200': { description: Session created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      summary: End the current session
+      tags: [Session]
+      responses:
+        '204': { description: Session invalidated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /me:
+    get:
+      summary: Get the current account
+      tags: [Session]
+      responses:
+        '200': { description: Current account, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /state:
+    get:
+      summary: Get role-filtered application state
+      tags: [Session]
+      responses:
+        '200': { description: Role-filtered application state, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+  /products:
+    get:
+      summary: Search products
+      tags: [Catalog]
+      parameters:
+        - { name: query, in: query, schema: { type: string, default: '' } }
+      responses:
+        '200': { description: Matching products, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Product' } } } } }
+    post:
+      summary: Create a product
+      tags: [Catalog]
+      requestBody: { $ref: '#/components/requestBodies/CatalogInput' }
+      responses:
+        '200': { description: Product created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /products/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put:
+      summary: Update a product
+      tags: [Catalog]
+      requestBody: { $ref: '#/components/requestBodies/CatalogInput' }
+      responses: { '200': { description: Product updated }, '403': { $ref: '#/components/responses/Forbidden' } }
+    delete:
+      summary: Deactivate a product
+      tags: [Catalog]
+      responses: { '200': { description: Product deactivated }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /categories:
+    get:
+      summary: List categories
+      tags: [Catalog]
+      responses: { '200': { description: Categories, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+    post:
+      summary: Create a category
+      tags: [Catalog]
+      requestBody: { $ref: '#/components/requestBodies/CatalogInput' }
+      responses: { '200': { description: Category created }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /categories/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { summary: Update a category, tags: [Catalog], requestBody: { $ref: '#/components/requestBodies/CatalogInput' }, responses: { '200': { description: Category updated } } }
+    delete: { summary: Deactivate a category, tags: [Catalog], responses: { '200': { description: Category deactivated } } }
+  /suppliers:
+    get:
+      summary: List suppliers
+      tags: [Catalog]
+      responses: { '200': { description: Suppliers, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+    post:
+      summary: Create a supplier
+      tags: [Catalog]
+      requestBody: { $ref: '#/components/requestBodies/CatalogInput' }
+      responses: { '200': { description: Supplier created }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /suppliers/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { summary: Update a supplier, tags: [Catalog], requestBody: { $ref: '#/components/requestBodies/CatalogInput' }, responses: { '200': { description: Supplier updated } } }
+    delete: { summary: Deactivate a supplier, tags: [Catalog], responses: { '200': { description: Supplier deactivated } } }
+  /invoices:
+    post:
+      summary: Create a sales invoice
+      tags: [Operations]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lines, method, tendered]
+              properties:
+                lines: { type: array, minItems: 1, maxItems: 100, items: { $ref: '#/components/schemas/Line' } }
+                method: { type: string }
+                tendered: { type: integer, minimum: 0 }
+      responses: { '200': { description: Invoice and FEFO stock movements created }, '409': { $ref: '#/components/responses/Conflict' } }
+  /receipts:
+    post:
+      summary: Receive a stock batch
+      tags: [Operations]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [supplier, product, lot, expiry, delivered, accepted, note]
+              properties:
+                supplier: { type: string }
+                product: { type: string }
+                lot: { type: string, pattern: '^[A-Za-z0-9_-]{1,60}$' }
+                expiry: { type: string, format: date }
+                delivered: { type: integer, minimum: 1, maximum: 1000000 }
+                accepted: { type: integer, minimum: 1, maximum: 1000000 }
+                note: { type: string, maxLength: 500 }
+      responses: { '200': { description: 'Receipt, batch and stock movement created' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /counts:
+    post:
+      summary: Create a stock count
+      tags: [Operations]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchId, expected, actual, baseVersion, note]
+              properties:
+                batchId: { type: string }
+                expected: { type: integer, minimum: 0 }
+                actual: { type: integer, minimum: 0, maximum: 1000000 }
+                baseVersion: { type: integer, minimum: 0 }
+                note: { type: string, maxLength: 500 }
+      responses: { '200': { description: Pending stock count created }, '409': { $ref: '#/components/responses/Conflict' } }
+  /counts/{id}/approve:
+    post:
+      summary: Approve a stock count
+      tags: [Operations]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: Count approved and stock adjusted }, '409': { $ref: '#/components/responses/Conflict' } }
+  /promotions:
+    post:
+      summary: Create a promotion
+      tags: [Operations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, percent, end]
+              properties:
+                productId: { type: string }
+                percent: { type: integer, minimum: 1, maximum: 90 }
+                end: { type: string, format: date }
+      responses: { '200': { description: Promotion created } }
+  /training/sessions:
+    get:
+      summary: List current account training sessions
+      tags: [Training]
+      responses: { '200': { description: Sessions belonging to current account, content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } } } }
+    post:
+      summary: Start a training session
+      tags: [Training]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [chapter], properties: { chapter: { type: integer, minimum: 0, maximum: 6 } } } } }
+      responses: { '200': { description: Training session started } }
+  /training/sessions/{id}/orientation:
+    post:
+      summary: Submit orientation answers
+      tags: [Training]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [welcome, sensitive, delivery]
+              properties:
+                welcome: { type: string }
+                sensitive: { type: string }
+                delivery: { type: string }
+      responses: { '200': { description: Orientation answers evaluated } }
+  /training/sessions/{id}/events:
+    post:
+      summary: Record a visited training station
+      tags: [Training]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [station], properties: { station: { type: string } } } } } }
+      responses: { '200': { description: Training visit recorded } }
+  /training/sessions/{id}/complete:
+    post:
+      summary: Complete a training session
+      tags: [Training]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { description: Training session completed if criteria are met } }
+components:
+  securitySchemes:
+    sessionCookie: { type: apiKey, in: cookie, name: JSESSIONID }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 1 } }
+  requestBodies:
+    CatalogInput:
+      required: true
+      content: { application/json: { schema: { type: object, additionalProperties: { type: string } } } }
+  responses:
+    Unauthorized: { description: Missing or expired session, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Forbidden: { description: Role or CSRF check failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Conflict: { description: Duplicate or stale operation, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  schemas:
+    Error:
+      type: object
+      required: [message]
+      properties: { message: { type: string } }
+    Health:
+      type: object
+      required: [status, database]
+      properties: { status: { const: UP }, database: { const: PostgreSQL } }
+    Csrf:
+      type: object
+      required: [token, headerName]
+      properties: { token: { type: string }, headerName: { type: string } }
+    User:
+      type: object
+      required: [id, name, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [admin, accountant, manager, sales, stock] }
+    Product:
+      type: object
+      required: [id, name, barcode, category, unit, price, active]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        barcode: { type: string }
+        category: { type: string }
+        unit: { type: string }
+        price: { type: integer, minimum: 0 }
+        emoji: { type: string }
+        active: { type: boolean }
+    Line:
+      type: object
+      required: [id, quantity]
+      properties:
+        id: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 10000 }

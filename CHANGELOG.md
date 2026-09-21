@@ -6,6 +6,11 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Tổ chức lại monorepo theo deployable unit: `apps/web`, `apps/training-godot`, `services/api`, `contracts`, `infra`, `scripts`, `tools` và tài liệu theo mục đích.
+- Khôi phục và harden Sprint 1 gồm Vue PWA, Spring Boot/PostgreSQL/Flyway và Godot Chapter 0; lưu game Vue/SVG cũ trong `archive/`.
+- Ghi nhận owner/reviewer bằng tài khoản GitHub, thêm CODEOWNERS, hướng dẫn module và ADR kiến trúc.
+- Thêm OpenAPI, ma trận RBAC, error contract cùng các lệnh root cho setup, development, verification và cleanup.
+- Tách CI thành các cổng repository, API, Godot, web build và kiểm thử tích hợp.
 - Chuẩn hóa cấu trúc repository: chuyển Prototype 01 vào `archive/prototype-v1/` và đưa changelog lên root.
 - Bổ sung bản đồ tài liệu, hướng dẫn đóng góp, quy tắc agent, EditorConfig, Git attributes và cấu hình Codex an toàn.
 - Thêm skill `verify-sim-tim` và lệnh `npm run verify` dùng chung giữa máy phát triển và CI.
