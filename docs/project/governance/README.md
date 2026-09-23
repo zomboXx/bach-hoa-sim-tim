@@ -1,11 +1,12 @@
 # Quản lý dự án cuối kỳ
 
-Đây là nguồn thống nhất cho kế hoạch nhóm. GitHub Issues dùng để theo dõi từng việc; tài liệu trong thư mục này giữ quy tắc, phân công và phạm vi sprint.
+Đây là nguồn thống nhất cho quy tắc, phân công và phạm vi sprint. GitHub Issues cùng Project là nguồn trạng thái vận hành của từng việc; không duy trì một bảng trạng thái hằng ngày trùng lặp trong Markdown.
 
 - [Phân công](TEAM.md)
 - [Quy trình Scrum rút gọn](SCRUM.md)
 - [Product backlog và sprint](BACKLOG.md)
 - [Điều kiện merge đầu tiên](MERGE_01.md)
+- [Thiết lập GitHub](GITHUB_SETUP.md)
 
 ## Nguyên tắc
 
@@ -15,10 +16,9 @@
 4. Mỗi tuần phải có bản chạy hoặc tài liệu có thể review, không chỉ báo cáo bằng lời.
 5. `main` phải build và chạy kiểm thử; thay đổi đi qua pull request.
 
-## Trạng thái
+## Trạng thái GitHub Project
 
 ```text
-Backlog → Ready → In progress → Review → Testing → Done
-                         └──────→ Blocked
+Backlog → Ready → In Progress → In Review → Done
+                            └──→ Blocked
 ```
-

@@ -1,0 +1,46 @@
+name: Quyết định kiến trúc hoặc phạm vi
+description: Quyết định cần ghi nhận trước khi code hoặc thay đổi phạm vi.
+title: "[DECISION] "
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Bối cảnh và vấn đề
+      description: Vì sao cần quyết định này và nếu không quyết định thì công việc nào bị block?
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Các phương án
+      description: Nêu ít nhất phương án đề xuất, ưu/nhược điểm và phương án không chọn.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất
+      description: Quyết định mong muốn Project Owner chấp nhận.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Ảnh hưởng và cách chuyển đổi
+      description: Module, contract, migration, bảo mật, test và khả năng quay lại.
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Decision owner
+      placeholder: "@zomboXx"
+    validations:
+      required: true
+  - type: input
+    id: reviewers
+    attributes:
+      label: Reviewers
+      placeholder: "@github-user"
+    validations:
+      required: true

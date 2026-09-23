@@ -3,6 +3,8 @@ name: baseline-quality
 on:
   pull_request:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -18,9 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - name: Check committed whitespace
         run: git show --check --format=oneline HEAD
+      - name: Check repository policy
+        shell: pwsh
+        run: ./scripts/check-repository-policy.ps1
       - name: Check local Markdown links
         shell: pwsh
         run: ./scripts/check-markdown-links.ps1
@@ -33,8 +40,8 @@ jobs:
       run:
         working-directory: apps/web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

@@ -1,6 +1,6 @@
 ## Kết quả
 
-Mô tả hành vi sau thay đổi và Issue liên quan.
+Mô tả kết quả quan sát được sau thay đổi và Issue liên quan. Không chỉ liệt kê file đã sửa.
 
 Closes #
 
@@ -37,3 +37,4 @@ Ghi lệnh và kết quả kiểm thử:
 - Reviewer:
 - Backlog item/Issue:
 - Rủi ro hoặc giới hạn còn lại:
+- [ ] Tác giả đã tự review diff và không trộn thay đổi ngoài phạm vi

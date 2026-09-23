@@ -6,8 +6,9 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 - [`project/governance/README.md`](project/governance/README.md): điểm vào quy trình nhóm.
 - [`project/governance/SCRUM.md`](project/governance/SCRUM.md): Ready, Done, nhánh và Pull Request.
-- [`project/governance/BACKLOG.md`](project/governance/BACKLOG.md): backlog và trạng thái sprint.
+- [`project/governance/BACKLOG.md`](project/governance/BACKLOG.md): phạm vi, ưu tiên và phụ thuộc của các sprint.
 - [`project/governance/TEAM.md`](project/governance/TEAM.md): owner, GitHub và reviewer.
+- [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_1_KICKOFF.md`](project/SPRINT_1_KICKOFF.md): thứ tự tích hợp và PR đầu tiên của Sprint 1.
 
 ## Phân tích và thiết kế
@@ -15,6 +16,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`product/analysis/README.md`](product/analysis/README.md): bộ yêu cầu bản nháp và sơ đồ Use Case.
 - [`architecture/database/01-thiet-ke-csdl-khai-niem.md`](architecture/database/01-thiet-ke-csdl-khai-niem.md): thiết kế dữ liệu đề xuất, chưa phải schema vật lý.
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
+- [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
 ## Tài liệu lịch sử

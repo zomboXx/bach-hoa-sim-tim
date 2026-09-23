@@ -37,10 +37,10 @@ infra/              Hạ tầng local đi cùng dịch vụ sở hữu
 docs/               Product, kiến trúc, quản trị dự án, kiểm thử và lịch sử
 scripts/            Lệnh setup/dev/verify/clean được hỗ trợ
 .github/             CI, Issue template và Pull Request template
-.agents/skills/      Workflow dùng lại cho Codex trong repository
-.codex/              Cấu hình và hàng rào an toàn cho Codex
 archive/             Prototype cũ chỉ giữ để truy vết
 ```
+
+`AGENTS.md` chứa hướng dẫn portable dùng chung. Cấu hình riêng của công cụ như `.agents/` và `.codex/`, cùng bản Word đang soạn, chỉ giữ local và không thuộc baseline.
 
 - [Bản đồ tài liệu](docs/README.md)
 - [Hướng dẫn đóng góp](CONTRIBUTING.md)
