@@ -22,6 +22,16 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Đức Phát - 2026-09-24 00:29:26
+
+Sửa CI governance sau lần chạy đầu trên Pull Request: checkout đủ parent commit để kiểm tra đúng diff, nâng GitHub Actions khỏi runtime Node.js đã ngừng hỗ trợ và loại bỏ lượt chạy trùng trên feature branch.
+
+- `.github/workflows/ci.yml`: +7 -3
+- `CHANGELOG.md`: +4 -0
+- `CONTRIBUTION_LOG.md`: +10 -0
+---
+
+---
 Nguyễn Đức Phát - 2026-09-23 23:42:37
 
 Project Owner review và chấp nhận đợt hardening governance có AI hỗ trợ: chốt kiến trúc Sprint 1, chuẩn hóa GitHub Flow/Issue forms/CODEOWNERS, đưa cấu hình công cụ cùng Word draft ra khỏi tracking và thêm repository policy vào CI.

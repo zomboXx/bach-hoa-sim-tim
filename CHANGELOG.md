@@ -14,6 +14,10 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 - Bổ sung Issue forms và runbook cấu hình GitHub cho Project Owner.
 
+### Fixed
+
+- Cho CI tải parent commit trước khi kiểm tra whitespace, tránh quét nhầm toàn bộ baseline trong shallow checkout; đồng thời chỉ chạy `push` gate trên `main` để không lặp check của Pull Request.
+
 ## 0.2.1 — 2026-09-21
 
 Đây là bản hardening repository của baseline Sprint 0 để bắt đầu Sprint 1; không bao gồm implementation Sprint 1.
