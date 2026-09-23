@@ -1,35 +1,59 @@
 name: Báo lỗi
-description: Lỗi chức năng, dữ liệu, giao diện hoặc kiểm thử
+description: Lỗi có bước tái hiện, mức ảnh hưởng và kết quả mong đợi.
 title: "[BUG] "
 body:
   - type: textarea
-    id: steps
+    id: current
     attributes:
-      label: Các bước tái hiện
-      placeholder: "1. ...\n2. ...\n3. ..."
+      label: Hành vi hiện tại
+      description: Điều gì đã xảy ra, ở vai trò/dữ liệu/môi trường nào?
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Kết quả mong đợi
+      label: Hành vi mong đợi
     validations:
       required: true
   - type: textarea
-    id: actual
+    id: reproduce
     attributes:
-      label: Kết quả thực tế
+      label: Bước tái hiện
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
     validations:
       required: true
-  - type: input
-    id: environment
+  - type: textarea
+    id: impact
     attributes:
-      label: Môi trường
-      placeholder: "Branch/commit, trình duyệt, thiết bị"
+      label: Mức ảnh hưởng và rủi ro dữ liệu
+      description: Nêu rõ quyền, giá, tồn kho, offline hoặc mất dữ liệu nếu có.
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
-      label: Log hoặc bằng chứng
-
+      label: Bằng chứng
+      description: Log đã loại secret, ảnh, video hoặc test đang fail.
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression test dự kiến
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      placeholder: "@github-user"
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: Reviewer
+      placeholder: "@github-user"
+    validations:
+      required: true

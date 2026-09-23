@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check committed whitespace
         run: git show --check --format=oneline HEAD
+      - name: Check repository policy
+        shell: pwsh
+        run: ./scripts/check-repository-policy.ps1
       - name: Check local Markdown links
         shell: pwsh
         run: ./scripts/check-markdown-links.ps1

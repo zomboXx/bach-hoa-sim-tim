@@ -38,7 +38,8 @@ The agent may inspect files, edit the requested scope and run local validation w
 - `scripts/`: supported root commands for setup, development and verification.
 - `archive/`: read-only historical implementations; do not add features there.
 - `.github/`: team workflow and CI.
-- `.agents/skills/`: reusable repository workflows.
+
+Tool-specific local configuration such as `.agents/` and `.codex/` is not a repository source of truth and must remain untracked. Keep portable project guidance in `AGENTS.md` and deterministic checks in `scripts/` plus CI.
 
 ## Verification
 

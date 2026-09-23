@@ -7,6 +7,13 @@ apps/web/test-results/
 apps/web/playwright-report/
 rendered/
 
+# Local agent and tool configuration
+.agents/
+.codex/
+
+# Working document drafts; add an approved final artifact explicitly when needed
+docs/**/*.docx
+
 # Local configuration and logs
 .env
 .env.*

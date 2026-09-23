@@ -4,6 +4,16 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+### Changed
+
+- Chốt kiến trúc Sprint 1 theo module nghiệp vụ: frontend feature modules và backend modular monolith với ports/adapters.
+- Chuẩn hóa GitHub Flow theo Issue ngắn hạn, Pull Request có reviewer và GitHub Project làm nguồn trạng thái vận hành.
+- Giữ `AGENTS.md` làm hướng dẫn portable; ngừng track cấu hình `.agents`, `.codex` và bản Word đang soạn, đồng thời chặn chúng bằng repository policy trong CI.
+
+### Added
+
+- Bổ sung Issue forms và runbook cấu hình GitHub cho Project Owner.
+
 ## 0.2.1 — 2026-09-21
 
 Đây là bản hardening repository của baseline Sprint 0 để bắt đầu Sprint 1; không bao gồm implementation Sprint 1.

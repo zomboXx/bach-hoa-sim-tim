@@ -17,12 +17,12 @@ Không nhập một PR phụ thuộc khi contract hoặc migration nguồn chưa
 
 ## Phân luồng bắt đầu
 
-| Workstream | Owner | Reviewer | Nhánh đầu tiên | Kết quả đầu tiên |
+| Workstream | Owner | Reviewer | Mẫu nhánh sau khi có Issue | Kết quả đầu tiên |
 |---|---|---|---|---|
-| Phạm vi, contract và auth | Nguyễn Đức Phát `@zomboXx` | Nguyễn Văn Trung | `feature/platform-auth-contract` | Quyết định session/RBAC và OpenAPI draft nhỏ |
-| Dữ liệu và API bootstrap | Nguyễn Văn Trung `@nguyentrung01ute-ui` | Nguyễn Đức Phát | `feature/api-bootstrap` | Maven Wrapper, PostgreSQL/Flyway, health test |
-| Web adapter | Nguyễn Văn Thi `@thinguyen135` | Nguyễn Đức Phát | `feature/web-api-adapter` | Interface adapter và consumer test, chưa xóa demo mode |
-| QA và traceability | Lê Văn Chiến `@VanChien11-02` | Nguyễn Văn Thi | `test/sprint1-quality-harness` | Test matrix, viewport và evidence convention |
+| Phạm vi, contract và auth | Nguyễn Đức Phát `@zomboXx` | Nguyễn Văn Trung | `feature/<issue>-auth-contract` | Quyết định session/RBAC và OpenAPI draft nhỏ |
+| Dữ liệu và API bootstrap | Nguyễn Văn Trung `@nguyentrung01ute-ui` | Nguyễn Đức Phát | `feature/<issue>-api-bootstrap` | Maven Wrapper, PostgreSQL/Flyway, health test |
+| Web adapter | Nguyễn Văn Thi `@thinguyen135` | Nguyễn Đức Phát | `feature/<issue>-web-api-adapter` | Interface adapter và consumer test, chưa xóa demo mode |
+| QA và traceability | Lê Văn Chiến `@VanChien11-02` | Nguyễn Văn Thi | `test/<issue>-quality-harness` | Test matrix, viewport và evidence convention |
 
 ## Definition of Ready cho PR đầu tiên
 

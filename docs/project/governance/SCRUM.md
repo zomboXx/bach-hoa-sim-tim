@@ -12,7 +12,7 @@ Nhóm làm sprint một tuần. Product Owner và Scrum Master do trưởng nhó
 | Sau review | Retrospective | 15 phút | Một việc giữ lại, một việc cần sửa |
 | Sau retrospective | Chốt báo cáo tuần | 20–30 phút | Báo cáo và kế hoạch tuần kế tiếp |
 
-Mỗi ngày thành viên cập nhật Issue đang làm bằng một dòng: kết quả mới, bước tiếp theo và blocker. Không mở cuộc họp riêng nếu Issue đã đủ thông tin.
+Mỗi ngày thành viên cập nhật Issue đang làm bằng một dòng: kết quả mới, bước tiếp theo và blocker. GitHub Project giữ trạng thái `Backlog`, `Ready`, `In Progress`, `In Review`, `Blocked`, `Done`; không nhân đôi trạng thái này trong tài liệu. Không mở cuộc họp riêng nếu Issue đã đủ thông tin.
 
 ## Definition of Ready
 
@@ -37,13 +37,15 @@ Một task chỉ vào `Ready` khi có:
 ## Quy tắc nhánh và pull request
 
 - `main`: luôn chạy được.
-- `feature/<module>-<ket-qua>`: chức năng mới.
-- `fix/<van-de>`: sửa lỗi.
+- `feature/<issue>-<ket-qua>`: chức năng mới.
+- `fix/<issue>-<van-de>`: sửa lỗi.
+- `docs/<issue>-<noi-dung>`: tài liệu hoặc quyết định.
 - Không commit build output, secret hoặc CSDL thật.
 - PR phải nhỏ, có tiêu chí kiểm thử và gắn Issue.
 - Thay đổi CSDL/API phải được reviewer của phần frontend/backend liên quan đồng ý.
 - CI `baseline-quality` và mọi job module mới phải đạt trước khi merge.
 - Không commit trực tiếp lên `main`, trừ thao tác bootstrap/tích hợp được Project Owner chỉ định rõ và ghi trong biên bản.
+- Squash merge PR đã đạt để lịch sử `main` giữ một thay đổi có chủ đích cho mỗi Issue.
 
 ## Mẫu báo cáo tuần
 

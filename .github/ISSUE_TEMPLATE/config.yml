@@ -1,2 +1,5 @@
 blank_issues_enabled: false
-
+contact_links:
+  - name: Quy trình và phạm vi dự án
+    url: https://github.com/zomboXx/bach-hoa-sim-tim/blob/main/docs/project/governance/README.md
+    about: Đọc Definition of Ready, backlog và ownership trước khi mở Issue.

@@ -6,6 +6,7 @@ $root = Split-Path $PSScriptRoot -Parent
 if ($LASTEXITCODE -ne 0) { throw 'git diff --check failed.' }
 & git -C $root diff --cached --check
 if ($LASTEXITCODE -ne 0) { throw 'git diff --cached --check failed.' }
+& (Join-Path $PSScriptRoot 'check-repository-policy.ps1')
 & (Join-Path $PSScriptRoot 'check-markdown-links.ps1')
 
 Push-Location (Join-Path $root 'apps/web')

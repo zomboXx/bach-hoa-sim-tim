@@ -1,5 +1,7 @@
 # Product backlog hiện tại
 
+Tài liệu này chốt phạm vi, ưu tiên và phụ thuộc ở mức sprint. Sau khi GitHub Project được tạo, trạng thái thực thi từng ngày chỉ cập nhật trên Issue/Project; không sửa đồng thời một cột trạng thái trùng lặp tại đây.
+
 Ưu tiên: `P0` bắt buộc cho luồng quản lý; `P1` cần cho bản cuối kỳ; `P2` chỉ làm khi P0/P1 ổn định. Trạng thái phản ánh baseline tại ngày 21/09/2026. TV1–TV4 được ánh xạ trong [TEAM.md](TEAM.md).
 
 ## Sprint 0 — Baseline có thể merge

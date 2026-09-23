@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Đức Phát - 2026-09-23 23:42:37
+
+Project Owner review và chấp nhận đợt hardening governance có AI hỗ trợ: chốt kiến trúc Sprint 1, chuẩn hóa GitHub Flow/Issue forms/CODEOWNERS, đưa cấu hình công cụ cùng Word draft ra khỏi tracking và thêm repository policy vào CI.
+
+- `.agents/` và `.codex/`: +0 -59
+- `.github/`: +136 -36
+- Cấu hình và tài liệu root: +34 -7
+- `docs/`: +156 -14; 1 DOCX bỏ tracking nhưng giữ local
+- `scripts/`: +35 -0
+- `CONTRIBUTION_LOG.md`: +13 -0
+---
+
+---
 Nguyễn Đức Phát - 2026-09-21 21:28:26
 
 Làm rõ mốc hiện tại là baseline Sprint 0 đã nghiệm thu và chỉ là điểm xuất phát để cả nhóm triển khai Sprint 1; không ghi nhận nhầm kế hoạch nền tảng thành implementation đã hoàn thành.

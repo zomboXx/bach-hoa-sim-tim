@@ -1,7 +1,10 @@
-name: Backlog item
-description: Công việc yêu cầu, thiết kế, triển khai, kiểm thử hoặc báo cáo
-title: "[MODULE] "
+name: Công việc hoặc tính năng
+description: Công việc có kết quả, phạm vi và tiêu chí chấp nhận rõ ràng.
+title: "[TASK] "
 body:
+  - type: markdown
+    attributes:
+      value: Mỗi Issue có một owner chính, một reviewer và phải đủ Definition of Ready trước khi chuyển sang Ready.
   - type: dropdown
     id: priority
     attributes:
@@ -10,17 +13,30 @@ body:
     validations:
       required: true
   - type: input
-    id: requirement
+    id: backlog
     attributes:
-      label: Yêu cầu hoặc pain point nguồn
-      placeholder: "Ví dụ: FR-REC-05 / PP-02"
+      label: Backlog item
+      description: Mã backlog hoặc liên kết quyết định nguồn.
+      placeholder: BE-01
     validations:
       required: true
   - type: textarea
     id: outcome
     attributes:
-      label: Kết quả cần tạo
-      description: Ghi kết quả có thể review, không chỉ tên hoạt động.
+      label: Kết quả cần đạt
+      description: Mô tả hành vi hoặc đầu ra có thể quan sát, không chỉ liệt kê file sẽ sửa.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Phạm vi và ngoài phạm vi
+      placeholder: |
+        Trong phạm vi:
+        - ...
+
+        Ngoài phạm vi:
+        - ...
     validations:
       required: true
   - type: textarea
@@ -30,26 +46,31 @@ body:
       placeholder: "- [ ] ..."
     validations:
       required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Phụ thuộc và ảnh hưởng
+      description: Issue bị block, contract, migration, module hoặc dữ liệu bị ảnh hưởng; ghi N/A nếu không có.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Kế hoạch kiểm thử
+      description: Lệnh tự động và tình huống thủ công dự kiến dùng để chứng minh kết quả.
+    validations:
+      required: true
   - type: input
     id: owner
     attributes:
       label: Owner
+      placeholder: "@github-user"
     validations:
       required: true
   - type: input
     id: reviewer
     attributes:
       label: Reviewer
+      placeholder: "@github-user"
     validations:
       required: true
-  - type: textarea
-    id: dependencies
-    attributes:
-      label: Phụ thuộc và phạm vi ảnh hưởng
-      description: Issue, API, bảng dữ liệu và file dự kiến thay đổi.
-  - type: textarea
-    id: evidence
-    attributes:
-      label: Bằng chứng hoàn thành
-      description: PR, test, ảnh/video demo hoặc tài liệu cần cập nhật.
-
