@@ -12,6 +12,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
 - Bổ sung Issue forms và runbook cấu hình GitHub cho Project Owner.
 
 ### Fixed

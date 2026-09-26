@@ -57,3 +57,20 @@ jobs:
             apps/web/test-results
             apps/web/playwright-report
           if-no-files-found: ignore
+
+  api-bootstrap:
+    name: API bootstrap
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+      - run: ./mvnw verify
