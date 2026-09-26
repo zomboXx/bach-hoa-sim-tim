@@ -85,7 +85,7 @@ entity "catalog.product_prices" as product_prices {
   * organization_id : uuid <<FK>>
   * store_id : uuid <<FK>>
   * product_id : uuid <<FK>>
-  * sale_price : numeric(14,2)
+  * sale_price : bigint
   * effective_from : timestamptz
   effective_to : timestamptz
 }
@@ -112,7 +112,7 @@ entity "inventory.goods_receipt_lines" as receipt_lines {
   * delivered_quantity : numeric(14,3)
   * accepted_quantity : numeric(14,3)
   * rejected_quantity : numeric(14,3)
-  * unit_cost : numeric(14,2)
+  * unit_cost : bigint
   supplier_lot_number : varchar
   expiry_date : date
   rejection_reason : varchar
@@ -214,10 +214,10 @@ entity "sales.invoices" as invoices {
   * status : varchar
   * sold_by : uuid <<FK>>
   * sold_at : timestamptz
-  * subtotal : numeric(14,2)
-  * discount_total : numeric(14,2)
-  * grand_total : numeric(14,2)
-  * paid_total : numeric(14,2)
+  * subtotal : bigint
+  * discount_total : bigint
+  * grand_total : bigint
+  * paid_total : bigint
   voided_by : uuid <<FK>>
   void_reason : varchar
   * version : bigint
@@ -231,9 +231,9 @@ entity "sales.invoice_lines" as invoice_lines {
   * sku_snapshot : varchar
   * product_name_snapshot : varchar
   * quantity : numeric(14,3)
-  * unit_price : numeric(14,2)
-  * discount_amount : numeric(14,2)
-  * line_total : numeric(14,2)
+  * unit_price : bigint
+  * discount_amount : bigint
+  * line_total : bigint
   applied_promotion_id : uuid <<FK>>
 }
 
@@ -249,7 +249,7 @@ entity "sales.payments" as payments {
   * invoice_id : uuid <<FK>>
   * method : varchar
   * status : varchar
-  * amount : numeric(14,2)
+  * amount : bigint
   reference_code : varchar
   * paid_at : timestamptz
 }

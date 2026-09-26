@@ -6,6 +6,10 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Ghi nhận Project Owner duyệt hướng DB-01 gồm 39 bảng đích và migration theo sprint; migration Sprint 1 đã kiểm thử local, review kỹ thuật và CI PostgreSQL 17 vẫn đang chờ.
+- Làm rõ tiêu chí Sprint 1 theo báo cáo Word hiện hành và ghi riêng hai ứng viên quản trị tài khoản, lịch sử giá chưa được lên lịch.
+- Theo quyết định Project Owner ngày 26/09/2026, Sprint 1 dùng bốn vai trò server; người học là trạng thái của nhân viên.
+- Ghi nhận phương án tiền nguyên VND và số lượng lẻ tối đa ba chữ số thập phân để DB-01 review; giới hạn xử lý hàng nhận sai lệch trong MVP ở việc ghi số lượng cùng lý do trên phiếu.
 - Chốt kiến trúc Sprint 1 theo module nghiệp vụ: frontend feature modules và backend modular monolith với ports/adapters.
 - Chuẩn hóa GitHub Flow theo Issue ngắn hạn, Pull Request có reviewer và GitHub Project làm nguồn trạng thái vận hành.
 - Giữ `AGENTS.md` làm hướng dẫn portable; ngừng track cấu hình `.agents`, `.codex` và bản Word đang soạn, đồng thời chặn chúng bằng repository policy trong CI.
@@ -13,7 +17,11 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 ### Added
 
 - Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
+- Chuẩn bị DDL đích 38 bảng từ báo cáo Word và một bảng phiên đăng nhập đề xuất, kèm đánh giá 3NF và kiểm tra ràng buộc cho DB-01; V2/V3 chỉ đưa 14 bảng Sprint 1 vào Flyway.
+- Thêm migration core/IAM/catalog, seed demo chỉ theo profile và test ràng buộc vai trò/giá từ database sạch.
 - Bổ sung Issue forms và runbook cấu hình GitHub cho Project Owner.
+- Chuẩn bị bản đối chiếu và các quyết định còn thiếu cho REQ-01, giữ trạng thái draft tới khi nhóm xác nhận.
+- Chuẩn bị bản đối chiếu báo cáo Word với backlog Sprint 1 để bổ sung chi tiết theo từng sprint mà không tự mở rộng cam kết MVP.
 
 ### Fixed
 

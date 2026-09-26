@@ -25,7 +25,11 @@ Thiết kế ưu tiên năm thuộc tính:
 | DB-07 | Khách hàng thành viên và điểm thưởng chưa nằm trong mô hình MVP. | Phạm vi mới không liệt kê chức năng này trong Must have hoặc Should have. |
 | DB-08 | Dữ liệu đào tạo đặt trong PostgreSQL schema `training`; dữ liệu vận hành đặt trong các schema còn lại. | Tách dữ liệu rõ ràng nhưng vẫn dùng chung kết nối, API và tài khoản người học. |
 | DB-09 | Bảng đã phát sinh giao dịch không bị xóa vật lý; dùng trạng thái và nghiệp vụ đảo/hủy. | Giữ tính truy vết của hóa đơn, phiếu nhận và biến động tồn. |
-| DB-10 | Khóa chính dùng UUID; thời gian dùng `timestamptz`; tiền dùng `numeric(14,2)`; số lượng dùng `numeric(14,3)`. | Phù hợp môi trường phân tán, tránh sai số tiền và hỗ trợ hàng có số lượng lẻ. |
+| DB-10 | Khóa chính dùng UUID; thời gian dùng `timestamptz`; tiền lưu số nguyên VND bằng `bigint`; số lượng dùng `numeric(14,3)`. | Tránh sai số tiền và hỗ trợ số lượng lẻ tối đa ba chữ số thập phân; API cũng dùng số nguyên VND. |
+
+Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026 thay thế phần tiền `numeric(14,2)` trong DB-10 và ERD trước ngày này, đồng thời xác nhận số lượng lẻ tối đa ba chữ số thập phân. Ngày 27/09/2026, Project Owner làm rõ hai quy ước số học này có thể điều chỉnh tại DB-01; bốn vai trò server mới là ràng buộc cần giữ. Vì vậy `bigint` và `numeric(14,3)` ở đây là **phương án thiết kế hiện hành, chưa khóa migration nghiệp vụ**. `sales.promotions.discount_value` vẫn là `numeric(14,2)` vì có thể biểu diễn tỷ lệ phần trăm; nếu loại giảm là số tiền cố định thì giá trị phải là số nguyên VND. Contract API cần giới hạn giá trị tiền trong miền số nguyên an toàn của JavaScript khi biểu diễn bằng JSON number nếu giữ phương án này.
+
+Quy tắc làm tròn **đề xuất cho DB-01 review**: làm tròn `quantity × unit_price` đến VND gần nhất trên từng dòng, sau đó tính `discount_amount` bằng số nguyên VND (giảm theo tỷ lệ cũng làm tròn đến VND gần nhất); `line_total = rounded_base - discount_amount`. Tổng hóa đơn là tổng các `line_total`. Cần chốt quy tắc trường hợp đúng nửa VND và kiểm thử cùng một cách tính ở API/CSDL trước migration.
 
 ## 3. Phân chia schema
 
@@ -41,6 +45,8 @@ Thiết kế ưu tiên năm thuộc tính:
 | `training` | Kịch bản, phiên, hành động và kết quả đào tạo | `scenarios`, `scenario_steps`, `sessions`, `session_actions`, `session_results` |
 
 Việc chia schema là ranh giới logic trong cùng một PostgreSQL database, không phải microservice hoặc database độc lập.
+
+Danh sách trên mô tả trọng tâm MVP của bản thiết kế ban đầu. Chương 4 báo cáo Word hiện hành còn có `sales.members` và `sales.loyalty_point_transactions` cho giai đoạn sau MVP. [Bản DB-01 vật lý Draft](DB-01_PHYSICAL_SCHEMA_DRAFT.md) đối chiếu đủ 38 bảng trong Word và bổ sung `iam.auth_sessions` để đăng xuất phía server. Project Owner đã duyệt hướng thiết kế ngày 27/09/2026; 14 bảng Sprint 1 đã tách thành Flyway V2/V3. Không dùng nguyên DDL đích làm migration.
 
 ## 4. Mô hình dữ liệu vận hành
 
@@ -129,7 +135,7 @@ Các bảng đào tạo không tham chiếu đến hóa đơn, phiếu nhận, l
 | C-02 | Lô có theo dõi hạn phải có `expiry_date`; `expiry_date` không trước `received_date`. |
 | C-03 | `inventory_balances.quantity_on_hand >= 0` đối với dữ liệu vận hành bình thường. |
 | C-04 | Tổng `invoice_line_batches.quantity` bằng `invoice_lines.quantity` khi hóa đơn hoàn tất. |
-| C-05 | `invoice_lines.line_total = quantity * unit_price - discount_amount`, với kết quả không âm. |
+| C-05 | `invoice_lines.line_total = round(quantity * unit_price, 0) - discount_amount`, với kết quả không âm; quy tắc làm tròn tại nửa VND còn chờ DB-01 review. |
 | C-06 | Hóa đơn chỉ được `COMPLETED` khi tổng thanh toán hợp lệ bằng số phải trả trong phạm vi làm tròn. |
 | C-07 | Chứng từ `CONFIRMED`, `COMPLETED` hoặc `APPROVED` không bị xóa vật lý. |
 | C-08 | Mỗi `client_operation_id` chỉ được xử lý một lần trong phạm vi tổ chức. |
@@ -165,3 +171,4 @@ Các bảng sau chỉ bổ sung khi phạm vi được mở lại: khách hàng 
 5. Tạo dữ liệu mẫu cho một tổ chức, một cửa hàng và bốn vai trò.
 6. Kiểm thử transaction xuyên suốt: nhận hàng → tăng tồn → bán hàng → giảm tồn → báo cáo.
 
+Trình tự V1–V6 ở trên là đề xuất lịch sử trước khi backend được khởi tạo. Nhánh `codex/be-01-bootstrap` đã dùng V1 chỉ để tạo schema `core`, V2 cho core/IAM và V3 cho catalog theo phạm vi Sprint 1; không đánh số lại V1. Các quan hệ/nguồn chứng từ được chỉnh trong [đề xuất vật lý ngày 27/09/2026](DB-01_PHYSICAL_SCHEMA_DRAFT.md) cần TV2/TV3 review trước khi cập nhật ERD logic và ảnh tương ứng.
