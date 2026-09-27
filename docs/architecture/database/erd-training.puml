@@ -39,7 +39,7 @@ entity "training.scenario_steps" as scenario_steps {
   * scenario_id : uuid <<FK>>
   * step_order : integer
   * action_type : varchar
-  target_key : varchar
+  * target_key : varchar
   * instruction_text : text
   * validation_rule : jsonb
   * score_weight : numeric(8,2)
@@ -58,12 +58,14 @@ entity "training.sessions" as trainingSession {
   * state_data : jsonb
   * started_at : timestamptz
   completed_at : timestamptz
-  total_score : numeric(8,2)
+  total_score : numeric(10,2)
 }
 
 entity "training.session_actions" as sessionAction {
   * id : uuid <<PK>>
   --
+  * organization_id : uuid <<FK>>
+  * scenario_id : uuid <<FK>>
   * session_id : uuid <<FK>>
   scenario_step_id : uuid <<FK>>
   * action_sequence : integer
@@ -78,9 +80,10 @@ entity "training.session_actions" as sessionAction {
 entity "training.session_results" as sessionResult {
   * id : uuid <<PK>>
   --
+  * organization_id : uuid <<FK>>
   * session_id : uuid <<FK>>
   * metric_code : varchar
-  * score : numeric(8,2)
+  * score : numeric(10,2)
   * passed : boolean
   detail_data : jsonb
 }
@@ -90,6 +93,7 @@ organizations ||--o{ scenarios
 organizations ||--o{ trainingSession
 scenarios ||--|{ scenario_steps
 scenarios ||--o{ trainingSession
+scenarios ||--o{ sessionAction
 users ||--o{ trainingSession : learner
 trainingSession ||--o{ sessionAction
 scenario_steps "0..1" -- "0..*" sessionAction

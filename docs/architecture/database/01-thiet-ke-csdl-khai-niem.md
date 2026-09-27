@@ -171,4 +171,4 @@ Các bảng sau chỉ bổ sung khi phạm vi được mở lại: khách hàng 
 5. Tạo dữ liệu mẫu cho một tổ chức, một cửa hàng và bốn vai trò.
 6. Kiểm thử transaction xuyên suốt: nhận hàng → tăng tồn → bán hàng → giảm tồn → báo cáo.
 
-Trình tự V1–V6 ở trên là đề xuất lịch sử trước khi backend được khởi tạo. Nhánh `codex/be-01-bootstrap` đã dùng V1 chỉ để tạo schema `core`, V2 cho core/IAM và V3 cho catalog theo phạm vi Sprint 1; không đánh số lại V1. Các quan hệ/nguồn chứng từ được chỉnh trong [đề xuất vật lý ngày 27/09/2026](DB-01_PHYSICAL_SCHEMA_DRAFT.md) cần TV2/TV3 review trước khi cập nhật ERD logic và ảnh tương ứng.
+Trình tự V1–V6 ở trên là đề xuất lịch sử trước khi backend được khởi tạo. Nhánh `codex/be-01-bootstrap` đã dùng V1 chỉ để tạo schema `core`, V2 cho core/IAM và V3 cho catalog theo phạm vi Sprint 1; không đánh số lại V1. Nhóm đã đồng ý với [schema vật lý mục tiêu ngày 27/09/2026](DB-01_PHYSICAL_SCHEMA_DRAFT.md) theo thông báo của Project Owner; ba ERD logic và ảnh tương ứng đã được cập nhật cho các thay đổi thuộc MVP. DDL đích mô tả chi tiết các bảng giai đoạn sau chưa vẽ trong ERD MVP.

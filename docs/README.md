@@ -17,7 +17,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 - [`product/analysis/README.md`](product/analysis/README.md): bộ yêu cầu bản nháp và sơ đồ Use Case.
 - [`architecture/database/01-thiet-ke-csdl-khai-niem.md`](architecture/database/01-thiet-ke-csdl-khai-niem.md): thiết kế dữ liệu đề xuất, chưa phải schema vật lý.
-- [`architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md`](architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md): DDL đích 39 bảng và đánh giá 3NF đã được Project Owner duyệt làm hướng thiết kế; 14 bảng Sprint 1 đã tách thành Flyway V2/V3, phần còn lại chờ sprint và review.
+- [`architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md`](architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md): DDL đích 39 bảng và đánh giá 3NF được nhóm đồng ý theo thông báo của Project Owner; 14 bảng Sprint 1 đã tách thành Flyway V2/V3, phần còn lại chờ sprint sở hữu.
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.

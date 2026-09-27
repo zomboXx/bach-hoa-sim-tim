@@ -37,7 +37,7 @@ Thứ tự và nhánh khởi động xem [Sprint 1 kickoff](../SPRINT_1_KICKOFF.
 
 Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: bốn vai trò server là bán hàng, hàng hóa, quản lý và quản trị viên; “người học” là trạng thái của nhân viên. Dòng BE-02 trước đây ghi năm vai trò; [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md) lưu thay đổi và các điểm còn chờ nhóm xác nhận.
 
-[Schema vật lý DB-01](../../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) đã được Project Owner duyệt làm **hướng thiết kế ngày 27/09/2026**: 38 bảng của Word và một bảng phiên đăng nhập, migration theo sprint. Nhánh BE-01 đã có V2/V3 cho 14 bảng Sprint 1 và test PostgreSQL 18 local; TV2/TV3 chưa review, test PostgreSQL 17 trên CI chưa chạy, nên DB-01/BE-01 chưa Done. Các bảng sau MVP trong schema đích chưa trở thành cam kết sprint.
+[Schema vật lý DB-01](../../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) đã được Project Owner duyệt ngày 27/09/2026: 38 bảng của Word và một bảng phiên đăng nhập, migration theo sprint. Cùng ngày, Project Owner thông báo nhóm đã review và hoàn toàn đồng ý với phương án; chưa có liên kết biên bản/PR review để đối chiếu độc lập. Ba ERD logic đã được đồng bộ với các thay đổi thuộc MVP. Nhánh BE-01 đã có V2/V3 cho 14 bảng Sprint 1 và test PostgreSQL 18 local. PostgreSQL 17 CI chưa chạy và code chưa tích hợp qua PR, nên DB-01/BE-01 chưa Done theo Definition of Done. Các bảng sau MVP trong schema đích chưa trở thành cam kết sprint.
 
 ### Chi tiết từ Word cần refinement, chưa cam kết vào Sprint 1
 

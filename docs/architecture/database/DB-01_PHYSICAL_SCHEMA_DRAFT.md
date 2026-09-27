@@ -1,6 +1,6 @@
-# DB-01 — Đề xuất schema vật lý và đánh giá 3NF
+# DB-01 — Schema vật lý mục tiêu và đánh giá 3NF
 
-- Trạng thái: **Project Owner đã duyệt hướng thiết kế ngày 27/09/2026; migration/test Sprint 1 đã chạy local, chờ TV2/TV3 review và PostgreSQL 17 CI trước khi đóng DB-01**.
+- Trạng thái: **Nhóm đã thống nhất phương án DB-01 theo thông báo của Project Owner ngày 27/09/2026; ba ERD logic đã cập nhật, migration/test Sprint 1 đã chạy local; còn chờ PostgreSQL 17 CI và tích hợp PR trước khi đóng Issue**.
 - Ngày: 27/09/2026.
 - Nguồn: Chương 4 bản làm việc `Nhom04_BaoCaoHoanChinh.docx` do Project Owner cung cấp ngày 26/09/2026; [backlog hiện hành](../../project/governance/BACKLOG.md), [quyết định REQ-01](../../project/REQ-01_DECISION_DRAFT.md), [thiết kế logic](01-thiet-ke-csdl-khai-niem.md).
 - Bản DDL đầy đủ: [DB-01_schema_proposal.sql](DB-01_schema_proposal.sql). Kiểm tra: [DB-01_schema_checks.sql](DB-01_schema_checks.sql).
@@ -11,14 +11,14 @@
 
 Không chạy file DDL đích này trên database đang dùng hoặc đặt nguyên file vào Flyway: nó tạo toàn bộ schema từ đầu và bao gồm những bảng chưa đến sprint. Phần Sprint 1 đã được tách thành V2/V3 sau V1; phần còn lại sẽ có migration riêng theo sprint và review. Mỗi migration cần test từ database sạch và test nâng cấp.
 
-Nguyễn Đức Phát duyệt trong cuộc trò chuyện ngày 27/09/2026: giữ bốn vai trò server; dùng 39 bảng làm **schema đích**, chỉ đưa phần của sprint hiện tại vào migration; trước mắt dùng tiền nguyên VND và số lượng `numeric(14,3)` để kiểm thử, ưu tiên sửa theo kết quả nghiệp vụ. Sự duyệt này bao gồm bảng `iam.auth_sessions` đề xuất trong bản đích, nhưng chưa thay thế review kỹ thuật của TV2/TV3 hoặc quyết định lên lịch các chức năng sau MVP.
+Nguyễn Đức Phát duyệt trong cuộc trò chuyện ngày 27/09/2026: giữ bốn vai trò server; dùng 39 bảng làm **schema đích**, chỉ đưa phần của sprint hiện tại vào migration; trước mắt dùng tiền nguyên VND và số lượng `numeric(14,3)` để kiểm thử, ưu tiên sửa theo kết quả nghiệp vụ. Sau đó, Project Owner thông báo **nhóm đã review và hoàn toàn đồng ý** với phương án này. Đây là xác nhận do Project Owner cung cấp trong cuộc trò chuyện; chưa có đường dẫn biên bản hoặc PR review để đối chiếu độc lập. Sự thống nhất bao gồm `iam.auth_sessions` trong schema đích nhưng không tự lên lịch các chức năng sau MVP.
 
 ## Danh mục bảng theo thời điểm dự kiến
 
 | Nhóm | Bảng trong bản đích | Thời điểm đề xuất |
 |---|---|---|
 | `core` (2) | `organizations`, `stores` | Sprint 1, DB-01/BE-01 |
-| `iam` (6) | `users`, `auth_sessions`, `roles`, `permissions`, `user_roles`, `role_permissions` | Sprint 1, BE-02; `auth_sessions` là bổ sung cần review |
+| `iam` (6) | `users`, `auth_sessions`, `roles`, `permissions`, `user_roles`, `role_permissions` | Sprint 1, BE-02; `auth_sessions` là bổ sung đã được nhóm đồng ý trong schema đích |
 | `catalog` (6) | `categories`, `units`, `products`, `product_barcodes`, `suppliers`, `product_prices` | Sprint 1, BE-03; thời điểm triển khai lịch sử giá còn chờ PRC-01 |
 | `inventory` (9) | `goods_receipts`, `goods_receipt_lines`, `product_batches`, `inventory_balances`, `stock_movements`, `stocktakes`, `stocktake_lines`, `stock_disposals`, `stock_disposal_lines` | Nhận/tồn Sprint 2; kiểm kê Sprint 3; xử lý hàng hỏng/hết hạn chưa lên lịch |
 | `sales` (9) | `members`, `promotions`, `promotion_products`, `promotion_batches`, `invoices`, `invoice_lines`, `invoice_line_batches`, `payments`, `loyalty_point_transactions` | Bán/khuyến mãi Sprint 2; thành viên/điểm sau MVP nếu được duyệt |
@@ -49,7 +49,7 @@ Tên, kiểu, `NULL`/`NOT NULL` và giá trị mặc định của từng cột 
 | `catalog.suppliers` | `code`, `name`, `phone`, `email`, `status`: mã, liên hệ và trạng thái nhà cung cấp. | `id` PK; mã duy nhất trong tổ chức không phân biệt hoa/thường. |
 | `catalog.product_prices` | `store_id`, `product_id`, `sale_price`, `effective_from`, `effective_to`: giá bán VND cho sản phẩm/cửa hàng trong khoảng hiệu lực `[from, to)`. | `id` PK; giá không âm; FK ghép cùng tổ chức; các khoảng giá cùng cửa hàng/sản phẩm không chồng lấn. |
 
-`precision_scale` là quy tắc nhập cho đơn vị; V2/V3 chưa có cột số lượng giao dịch. API ở sprint sở hữu giao dịch phải chặn số lượng quá ba chữ số thập phân trước khi ghi vào `numeric(14,3)`. Quy tắc làm tròn tiền khi nhân với lượng lẻ vẫn chờ review; schema chưa tự tính tiền hóa đơn.
+`precision_scale` là quy tắc nhập cho đơn vị; V2/V3 chưa có cột số lượng giao dịch. API ở sprint sở hữu giao dịch phải chặn số lượng quá ba chữ số thập phân trước khi ghi vào `numeric(14,3)`. Nhóm đồng ý dùng kiểu tiền/số lượng hiện hành để triển khai; quy tắc làm tròn nửa VND cần được đặc tả và kiểm thử ở contract bán hàng trước migration giao dịch, vì schema hiện chưa tự tính tiền hóa đơn.
 
 ## Chuẩn hóa và các ngoại lệ có chủ đích
 
@@ -85,8 +85,8 @@ Vì những ngoại lệ trên, không tuyên bố **toàn bộ 39 bảng đạt
 - RBAC: quyền được kiểm tra ở server trên từng API; `training_enabled` không cấp quyền bán/tồn. Thu hồi phiên khi đăng xuất/khóa tài khoản.
 - Giá trị tiền/số lượng: API kiểm tra scale và làm tròn trước khi PostgreSQL ép kiểu, vì `numeric(14,3)` có thể tự làm tròn đầu vào nhiều chữ số thập phân.
 
-## Bằng chứng kiểm tra và điểm chờ review
+## Bằng chứng kiểm tra và việc còn lại
 
 Ngày 27/09/2026, DDL đích đã áp dụng thành công trên database PostgreSQL 18.6 tạm, sạch; catalog cho thấy 39 bảng. `DB-01_schema_checks.sql` chạy trong transaction rollback và kiểm tra bốn vai trò, FK chéo tổ chức, khoảng giá chồng lấn, lý do giao thiếu, sản phẩm lô khớp dòng nhận, không phân bổ lô sai sản phẩm, loại nguồn biến động và ranh giới training. Flyway V1–V3 và seed demo đã chạy trên database PostgreSQL 18.6 sạch và database đã có V1; integration test kiểm tra 14 bảng, bốn vai trò, giá không chồng lấn và health. PostgreSQL 17 là bản đích theo ADR 0002; CI/Testcontainers 17 chưa chạy vì nhánh còn ở máy và Docker/WSL local chưa hoạt động. Kiểm tra hiện có chưa thay thế test nghiệp vụ API của các sprint sau.
 
-Trước khi đóng DB-01, nhóm còn cần review: (1) quy tắc làm tròn tiền khi có lượng lẻ/khuyến mãi; (2) thời điểm triển khai API lịch sử giá; (3) quyền admin theo cửa hàng hay toàn tổ chức; (4) lịch của thành viên, điểm và xử lý hàng; (5) ràng buộc được giao cho DB và service. Nếu review hoặc test yêu cầu đổi kiểu tiền/số lượng, ghi quyết định thay thế có ngày và cập nhật DDL/ERD trước migration bị ảnh hưởng.
+Ba ERD logic và ảnh tương ứng đã cập nhật những quan hệ MVP bị thay đổi bởi schema vật lý: phiên đăng nhập, nguồn biến động tồn có kiểu và phiên đào tạo. DDL là nguồn chi tiết cho các bảng thuộc giai đoạn sau MVP chưa vẽ trên ERD MVP. Trước khi đóng Issue theo Definition of Done của repo, cần có kết quả CI PostgreSQL 17, PR được review/tích hợp và liên kết bằng chứng với Issue. Khi triển khai các API liên quan, contract còn phải đặc tả: (1) làm tròn nửa VND khi có lượng lẻ/khuyến mãi; (2) thời điểm triển khai API lịch sử giá; (3) quyền admin theo cửa hàng hay toàn tổ chức; (4) lịch của thành viên, điểm và xử lý hàng; (5) ràng buộc nào do DB và service đảm nhiệm. Những quyết định API/sprint này không ngầm thay đổi phạm vi DB-01 đã được nhóm đồng ý. Nếu test nghiệp vụ yêu cầu đổi kiểu tiền/số lượng, ghi quyết định thay thế có ngày và cập nhật DDL/ERD trước migration bị ảnh hưởng.
