@@ -6,7 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
-- Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đã kiểm thử local, CI PostgreSQL 17 và tích hợp PR còn chờ.
+- Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17 trên PR #11, còn chờ review code và tích hợp.
 - Làm rõ tiêu chí Sprint 1 theo báo cáo Word hiện hành và ghi riêng hai ứng viên quản trị tài khoản, lịch sử giá chưa được lên lịch.
 - Theo quyết định Project Owner ngày 26/09/2026, Sprint 1 dùng bốn vai trò server; người học là trạng thái của nhân viên.
 - Ghi nhận phương án tiền nguyên VND và số lượng lẻ tối đa ba chữ số thập phân để DB-01 review; giới hạn xử lý hàng nhận sai lệch trong MVP ở việc ghi số lượng cùng lý do trên phiếu.
