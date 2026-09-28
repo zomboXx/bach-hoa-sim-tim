@@ -39,7 +39,7 @@ Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: bố
 
 [Schema vật lý DB-01](../../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) đã được Project Owner duyệt ngày 27/09/2026: 38 bảng của Word và một bảng phiên đăng nhập, migration theo sprint. Cùng ngày, Project Owner thông báo nhóm đã review và hoàn toàn đồng ý với phương án; chưa có liên kết biên bản review thiết kế để đối chiếu độc lập. Ba ERD logic đã được đồng bộ với các thay đổi thuộc MVP. [PR #11](https://github.com/zomboXx/bach-hoa-sim-tim/pull/11) chứa BE-01 và V2/V3 cho 14 bảng Sprint 1, CI PostgreSQL 17 cùng hai job khác đã đạt; PR đã merge vào `main` với commit `cced1a1`, được kiểm tra ngày 28/09/2026. Các bảng sau MVP trong schema đích chưa trở thành cam kết sprint.
 
-BE-02 bắt đầu từ nền PR #11 trên nhánh `codex/be-02-auth`: [Draft session/RBAC](../../../contracts/AUTH_SESSION_REVIEW.md) mô tả request/response, ma trận quyền và điểm tích hợp BE-03/FE-01. Việc triển khai local chưa thay thế review contract/code và CI của PR BE-02.
+BE-02 bắt đầu từ nền PR #11 trên nhánh `codex/be-02-auth`: [Draft session/RBAC](../../../contracts/AUTH_SESSION_REVIEW.md) mô tả request/response, ma trận quyền và điểm tích hợp BE-03/FE-01. [PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14) đã mở; [CI của commit triển khai `4df9338`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/36404651237) đạt cả ba job ngày 28/09/2026, gồm Java 21/PostgreSQL 17. PR còn chờ review contract/code và merge; chưa ghi BE-02 Done.
 
 ### Chi tiết từ Word cần refinement, chưa cam kết vào Sprint 1
 

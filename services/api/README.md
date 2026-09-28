@@ -1,6 +1,6 @@
 # API module (BE-01 / BE-02)
 
-BE-01 is integrated through PR #11. BE-02 is a local implementation proposal on `codex/be-02-auth`, pending contract/code review. Requires Java 21 for the supported runtime; integration tests use Docker or a disposable PostgreSQL database configured as described below.
+BE-01 is integrated through PR #11. BE-02 is proposed in [PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14) on `codex/be-02-auth`, pending contract/code review. Requires Java 21 for the supported runtime; integration tests use Docker or a disposable PostgreSQL database configured as described below.
 
 Flyway V1 creates the `core` schema. V2 adds core/IAM tables and V3 adds catalog tables, following the Project Owner's DB-01 direction. They represent **14 Sprint 1 tables** of the [39-table target draft](../../docs/architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md). V4 adds permission codes/grants without changing V1–V3. Migration of inventory, sales, sync, audit and training tables waits for their owning sprint. This branch serves health and login/session/logout; catalog CRUD belongs to BE-03.
 

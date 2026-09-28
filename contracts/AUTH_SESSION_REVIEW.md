@@ -2,6 +2,7 @@
 
 - Status: **Draft implementation proposal**, 28/09/2026. Owner TV1; reviewer API TV2, web TV3.
 - Issue: [BE-02 #5](https://github.com/zomboXx/bach-hoa-sim-tim/issues/5).
+- Implementation: [PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14), pending contract/code review and merge.
 - Wire contract: [OpenAPI 3.1](auth-session.openapi.yaml).
 - The Project Owner's four-role decision replaces the old three-role wording in Issue #5. Team approval of DB-01 does not imply approval of this API contract.
 
@@ -38,6 +39,8 @@ Provider tests exercise real PostgreSQL session/password/role data through Sprin
 
 Reviewers still need to accept the request/response shape and current permission matrix. Consumer tests and web adapter changes belong to FE-01. Mark this contract Accepted only after that review is recorded.
 
-Local evidence, 28/09/2026: `pwsh -File scripts/verify.ps1` passed repository/link checks, web lint/format/build, 4 Playwright tests and 10 API tests. Flyway ran from an empty PostgreSQL 18.6 database and upgraded the disposable BE-01 V3 database to V4; the upgrade test suite also passed. Local Java 25 compiled with release 21. PostgreSQL 17/Java 21 CI is pending because the local Docker daemon is unavailable; no CI result is claimed for this branch.
+Local evidence, 28/09/2026: `pwsh -File scripts/verify.ps1` passed repository/link checks, web lint/format/build, 4 Playwright tests and 10 API tests. Flyway ran from an empty PostgreSQL 18.6 database and upgraded the disposable BE-01 V3 database to V4; the upgrade test suite also passed. Local Java 25 compiled with release 21; the local Docker daemon is unavailable.
+
+CI evidence, 28/09/2026: [run 36404651237](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/36404651237) for implementation commit `4df9338` passed Repository policy, Web baseline and API bootstrap. The API job ran `./mvnw verify` on Java 21 with a fresh PostgreSQL 17 Testcontainer. Passing CI does not replace provider/consumer review or mark this Draft contract Accepted.
 
 Implementation references: [Spring Security 6.5 password storage](https://docs.spring.io/spring-security/reference/6.5/features/authentication/password-storage.html) and [servlet architecture](https://docs.spring.io/spring-security/reference/6.5/servlet/architecture.html).
