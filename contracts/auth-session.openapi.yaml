@@ -1,0 +1,125 @@
+openapi: 3.1.0
+info:
+  title: Sim Tim authentication and session
+  version: 0.1.0-draft
+  description: >-
+    Draft for BE-02/FE-01 review. Owner API TV1; reviewers TV2 and TV3.
+    Provider code and tests exist on codex/be-02-auth; this contract is not Accepted
+    or integrated until review and merge. Bearer tokens are opaque, not JWTs.
+servers:
+  - url: /
+security:
+  - bearerSession: []
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      security: []
+      description: >-
+        Organization/store codes select the account scope. Username is trimmed and
+        matched without case sensitivity. Password is not trimmed and must fit
+        72 UTF-8 bytes. Returns the raw token once; the DB stores only its SHA-256
+        hash. Default lifetime is 8 hours. Responses are Cache-Control no-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [organizationCode, storeCode, username, password]
+              properties:
+                organizationCode: {type: string, minLength: 1, maxLength: 40}
+                storeCode: {type: string, minLength: 1, maxLength: 40}
+                username: {type: string, minLength: 1, maxLength: 80}
+                password: {type: string, minLength: 1, maxLength: 72, writeOnly: true}
+      responses:
+        '200':
+          description: Authenticated within one organization and store
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, tokenType, expiresAt, session]
+                properties:
+                  accessToken: {type: string, minLength: 43, maxLength: 43}
+                  tokenType: {type: string, const: Bearer}
+                  expiresAt: {type: string, format: date-time}
+                  session: {$ref: '#/components/schemas/Session'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '429':
+          description: Per-instance login limit reached (default 20 requests per minute per peer IP)
+          headers:
+            Retry-After: {schema: {type: string}, description: Seconds to wait}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/v1/auth/session:
+    get:
+      operationId: getSession
+      description: >-
+        Reloads current roles and permissions from the DB. Locked/disabled users,
+        inactive organizations/stores, expired/revoked sessions and users without
+        a role in this store are rejected. Does not return a token or password hash.
+      responses:
+        '200':
+          description: Current session identity and scope, Cache-Control no-store
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Session'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      description: Revokes only the presented session in the DB; future use returns 401.
+      responses:
+        '204': {description: Session revoked}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  securitySchemes:
+    bearerSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  schemas:
+    Session:
+      type: object
+      required: [userId, organizationId, storeId, fullName, trainingEnabled, roles, permissions]
+      properties:
+        userId: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        storeId: {type: string, format: uuid}
+        fullName: {type: string}
+        trainingEnabled: {type: boolean, description: Employee training state; never an operational role}
+        roles:
+          type: array
+          uniqueItems: true
+          items: {type: string, enum: [SALES, STOCK, MANAGER, ADMIN]}
+        permissions:
+          type: array
+          uniqueItems: true
+          items: {type: string}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string, enum: [INVALID_REQUEST, INVALID_CREDENTIALS, UNAUTHENTICATED, FORBIDDEN, RATE_LIMITED]}
+        message: {type: string}
+  responses:
+    InvalidRequest:
+      description: Invalid login payload
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unauthenticated:
+      description: Missing/invalid session or generic login failure without revealing account existence
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: Valid session lacks permission, or scope headers do not match the session
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
