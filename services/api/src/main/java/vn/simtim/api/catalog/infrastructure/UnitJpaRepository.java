@@ -13,4 +13,10 @@ interface UnitJpaRepository extends JpaRepository<UnitJpa, UUID> {
     @Query("select count(u) > 0 from UnitJpa u " +
            "where u.organizationId = :orgId and lower(u.code) = lower(:code)")
     boolean existsByCodeInsensitive(@Param("orgId") UUID orgId, @Param("code") String code);
+
+    @Query("select count(u) > 0 from UnitJpa u " +
+           "where u.organizationId = :orgId and lower(u.code) = lower(:code) and u.id <> :excludeId")
+    boolean existsByCodeInsensitiveExcluding(@Param("orgId") UUID orgId, @Param("code") String code, @Param("excludeId") UUID excludeId);
+
+    void deleteByOrganizationIdAndId(UUID organizationId, UUID id);
 }

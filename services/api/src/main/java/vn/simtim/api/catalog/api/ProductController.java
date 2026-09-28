@@ -67,4 +67,28 @@ public class ProductController {
         service.delete(orgId, id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/barcodes")
+    public List<ProductBarcodeResponse> listBarcodes(@RequestHeader("X-Organization-Id") UUID orgId,
+                                                     @PathVariable UUID id) {
+        return service.listBarcodes(orgId, id).stream().map(ProductBarcodeResponse::from).toList();
+    }
+
+    @PostMapping("/{id}/barcodes")
+    public ResponseEntity<ProductBarcodeResponse> addBarcode(@RequestHeader("X-Organization-Id") UUID orgId,
+                                                             @PathVariable UUID id,
+                                                             @Valid @RequestBody ProductBarcodeRequest req) {
+        var created = service.addBarcode(orgId, id, req.barcode(), req.isPrimary());
+        return ResponseEntity
+                .created(URI.create("/api/v1/products/" + id + "/barcodes/" + created.id()))
+                .body(ProductBarcodeResponse.from(created));
+    }
+
+    @DeleteMapping("/{id}/barcodes/{barcodeId}")
+    public ResponseEntity<Void> deleteBarcode(@RequestHeader("X-Organization-Id") UUID orgId,
+                                              @PathVariable UUID id,
+                                              @PathVariable UUID barcodeId) {
+        service.deleteBarcode(orgId, id, barcodeId);
+        return ResponseEntity.noContent().build();
+    }
 }

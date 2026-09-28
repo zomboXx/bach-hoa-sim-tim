@@ -14,13 +14,16 @@ public class ProductService {
     private final ProductRepository repo;
     private final CategoryRepository categoryRepo;
     private final UnitRepository unitRepo;
+    private final ProductBarcodeRepository barcodeRepo;
 
     public ProductService(ProductRepository repo,
                           CategoryRepository categoryRepo,
-                          UnitRepository unitRepo) {
+                          UnitRepository unitRepo,
+                          ProductBarcodeRepository barcodeRepo) {
         this.repo = repo;
         this.categoryRepo = categoryRepo;
         this.unitRepo = unitRepo;
+        this.barcodeRepo = barcodeRepo;
     }
 
     @Transactional(readOnly = true)
@@ -83,5 +86,32 @@ public class ProductService {
         repo.findById(organizationId, id)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + id));
         repo.deleteById(organizationId, id);
+    }
+
+
+
+    public ProductBarcode addBarcode(UUID organizationId, UUID productId, String barcodeStr, boolean isPrimary) {
+        repo.findById(organizationId, productId)
+                .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
+        if (barcodeRepo.existsByBarcode(organizationId, barcodeStr)) {
+            throw new CatalogConflictException("Mã vạch đã tồn tại: " + barcodeStr);
+        }
+        var barcode = new ProductBarcode(UUID.randomUUID(), organizationId, productId, barcodeStr, isPrimary);
+        return barcodeRepo.save(barcode);
+    }
+
+    public List<ProductBarcode> listBarcodes(UUID organizationId, UUID productId) {
+        repo.findById(organizationId, productId)
+                .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
+        return barcodeRepo.findByProductId(organizationId, productId);
+    }
+
+    public void deleteBarcode(UUID organizationId, UUID productId, UUID barcodeId) {
+        var barcode = barcodeRepo.findById(organizationId, barcodeId)
+                .orElseThrow(() -> new CatalogNotFoundException("Mã vạch không tồn tại: " + barcodeId));
+        if (!barcode.productId().equals(productId)) {
+            throw new CatalogConflictException("Mã vạch không thuộc sản phẩm này");
+        }
+        barcodeRepo.deleteById(organizationId, barcodeId);
     }
 }

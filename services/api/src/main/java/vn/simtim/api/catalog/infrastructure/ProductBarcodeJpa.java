@@ -23,4 +23,16 @@ class ProductBarcodeJpa {
     boolean isPrimary;
 
     ProductBarcodeJpa() {}
+
+    ProductBarcodeJpa(vn.simtim.api.catalog.domain.ProductBarcode domain) {
+        this.id = domain.id();
+        this.organizationId = domain.organizationId();
+        this.productId = domain.productId();
+        this.barcode = domain.barcode();
+        this.isPrimary = domain.isPrimary();
+    }
+
+    vn.simtim.api.catalog.domain.ProductBarcode toDomain() {
+        return new vn.simtim.api.catalog.domain.ProductBarcode(id, organizationId, productId, barcode, isPrimary);
+    }
 }

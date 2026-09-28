@@ -32,7 +32,17 @@ class UnitRepositoryAdapter implements UnitRepository {
     }
 
     @Override
+    public boolean existsByCodeExcluding(UUID organizationId, String code, UUID excludeId) {
+        return jpa.existsByCodeInsensitiveExcluding(organizationId, code, excludeId);
+    }
+
+    @Override
     public Unit save(Unit unit) {
         return jpa.save(new UnitJpa(unit)).toDomain();
+    }
+
+    @Override
+    public void deleteById(UUID organizationId, UUID id) {
+        jpa.deleteByOrganizationIdAndId(organizationId, id);
     }
 }
