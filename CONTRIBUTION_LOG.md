@@ -22,6 +22,20 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-09-28 16:18:06
+
+FE-01: tách AuthAdapter demo/API, bổ sung E2E API mode và sửa lỗi review.
+Bổ sung `ApiAuthAdapter` gọi `POST /api/auth/login` và `GET /api/me`; `DemoAuthAdapter` giữ nguyên hành vi offline. `onMounted` chỉ khôi phục phiên đúng mode, ngăn fallback tài khoản demo khi chạy API build. Form đăng nhập khóa submit và hiển thị trạng thái chờ khi `busy`. Thêm `playwright.api.config.ts` build với `VITE_USE_API=true` và 6 E2E test bao gồm reload, loading/guard submit trùng, HTTP 401/403, lỗi mạng và role không hợp lệ. Sửa strict-mode locator trong test guard submit. Verify gate PASS: policy/lint/format/typecheck/build/8 demo E2E/6 API E2E.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/package.json`: +3 -1
+- `apps/web/playwright.api.config.ts`: +18 -0
+- `apps/web/playwright.config.ts`: +1 -0
+- `apps/web/src/App.vue`: +21 -4
+- `apps/web/src/adapter.ts`: +49 -2
+- `apps/web/tests/adapter.spec.ts`: +1 -49
+- `apps/web/tests/api-auth.spec.ts`: +113 -0
+---
 Nguyễn Đức Phát - 2026-09-24 00:29:26
 
 Sửa CI governance sau lần chạy đầu trên Pull Request: checkout đủ parent commit để kiểm tra đúng diff, nâng GitHub Actions khỏi runtime Node.js đã ngừng hỗ trợ và loại bỏ lượt chạy trùng trên feature branch.
