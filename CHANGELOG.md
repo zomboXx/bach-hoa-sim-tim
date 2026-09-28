@@ -16,6 +16,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Bổ sung hồ sơ QA-01 gồm test plan, ma trận quyền, ma trận requirement–contract–test và checkpoint report; tách bằng chứng owner báo cáo khỏi kết quả QA trực tiếp xác nhận.
 - Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
 - Chuẩn bị DDL đích 38 bảng từ báo cáo Word và một bảng phiên đăng nhập đề xuất, kèm đánh giá 3NF và kiểm tra ràng buộc cho DB-01; V2/V3 chỉ đưa 14 bảng Sprint 1 vào Flyway.
 - Thêm migration core/IAM/catalog, seed demo chỉ theo profile và test ràng buộc vai trò/giá từ database sạch.

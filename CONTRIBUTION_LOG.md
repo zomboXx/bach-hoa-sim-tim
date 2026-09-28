@@ -22,6 +22,21 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Lê Văn Chiến - 2026-09-28 17:26:58
+
+Nhận trách nhiệm cho đợt chuẩn bị QA-01: hoàn thiện test plan, ma trận quyền, ma trận requirement–contract–test và checkpoint report; phân biệt bằng chứng BE-02 do owner báo cáo với kết quả QA trực tiếp xác nhận, đồng thời giữ BE-03 ở trạng thái blocked đến khi có API thật.
+
+- `docs/testing/QA-01-authorize.md`: +73 -0
+- `docs/testing/QA-01-test-plan.md`: +227 -0
+- `docs/testing/QA-01-test-report.md`: +90 -0
+- `docs/testing/QA-01-traceability.md`: +90 -0
+- `docs/testing/README.md`: +14 -0
+- `docs/README.md`: +4 -0
+- `CHANGELOG.md`: +1 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
+---
+
+---
 Nguyễn Đức Phát - 2026-09-24 00:29:26
 
 Sửa CI governance sau lần chạy đầu trên Pull Request: checkout đủ parent commit để kiểm tra đúng diff, nâng GitHub Actions khỏi runtime Node.js đã ngừng hỗ trợ và loại bỏ lượt chạy trùng trên feature branch.
