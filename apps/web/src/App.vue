@@ -5,7 +5,6 @@ import {
   accounts,
   available,
   checkout,
-  login,
   permissions,
   persist,
   price,
@@ -17,6 +16,7 @@ import {
   type User,
   type Count,
 } from "./api";
+import { authAdapter } from "./adapter";
 const state = ref<State>();
 const user = ref<User>();
 const route = ref("dashboard");
@@ -95,15 +95,18 @@ function go(id: string) {
   error.value = "";
   window.scrollTo(0, 0);
 }
-function signIn() {
+async function signIn() {
   try {
     if (!connected.value) throw Error("Cần kết nối để bắt đầu phiên đăng nhập.");
-    user.value = login(credentials.id, credentials.password);
+    busy.value = true;
+    user.value = await authAdapter.login(credentials.id, credentials.password);
     sessionStorage.setItem("simtim-v2-user", user.value.id);
     go("dashboard");
     error.value = "";
   } catch (e) {
     error.value = (e as Error).message;
+  } finally {
+    busy.value = false;
   }
 }
 function signOut() {
