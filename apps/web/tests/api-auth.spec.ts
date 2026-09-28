@@ -70,7 +70,7 @@ test("API login shows loading, blocks duplicate submission, and changes state on
   const submit = page.getByRole("button", { name: "Đang đăng nhập…" });
   await expect(submit).toBeDisabled();
   await expect(page.locator("nav")).toHaveCount(0);
-  await page.locator("form").evaluate((form) => {
+  await page.locator(".login-form form").evaluate((form) => {
     form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   });
   expect(loginRequests).toBe(1);
