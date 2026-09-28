@@ -3,6 +3,7 @@ INSERT INTO core.organizations (id, code, name, status)
 VALUES ('10000000-0000-0000-0000-000000000001', 'SIMTIM', 'Bách Hóa Sim Tím', 'ACTIVE')
 ON CONFLICT DO NOTHING;
 
+
 INSERT INTO core.stores (id, organization_id, code, name, status)
 VALUES ('10000000-0000-0000-0000-000000000002',
         '10000000-0000-0000-0000-000000000001', 'MAIN', 'Cửa hàng mẫu', 'ACTIVE')
@@ -54,4 +55,11 @@ INSERT INTO catalog.product_prices
     ('10000000-0000-0000-0000-000000000072', '10000000-0000-0000-0000-000000000001',
      '10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000042',
      40000, '2020-01-01T00:00:00Z')
+ON CONFLICT DO NOTHING;
+
+-- Repeatable seed runs after V4, including on an empty demo database.
+INSERT INTO iam.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
+WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
+  AND (p.code='catalog.read' OR (p.code='catalog.write' AND r.code IN ('STOCK','MANAGER','ADMIN')))
 ON CONFLICT DO NOTHING;

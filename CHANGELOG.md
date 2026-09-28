@@ -6,7 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
-- Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17 trên PR #11, còn chờ review code và tích hợp.
+- Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17, đã tích hợp qua PR #11.
 - Làm rõ tiêu chí Sprint 1 theo báo cáo Word hiện hành và ghi riêng hai ứng viên quản trị tài khoản, lịch sử giá chưa được lên lịch.
 - Theo quyết định Project Owner ngày 26/09/2026, Sprint 1 dùng bốn vai trò server; người học là trạng thái của nhân viên.
 - Ghi nhận phương án tiền nguyên VND và số lượng lẻ tối đa ba chữ số thập phân để DB-01 review; giới hạn xử lý hàng nhận sai lệch trong MVP ở việc ghi số lượng cùng lý do trên phiếu.
@@ -15,6 +15,9 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 - Giữ `AGENTS.md` làm hướng dẫn portable; ngừng track cấu hình `.agents`, `.codex` và bản Word đang soạn, đồng thời chặn chúng bằng repository policy trong CI.
 
 ### Added
+
+- Triển khai BE-02 trên nhánh review: login/session/logout với Bearer session thu hồi được, BCrypt, bốn vai trò và permission catalog/read-write; chặn giả mạo phạm vi và kiểm tra lại quyền/tài khoản mỗi request.
+- Thêm Draft OpenAPI session/RBAC, giới hạn yêu cầu đăng nhập và tài khoản demo chỉ khi người chạy cung cấp mật khẩu qua môi trường; không có mật khẩu mặc định.
 
 - Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
 - Chuẩn bị DDL đích 38 bảng từ báo cáo Word và một bảng phiên đăng nhập đề xuất, kèm đánh giá 3NF và kiểm tra ràng buộc cho DB-01; V2/V3 chỉ đưa 14 bảng Sprint 1 vào Flyway.
