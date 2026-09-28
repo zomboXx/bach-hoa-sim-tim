@@ -27,13 +27,26 @@ Thứ tự và nhánh khởi động xem [Sprint 1 kickoff](../SPRINT_1_KICKOFF.
 
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| REQ-01 | Xác nhận phạm vi P1 và các mục `Cần khảo sát` | P0 | TV1 | Cả nhóm | GOV-01 | Có biên bản quyết định và cập nhật SRS |
-| DB-01 | Chốt ERD MVP và data dictionary | P0 | TV2 | TV1, TV3 | REQ-01 | Khóa, quan hệ, trạng thái và ràng buộc được mô tả |
-| BE-01 | Khởi tạo backend, migration và CSDL demo | P0 | TV2 | TV1 | DB-01 | Môi trường sạch chạy migration và health check |
-| BE-02 | Đăng nhập và RBAC phía server | P0 | TV1 | TV2 | BE-01 | Năm vai trò chỉ gọi được API đúng quyền; mật khẩu được hash |
-| BE-03 | API danh mục, sản phẩm và nhà cung cấp | P0 | TV2 | TV3 | BE-01 | CRUD cần thiết, tìm mã vạch và chống trùng |
-| FE-01 | Tách adapter demo/API và kết nối đăng nhập | P0 | TV3 | TV1 | BE-02 | Có thể đổi adapter bằng cấu hình; lỗi mạng được hiển thị |
-| QA-01 | Test API nền tảng và ma trận truy vết | P1 | TV4 | TV1 | BE-02, BE-03 | Test quyền và validation; requirement liên kết test |
+| REQ-01 | Xác nhận phạm vi P1 và các mục `Cần khảo sát` | P0 | TV1 | Cả nhóm | GOV-01 | Đối chiếu pain point, Use Case và từng yêu cầu với phạm vi MVP; biên bản ghi mục chấp nhận/hoãn/loại, nguồn khảo sát và người xác nhận; cập nhật SRS theo quyết định |
+| DB-01 | Chốt ERD MVP và data dictionary | P0 | TV2 | TV1, TV3 | REQ-01 | Mô tả khóa, quan hệ, trạng thái, phạm vi tổ chức/cửa hàng và ràng buộc cho tài khoản/quyền, danh mục/giá, nhà cung cấp, nhận hàng, tồn, bán và kiểm kê; tách bảng MVP khỏi thiết kế tương lai; review kiểu tiền, số lượng và quy tắc làm tròn trước migration nghiệp vụ |
+| BE-01 | Khởi tạo backend, migration và CSDL demo | P0 | TV2 | TV1 | DB-01 | Từ môi trường sạch chạy được Java/Spring Boot, PostgreSQL và Flyway; migration của schema đã chốt tạo dữ liệu demo tối thiểu; health check và integration test qua; Maven Wrapper, Compose và gate CI được commit cùng module |
+| BE-02 | Đăng nhập và RBAC phía server | P0 | TV1 | TV2 | BE-01 | Mật khẩu được hash; đăng nhập sai và truy cập thiếu quyền bị từ chối; bốn vai trò bán hàng/hàng hóa/quản lý/quản trị viên chỉ dùng API được cấp; người học là trạng thái nhân viên, không phải vai trò server thứ năm |
+| BE-03 | API danh mục, sản phẩm và nhà cung cấp | P0 | TV2 | TV3 | BE-01 | CRUD theo quyền và trạng thái; tìm sản phẩm theo mã, mã vạch hoặc tên; từ chối mã trùng và dữ liệu không hợp lệ bằng lỗi có cấu trúc; contract giá được review trước API thay đổi giá |
+| FE-01 | Tách adapter demo/API và kết nối đăng nhập | P0 | TV3 | TV1 | BE-02 | Đổi demo/API bằng cấu hình; PWA đăng nhập qua API, hiển thị trạng thái chờ/lỗi mạng và điều hướng theo quyền server; demo adapter vẫn qua regression |
+| QA-01 | Test API nền tảng và ma trận truy vết | P1 | TV4 | TV1 | BE-02, BE-03 | Test đăng nhập sai, truy cập sai quyền, mã trùng và validation; ma trận nối requirement → contract → test; chỉ ghi kết quả đạt khi API thật được chạy kiểm thử |
+
+Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: bốn vai trò server là bán hàng, hàng hóa, quản lý và quản trị viên; “người học” là trạng thái của nhân viên. Dòng BE-02 trước đây ghi năm vai trò; [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md) lưu thay đổi và các điểm còn chờ nhóm xác nhận.
+
+[Schema vật lý DB-01](../../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) đã được Project Owner duyệt ngày 27/09/2026: 38 bảng của Word và một bảng phiên đăng nhập, migration theo sprint. Cùng ngày, Project Owner thông báo nhóm đã review và hoàn toàn đồng ý với phương án; chưa có liên kết biên bản review thiết kế để đối chiếu độc lập. Ba ERD logic đã được đồng bộ với các thay đổi thuộc MVP. [PR #11](https://github.com/zomboXx/bach-hoa-sim-tim/pull/11) chứa BE-01 và V2/V3 cho 14 bảng Sprint 1; [CI PostgreSQL 17](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/36330835039) cùng hai job khác đã đạt. Code chưa được reviewer duyệt và merge, nên DB-01/BE-01 chưa Done theo Definition of Done. Các bảng sau MVP trong schema đích chưa trở thành cam kết sprint.
+
+### Chi tiết từ Word cần refinement, chưa cam kết vào Sprint 1
+
+| Ứng viên | Nội dung cần ghi nhận | Phụ thuộc và quyết định còn thiếu |
+|---|---|---|
+| ACC-01 | Quản trị viên tạo, khóa/mở khóa tài khoản và gán vai trò; có đường cấp và thu hồi tài khoản cá nhân. | Sau BE-02; cần nhóm chốt sprint, owner/reviewer và quyền quản trị cụ thể. |
+| PRC-01 | Giá bán có thời điểm hiệu lực và lịch sử; hóa đơn giữ giá tại lúc bán. | DB-01 và BE-03 phải chốt một giá hiện hành hay nhiều phiên bản giá trong MVP trước khi lên lịch API. |
+
+Hai mã trên là nhãn theo dõi đề xuất, chưa là Issue đã nhận làm hoặc tiêu chí đóng Sprint 1. Các mục Word thuộc Sprint 2 trở đi được đối chiếu theo từng sprint trong [bản nháp phạm vi Word](../SPRINT_1_WORD_BACKLOG_DRAFT.md); chưa mở rộng cam kết của sprint này.
 
 ## Sprint 2 — Luồng nghiệp vụ cốt lõi
 
@@ -41,12 +54,14 @@ Mục tiêu: hoàn thành luồng tạo sản phẩm → nhận lô → bán →
 
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| INV-01 | Transaction nhận hàng | P0 | TV2 | TV1 | BE-03 | Tạo phiếu/lô, tăng tồn và biến động nguyên tử |
+| INV-01 | Transaction nhận hàng | P0 | TV2 | TV1 | BE-03 | Ghi số giao/nhận/từ chối và lý do trên phiếu; tạo lô, tăng tồn và biến động nguyên tử |
 | INV-02 | Tra cứu tồn, lô, hạn và biến động | P0 | TV2 | TV4 | INV-01 | Lọc còn hạn/cận hạn/hết hạn; truy được chứng từ nguồn |
 | SAL-01 | Transaction bán hàng và hóa đơn | P0 | TV3 | TV2 | INV-02 | Server tính giá, chọn lô còn hạn, lưu hóa đơn và giảm tồn nguyên tử |
 | PRO-01B | Khuyến mãi cơ bản | P1 | TV3 | TV1 | SAL-01 | Chỉ áp dụng đúng thời gian/phạm vi; hóa đơn giữ giá đã bán |
 | REP-01 | Báo cáo doanh thu và tồn | P0 | TV3 | TV2 | SAL-01 | Báo cáo phản ánh đúng giao dịch vừa thực hiện |
 | QA-02 | E2E luồng nhận–bán | P0 | TV4 | TV1 | REP-01 | Chạy tự động trên dữ liệu sạch và kiểm tra rollback lỗi |
+
+Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: với hàng giao thiếu, thừa hoặc hư hỏng, MVP ghi số lượng và lý do trên phiếu nhận; chưa có quy trình điều chỉnh riêng. Tiêu chí INV-01 trước đây chỉ ghi tạo phiếu/lô, tăng tồn và biến động nguyên tử; xem [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md).
 
 ## Sprint 3 — Hiện trường và kiểm kê
 

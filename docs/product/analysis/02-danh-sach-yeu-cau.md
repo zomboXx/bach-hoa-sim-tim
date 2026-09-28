@@ -2,6 +2,8 @@
 
 Phiên bản: `0.1-draft`. Tài liệu được lập từ mô hình hiện trạng dự kiến; các mục `Cần khảo sát` phải được xác nhận trước khi đóng phạm vi.
 
+Các quyết định Project Owner ngày 26/09/2026 về bốn vai trò server, tiền số nguyên VND và phạm vi ghi hàng nhận sai lệch đã được ghi trong [bản đối chiếu REQ-01](../../project/REQ-01_DECISION_DRAFT.md). Bảng trạng thái dưới đây vẫn là bản nháp; chỉ đổi trạng thái từng yêu cầu sau khi có biên bản xác nhận của nhóm theo Issue REQ-01.
+
 ## 2.1. Mục tiêu hệ thống
 
 | ID | Mục tiêu |
@@ -226,4 +228,3 @@ Một kịch bản đào tạo tái sử dụng luồng nhận hàng hoặc xử
 | PP-06 | OBJ-04 | FR-AUTH-01..04, FR-AUD-01..02 |
 | PP-07 | OBJ-02 | FR-PRO-01..03, FR-SAL-05 |
 | PP-08, PP-09 | OBJ-06 | FR-TRN-01..08, NFR-TRN-01 |
-

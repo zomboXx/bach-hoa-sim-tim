@@ -85,7 +85,7 @@ entity "catalog.product_prices" as product_prices {
   * organization_id : uuid <<FK>>
   * store_id : uuid <<FK>>
   * product_id : uuid <<FK>>
-  * sale_price : numeric(14,2)
+  * sale_price : bigint
   * effective_from : timestamptz
   effective_to : timestamptz
 }
@@ -112,7 +112,7 @@ entity "inventory.goods_receipt_lines" as receipt_lines {
   * delivered_quantity : numeric(14,3)
   * accepted_quantity : numeric(14,3)
   * rejected_quantity : numeric(14,3)
-  * unit_cost : numeric(14,2)
+  * unit_cost : bigint
   supplier_lot_number : varchar
   expiry_date : date
   rejection_reason : varchar
@@ -150,8 +150,10 @@ entity "inventory.stock_movements" as stockMovement {
   * product_batch_id : uuid <<FK>>
   * movement_type : varchar
   * quantity_delta : numeric(14,3)
-  * source_type : varchar
-  * source_id : uuid
+  receipt_line_id : uuid <<FK>>
+  invoice_line_id : uuid <<FK>>
+  stocktake_line_id : uuid <<FK>>
+  disposal_line_id : uuid <<FK, later sprint>>
   reversed_movement_id : uuid <<FK>>
   * occurred_at : timestamptz
   * actor_user_id : uuid <<FK>>
@@ -214,10 +216,10 @@ entity "sales.invoices" as invoices {
   * status : varchar
   * sold_by : uuid <<FK>>
   * sold_at : timestamptz
-  * subtotal : numeric(14,2)
-  * discount_total : numeric(14,2)
-  * grand_total : numeric(14,2)
-  * paid_total : numeric(14,2)
+  * subtotal : bigint
+  * discount_total : bigint
+  * grand_total : bigint
+  * paid_total : bigint
   voided_by : uuid <<FK>>
   void_reason : varchar
   * version : bigint
@@ -231,9 +233,9 @@ entity "sales.invoice_lines" as invoice_lines {
   * sku_snapshot : varchar
   * product_name_snapshot : varchar
   * quantity : numeric(14,3)
-  * unit_price : numeric(14,2)
-  * discount_amount : numeric(14,2)
-  * line_total : numeric(14,2)
+  * unit_price : bigint
+  * discount_amount : bigint
+  * line_total : bigint
   applied_promotion_id : uuid <<FK>>
 }
 
@@ -249,9 +251,9 @@ entity "sales.payments" as payments {
   * invoice_id : uuid <<FK>>
   * method : varchar
   * status : varchar
-  * amount : numeric(14,2)
+  * amount : bigint
   reference_code : varchar
-  * paid_at : timestamptz
+  paid_at : timestamptz
 }
 
 organizations ||--o{ stores
@@ -274,6 +276,9 @@ products ||--o{ batches
 stores ||--o{ batches
 batches ||--|| balances
 batches ||--o{ stockMovement
+receipt_lines "0..1" -- "0..1" stockMovement : receipt source
+invoice_line_batches "0..1" -- "0..1" stockMovement : sale source
+stocktake_lines "0..1" -- "0..1" stockMovement : count source
 stockMovement "0..1" -- "0..*" stockMovement : reverses
 stores ||--o{ stocktakes
 stocktakes ||--|{ stocktake_lines
@@ -290,5 +295,10 @@ promotions "0..1" -- "0..*" invoice_lines
 invoice_lines ||--|{ invoice_line_batches
 batches ||--o{ invoice_line_batches
 invoices ||--o{ payments
+
+note bottom of stockMovement
+  Exactly one typed source is set per movement.
+  Disposal lines are scheduled separately from MVP.
+end note
 
 @enduml

@@ -29,14 +29,28 @@ entity "iam.users" as users {
   * password_hash : varchar
   * full_name : varchar
   * status : varchar
+  * training_enabled : boolean
   * version : bigint
+}
+
+entity "iam.auth_sessions" as auth_sessions {
+  * id : uuid <<PK>>
+  --
+  * organization_id : uuid <<FK>>
+  * user_id : uuid <<FK>>
+  store_id : uuid <<FK>>
+  * token_hash : bytea <<UQ>>
+  * issued_at : timestamptz
+  * expires_at : timestamptz
+  revoked_at : timestamptz
+  last_seen_at : timestamptz
 }
 
 entity "iam.roles" as roles {
   * id : uuid <<PK>>
   --
   * organization_id : uuid <<FK>>
-  * code : varchar
+  * code : varchar <<SALES, STOCK, MANAGER, ADMIN>>
   * name : varchar
 }
 
@@ -48,6 +62,7 @@ entity "iam.permissions" as permissions {
 }
 
 entity "iam.user_roles" as user_roles {
+  * organization_id : uuid <<FK>>
   * user_id : uuid <<PK, FK>>
   * role_id : uuid <<PK, FK>>
   * store_id : uuid <<PK, FK>>
@@ -99,6 +114,8 @@ entity "audit.audit_logs" as auditLog {
 organizations ||--o{ stores
 organizations ||--o{ users
 organizations ||--o{ roles
+users ||--o{ auth_sessions
+stores "0..1" -- "0..*" auth_sessions
 users ||--o{ user_roles
 roles ||--o{ user_roles
 stores ||--o{ user_roles
