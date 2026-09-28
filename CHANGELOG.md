@@ -16,6 +16,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- Khi bật API adapter, khôi phục phiên qua `GET /api/me` và chỉ dùng người dùng do server trả về; không còn lấy lại vai trò từ tài khoản demo sau reload. Phản hồi người dùng/role không được PWA hỗ trợ bị từ chối.
+- Form đăng nhập khóa submit, hiển thị trạng thái đang đăng nhập và giữ nguyên màn hình đăng nhập khi API trả lỗi. Bổ sung E2E chạy bản production với `VITE_USE_API=true` cho đăng nhập, reload, HTTP 401/403, lỗi mạng và phản hồi role không hợp lệ.
 - Cho CI tải parent commit trước khi kiểm tra whitespace, tránh quét nhầm toàn bộ baseline trong shallow checkout; đồng thời chỉ chạy `push` gate trên `main` để không lặp check của Pull Request.
 
 ## 0.2.1 — 2026-09-21

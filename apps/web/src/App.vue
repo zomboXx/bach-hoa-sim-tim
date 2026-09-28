@@ -28,6 +28,7 @@ const menu = ref(false);
 const online = ref(navigator.onLine);
 const simulateOffline = ref(false);
 const connected = computed(() => online.value && !simulateOffline.value);
+const isDemoMode = authAdapter.mode === "demo";
 const credentials = reactive({ id: "NV001", password: "demo123" });
 const roleNames = {
   sales: "Nhân viên bán hàng",
@@ -96,11 +97,13 @@ function go(id: string) {
   window.scrollTo(0, 0);
 }
 async function signIn() {
+  if (busy.value) return;
   try {
     if (!connected.value) throw Error("Cần kết nối để bắt đầu phiên đăng nhập.");
     busy.value = true;
     user.value = await authAdapter.login(credentials.id, credentials.password);
     sessionStorage.setItem("simtim-v2-user", user.value.id);
+    sessionStorage.setItem("simtim-v2-auth-mode", authAdapter.mode);
     go("dashboard");
     error.value = "";
   } catch (e) {
@@ -112,6 +115,7 @@ async function signIn() {
 function signOut() {
   user.value = undefined;
   sessionStorage.removeItem("simtim-v2-user");
+  sessionStorage.removeItem("simtim-v2-auth-mode");
   cart.value = [];
   error.value = "";
 }
@@ -158,12 +162,23 @@ function toggleNetwork() {
 onMounted(async () => {
   try {
     state.value = await readState();
-    const saved = sessionStorage.getItem("simtim-v2-user");
-    user.value = accounts.find((a) => a.id === saved);
     if (connected.value) void sync();
   } catch {
     error.value =
       "Không mở được dữ liệu cục bộ. Hãy cho phép lưu trữ trong trình duyệt và tải lại.";
+  }
+  if (state.value && sessionStorage.getItem("simtim-v2-auth-mode") === authAdapter.mode) {
+    try {
+      user.value = await authAdapter.restoreSession();
+      if (!user.value) {
+        sessionStorage.removeItem("simtim-v2-user");
+        sessionStorage.removeItem("simtim-v2-auth-mode");
+      }
+    } catch (e) {
+      sessionStorage.removeItem("simtim-v2-user");
+      sessionStorage.removeItem("simtim-v2-auth-mode");
+      error.value = (e as Error).message;
+    }
   }
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
@@ -445,9 +460,11 @@ const statuses = {
               required
           /></label>
           <p v-if="error" role="alert" class="error">{{ error }}</p>
-          <button class="primary wide">Vào không gian làm việc <span>→</span></button>
+          <button class="primary wide" :disabled="busy">
+            {{ busy ? "Đang đăng nhập…" : "Vào không gian làm việc" }} <span>→</span>
+          </button>
         </form>
-        <div class="demo-accounts">
+        <div v-if="isDemoMode" class="demo-accounts">
           <small>CHỌN TÀI KHOẢN TRẢI NGHIỆM</small
           ><button
             v-for="a in accounts"
