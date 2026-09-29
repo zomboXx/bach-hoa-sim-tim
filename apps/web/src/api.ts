@@ -159,6 +159,7 @@ const seed = (): State => ({
   receipts: [],
 });
 const dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
+  if (typeof indexedDB === "undefined") return; // For node environment (e.g. testing)
   const req = indexedDB.open("simtim-v2", 1);
   req.onupgradeneeded = () => req.result.createObjectStore("state");
   req.onsuccess = () => resolve(req.result);

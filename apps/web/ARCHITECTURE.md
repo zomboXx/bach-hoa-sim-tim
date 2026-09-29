@@ -20,7 +20,13 @@ PWA → adapter TypeScript → IndexedDB trên một thiết bị. Các thao tá
 
 Adapter hiện là mô phỏng giao diện, không thể làm nguồn dữ liệu trung tâm hoặc lớp bảo mật. Trong triển khai thật, giá, tồn, quyền, FEFO, tổng tiền và giao dịch phải do backend quyết định. Giao diện không được gửi giá/tổng tiền để server tin dùng. Validation hiện nằm cả ở handler giao diện và adapter; cần di chuyển các quy tắc sang service backend khi thực hiện, giữ validation giao diện để phản hồi nhanh.
 
-## API contract bản nháp (chưa có endpoint chạy)
+## Căn chỉnh auth FE-01 đang review
+
+Ngày 2026-09-28: FE-01 sử dụng đề xuất auth/session của [BE-02 PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14): `/api/v1/auth/login`, `/api/v1/auth/session`, `/api/v1/auth/logout`, scope doanh nghiệp/cửa hàng và token Bearer opaque giữ trong bộ nhớ. Reload API mode cần đăng nhập lại. Permissions và `trainingEnabled` đến từ server; các vai trò demo không quyết định quyền API. Đây là căn chỉnh consumer theo Draft để kiểm thử trước merge, chưa công bố contract Accepted. Cấu hình và giới hạn hiện tại nằm trong [README](README.md#auth-adapter-fe-01--be-02-đang-review).
+
+## API contract lịch sử của prototype (bản nháp)
+
+Bảng dưới được giữ để truy vết đề xuất ban đầu. Ba đường dẫn auth/session đã được thay thế bởi đề xuất BE-02 ở trên; các API nghiệp vụ khác vẫn là ý tưởng, cần backlog và contract riêng trước triển khai.
 
 Tiền tệ: số nguyên VND. Thời gian sự kiện: ISO 8601 có timezone. Hạn sử dụng: YYYY-MM-DD theo múi giờ cửa hàng. IDs do server cấp, trừ `clientOperationId` do client tạo để chống lặp. Lỗi trả `{ code, message, fieldErrors? }`.
 
