@@ -1,14 +1,14 @@
 # QA-01 — Kế hoạch kiểm thử API nền tảng
 
-- Trạng thái: **Draft — đang thực hiện**
-- Ngày cập nhật: 2026-09-28
+- Trạng thái: **Ready for review — đã thực thi trên API tích hợp**
+- Ngày cập nhật: 2026-09-29
 - Owner: TV4 — Lê Văn Chiến (`@VanChien11-02`)
 - Reviewer chính: TV1 — Nguyễn Đức Phát (`@zomboXx`)
 - Reviewer liên quan: TV2 cho provider/API và TV3 cho contract consumer
 - Backlog: `QA-01`
 - Phụ thuộc: `BE-02`, `BE-03`
 
-Tài liệu này định nghĩa cách kiểm chứng API xác thực, phân quyền, danh mục, sản phẩm và nhà cung cấp của Sprint 1. Đây chưa phải báo cáo đạt: chỉ chuyển một test sang `Pass` sau khi TV4 trực tiếp chạy test trên API thật và lưu được bằng chứng.
+Tài liệu này định nghĩa cách kiểm chứng API xác thực, phân quyền, danh mục, sản phẩm và nhà cung cấp của Sprint 1. TV4 đã chạy trực tiếp source `5f0b14c` trên PostgreSQL disposable sạch; kết quả và evidence nằm trong test report và traceability.
 
 ## 1. Mục tiêu
 
@@ -31,7 +31,9 @@ Thứ tự ưu tiên khi có mâu thuẫn:
 
 Nguồn tham chiếu hiện tại:
 
-- [BE-02 Issue #5](https://github.com/zomboXx/bach-hoa-sim-tim/issues/5).
+- [BE-02 Issue #5](https://github.com/zomboXx/bach-hoa-sim-tim/issues/5) và [PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14), đã merge vào `main` tại `9cd293d`.
+- [BE-03 PR #13](https://github.com/zomboXx/bach-hoa-sim-tim/pull/13), đã merge vào nhánh tích hợp tại `bd6ef5c`.
+- [Auth/session OpenAPI](../../contracts/auth-session.openapi.yaml) và [session/RBAC review](../../contracts/AUTH_SESSION_REVIEW.md).
 - [ADR nền tảng Sprint 1](../architecture/adr/0002-sprint-1-platform.md).
 - [ADR kiến trúc ứng dụng](../architecture/adr/0003-application-architecture.md).
 - [Thiết kế schema DB-01](../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md).
@@ -39,7 +41,7 @@ Nguồn tham chiếu hiện tại:
 - [Ma trận quyền QA-01](QA-01-authorize.md).
 - [Báo cáo kiểm thử QA-01](QA-01-test-report.md).
 
-API và permission được mô tả trong handoff BE-02 ngày 2026-09-28 vẫn là Draft cho đến khi contract được review/merge. Không dùng mô tả PR thay cho contract `Accepted`.
+Auth/session contract đã Accepted ngày 29/09/2026 sau provider/consumer review. Trạng thái merge hoặc CI xanh vẫn không tự thay thế evidence QA trên đúng source tích hợp.
 
 ## 3. Phạm vi
 
@@ -100,9 +102,12 @@ Owner module vẫn chịu trách nhiệm self-test. TV4 không làm thay toàn b
 
 ### Trạng thái tại lần cập nhật này
 
-- `main` local ở commit `cced1a1`, có `DB-01/BE-01` nhưng chưa có implementation `BE-02/BE-03`.
-- Handoff BE-02 báo commit `4801d07` đạt 10 API tests và CI PostgreSQL 17, nhưng nhánh/code đó chưa có trong checkout QA hiện tại.
-- Vì vậy chưa có test API nào được TV4 xác nhận `Pass`.
+- Source được TV4 kiểm thử là `5f0b14c787a1c0ed72756e3355ea9d662f1a7952`, có cả BE-02 và BE-03.
+- Java 24.0.2 compile `release 21`; Testcontainers chạy PostgreSQL 17.11 disposable sạch; không đặt `SIMTIM_DEMO_PASSWORD`.
+- `services/api/mvnw.cmd verify` đạt 31/31 tests: 10 auth/bootstrap và 21 catalog.
+- Root `pwsh -File scripts/verify.ps1 -SkipInstall` đạt repository policy, Markdown links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 31 backend tests.
+- 29/29 test case trong ma trận truy vết có method, expected, actual và evidence `E-QA-RERUN-5F0B14C`.
+- Hai blocker ở checkpoint review cũ đã được owner sửa: route fixture không còn trùng và catalog fixture đã dùng login/Bearer thật. TV4 bổ sung coverage barcode trùng.
 
 Khi chạy thật, report phải ghi commit SHA, profile, phiên bản Java/PostgreSQL, lệnh chạy và URL CI. Không ghi secret, token đầy đủ, mật khẩu demo hoặc database dump.
 
@@ -207,11 +212,12 @@ Mỗi bug phải có:
 
 | Rủi ro/dependency | Ảnh hưởng | Cách xử lý |
 |---|---|---|
-| BE-02 chưa có trong checkout QA | Không chạy độc lập được auth/RBAC | Giữ `Reported/Blocked`, checkout commit sau khi PR sẵn sàng |
-| BE-03 chưa triển khai | Không test CRUD/duplicate/validation thật | Giữ `Blocked`, không dùng controller test của BE-02 thay thế |
-| OpenAPI/permission matrix còn Draft | Endpoint, status/error code có thể đổi | Dùng `TBD/Draft`, cập nhật sau review |
+| Regression route fixture trùng controller production | Có thể làm combined context không khởi tạo | Đã tách route; giữ `ApiBootstrapTest` trong root/module gate |
+| Regression catalog fixture bỏ Bearer hoặc tắt security | Có thể tạo false-positive cho CRUD | Giữ fixture login HTTP và ba nhóm negative authorization tests |
+| OpenAPI/permission matrix thay đổi sau Accepted | Endpoint, status/error code có thể lệch test | Mọi thay đổi contract cần review và cập nhật traceability |
 | SRS còn trạng thái đề xuất | Có thể lệch phạm vi đã chốt | Theo backlog và quyết định PO mới nhất |
-| Khác PostgreSQL local/CI | Có thể che lỗi tương thích | Kết luận dựa trên PostgreSQL 17 CI và ghi rõ local version |
+| CI cũ của PR #15 không chứa BE-03 CRUD | CI cũ không chứng minh duplicate/validation/catalog | Không tái sử dụng CI cũ; yêu cầu CI mới trên head chứa cả hai module |
+| Khác Java local/CI | Local Java 24 có thể khác Java 21 đích | Compile `release 21`; bắt buộc theo dõi CI Java 21 sau push |
 | Không có test data tái tạo | Test dễ phụ thuộc thứ tự hoặc dữ liệu cũ | Reset database/fixture trước suite |
 
 ## 14. Quy trình lặp lại cho các QA sau

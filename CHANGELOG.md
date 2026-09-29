@@ -18,6 +18,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Bổ sung regression integration test cho barcode sản phẩm trùng; kiểm tra `409` và hậu điều kiện không tạo thêm record.
 - Bổ sung hồ sơ QA-01 gồm test plan, ma trận quyền, ma trận requirement–contract–test và checkpoint report; tách bằng chứng owner báo cáo khỏi kết quả QA trực tiếp xác nhận.
 - Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
 - Chuẩn bị DDL đích 38 bảng từ báo cáo Word và một bảng phiên đăng nhập đề xuất, kèm đánh giá 3NF và kiểm tra ràng buộc cho DB-01; V2/V3 chỉ đưa 14 bảng Sprint 1 vào Flyway.
@@ -28,6 +29,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- Hoàn tất checkpoint QA-01 sau Request Changes: cập nhật wire auth `/api/v1/auth/*`, đối chiếu đúng test method, ghi evidence local trên source tích hợp BE-02/BE-03 và xác nhận 31/31 API tests cùng 29/29 traceability cases đạt.
 - FE-01 căn chỉnh auth adapter với contract BE-02: scope doanh nghiệp/cửa hàng, `/api/v1/auth/*`, Bearer token và session do server trả về. Thay thế đề xuất `/api/auth/login` và `/api/me` trước đó; contract đã Accepted ngày 29/09/2026 theo provider/consumer review, FE-01 chờ tích hợp PR #12.
 - Sửa gate tích hợp BE-02/BE-03: tách route fixture kiểm thử quyền khỏi controller sản phẩm thật; test catalog đăng nhập HTTP bằng tài khoản fixture và gửi Bearer token, kiểm tra thiếu token, SALES ghi dữ liệu và giả mạo scope trên controller thật.
 - Tách lại hai entry FE-01/BE-03 trong nhật ký đóng góp sau khi giải quyết conflict PR #12, giữ nguyên nội dung và thời gian ghi nhận.

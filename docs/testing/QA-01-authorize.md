@@ -1,10 +1,10 @@
 # QA-01 — Ma trận xác thực và phân quyền
 
-- Trạng thái: **Draft — chờ contract/reviewer xác nhận**
-- Ngày cập nhật: 2026-09-28
-- Nguồn tạm thời: handoff BE-02 và quyết định bốn vai trò trong [backlog](../project/governance/BACKLOG.md)
+- Trạng thái: **Accepted contract — QA integration đã xác nhận**
+- Ngày cập nhật: 2026-09-29
+- Nguồn: [auth/session OpenAPI](../../contracts/auth-session.openapi.yaml), [session/RBAC review](../../contracts/AUTH_SESSION_REVIEW.md), `AuthSecurity` trong source `5f0b14c` và quyết định bốn vai trò trong [backlog](../project/governance/BACKLOG.md)
 
-Ma trận này mô tả policy cần test, không tự cấp quyền cho implementation. Khi OpenAPI/permission contract được Accepted, mọi ô phải được đối chiếu và ghi link/operation ID chính xác.
+Ma trận này mô tả policy đã Accepted và được QA đối chiếu trên source tích hợp. Nó không tự cấp quyền cho implementation; thay đổi policy phải cập nhật contract, test và traceability cùng nhau.
 
 ## 1. Quy ước
 
@@ -19,21 +19,21 @@ Ma trận này mô tả policy cần test, không tự cấp quyền cho impleme
 
 | Operation | Chưa đăng nhập | `SALES` | `STOCK` | `MANAGER` | `ADMIN` | Nguồn/ghi chú |
 |---|---:|---:|---:|---:|---:|---|
-| Login | Allow | N/A | N/A | N/A | N/A | Public nhưng chịu rate limit |
-| Đọc phiên hiện hành (`me`) | Deny | Allow | Allow | Allow | Allow | Cần Bearer session hợp lệ |
-| Logout phiên hiện hành | Deny | Allow | Allow | Allow | Allow | Sau logout token phải bị revoke |
+| `POST /api/v1/auth/login` | Allow | N/A | N/A | N/A | N/A | `200`; invalid request `400`, sai thông tin `401`, rate limit `429` |
+| `GET /api/v1/auth/session` | Deny | Allow | Allow | Allow | Allow | `200`; cần opaque Bearer session hợp lệ, trả organization/store scope |
+| `POST /api/v1/auth/logout` | Deny | Allow | Allow | Allow | Allow | `204`; sau logout token phải bị revoke |
 | API chưa được cấp policy | Deny | Deny | Deny | Deny | Deny | Deny-by-default theo handoff BE-02 |
 
-## 3. Catalog permissions Draft
+## 3. Catalog permissions
 
 | Permission/operation | Chưa đăng nhập | `SALES` | `STOCK` | `MANAGER` | `ADMIN` | Nguồn/ghi chú |
 |---|---:|---:|---:|---:|---:|---|
-| `catalog.read` / GET catalog | Deny | Allow | Allow | Allow | Allow | Handoff BE-02; cần contract consumer review |
-| `catalog.write` / POST catalog | Deny | Deny | Allow | Allow | Allow | Handoff BE-02; khác với ma trận QA ban đầu |
-| `catalog.write` / PUT catalog | Deny | Deny | Allow | Allow | Allow | Handoff BE-02; BE-03 phải xác nhận endpoint |
-| `catalog.write` / DELETE/deactivate catalog | Deny | Deny | Allow | Allow | Allow | Cách delete/deactivate còn TBD |
+| `catalog.read` / GET category, unit, product, supplier | Deny | Allow | Allow | Allow | Allow | Accepted; positive tests gửi Bearer thật |
+| `catalog.write` / POST catalog | Deny | Deny | Allow | Allow | Allow | Accepted; SALES negative test trên controller thật |
+| `catalog.write` / PUT catalog | Deny | Deny | Allow | Allow | Allow | Accepted; SALES negative test trên controller thật |
+| `catalog.write` / DELETE catalog | Deny | Deny | Allow | Allow | Allow | Accepted; integration test kỳ vọng `204` |
 
-Controller catalog hiện được mô tả là test fixture của BE-02 để kiểm tra security chain. Các ô `Allow` không chứng minh CRUD catalog đã được BE-03 triển khai hoặc validation đúng.
+Controller catalog trong `ApiBootstrapTest` là fixture của BE-02 tại `/api/v1/products/__be02_security_fixture`, chỉ kiểm tra security chain và không trùng controller thật. `CatalogApiTest` bổ sung bằng chứng trên CRUD thật với STOCK/SALES session. Kết quả tại `5f0b14c`: 31/31 automated tests đạt.
 
 ## 4. Hành vi động phải kiểm thử
 
@@ -53,21 +53,19 @@ Controller catalog hiện được mô tả là test fixture của BE-02 để k
 | Principal | Trạng thái | Role/permission | Mục đích |
 |---|---|---|---|
 | `sales-active` | Active | `SALES`, `catalog.read` | Positive read, negative write |
-| `stock-active` | Active | `STOCK`, `catalog.read/write` Draft | Positive read/write |
+| `stock-active` | Active | `STOCK`, `catalog.read/write` | Positive read/write |
 | `manager-active` | Active | `MANAGER`, `catalog.read/write` | Positive read/write |
-| `admin-active` | Active | `ADMIN`, `catalog.read/write` Draft | Positive read/write, kiểm tra scope |
+| `admin-active` | Active | `ADMIN`, `catalog.read/write` | Positive read/write, kiểm tra scope |
 | `locked-user` | Locked | Bất kỳ | Negative login/session |
 | `permission-revoked` | Active | Permission bị gỡ sau login | Kiểm tra reload authorization |
 
 Tên trên chỉ là nhãn test; username/password thật do fixture tạo và không ghi vào repository.
 
-## 6. Điểm cần xác nhận trước khi Accepted
+## 6. Quyết định và follow-up
 
-1. `STOCK` có thực sự được tạo/sửa/xóa category, product và supplier hay `catalog.write` cần tách nhỏ?
-2. `ADMIN` có cùng store scope với role vận hành hay có scope khác?
-3. GET supplier có dùng `catalog.read` không?
-4. DELETE là xóa vật lý hay chuyển trạng thái inactive?
-5. Status/error code chuẩn cho missing token, invalid token, expired token, `403` và rate limit là gì?
-6. Endpoint health nào public; endpoint nào bắt buộc session?
-
-Các câu trả lời phải được ghi vào contract/decision nguồn. Sau đó TV4 cập nhật bảng này và test matrix, không chỉ sửa expected trong test code.
+- Provider/consumer reviewers đã Accepted request/response auth và permission matrix ngày 29/09/2026.
+- Header organization/store tạm chỉ được chấp nhận khi khớp session; scope giả mạo trả `403`. Việc chuyển controller sang đọc `SessionPrincipal` trực tiếp là follow-up implementation.
+- DELETE catalog hiện được integration test theo status `204`; mọi thay đổi semantics phải đi qua contract review.
+- Validation catalog hiện dùng `ProblemDetail` với thuộc tính `errors` khi phù hợp.
+- Fixture security đã được cô lập; negative catalog tests chứng minh missing token `401`, SALES write `403` và scope mismatch `403`.
+- Evidence chi tiết nằm trong [ma trận truy vết](QA-01-traceability.md) và [test report](QA-01-test-report.md).

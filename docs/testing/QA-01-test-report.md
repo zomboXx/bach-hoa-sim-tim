@@ -1,90 +1,102 @@
 # QA-01 — Báo cáo kiểm thử API nền tảng
 
-- Trạng thái: **Checkpoint — chưa đủ điều kiện kết luận**
-- Ngày báo cáo: 2026-09-28
+- Trạng thái: **Ready for review — local verification đạt**
+- Ngày báo cáo: 2026-09-29
 - Owner QA: TV4 — Lê Văn Chiến
-- Commit checkout QA: `cced1a1`
-- Phạm vi dự kiến: `BE-02`, `BE-03`
+- Source được kiểm thử: `5f0b14c787a1c0ed72756e3355ea9d662f1a7952`
+- Dependency: BE-02 đã merge qua PR #14; BE-03 đã merge qua PR #13
+- Issue/PR QA: Issue #8 / PR #15
 
-## 1. Kết luận hiện tại
+## 1. Kết luận
 
-QA-01 **chưa đạt và cũng chưa thất bại** vì các API thuộc dependency chưa có đầy đủ trong checkout QA:
+Các blocker được nêu trong Request Changes của PR #15 đã được xử lý trong source đã pull và được TV4 chạy lại độc lập:
 
-- `main` local có `DB-01/BE-01`, chưa có implementation `BE-02/BE-03`.
-- Handoff BE-02 báo 10 API tests đạt tại commit `4801d07`, nhưng TV4 chưa có code/branch đó để đối chiếu từng test method và chạy độc lập.
-- `BE-03` chưa có API thật, nên duplicate/validation/catalog CRUD đều đang `Blocked`.
+- Route test quyền của `ApiBootstrapTest` đã tách khỏi mapping controller sản phẩm thật.
+- `CatalogApiTest` tạo fixture STOCK/SALES, login qua `/api/v1/auth/login` và gửi opaque Bearer cho positive tests.
+- Negative tests vẫn kiểm tra thiếu token `401`, SALES ghi dữ liệu `403` và organization/store lệch session `403`; Spring Security không bị tắt.
+- TV4 bổ sung regression test cho barcode trùng, kiểm tra cả `409` và số record không thay đổi.
 
-Không dùng 4 Playwright tests của PWA Sprint 0 hoặc controller catalog test fixture của BE-02 làm bằng chứng API CRUD của BE-03.
+Kết quả hiện hành là 31/31 automated tests đạt và 29/29 traceability cases đạt. QA-01 đủ điều kiện yêu cầu review lại. Issue #8 vẫn để mở cho tới khi reviewer chấp nhận thay đổi và PR/CI của head mới hoàn tất.
 
-## 2. Tổng hợp
+## 2. Môi trường và lệnh
 
-| Nhóm | Planned | QA Pass | QA Fail | Owner reported | Blocked/TBD |
-|---|---:|---:|---:|---:|---:|
-| BE-02 auth/RBAC/security | 17 | 0 | 0 | 16 | 1 |
-| BE-03 catalog/supplier | 12 | 0 | 0 | 0 | 12 |
-| Tổng | 29 | 0 | 0 | 16 | 13 |
+- Windows; Java 24.0.2, compile `release 21`.
+- Spring Boot 3.5.16; Testcontainers 1.21.4; Docker Desktop 29.4.0.
+- PostgreSQL 17.11 từ `postgres:17-alpine`, database disposable sạch riêng cho mỗi suite.
+- Flyway xác thực và áp dụng năm migration: V1–V4 cùng repeatable demo seed.
+- Profile `demo`; không đặt `SIMTIM_DEMO_PASSWORD`.
+- Không commit secret, raw token, database URL, Surefire XML hoặc output build.
 
-Chi tiết từng dòng nằm tại [QA-01-traceability.md](QA-01-traceability.md).
-
-## 3. Bằng chứng đã nhận nhưng chưa được QA xác nhận
-
-Theo handoff BE-02:
-
-- 10 API tests cùng root verification đã đạt.
-- Migration database sạch và upgrade từ BE-01 V3 lên V4 đã đạt.
-- CI chạy Java 21/PostgreSQL 17 tại commit `4801d07`.
-- Test được báo gồm đăng nhập sai, bốn role, training flag, logout/expiry, account khóa/mất role, thu hồi permission, store scope, token hash, demo opt-in và rate limit.
-
-Link được cung cấp: [CI run 36404996237](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/36404996237).
-
-Các nội dung trên chỉ là `Reported` cho đến khi TV4:
-
-1. Checkout đúng commit/PR.
-2. Đối chiếu OpenAPI/permission matrix.
-3. Ghi đúng tên class/method test vào traceability.
-4. Chạy test trên môi trường phù hợp.
-5. Lưu lệnh, kết quả và commit làm evidence.
-
-## 4. Lệnh cần chạy khi dependency sẵn sàng
-
-Lệnh chính xác của backend phải theo `services/api/README.md` tại commit BE-02/BE-03. Kế hoạch tối thiểu:
+Lệnh module:
 
 ```powershell
-pwsh -File scripts/setup.ps1
-pwsh -File scripts/verify.ps1
+Push-Location services/api
+.\mvnw.cmd verify
+Pop-Location
 ```
 
-Nếu root gate cung cấp tham số bỏ qua cài đặt hoặc module gate riêng, report phải ghi đúng lệnh thực tế đã dùng; không thay bằng câu “test đều đạt”.
+Máy chạy có một phần tử `PATH` người dùng bị cấu hình sai, nối hai đường dẫn bằng dấu phẩy. Trước khi gọi Maven, TV4 loại đúng phần tử đó cho riêng tiến trình PowerShell. Đây là điều chỉnh môi trường local, không phải thay đổi code hay điều kiện để CI chạy.
 
-## 5. Các bước còn lại để đóng QA-01
+Evidence ID: `E-QA-RERUN-5F0B14C`. Maven summary và Surefire XML nằm local trong `services/api/target/surefire-reports/`.
 
-- [ ] BE-02 có PR/commit checkout được và contract ghi trạng thái rõ ràng.
-- [ ] Điền tên automated test chính xác cho 17 dòng BE-02.
-- [ ] TV4 chạy độc lập test BE-02 và cập nhật `Pass/Fail`.
-- [ ] Reviewer chốt permission matrix và các câu hỏi `TBD`.
-- [ ] BE-03 cung cấp OpenAPI, migration/fixture và provider tests.
-- [ ] Cập nhật 12 dòng BE-03 bằng endpoint, error code và test method thật.
-- [ ] Chạy test duplicate product code/barcode và validation trên API thật.
-- [ ] Kiểm tra request bị từ chối không để lại dữ liệu.
-- [ ] Tạo Bug Issue cho mọi sai lệch chưa được xử lý.
-- [ ] Root verification và CI đạt tại commit cuối.
-- [ ] Reviewer chấp nhận test plan, matrix và final report.
+Root gate `pwsh -File scripts/verify.ps1 -SkipInstall` cũng đạt trên cùng source: repository policy và Markdown links OK; web lint/format/typecheck/build đạt; 6 demo E2E và 23 API consumer E2E đạt; backend 31/31 tests đạt. Evidence root gate: `E-QA-ROOT-5F0B14C`.
 
-## 6. Rủi ro còn lại
+## 3. Kết quả theo suite
 
-- Permission matrix BE-02 vẫn Draft; đặc biệt quyền ghi catalog của `STOCK` và scope của `ADMIN` cần review.
-- Chưa biết exact endpoint, operation ID, status/error code và field validation của BE-03.
-- CI của owner không thay thế việc QA chạy độc lập và kiểm tra hậu điều kiện database.
-- Nếu BE-02/BE-03 đổi contract sau khi test được viết, traceability và consumer test phải cập nhật cùng thay đổi.
+| Suite | Tests | Pass | Failure | Error | Skipped | Kết quả |
+|---|---:|---:|---:|---:|---:|---|
+| `ApiBootstrapTest` | 10 | 10 | 0 | 0 | 0 | Pass |
+| `CatalogApiTest` | 21 | 21 | 0 | 0 | 0 | Pass |
+| Tổng | 31 | 31 | 0 | 0 | 0 | Pass |
 
-## 7. Mẫu cập nhật sau lần chạy tiếp theo
+Chi tiết requirement, endpoint, class/method, expected và actual của 29 case nằm tại [QA-01-traceability.md](QA-01-traceability.md).
 
-```text
-Commit/API version:
-Môi trường:
-Lệnh đã chạy:
-Kết quả: total / pass / fail / blocked
-Bug Issue:
-Evidence/CI:
-Rủi ro còn lại:
-```
+## 4. Đối chiếu Request Changes
+
+| Nhận xét review | Cách xử lý/đối chiếu | Kết quả |
+|---|---|---|
+| Auth contract dùng sai `/api/auth/*` và `/api/me` | Đổi sang `/api/v1/auth/login`, `/api/v1/auth/session`, `/api/v1/auth/logout`; map đúng `ApiBootstrapTest` | Đạt |
+| Không có SHA/lệnh/evidence QA thực tế | Ghi source `5f0b14c`, lệnh Maven, runtime, database và Surefire evidence local | Đạt |
+| Fixture BE-02 trùng `/api/v1/products` | Source hiện dùng `/api/v1/products/__be02_security_fixture`; combined context khởi tạo được | Đạt |
+| Catalog test không login/Bearer | Fixture login HTTP bằng STOCK/SALES và gửi Bearer thật | Đạt |
+| Phải giữ negative authorization | Ba nhóm test missing token, SALES deny write và scope mismatch đều đạt | Đạt |
+| CI cũ không có BE-03 | Root gate hiện tại chứa cả BE-02 và BE-03; 21 catalog tests chạy trên controller thật | Đạt local; chờ CI sau push |
+| Thiếu duplicate barcode | Thêm `addProductBarcode_conflict_onDuplicateBarcode_withoutCreatingRecord` | Đạt |
+| Cần cập nhật expected/actual và báo cáo | 29/29 dòng traceability đã có expected, actual, method và evidence | Đạt |
+
+## 5. Phạm vi đã chứng minh
+
+- Sai thông tin đăng nhập, malformed/missing Bearer và endpoint auth/session/logout thật.
+- Opaque token/hash-only storage, BCrypt, expiry, revoke, khóa account, mất role/permission và rate limit.
+- Quyền đọc/ghi của SALES, STOCK, MANAGER, ADMIN và organization/store scope.
+- CRUD category, product, supplier; tìm product theo SKU/barcode/name.
+- Duplicate category code, product SKU, product barcode và supplier code.
+- Validation category rỗng và supplier email sai với status lỗi có cấu trúc.
+- Request bị từ chối không vượt security; duplicate barcode không làm tăng số record.
+
+## 6. Evidence lịch sử
+
+Checkpoint trước sửa harness được giữ để truy vết: BE-03 `f9f3642` ghép main/BE-02 `9cd293d` có 27 test, 0 Pass, 11 Failure và 16 Error. Đó là kết quả reviewer cung cấp dẫn tới Request Changes, không phải kết quả của source hiện hành.
+
+Không tạo Bug Issue mới vì lần chạy hiện tại không còn regression trong phạm vi. Nếu CI sau push hoặc review độc lập tái hiện lỗi, Issue #8 phải giữ mở và lỗi mới cần Bug Issue/regression evidence riêng.
+
+## 7. Giới hạn và việc còn chờ
+
+- Local dùng Java 24.0.2 nhưng compiler khóa `release 21`; CI Java 21 tại head mới cần đạt sau khi push.
+- Header scope tạm của BE-03 chỉ được chấp nhận khi khớp session; chuyển controller sang lấy scope trực tiếp từ `SessionPrincipal` là follow-up implementation, không phải bypass trong test này.
+- Việc đóng Issue #8 và merge PR #15 thuộc reviewer/Project Owner; báo cáo này chỉ kết luận evidence local đã đạt.
+
+## 8. Nội dung báo cáo tuần
+
+TV4 hoàn thành QA-01 trên source `5f0b14c`: cập nhật auth contract thật và ma trận truy vết, xác nhận test harness BE-02/BE-03 đã tích hợp Bearer session mà không tắt security, bổ sung regression test barcode trùng. Root verification đạt policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 31/31 backend tests trên PostgreSQL 17.11 disposable sạch; 29/29 traceability cases Pass. CI của head mới còn chờ sau push; Issue #8 giữ mở tới khi reviewer chấp nhận.
+
+## 9. Đề nghị review lại
+
+Reviewer kiểm tra:
+
+1. Source/evidence `5f0b14c` và kết quả CI sau push.
+2. Test barcode trùng có kiểm tra hậu điều kiện dữ liệu.
+3. Mapping 29 case trong traceability khớp requirement, endpoint và method.
+4. Contract/ma trận quyền Accepted không bị mở rộng ngoài BE-02/BE-03.
+
+Nếu các mục trên đạt, QA-01 có thể được approve và đóng cùng PR.
