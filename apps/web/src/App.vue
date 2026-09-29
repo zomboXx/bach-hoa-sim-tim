@@ -5,7 +5,6 @@ import {
   accounts,
   available,
   checkout,
-  permissions,
   persist,
   price,
   readState,
@@ -16,24 +15,30 @@ import {
   type User,
   type Count,
 } from "./api";
-import { authAdapter } from "./adapter";
+import { authAdapter, routesFor, type AuthUser } from "./adapter";
 const state = ref<State>();
-const user = ref<User>();
+const user = ref<AuthUser>();
 const route = ref("dashboard");
 const error = ref("");
 const toast = ref("");
 let timer: ReturnType<typeof setTimeout>;
 const busy = ref(false);
+const authPending = ref<"restore" | "login" | "logout" | undefined>("restore");
+let authRevision = 0;
 const menu = ref(false);
 const online = ref(navigator.onLine);
 const simulateOffline = ref(false);
 const connected = computed(() => online.value && !simulateOffline.value);
 const isDemoMode = authAdapter.mode === "demo";
-const credentials = reactive({ id: "NV001", password: "demo123" });
+const credentials = reactive({
+  id: isDemoMode ? "NV001" : "",
+  password: isDemoMode ? "demo123" : "",
+});
 const roleNames = {
   sales: "Nhân viên bán hàng",
   stock: "Nhân viên hàng hóa",
   manager: "Quản lý cửa hàng",
+  admin: "Quản trị viên",
 };
 const nav = [
   ["dashboard", "Tổng quan", "◫"],
@@ -48,9 +53,8 @@ const nav = [
   ["reports", "Báo cáo", "↗"],
   ["training", "Đào tạo nghiệp vụ", "✦"],
 ];
-const allowedNav = computed(() =>
-  nav.filter(([id]) => user.value && permissions[user.value.role].includes(id)),
-);
+const canGo = (id: string) => !!user.value && routesFor(user.value).includes(id);
+const allowedNav = computed(() => nav.filter(([id]) => canGo(id)));
 const pageTitle = computed(() => nav.find(([id]) => id === route.value)?.[1]);
 const money = (n: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
@@ -88,7 +92,7 @@ function notify(message: string) {
   timer = setTimeout(() => (toast.value = ""), 4000);
 }
 function go(id: string) {
-  if (!user.value || !permissions[user.value.role].includes(id)) return;
+  if (!canGo(id)) return;
   route.value = id;
   query.value = "";
   category.value = "Tất cả";
@@ -97,29 +101,57 @@ function go(id: string) {
   window.scrollTo(0, 0);
 }
 async function signIn() {
-  if (busy.value) return;
+  if (busy.value || authPending.value) return;
+  const revision = ++authRevision;
+  authPending.value = "login";
   try {
     if (!connected.value) throw Error("Cần kết nối để bắt đầu phiên đăng nhập.");
     busy.value = true;
-    user.value = await authAdapter.login(credentials.id, credentials.password);
-    sessionStorage.setItem("simtim-v2-user", user.value.id);
-    sessionStorage.setItem("simtim-v2-auth-mode", authAdapter.mode);
+    const signedIn = await authAdapter.login(credentials.id, credentials.password);
+    if (revision !== authRevision) return;
+    user.value = signedIn;
+    if (isDemoMode) {
+      sessionStorage.setItem("simtim-v2-user", signedIn.id);
+      sessionStorage.setItem("simtim-v2-auth-mode", "demo");
+    } else clearSessionMarkers();
+    credentials.password = "";
     go("dashboard");
     error.value = "";
   } catch (e) {
-    error.value = (e as Error).message;
+    if (revision === authRevision) error.value = (e as Error).message;
   } finally {
-    busy.value = false;
+    if (revision === authRevision) {
+      busy.value = false;
+      authPending.value = undefined;
+    }
   }
 }
-function signOut() {
-  user.value = undefined;
+function clearSessionMarkers() {
   sessionStorage.removeItem("simtim-v2-user");
   sessionStorage.removeItem("simtim-v2-auth-mode");
+}
+async function signOut() {
+  const revision = ++authRevision;
+  authPending.value = "logout";
+  user.value = undefined;
+  clearSessionMarkers();
   cart.value = [];
+  credentials.password = "";
+  route.value = "dashboard";
   error.value = "";
+  try {
+    await authAdapter.logout();
+  } catch (e) {
+    if (revision === authRevision) error.value = (e as Error).message;
+  } finally {
+    if (revision === authRevision) authPending.value = undefined;
+  }
 }
 async function change(action: (s: State) => void, message: string, allowOffline = false) {
+  if (!isDemoMode) {
+    notify("Chức năng này chưa kết nối dữ liệu cửa hàng.");
+    return;
+  }
   if (busy.value || !state.value) return;
   error.value = "";
   if (!connected.value && !allowOffline) {
@@ -143,7 +175,7 @@ async function change(action: (s: State) => void, message: string, allowOffline 
   }
 }
 async function sync() {
-  if (!connected.value || !pending.value || busy.value) return;
+  if (!isDemoMode || !connected.value || !pending.value || busy.value) return;
   await change((s) => {
     for (const c of s.counts.filter((c) => c.status === "PENDING")) {
       const b = s.batches.find((b) => b.id === c.batchId);
@@ -160,6 +192,7 @@ function toggleNetwork() {
   if (connected.value) void sync();
 }
 onMounted(async () => {
+  const revision = authRevision;
   try {
     state.value = await readState();
     if (connected.value) void sync();
@@ -169,21 +202,24 @@ onMounted(async () => {
   }
   if (state.value && sessionStorage.getItem("simtim-v2-auth-mode") === authAdapter.mode) {
     try {
-      user.value = await authAdapter.restoreSession();
-      if (!user.value) {
-        sessionStorage.removeItem("simtim-v2-user");
-        sessionStorage.removeItem("simtim-v2-auth-mode");
+      const restored = await authAdapter.restoreSession();
+      if (revision === authRevision) {
+        user.value = restored;
+        if (!restored) clearSessionMarkers();
       }
     } catch (e) {
-      sessionStorage.removeItem("simtim-v2-user");
-      sessionStorage.removeItem("simtim-v2-auth-mode");
-      error.value = (e as Error).message;
+      if (revision === authRevision) {
+        clearSessionMarkers();
+        error.value = (e as Error).message;
+      }
     }
-  }
+  } else clearSessionMarkers();
+  if (revision === authRevision) authPending.value = undefined;
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
 });
 onUnmounted(() => {
+  authRevision++;
   clearTimeout(timer);
   window.removeEventListener("online", connectionChanged);
   window.removeEventListener("offline", connectionChanged);
@@ -234,11 +270,13 @@ function quantity(id: string, delta: number) {
   else cart.value = cart.value.filter((l) => l.id !== id);
 }
 async function pay() {
+  if (!isDemoMode || !user.value || user.value.role === "admin") return;
+  const actingUser: User = { ...user.value, role: user.value.role };
   if (method.value === "Tiền mặt" && cash.value < total.value)
     return notify("Số tiền khách đưa chưa đủ.");
   if (
     await change((s) => {
-      checkout(s, user.value!, cart.value, method.value);
+      checkout(s, actingUser, cart.value, method.value);
     }, "Đã lưu hóa đơn và trừ tồn kho.")
   ) {
     cart.value = [];
@@ -318,8 +356,7 @@ const receipt = reactive({
 });
 async function receive() {
   const ok = await change((s) => {
-    if (!permissions[user.value!.role].includes("receive"))
-      throw Error("Không có quyền nhận hàng.");
+    if (!canGo("receive")) throw Error("Không có quyền nhận hàng.");
     if (!receipt.lot.trim() || !receipt.expiry || receipt.expiry < today())
       throw Error("Nhập mã lô và hạn sử dụng còn hiệu lực.");
     if (s.batches.some((b) => b.id === receipt.lot.trim())) throw Error("Mã lô đã tồn tại.");
@@ -367,8 +404,7 @@ async function saveCount() {
   if (
     await change(
       (s) => {
-        if (!permissions[user.value!.role].includes("count"))
-          throw Error("Không có quyền kiểm kê.");
+        if (!canGo("count")) throw Error("Không có quyền kiểm kê.");
         if (!Number.isInteger(count.actual) || count.actual < 0)
           throw Error("Số thực tế phải là số nguyên không âm.");
         const b = s.batches.find((b) => b.id === count.batch)!;
@@ -460,8 +496,17 @@ const statuses = {
               required
           /></label>
           <p v-if="error" role="alert" class="error">{{ error }}</p>
-          <button class="primary wide" :disabled="busy">
-            {{ busy ? "Đang đăng nhập…" : "Vào không gian làm việc" }} <span>→</span>
+          <button class="primary wide" :disabled="busy || !!authPending">
+            {{
+              authPending === "restore"
+                ? "Đang kiểm tra phiên…"
+                : authPending === "logout"
+                  ? "Đang đăng xuất…"
+                  : busy
+                    ? "Đang đăng nhập…"
+                    : "Vào không gian làm việc"
+            }}
+            <span>→</span>
           </button>
         </form>
         <div v-if="isDemoMode" class="demo-accounts">
@@ -514,7 +559,7 @@ const statuses = {
       </nav>
       <div class="sidebar-bottom">
         <span class="mini-label">PHIÊN LÀM VIỆC</span><b>{{ roleNames[user.role] }}</b
-        ><small>Quyền thao tác theo vai trò</small
+        ><small>{{ isDemoMode ? "Quyền demo theo vai trò" : "Quyền do máy chủ cấp" }}</small
         ><button class="text-button" @click="signOut">Đăng xuất ↗</button>
       </div>
     </aside>
@@ -537,12 +582,18 @@ const statuses = {
         </div>
       </header>
       <div class="demo-strip">
-        <span><b>PROTOTYPE</b> Dữ liệu trên thiết bị · đồng bộ với API mô phỏng</span
-        ><button @click="toggleNetwork">
+        <span
+          ><b>PROTOTYPE</b>
+          {{
+            isDemoMode
+              ? "Dữ liệu trên thiết bị · đồng bộ với API mô phỏng"
+              : "Đăng nhập máy chủ · dữ liệu minh họa trên thiết bị chỉ để xem"
+          }}</span
+        ><button v-if="isDemoMode" @click="toggleNetwork">
           {{ simulateOffline ? "Kết nối lại" : "Thử mất mạng" }} ↔
         </button>
       </div>
-      <div v-if="!connected" class="offline-banner">
+      <div v-if="isDemoMode && !connected" class="offline-banner">
         Bạn đang offline. Có thể lưu phiếu kiểm kê; bán hàng và các thay đổi khác cần kết nối.
         <b v-if="pending">{{ pending }} phiếu chờ đồng bộ.</b>
       </div>
@@ -557,7 +608,11 @@ const statuses = {
               </h1>
               <p>Mọi việc trong cửa hàng, ngay trong tầm tay bạn.</p>
             </div>
-            <button class="primary" @click="go(user.role === 'stock' ? 'receive' : 'sale')">
+            <button
+              v-if="canGo(user.role === 'stock' ? 'receive' : 'sale')"
+              class="primary"
+              @click="go(user.role === 'stock' ? 'receive' : 'sale')"
+            >
               {{ user.role === "stock" ? "↓ Nhận hàng mới" : "+ Tạo đơn bán hàng" }}
             </button>
           </div>
@@ -599,7 +654,7 @@ const statuses = {
                   Hóa đơn đầu tiên sẽ xuất hiện ở đây.<br />Mọi giao dịch sẽ tự động cập nhật tồn
                   kho.
                 </p>
-                <button v-if="user.role !== 'stock'" class="secondary" @click="go('sale')">
+                <button v-if="canGo('sale')" class="secondary" @click="go('sale')">
                   Bắt đầu bán hàng →
                 </button>
               </div>
@@ -639,12 +694,12 @@ const statuses = {
                   </div>
                 </div>
               </div>
-              <button class="card-link" @click="go('inventory')">
+              <button v-if="canGo('inventory')" class="card-link" @click="go('inventory')">
                 Kiểm tra lô hàng <span>→</span>
               </button>
             </section>
           </div>
-          <section class="mentor-banner">
+          <section v-if="canGo('training')" class="mentor-banner">
             <div class="mentor-portrait">
               <img src="/mentor.png" alt="Chị mentor tóc cam đeo kính" />
             </div>
@@ -662,15 +717,18 @@ const statuses = {
           </section>
           <div class="section-label">ĐƯỜNG TẮT CHO BẠN</div>
           <div class="shortcuts">
-            <button @click="go('products')">
+            <button v-if="canGo('products')" @click="go('products')">
               <span>⌕</span>
               <div><b>Tra cứu sản phẩm</b><small>Tên, mã vạch và giá bán</small></div>
               ↗</button
-            ><button @click="go('inventory')">
+            ><button v-if="canGo('inventory')" @click="go('inventory')">
               <span>▥</span>
               <div><b>Kiểm tra tồn kho</b><small>Lô hàng và hạn sử dụng</small></div>
               ↗</button
-            ><button @click="go(user.role === 'sales' ? 'invoices' : 'count')">
+            ><button
+              v-if="canGo(user.role === 'sales' ? 'invoices' : 'count')"
+              @click="go(user.role === 'sales' ? 'invoices' : 'count')"
+            >
               <span>☑</span>
               <div>
                 <b>{{ user.role === "sales" ? "Xem hóa đơn" : "Kiểm kê trên điện thoại" }}</b
@@ -805,7 +863,11 @@ const statuses = {
               <h1>Sản phẩm</h1>
               <p>Một danh mục thống nhất cho bán hàng và tồn kho.</p>
             </div>
-            <button v-if="user.role === 'manager'" class="primary" @click="openDialog('product')">
+            <button
+              v-if="isDemoMode && user.role === 'manager'"
+              class="primary"
+              @click="openDialog('product')"
+            >
               ＋ Thêm sản phẩm
             </button>
           </div>
@@ -859,7 +921,11 @@ const statuses = {
               <h1>Nhà cung cấp</h1>
               <p>Thông tin liên hệ cho từng lần nhận hàng.</p>
             </div>
-            <button v-if="user.role === 'manager'" class="primary" @click="openDialog('supplier')">
+            <button
+              v-if="isDemoMode && user.role === 'manager'"
+              class="primary"
+              @click="openDialog('supplier')"
+            >
               ＋ Thêm nhà cung cấp
             </button>
           </div>
@@ -1219,7 +1285,7 @@ const statuses = {
       </footer>
     </main>
     <button
-      v-if="route !== 'training'"
+      v-if="route !== 'training' && canGo('training')"
       class="mentor-fab"
       aria-label="Mở đào tạo cùng Mentor Mai"
       @click="go('training')"
