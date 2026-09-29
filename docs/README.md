@@ -21,7 +21,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md`](architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md): DDL đích 39 bảng và đánh giá 3NF được nhóm đồng ý theo thông báo của Project Owner; 14 bảng Sprint 1 đã tách thành Flyway V2/V3, phần còn lại chờ sprint sở hữu.
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
-- [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Draft contract session/RBAC và ma trận quyền của BE-02, chờ API/web review.
+- [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Accepted contract session/RBAC và ma trận quyền của BE-02, có bằng chứng provider/consumer review; FE-01 chờ tích hợp PR #12.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
 ## Tài liệu lịch sử

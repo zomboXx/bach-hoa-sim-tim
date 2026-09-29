@@ -2,24 +2,32 @@ package vn.simtim.api.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import vn.simtim.api.auth.domain.PasswordHasher;
 
 /**
  * Integration test cho BE-03: API danh mục, sản phẩm và nhà cung cấp.
  * Dùng Testcontainers PostgreSQL 17 (giống CI) và profile demo để seed dữ liệu.
  */
 @ActiveProfiles("demo")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CatalogApiTest {
 
@@ -49,18 +57,115 @@ class CatalogApiTest {
     }
 
     @AfterAll
-    static void stop() {
-        if (postgres.isRunning()) postgres.stop();
+    void stop() {
+        try {
+            // Remove only accounts owned by this suite, including with a shared disposable DB.
+            for (UUID id : fixtureUsers) {
+                jdbc.update("delete from iam.auth_sessions where user_id=?", id);
+                jdbc.update("delete from iam.user_roles where user_id=?", id);
+                jdbc.update("delete from iam.users where id=?", id);
+            }
+        } finally {
+            if (postgres.isRunning()) postgres.stop();
+        }
     }
 
     @Autowired
     TestRestTemplate rest;
 
-    HttpHeaders orgHeaders() {
+    @Autowired JdbcTemplate jdbc;
+    @Autowired PasswordHasher passwords;
+    private final List<UUID> fixtureUsers = new ArrayList<>();
+    private static final String PASSWORD = "catalog-fixture-password-123";
+    private String stockToken;
+    private String salesToken;
+
+    @BeforeAll
+    void authenticateFixtures() {
+        String hash = passwords.hash(PASSWORD);
+        stockToken = createSession("STOCK", hash);
+        salesToken = createSession("SALES", hash);
+    }
+
+    private String createSession(String role, String hash) {
+        UUID id = UUID.randomUUID();
+        String username = "catalog_" + role.toLowerCase(Locale.ROOT) + "_" + id;
+        jdbc.update("""
+                insert into iam.users(id,organization_id,username,password_hash,full_name,status)
+                values(?,?,?,?,?,'ACTIVE')
+                """, id, UUID.fromString(ORG_ID), username, hash, "Catalog fixture " + role);
+        fixtureUsers.add(id);
+        assertThat(jdbc.update("""
+                insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
+                select organization_id,?,id,?,now(),? from iam.roles
+                where organization_id=? and code=?
+                """, id, UUID.fromString(STORE_ID), id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+        var response = rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(Map.of(
+                "organizationCode", "SIMTIM", "storeCode", "MAIN",
+                "username", username, "password", PASSWORD), scopeHeaders()), Map.class);
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull().containsEntry("tokenType", "Bearer");
+        String token = (String) response.getBody().get("accessToken");
+        assertThat(token).hasSize(43);
+        return token;
+    }
+
+    private HttpHeaders scopeHeaders() {
         var h = new HttpHeaders();
         h.set("X-Organization-Id", ORG_ID);
         h.setContentType(MediaType.APPLICATION_JSON);
         return h;
+    }
+
+    private HttpHeaders sessionHeaders(String token) {
+        var h = scopeHeaders();
+        h.setBearerAuth(token);
+        return h;
+    }
+
+    HttpHeaders orgHeaders() {
+        return sessionHeaders(stockToken);
+    }
+
+    @Test
+    void catalogRequestsWithoutBearerAreRejected() {
+        for (String path : List.of("categories", "units", "products", "suppliers")) {
+            var response = rest.exchange("/api/v1/" + path, HttpMethod.GET,
+                    new HttpEntity<>(scopeHeaders()), Map.class);
+            assertThat(response.getStatusCode().value()).isEqualTo(401);
+            assertThat(response.getBody()).containsEntry("code", "UNAUTHENTICATED");
+        }
+    }
+
+    @Test
+    void salesCanReadCatalogButCannotCreateUpdateOrDelete() {
+        for (String path : List.of("categories", "units", "products", "suppliers")) {
+            String url = "/api/v1/" + path;
+            var read = rest.exchange(url, HttpMethod.GET,
+                    new HttpEntity<>(sessionHeaders(salesToken)), String.class);
+            assertThat(read.getStatusCode().value()).isEqualTo(200);
+            for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)) {
+                String target = method == HttpMethod.POST ? url : url + "/" + UUID.randomUUID();
+                var denied = rest.exchange(target, method,
+                        new HttpEntity<>("{}", sessionHeaders(salesToken)), Map.class);
+                assertThat(denied.getStatusCode().value()).isEqualTo(403);
+                assertThat(denied.getBody()).containsEntry("code", "FORBIDDEN");
+            }
+        }
+    }
+
+    @Test
+    void catalogRejectsOrganizationAndStoreOutsideSessionScope() {
+        for (String scope : List.of("X-Organization-Id", "X-Store-Id")) {
+            var headers = orgHeaders();
+            headers.set(scope, UUID.randomUUID().toString());
+            for (String path : List.of("categories", "units", "products", "suppliers")) {
+                var response = rest.exchange("/api/v1/" + path, HttpMethod.GET,
+                        new HttpEntity<>(headers), Map.class);
+                assertThat(response.getStatusCode().value()).isEqualTo(403);
+                assertThat(response.getBody()).containsEntry("code", "FORBIDDEN");
+            }
+        }
     }
 
     // ===== Categories =====
