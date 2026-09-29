@@ -1,8 +1,8 @@
 # 2. Danh sách yêu cầu
 
-Phiên bản: `0.1-draft`. Tài liệu được lập từ mô hình hiện trạng dự kiến; các mục `Cần khảo sát` phải được xác nhận trước khi đóng phạm vi.
+Phiên bản: `0.2` — phạm vi được Project Owner xác nhận ngày 29/09/2026 theo backlog hiện hành, phần mở rộng trong Word để sau. **Chờ review của nhóm và tích hợp**, chưa ghi nhận phê duyệt riêng của từng thành viên.
 
-Các quyết định Project Owner ngày 26/09/2026 về bốn vai trò server, tiền số nguyên VND và phạm vi ghi hàng nhận sai lệch đã được ghi trong [bản đối chiếu REQ-01](../../project/REQ-01_DECISION_DRAFT.md). Bảng trạng thái dưới đây vẫn là bản nháp; chỉ đổi trạng thái từng yêu cầu sau khi có biên bản xác nhận của nhóm theo Issue REQ-01.
+[Bản ghi REQ-01 ngày 29/09/2026](../../project/REQ-01_SCOPE_RECORD_2026-09-29.md) nêu nguồn báo cáo tuần 4, thông tin Project Owner về quá trình trao đổi của nhóm và ma trận phạm vi theo backlog hiện hành. Bản `0.1-draft` được giữ trong lịch sử Git và [phương án ngày 26/09/2026](../../project/REQ-01_DECISION_DRAFT.md).
 
 ## 2.1. Mục tiêu hệ thống
 
@@ -23,7 +23,7 @@ Các quyết định Project Owner ngày 26/09/2026 về bốn vai trò server, 
 | P2 | Nên có, chỉ thực hiện sau khi luồng P1 chạy ổn định. |
 | P3 | Hướng mở rộng hoặc nội dung trình diễn. |
 
-Trạng thái `Đề xuất` nghĩa là nhóm chưa xác nhận với người dùng thực tế/giảng viên. `Cần khảo sát` nghĩa là yêu cầu phụ thuộc kết quả khảo sát.
+Các trạng thái dưới đây ghi **quyết định phạm vi của Project Owner ngày 29/09/2026**: `Chấp nhận` thuộc phạm vi backlog hiện hành; `Hoãn` chưa có cam kết triển khai; `Loại` ngoài bản nộp hiện tại. Trạng thái phạm vi không có nghĩa code/test đã hoàn thành. Ưu tiên gốc được giữ để thấy các yêu cầu P1 chưa được lên lịch. Nguồn nghiên cứu tham khảo và xác nhận được ghi ở bản REQ-01; không suy ra đã khảo sát người dùng hoặc được giảng viên phê duyệt.
 
 ## 2.3. Yêu cầu chức năng
 
@@ -31,136 +31,138 @@ Trạng thái `Đề xuất` nghĩa là nhóm chưa xác nhận với người d
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-AUTH-01 | Người dùng đăng nhập bằng tài khoản cá nhân. | P1 | Đề xuất |
-| FR-AUTH-02 | Người dùng đăng xuất; hệ thống kết thúc phiên làm việc trên thiết bị. | P1 | Đề xuất |
-| FR-AUTH-03 | Hệ thống giới hạn chức năng theo vai trò nhân viên bán hàng, nhân viên kho, quản lý và quản trị viên. | P1 | Đề xuất |
-| FR-AUTH-04 | Quản trị viên tạo, khóa, mở khóa và gán vai trò cho tài khoản. | P1 | Đề xuất |
-| FR-AUTH-05 | Người dùng đổi mật khẩu của mình. | P2 | Đề xuất |
+| FR-AUTH-01 | Người dùng đăng nhập bằng tài khoản cá nhân. | P1 | Chấp nhận |
+| FR-AUTH-02 | Người dùng đăng xuất; hệ thống kết thúc phiên làm việc trên thiết bị. | P1 | Chấp nhận |
+| FR-AUTH-03 | Hệ thống giới hạn chức năng theo vai trò nhân viên bán hàng, nhân viên kho, quản lý và quản trị viên. | P1 | Chấp nhận |
+| FR-AUTH-04 | Quản trị viên tạo, khóa, mở khóa và gán vai trò cho tài khoản. | P1 | Hoãn — ACC-01 chưa lên lịch |
+| FR-AUTH-05 | Người dùng đổi mật khẩu của mình. | P2 | Hoãn — chưa lên lịch |
 
 ### B. Danh mục hàng hóa
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-CAT-01 | Quản lý tạo, xem, sửa và ngừng sử dụng loại sản phẩm. | P1 | Đề xuất |
-| FR-CAT-02 | Quản lý tạo, xem, sửa và ngừng kinh doanh sản phẩm. | P1 | Đề xuất |
-| FR-CAT-03 | Mỗi sản phẩm có mã nội bộ, tên, loại, đơn vị tính, mã vạch, giá bán và trạng thái. | P1 | Đề xuất |
-| FR-CAT-04 | Hệ thống cho phép tìm sản phẩm bằng mã, mã vạch hoặc tên. | P1 | Đề xuất |
-| FR-CAT-05 | Hệ thống từ chối mã sản phẩm/mã vạch bị trùng trong phạm vi áp dụng. | P1 | Đề xuất |
+| FR-CAT-01 | Quản lý tạo, xem, sửa và ngừng sử dụng loại sản phẩm. | P1 | Chấp nhận |
+| FR-CAT-02 | Quản lý tạo, xem, sửa và ngừng kinh doanh sản phẩm. | P1 | Chấp nhận |
+| FR-CAT-03 | Mỗi sản phẩm có mã nội bộ, tên, loại, đơn vị tính, mã vạch, giá bán và trạng thái. | P1 | Chấp nhận |
+| FR-CAT-04 | Hệ thống cho phép tìm sản phẩm bằng mã, mã vạch hoặc tên. | P1 | Chấp nhận |
+| FR-CAT-05 | Hệ thống từ chối mã sản phẩm/mã vạch bị trùng trong phạm vi áp dụng. | P1 | Chấp nhận |
 
 ### C. Nhà cung cấp và nhận hàng
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-REC-01 | Quản lý lưu và cập nhật thông tin nhà cung cấp. | P1 | Đề xuất |
-| FR-REC-02 | Nhân viên lập phiếu nhận hàng gồm nhà cung cấp, thời điểm nhận và các dòng hàng. | P1 | Đề xuất |
-| FR-REC-03 | Mỗi dòng nhận hàng ghi sản phẩm, số lượng giao, số lượng chấp nhận, giá nhập, mã lô và hạn sử dụng khi áp dụng. | P1 | Đề xuất |
-| FR-REC-04 | Nhân viên ghi nhận hàng thiếu, thừa, hư hỏng hoặc bị từ chối cùng lý do. | P2 | Cần khảo sát |
-| FR-REC-05 | Khi xác nhận phiếu, hệ thống tạo/cập nhật lô, tăng tồn và ghi biến động kho trong cùng một giao dịch nghiệp vụ. | P1 | Đề xuất |
-| FR-REC-06 | Phiếu đã xác nhận không được xóa trực tiếp; việc sửa sai phải qua thao tác hủy/điều chỉnh có lưu lịch sử. | P2 | Cần khảo sát |
+| FR-REC-01 | Quản lý lưu và cập nhật thông tin nhà cung cấp. | P1 | Chấp nhận |
+| FR-REC-02 | Nhân viên lập phiếu nhận hàng gồm nhà cung cấp, thời điểm nhận và các dòng hàng. | P1 | Chấp nhận |
+| FR-REC-03 | Mỗi dòng nhận hàng ghi sản phẩm, số lượng giao, số lượng chấp nhận, giá nhập, mã lô và hạn sử dụng khi áp dụng. | P1 | Chấp nhận |
+| FR-REC-04 | Nhân viên ghi nhận hàng thiếu, thừa, hư hỏng hoặc bị từ chối cùng lý do. | P2 | Chấp nhận — ghi số lượng/lý do trên phiếu |
+| FR-REC-05 | Khi xác nhận phiếu, hệ thống tạo/cập nhật lô, tăng tồn và ghi biến động kho trong cùng một giao dịch nghiệp vụ. | P1 | Chấp nhận |
+| FR-REC-06 | Phiếu đã xác nhận không được xóa trực tiếp; việc sửa sai phải qua thao tác hủy/điều chỉnh có lưu lịch sử. | P2 | Hoãn — chưa có luồng sửa sai |
 
 ### D. Tồn kho, lô và hạn sử dụng
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-INV-01 | Người có quyền xem tồn hiện tại theo sản phẩm và theo lô. | P1 | Đề xuất |
-| FR-INV-02 | Hệ thống lưu ngày nhận, hạn sử dụng và trạng thái của lô khi sản phẩm cần theo dõi lô. | P1 | Đề xuất |
-| FR-INV-03 | Người dùng lọc các lô còn hạn, cận hạn và hết hạn tại một ngày xác định. | P1 | Đề xuất |
-| FR-INV-04 | Hệ thống ghi mọi lần tăng/giảm tồn thành biến động có loại nghiệp vụ, số lượng, thời điểm, người thực hiện và chứng từ nguồn. | P1 | Đề xuất |
-| FR-INV-05 | Hệ thống không cho bán lô hết hạn. | P1 | Đề xuất |
-| FR-INV-06 | Hệ thống đề xuất hoặc tự chọn lô xuất theo quy tắc ưu tiên hết hạn sớm, còn khả dụng. | P2 | Cần khảo sát |
-| FR-INV-07 | Nhân viên lập phiên kiểm kê và nhập số lượng thực tế. | P1 | Đề xuất |
-| FR-INV-08 | Hệ thống tính chênh lệch giữa số thực tế và số hệ thống. | P1 | Đề xuất |
-| FR-INV-09 | Quản lý duyệt điều chỉnh chênh lệch; hệ thống tạo biến động tương ứng. | P2 | Cần khảo sát |
-| FR-INV-10 | Nhân viên ghi nhận việc loại bỏ hàng hết hạn/hư hỏng; quản lý phê duyệt khi quy định yêu cầu. | P2 | Cần khảo sát |
-| FR-INV-11 | Hệ thống quản lý tồn theo vị trí “kho” và “kệ” cùng nghiệp vụ bổ sung kệ. | P3 | Cần khảo sát |
+| FR-INV-01 | Người có quyền xem tồn hiện tại theo sản phẩm và theo lô. | P1 | Chấp nhận |
+| FR-INV-02 | Hệ thống lưu ngày nhận, hạn sử dụng và trạng thái của lô khi sản phẩm cần theo dõi lô. | P1 | Chấp nhận |
+| FR-INV-03 | Người dùng lọc các lô còn hạn, cận hạn và hết hạn tại một ngày xác định. | P1 | Chấp nhận |
+| FR-INV-04 | Hệ thống ghi mọi lần tăng/giảm tồn thành biến động có loại nghiệp vụ, số lượng, thời điểm, người thực hiện và chứng từ nguồn. | P1 | Chấp nhận |
+| FR-INV-05 | Hệ thống không cho bán lô hết hạn. | P1 | Chấp nhận |
+| FR-INV-06 | Hệ thống đề xuất hoặc tự chọn lô xuất theo quy tắc ưu tiên hết hạn sớm, còn khả dụng. | P2 | Chấp nhận |
+| FR-INV-07 | Nhân viên lập phiên kiểm kê và nhập số lượng thực tế. | P1 | Chấp nhận |
+| FR-INV-08 | Hệ thống tính chênh lệch giữa số thực tế và số hệ thống. | P1 | Chấp nhận |
+| FR-INV-09 | Quản lý duyệt điều chỉnh chênh lệch; hệ thống tạo biến động tương ứng. | P2 | Chấp nhận |
+| FR-INV-10 | Nhân viên ghi nhận việc loại bỏ hàng hết hạn/hư hỏng; quản lý phê duyệt khi quy định yêu cầu. | P2 | Hoãn — nghiệp vụ vận hành chưa lên lịch |
+| FR-INV-11 | Hệ thống quản lý tồn theo vị trí “kho” và “kệ” cùng nghiệp vụ bổ sung kệ. | P3 | Hoãn — MVP một tồn chung |
 
 ### E. Bán hàng, hóa đơn và thanh toán
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-SAL-01 | Nhân viên bán hàng tạo một hóa đơn mới tại quầy. | P1 | Đề xuất |
-| FR-SAL-02 | Nhân viên thêm sản phẩm bằng cách quét/nhập mã vạch hoặc tìm kiếm. | P1 | Đề xuất |
-| FR-SAL-03 | Nhân viên thay đổi số lượng hoặc xóa dòng hàng trước khi xác nhận thanh toán. | P1 | Đề xuất |
-| FR-SAL-04 | Hệ thống kiểm tra trạng thái sản phẩm, hạn sử dụng và lượng tồn khả dụng. | P1 | Đề xuất |
-| FR-SAL-05 | Hệ thống tính tạm tính, giảm giá và tổng thanh toán. | P1 | Đề xuất |
-| FR-SAL-06 | Nhân viên ghi nhận phương thức và số tiền thanh toán. | P1 | Đề xuất |
-| FR-SAL-07 | Khi xác nhận thanh toán, hệ thống lưu hóa đơn, chi tiết, thanh toán và biến động giảm tồn trong cùng một giao dịch nghiệp vụ. | P1 | Đề xuất |
-| FR-SAL-08 | Người dùng xem lại hoặc xuất bản trình bày hóa đơn. | P1 | Đề xuất |
-| FR-SAL-09 | Quản lý hủy hóa đơn theo quyền; hệ thống hoàn tác tồn và lưu lý do, không xóa lịch sử. | P2 | Cần khảo sát |
-| FR-SAL-10 | Hệ thống hỗ trợ trả hàng/hoàn tiền. | P3 | Cần khảo sát |
+| FR-SAL-01 | Nhân viên bán hàng tạo một hóa đơn mới tại quầy. | P1 | Chấp nhận |
+| FR-SAL-02 | Nhân viên thêm sản phẩm bằng cách quét/nhập mã vạch hoặc tìm kiếm. | P1 | Chấp nhận |
+| FR-SAL-03 | Nhân viên thay đổi số lượng hoặc xóa dòng hàng trước khi xác nhận thanh toán. | P1 | Chấp nhận |
+| FR-SAL-04 | Hệ thống kiểm tra trạng thái sản phẩm, hạn sử dụng và lượng tồn khả dụng. | P1 | Chấp nhận |
+| FR-SAL-05 | Hệ thống tính tạm tính, giảm giá và tổng thanh toán. | P1 | Chấp nhận |
+| FR-SAL-06 | Nhân viên ghi nhận phương thức và số tiền thanh toán. | P1 | Chấp nhận |
+| FR-SAL-07 | Khi xác nhận thanh toán, hệ thống lưu hóa đơn, chi tiết, thanh toán và biến động giảm tồn trong cùng một giao dịch nghiệp vụ. | P1 | Chấp nhận |
+| FR-SAL-08 | Người dùng xem lại hoặc xuất bản trình bày hóa đơn. | P1 | Chấp nhận |
+| FR-SAL-09 | Quản lý hủy hóa đơn theo quyền; hệ thống hoàn tác tồn và lưu lý do, không xóa lịch sử. | P2 | Hoãn — chưa có backlog |
+| FR-SAL-10 | Hệ thống hỗ trợ trả hàng/hoàn tiền. | P3 | Hoãn — ngoài MVP |
 
 ### F. Khuyến mãi và khách hàng thành viên
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-PRO-01 | Quản lý tạo chương trình giảm giá với thời gian hiệu lực và phạm vi sản phẩm/lô. | P1 | Đề xuất |
-| FR-PRO-02 | Hệ thống chỉ áp dụng khuyến mãi khi thỏa điều kiện và còn hiệu lực. | P1 | Đề xuất |
-| FR-PRO-03 | Hệ thống lưu giá gốc, mức giảm và giá thực bán trên từng dòng hóa đơn. | P1 | Đề xuất |
-| FR-CUS-01 | Nhân viên tìm hoặc đăng ký khách hàng thành viên bằng thông tin định danh được chọn. | P2 | Cần khảo sát |
-| FR-CUS-02 | Hệ thống cộng điểm sau giao dịch và lưu lịch sử thay đổi điểm. | P2 | Cần khảo sát |
-| FR-CUS-03 | Khách hàng sử dụng điểm theo quy tắc được cấu hình. | P3 | Cần khảo sát |
+| FR-PRO-01 | Quản lý tạo chương trình giảm giá với thời gian hiệu lực và phạm vi sản phẩm/lô. | P1 | Chấp nhận |
+| FR-PRO-02 | Hệ thống chỉ áp dụng khuyến mãi khi thỏa điều kiện và còn hiệu lực. | P1 | Chấp nhận |
+| FR-PRO-03 | Hệ thống lưu giá gốc, mức giảm và giá thực bán trên từng dòng hóa đơn. | P1 | Chấp nhận |
+| FR-CUS-01 | Nhân viên tìm hoặc đăng ký khách hàng thành viên bằng thông tin định danh được chọn. | P2 | Hoãn — Icebox |
+| FR-CUS-02 | Hệ thống cộng điểm sau giao dịch và lưu lịch sử thay đổi điểm. | P2 | Hoãn — Icebox |
+| FR-CUS-03 | Khách hàng sử dụng điểm theo quy tắc được cấu hình. | P3 | Hoãn — Icebox |
 
 ### G. Báo cáo và truy vết
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-REP-01 | Quản lý xem doanh thu và số hóa đơn theo khoảng thời gian. | P1 | Đề xuất |
-| FR-REP-02 | Quản lý xem tồn hiện tại theo sản phẩm/lô. | P1 | Đề xuất |
-| FR-REP-03 | Quản lý xem danh sách lô cận hạn và hết hạn. | P1 | Đề xuất |
-| FR-REP-04 | Quản lý xem lịch sử biến động của một sản phẩm/lô. | P1 | Đề xuất |
-| FR-REP-05 | Quản lý xem chênh lệch kiểm kê. | P2 | Đề xuất |
-| FR-AUD-01 | Hệ thống lưu nhật ký các thao tác quan trọng như đăng nhập, xác nhận phiếu, hủy hóa đơn, điều chỉnh tồn và thay đổi quyền. | P1 | Đề xuất |
-| FR-AUD-02 | Người có quyền tra cứu nhật ký theo người dùng, thời gian và loại hành động. | P2 | Đề xuất |
+| FR-REP-01 | Quản lý xem doanh thu và số hóa đơn theo khoảng thời gian. | P1 | Chấp nhận |
+| FR-REP-02 | Quản lý xem tồn hiện tại theo sản phẩm/lô. | P1 | Chấp nhận |
+| FR-REP-03 | Quản lý xem danh sách lô cận hạn và hết hạn. | P1 | Chấp nhận |
+| FR-REP-04 | Quản lý xem lịch sử biến động của một sản phẩm/lô. | P1 | Chấp nhận |
+| FR-REP-05 | Quản lý xem chênh lệch kiểm kê. | P2 | Chấp nhận |
+| FR-AUD-01 | Hệ thống lưu nhật ký các thao tác quan trọng như đăng nhập, xác nhận phiếu, hủy hóa đơn, điều chỉnh tồn và thay đổi quyền. | P1 | Chấp nhận — cho nghiệp vụ trong phạm vi |
+| FR-AUD-02 | Người có quyền tra cứu nhật ký theo người dùng, thời gian và loại hành động. | P2 | Hoãn — chưa có backlog riêng |
 
 ### H. Đa thiết bị, trạng thái kết nối và đồng bộ
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-DEV-01 | Giao diện quản lý dùng được trên màn hình máy tính và điện thoại đối với các chức năng được phân quyền. | P1 | Đề xuất |
-| FR-DEV-02 | Người dùng trên nhiều thiết bị truy cập cùng dữ liệu trung tâm khi có kết nối. | P1 | Đề xuất |
-| FR-SYNC-01 | Hệ thống hiển thị trạng thái trực tuyến, ngoại tuyến, đang chờ đồng bộ hoặc đồng bộ lỗi. | P2 | Đề xuất |
-| FR-SYNC-02 | Với nghiệp vụ offline được chọn, thiết bị lưu thao tác cục bộ cùng mã thao tác duy nhất. | P2 | Cần khảo sát |
-| FR-SYNC-03 | Khi có kết nối trở lại, hệ thống gửi thao tác đang chờ và không xử lý trùng cùng một mã thao tác. | P2 | Cần khảo sát |
-| FR-SYNC-04 | Hệ thống thông báo các thao tác bị từ chối hoặc có xung đột để người có quyền xử lý. | P2 | Cần khảo sát |
-| FR-SYNC-05 | Bán hàng ngoại tuyến hoàn chỉnh và giải quyết xung đột tồn giữa nhiều thiết bị. | P3 | Chưa cam kết |
+| FR-DEV-01 | Giao diện quản lý dùng được trên màn hình máy tính và điện thoại đối với các chức năng được phân quyền. | P1 | Chấp nhận |
+| FR-DEV-02 | Người dùng trên nhiều thiết bị truy cập cùng dữ liệu trung tâm khi có kết nối. | P1 | Chấp nhận |
+| FR-SYNC-01 | Hệ thống hiển thị trạng thái trực tuyến, ngoại tuyến, đang chờ đồng bộ hoặc đồng bộ lỗi. | P2 | Chấp nhận — kiểm kê offline |
+| FR-SYNC-02 | Với nghiệp vụ offline được chọn, thiết bị lưu thao tác cục bộ cùng mã thao tác duy nhất. | P2 | Chấp nhận — kiểm kê offline |
+| FR-SYNC-03 | Khi có kết nối trở lại, hệ thống gửi thao tác đang chờ và không xử lý trùng cùng một mã thao tác. | P2 | Chấp nhận — kiểm kê offline |
+| FR-SYNC-04 | Hệ thống thông báo các thao tác bị từ chối hoặc có xung đột để người có quyền xử lý. | P2 | Chấp nhận — kiểm kê offline |
+| FR-SYNC-05 | Bán hàng ngoại tuyến hoàn chỉnh và giải quyết xung đột tồn giữa nhiều thiết bị. | P3 | Hoãn — Icebox |
 
 ### I. Hỗ trợ đào tạo nghiệp vụ
 
 | ID | Yêu cầu | Ưu tiên | Trạng thái |
 |---|---|---:|---|
-| FR-TRN-01 | Người học xem danh sách và bắt đầu kịch bản đào tạo được mở. | P2 | Đề xuất |
-| FR-TRN-02 | Hệ thống tạo phiên thực hành có dữ liệu riêng, không thay đổi dữ liệu vận hành. | P2 | Đề xuất |
-| FR-TRN-03 | Nhân vật hướng dẫn trình bày mục tiêu và các chỉ dẫn của kịch bản. | P2 | Đề xuất |
-| FR-TRN-04 | Người học tương tác với hàng hóa/thiết bị trong môi trường 2D và thực hiện nghiệp vụ liên quan. | P2 | Đề xuất |
-| FR-TRN-05 | Hệ thống ghi thứ tự và kết quả các hành động cần đánh giá. | P2 | Đề xuất |
-| FR-TRN-06 | Hệ thống phản hồi khi hành động không đáp ứng quy tắc của kịch bản. | P2 | Đề xuất |
-| FR-TRN-07 | Hệ thống tính trạng thái hoàn thành và lưu kết quả phiên đào tạo. | P2 | Đề xuất |
-| FR-TRN-08 | Người học xem lại kết quả; quản lý xem kết quả của nhân viên thuộc phạm vi quản lý. | P2 | Đề xuất |
-| FR-TRN-09 | Kịch bản kinh dị, thực thể bí ẩn và jumpscare. | P3 | Nội dung mở rộng |
+| FR-TRN-01 | Người học xem danh sách và bắt đầu kịch bản đào tạo được mở. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-02 | Hệ thống tạo phiên thực hành có dữ liệu riêng, không thay đổi dữ liệu vận hành. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-03 | Nhân vật hướng dẫn trình bày mục tiêu và các chỉ dẫn của kịch bản. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-04 | Người học tương tác với hàng hóa/thiết bị trong môi trường 2D và thực hiện nghiệp vụ liên quan. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-05 | Hệ thống ghi thứ tự và kết quả các hành động cần đánh giá. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-06 | Hệ thống phản hồi khi hành động không đáp ứng quy tắc của kịch bản. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-07 | Hệ thống tính trạng thái hoàn thành và lưu kết quả phiên đào tạo. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-08 | Người học xem lại kết quả; quản lý xem kết quả của nhân viên thuộc phạm vi quản lý. | P2 | Chấp nhận — một kịch bản |
+| FR-TRN-09 | Kịch bản kinh dị, thực thể bí ẩn và jumpscare. | P3 | Loại — ngoài cam kết bản nộp |
 
 ## 2.4. Yêu cầu phi chức năng
 
-| ID | Nhóm | Yêu cầu đề xuất | Cách kiểm chứng dự kiến |
-|---|---|---|---|
-| NFR-SEC-01 | Bảo mật | Mật khẩu không được lưu dưới dạng văn bản thuần. | Kiểm tra schema và mã xử lý xác thực. |
-| NFR-SEC-02 | Bảo mật | API kiểm tra quyền ở phía máy chủ cho mọi thao tác thay đổi dữ liệu. | Test gọi API bằng vai trò không đủ quyền. |
-| NFR-SEC-03 | Bảo mật | Phiên đăng nhập hết hiệu lực theo chính sách được cấu hình. | Test token/session hết hạn. |
-| NFR-DAT-01 | Toàn vẹn | Hóa đơn, thanh toán và biến động tồn của một giao dịch không được lưu dở dang. | Mô phỏng lỗi giữa giao dịch và kiểm tra rollback. |
-| NFR-DAT-02 | Toàn vẹn | Mỗi yêu cầu đồng bộ có mã duy nhất để chống xử lý lặp. | Gửi lại cùng yêu cầu hai lần. |
-| NFR-DAT-03 | Toàn vẹn | Máy chủ và CSDL trung tâm là nguồn dữ liệu vận hành có thẩm quyền. | Kiểm tra quy trình xử lý xung đột. |
-| NFR-USA-01 | Khả dụng | Luồng bán hàng thường dùng được hoàn thành bằng thao tác ngắn, rõ và hỗ trợ nhập từ máy quét như bàn phím. | Kiểm thử tác vụ với người dùng. |
-| NFR-USA-02 | Khả dụng | Giao diện điện thoại không yêu cầu cuộn ngang ở các màn hình nghiệp vụ chính. | Test trên kích thước màn hình đã chọn. |
-| NFR-USA-03 | Khả dụng | Hệ thống hiển thị rõ thao tác đã thành công, đang chờ đồng bộ hay thất bại. | Test các trạng thái kết nối. |
-| NFR-PER-01 | Hiệu năng | Các thao tác tra cứu thường dùng phản hồi trong mục tiêu 2 giây ở môi trường demo và dữ liệu mẫu. | Đo thời gian phản hồi với bộ dữ liệu kiểm thử. |
-| NFR-REL-01 | Tin cậy | Dữ liệu đang nhập dở trong nghiệp vụ offline đã chọn không mất khi tải lại ứng dụng. | Tắt/mở ứng dụng trước khi đồng bộ. |
-| NFR-COM-01 | Tương thích | Giao diện quản lý chạy trên các trình duyệt desktop/mobile được nhóm công bố trong báo cáo. | Lập ma trận trình duyệt và kiểm thử. |
-| NFR-MAI-01 | Bảo trì | Tầng giao diện, nghiệp vụ/API và truy xuất dữ liệu được tách trách nhiệm. | Review kiến trúc và mã nguồn. |
-| NFR-BAC-01 | Sao lưu | Có cách sao lưu và khôi phục CSDL cho môi trường demo. | Thực hiện phục hồi trên bản sao sạch. |
-| NFR-TRN-01 | Cách ly | Dữ liệu phiên đào tạo không làm thay đổi tồn kho và báo cáo vận hành. | Chạy bài đào tạo và so sánh dữ liệu trước/sau. |
+| ID | Nhóm | Yêu cầu | Cách kiểm chứng dự kiến | Trạng thái phạm vi |
+|---|---|---|---|---|
+| NFR-SEC-01 | Bảo mật | Mật khẩu không được lưu dưới dạng văn bản thuần. | Kiểm tra schema và mã xử lý xác thực. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-SEC-02 | Bảo mật | API kiểm tra quyền ở phía máy chủ cho mọi thao tác thay đổi dữ liệu. | Test gọi API bằng vai trò không đủ quyền. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-SEC-03 | Bảo mật | Phiên đăng nhập hết hiệu lực theo chính sách được cấu hình. | Test token/session hết hạn. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-DAT-01 | Toàn vẹn | Hóa đơn, thanh toán và biến động tồn của một giao dịch không được lưu dở dang. | Mô phỏng lỗi giữa giao dịch và kiểm tra rollback. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-DAT-02 | Toàn vẹn | Mỗi yêu cầu đồng bộ có mã duy nhất để chống xử lý lặp. | Gửi lại cùng yêu cầu hai lần. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-DAT-03 | Toàn vẹn | Máy chủ và CSDL trung tâm là nguồn dữ liệu vận hành có thẩm quyền. | Kiểm tra quy trình xử lý xung đột. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-USA-01 | Khả dụng | Luồng bán hàng thường dùng được hoàn thành bằng thao tác ngắn, rõ và hỗ trợ nhập từ máy quét như bàn phím. | Kiểm thử tác vụ với người dùng. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-USA-02 | Khả dụng | Giao diện điện thoại không yêu cầu cuộn ngang ở các màn hình nghiệp vụ chính. | Test trên kích thước màn hình đã chọn. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-USA-03 | Khả dụng | Hệ thống hiển thị rõ thao tác đã thành công, đang chờ đồng bộ hay thất bại. | Test các trạng thái kết nối. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-PER-01 | Hiệu năng | Các thao tác tra cứu thường dùng phản hồi trong mục tiêu 2 giây ở môi trường demo và dữ liệu mẫu. | Đo thời gian phản hồi với bộ dữ liệu kiểm thử. | Hoãn chốt ngưỡng — cần môi trường đo |
+| NFR-REL-01 | Tin cậy | Dữ liệu đang nhập dở trong nghiệp vụ offline đã chọn không mất khi tải lại ứng dụng. | Tắt/mở ứng dụng trước khi đồng bộ. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-COM-01 | Tương thích | Giao diện quản lý chạy trên các trình duyệt desktop/mobile được nhóm công bố trong báo cáo. | Lập ma trận trình duyệt và kiểm thử. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-MAI-01 | Bảo trì | Tầng giao diện, nghiệp vụ/API và truy xuất dữ liệu được tách trách nhiệm. | Review kiến trúc và mã nguồn. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-BAC-01 | Sao lưu | Có cách sao lưu và khôi phục CSDL cho môi trường demo. | Thực hiện phục hồi trên bản sao sạch. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
+| NFR-TRN-01 | Cách ly | Dữ liệu phiên đào tạo không làm thay đổi tồn kho và báo cáo vận hành. | Chạy bài đào tạo và so sánh dữ liệu trước/sau. | Chấp nhận trong phạm vi nghiệp vụ đã chọn |
 
-Các con số hiệu năng và danh sách trình duyệt là ngưỡng đề xuất, cần điều chỉnh sau khi biết môi trường triển khai và máy yếu nhất.
+Ngưỡng hiệu năng chưa được chốt. Danh sách trình duyệt/viewport và môi trường kiểm thử phải được công bố trong QA của sprint tương ứng; chấp nhận yêu cầu không đồng nghĩa đã đo hoặc nghiệm thu.
 
 ## 2.5. Quy tắc nghiệp vụ
+
+BR-01..12 áp dụng cho các nghiệp vụ được chấp nhận trong ma trận REQ-01; phần nhắc đến hủy hóa đơn/đổi quyền không tạo cam kết triển khai chức năng đã hoãn. BR-10..11 chỉ áp dụng cho kiểm kê offline. Cấm xóa vật lý chứng từ đã xác nhận và phải giữ cách ly dữ liệu đào tạo.
 
 | ID | Quy tắc |
 |---|---|
@@ -177,7 +179,7 @@ Các con số hiệu năng và danh sách trình duyệt là ngưỡng đề xu�
 | BR-11 | Thao tác offline có trạng thái `PENDING`, `SYNCED`, `REJECTED` hoặc `CONFLICT`. |
 | BR-12 | Dữ liệu đào tạo được tạo trong phiên riêng và bị loại/reset theo chính sách của kịch bản. |
 
-## 2.6. Phạm vi MVP đề xuất
+## 2.6. Phạm vi MVP theo bản đối chiếu REQ-01
 
 MVP được nghiệm thu bằng hai luồng xuyên suốt:
 

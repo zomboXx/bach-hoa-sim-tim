@@ -26,6 +26,24 @@ Mật khẩu chung: `demo123`.
 
 Danh mục được nhập khi thêm sản phẩm. Chưa có màn hình sửa/xóa danh mục hoặc quản trị tài khoản.
 
+## Auth adapter FE-01 / BE-02 (đang review)
+
+Mặc định `VITE_USE_API` không bật, giữ nguyên demo mode. API mode đang căn chỉnh với contract **Draft** trên [BE-02 PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14); chưa phải quyết định Accepted hoặc backend đã tích hợp vào `main`.
+
+```powershell
+$env:VITE_USE_API = 'true'
+$env:VITE_ORGANIZATION_CODE = 'SIMTIM'
+$env:VITE_STORE_CODE = 'MAIN'
+$env:API_PROXY_TARGET = 'http://127.0.0.1:8080'
+npm run dev
+```
+
+`VITE_*` được nhúng khi build, không đặt secret ở đó. Scope mặc định là `SIMTIM`/`MAIN`; `API_PROXY_TARGET` chỉ cấu hình proxy dev/preview, không nhúng vào client. Production cần reverse proxy cùng origin cho `/api`; Vite preview chỉ phục vụ kiểm thử local. Có thể chạy `npm run build` rồi `npm run preview` với cấu hình này để thử production bundle.
+
+API gửi `POST /api/v1/auth/login` với `{ organizationCode, storeCode, username, password }`, nhận `{ accessToken, tokenType, expiresAt, session }`. Dùng tài khoản backend đã tạo, không dùng tài khoản demo `NV001`/`demo123`. Token opaque chỉ giữ trong bộ nhớ, không ghi storage, cookie, URL hoặc log. Reload quay lại form đăng nhập; demo mode vẫn khôi phục tài khoản trên cùng tab. `restoreSession()` chỉ gọi `GET /api/v1/auth/session` khi adapter đang giữ token; `POST /api/v1/auth/logout` dùng Bearer và thu hồi phiên server. Nếu thu hồi thất bại, giao diện vẫn đăng xuất và báo lỗi; phiên server còn tồn tại tới khi hết hạn hoặc được thu hồi.
+
+API mode hiển thị danh mục theo `catalog.read`, đào tạo theo `trainingEnabled`; role dùng để hiển thị, không tự cấp quyền thao tác. Danh mục hiện vẫn là dữ liệu minh họa trên thiết bị và chỉ để xem. Giao dịch bán hàng/nhập hàng/kiểm kê và sửa danh mục chỉ chạy trong demo mode cho tới khi adapter nghiệp vụ được tích hợp. Backend luôn phải kiểm tra quyền độc lập.
+
 ## Kịch bản trình diễn
 
 1. Đăng nhập `QL001`. Dashboard bắt đầu với doanh thu 0 để không trộn số liệu giả vào giao dịch vừa tạo.
@@ -54,6 +72,8 @@ npm run verify
 ```
 
 Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), khởi chạy preview nếu cổng 4174 chưa được dùng. Có kiểm tra nhận hàng/bán hàng/FEFO, giá khuyến mãi, hóa đơn, reload offline, đồng bộ, duyệt tồn, cách ly đào tạo, đăng nhập sai và quyền giao diện.
+
+`npm run test:e2e:api` tự build API mode và chạy cổng 4175 với HTTP mock theo DTO BE-02 cùng consumer test cho Bearer/session. Bộ này không thay thế kiểm thử kết nối với backend/PostgreSQL thật trước khi merge.
 
 ## Tài liệu và cấu trúc
 

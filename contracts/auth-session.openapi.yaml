@@ -1,11 +1,13 @@
 openapi: 3.1.0
 info:
   title: Sim Tim authentication and session
-  version: 0.1.0-draft
+  version: 0.1.0
+  x-status: Accepted
+  x-accepted-date: '2026-09-29'
   description: >-
-    Draft for BE-02/FE-01 review. Owner API TV1; reviewers TV2 and TV3.
-    Provider code and tests exist on codex/be-02-auth; this contract is not Accepted
-    or integrated until review and merge. Bearer tokens are opaque, not JWTs.
+    Accepted for BE-02/FE-01 following provider review in PR 14 and consumer review
+    in PR 12. Owner API TV1; reviewers API TV2 and web TV1 for TV3's implementation.
+    Provider is integrated; consumer awaits PR 12 integration. Bearer tokens are opaque, not JWTs.
 servers:
   - url: /
 security:
