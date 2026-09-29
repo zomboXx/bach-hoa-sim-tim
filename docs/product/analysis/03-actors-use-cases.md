@@ -2,6 +2,8 @@
 
 ## 3.1. Biên hệ thống
 
+Đọc cùng [bản ghi REQ-01 ngày 29/09/2026](../../project/REQ-01_SCOPE_RECORD_2026-09-29.md), Project Owner đã xác nhận phạm vi theo backlog hiện hành, phần mở rộng để sau; chờ review của nhóm và tích hợp. Danh mục Use Case bên dưới gồm cả thiết kế tương lai; không coi các mục tài khoản, thành viên, hủy hóa đơn hoặc xử lý hàng đã hoãn là cam kết sprint. Offline chỉ áp dụng kiểm kê. ACT-05 mô tả người học; server vẫn có bốn vai trò theo quyết định Project Owner, không có vai trò RBAC thứ năm.
+
 Hệ thống trong phạm vi gồm:
 
 - Giao diện quản lý responsive trên máy tính và điện thoại.
@@ -166,7 +168,9 @@ Actor là vai trò hoặc hệ thống bên ngoài trực tiếp trao đổi d�
 | Luồng thay thế | Làm sai thứ tự; chọn sai sản phẩm/lô; nhập sai số lượng; bỏ qua bước bắt buộc; rời bài giữa chừng |
 | Hậu điều kiện | Kết quả đào tạo được lưu; dữ liệu vận hành không thay đổi |
 
-## 3.7. Các quyết định còn cần xác nhận
+## 3.7. Các câu hỏi tại thời điểm lập bản cơ sở
+
+Giữ danh sách gốc dưới đây để truy vết. Bản đối chiếu REQ-01 đã giới hạn một tồn chung, hoãn thành viên/hủy hóa đơn/xử lý hàng vận hành và chọn kiểm kê offline; quyền server đọc theo BE-02. Kịch bản cụ thể do TRN-02 chốt khi triển khai, không cần mở rộng phạm vi REQ-01.
 
 1. Nhân viên bán hàng và nhân viên kho là hai chức danh tách biệt hay một nhân viên kiêm nhiệm?
 2. Quản lý có trực tiếp bán hàng/nhận hàng bằng cùng tài khoản không?

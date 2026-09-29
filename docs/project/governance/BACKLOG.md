@@ -23,11 +23,11 @@ Mục tiêu: thống nhất cấu trúc làm việc và giữ một prototype c�
 
 Mục tiêu: PWA đăng nhập và đọc danh mục từ API/CSDL thật.
 
-Thứ tự và nhánh khởi động xem [Sprint 1 kickoff](../SPRINT_1_KICKOFF.md). Code thử nghiệm ngoài `main` không làm thay đổi trạng thái backlog.
+Thứ tự và nhánh khởi động xem [Sprint 1 kickoff](../SPRINT_1_KICKOFF.md). Code thử nghiệm ngoài `main` không làm thay đổi trạng thái backlog. [Bản đối chiếu REQ-01 ngày 29/09/2026](../REQ-01_SCOPE_RECORD_2026-09-29.md) ghi cập nhật SRS và nguồn báo cáo tuần 4 theo xác nhận của Project Owner: phạm vi theo backlog hiện hành, phần mở rộng trong Word để sau; chờ review của nhóm và tích hợp, không mở rộng cam kết các sprint.
 
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| REQ-01 | Xác nhận phạm vi P1 và các mục `Cần khảo sát` | P0 | TV1 | Cả nhóm | GOV-01 | Đối chiếu pain point, Use Case và từng yêu cầu với phạm vi MVP; biên bản ghi mục chấp nhận/hoãn/loại, nguồn khảo sát và người xác nhận; cập nhật SRS theo quyết định |
+| REQ-01 | Xác nhận phạm vi P1 và các mục `Cần khảo sát` | P0 | TV1 | Cả nhóm | GOV-01 | Đối chiếu pain point, Use Case và từng yêu cầu với phạm vi MVP; bản ghi quyết định có ngày trên Issue/PR ghi mục chấp nhận/hoãn/loại, nguồn nghiên cứu/khảo sát và người xác nhận; cập nhật SRS theo quyết định |
 | DB-01 | Chốt ERD MVP và data dictionary | P0 | TV2 | TV1, TV3 | REQ-01 | Mô tả khóa, quan hệ, trạng thái, phạm vi tổ chức/cửa hàng và ràng buộc cho tài khoản/quyền, danh mục/giá, nhà cung cấp, nhận hàng, tồn, bán và kiểm kê; tách bảng MVP khỏi thiết kế tương lai; review kiểu tiền, số lượng và quy tắc làm tròn trước migration nghiệp vụ |
 | BE-01 | Khởi tạo backend, migration và CSDL demo | P0 | TV2 | TV1 | DB-01 | Từ môi trường sạch chạy được Java/Spring Boot, PostgreSQL và Flyway; migration của schema đã chốt tạo dữ liệu demo tối thiểu; health check và integration test qua; Maven Wrapper, Compose và gate CI được commit cùng module |
 | BE-02 | Đăng nhập và RBAC phía server | P0 | TV1 | TV2 | BE-01 | Mật khẩu được hash; đăng nhập sai và truy cập thiếu quyền bị từ chối; bốn vai trò bán hàng/hàng hóa/quản lý/quản trị viên chỉ dùng API được cấp; người học là trạng thái nhân viên, không phải vai trò server thứ năm |

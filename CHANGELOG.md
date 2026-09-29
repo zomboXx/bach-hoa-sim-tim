@@ -6,6 +6,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Đối chiếu từng yêu cầu với backlog và báo cáo tuần 4 cho REQ-01; ghi rõ phần chấp nhận/hoãn/loại theo xác nhận của Project Owner ngày 29/09/2026, chờ nhóm review và tích hợp, giữ bản nháp cũ để truy vết và cho phép ghi quyết định trên Issue/PR thay vì dựng biên bản cuộc họp.
+
 - Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17, đã tích hợp qua PR #11.
 - Làm rõ tiêu chí Sprint 1 theo báo cáo Word hiện hành và ghi riêng hai ứng viên quản trị tài khoản, lịch sử giá chưa được lên lịch.
 - Theo quyết định Project Owner ngày 26/09/2026, Sprint 1 dùng bốn vai trò server; người học là trạng thái của nhân viên.
