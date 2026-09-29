@@ -22,6 +22,17 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Trung - 2026-09-28 14:38:45
+
+Thực hiện issue [BE-03] API danh mục, sản phẩm và nhà cung cấp. Khởi tạo toàn bộ module `catalog` theo kiến trúc Modular Monolith (ADR 0003), bao gồm lớp Domain, Infrastructure, Application và API. Cấu hình Testcontainers và hoàn thành 17 tests tích hợp đảm bảo CRUD và business rules.
+
+- `services/api/pom.xml`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/catalog/`: +900 -0
+- `services/api/src/test/java/vn/simtim/api/catalog/`: +250 -0
+- `CONTRIBUTION_LOG.md`: +12 -0
+---
+
+---
 Nguyễn Đức Phát - 2026-09-24 00:29:26
 
 Sửa CI governance sau lần chạy đầu trên Pull Request: checkout đủ parent commit để kiểm tra đúng diff, nâng GitHub Actions khỏi runtime Node.js đã ngừng hỗ trợ và loại bỏ lượt chạy trùng trên feature branch.
