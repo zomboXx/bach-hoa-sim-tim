@@ -72,6 +72,8 @@ class ApiBootstrapTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired vn.simtim.api.auth.domain.PasswordHasher passwords;
+    // Uses the production catalog policy on a dedicated test route, alongside BE-03 controllers.
+    private static final String CATALOG_PERMISSION_PROBE = "/api/v1/products/__be02_security_fixture";
     private static final String PASSWORD = "fixture-password-123";
     private static final String PASSWORD_HASH = new BCryptPasswordEncoder(12).encode(PASSWORD);
 
@@ -82,10 +84,10 @@ class ApiBootstrapTest {
 
     @RestController
     static class TestCatalogController {
-        @GetMapping("/api/v1/products") Map<String, UUID> read(Authentication authentication) {
+        @GetMapping(CATALOG_PERMISSION_PROBE) Map<String, UUID> read(Authentication authentication) {
             return Map.of("organizationId", ((SessionPrincipal) authentication.getPrincipal()).organizationId());
         }
-        @PostMapping("/api/v1/products") ResponseEntity<Void> write() {
+        @PostMapping(CATALOG_PERMISSION_PROBE) ResponseEntity<Void> write() {
             return ResponseEntity.noContent().build();
         }
     }
@@ -145,12 +147,12 @@ class ApiBootstrapTest {
     @Test @Transactional
     void fourRolesEnforceCatalogPermissionsAndTrainingDoesNotEscalate() throws Exception {
         accounts();
-        mvc.perform(get("/api/v1/products")).andExpect(status().isUnauthorized());
+        mvc.perform(get(CATALOG_PERMISSION_PROBE)).andExpect(status().isUnauthorized());
         for (String role : new String[]{"SALES", "STOCK", "MANAGER", "ADMIN"}) {
             String token = login(role);
-            mvc.perform(get("/api/v1/products").header("Authorization", "Bearer " + token))
+            mvc.perform(get(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
-            mvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + token))
+            mvc.perform(post(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token))
                     .andExpect(status().is(role.equals("SALES") ? 403 : 204));
         }
     }
@@ -175,9 +177,9 @@ class ApiBootstrapTest {
     void rejectsSpoofedTenantAndRechecksAccountAndRoleState() throws Exception {
         accounts();
         String token = login("ADMIN");
-        mvc.perform(get("/api/v1/products").header("Authorization", "Bearer " + token)
+        mvc.perform(get(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token)
                 .header("X-Organization-Id", UUID.randomUUID().toString())).andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/products").header("Authorization", "Bearer " + token)
+        mvc.perform(get(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token)
                 .header("X-Store-Id", UUID.randomUUID().toString())).andExpect(status().isForbidden());
         jdbcTemplate.update("update iam.users set status='LOCKED' where username='be02_ADMIN'");
         mvc.perform(get("/api/v1/auth/session").header("Authorization", "Bearer " + token))
@@ -205,9 +207,9 @@ class ApiBootstrapTest {
                 delete from iam.role_permissions rp using iam.roles r,iam.permissions p
                 where rp.role_id=r.id and rp.permission_id=p.id and r.code='STOCK' and p.code='catalog.write'
                 """);
-        mvc.perform(post("/api/v1/products").header("Authorization", "Bearer " + token))
+        mvc.perform(post(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/products").header("Authorization", "Bearer " + token))
+        mvc.perform(get(CATALOG_PERMISSION_PROBE).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
         jdbcTemplate.update("update core.stores set status='INACTIVE' where code='MAIN'");
         mvc.perform(get("/api/v1/auth/session").header("Authorization", "Bearer " + token))

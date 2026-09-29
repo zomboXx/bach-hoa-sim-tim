@@ -22,6 +22,44 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-09-29 20:01:32
+
+Hỗ trợ tích hợp PR #12 FE-01 với BE-02/BE-03 trên nền main `6ebf601`: tách route fixture kiểm thử quyền, cho test catalog đăng nhập HTTP bằng tài khoản fixture STOCK/SALES và gửi Bearer token; thêm ba ca thiếu token, SALES ghi dữ liệu và giả mạo scope trên controller thật. Giữ nguyên mã sản phẩm, ma trận quyền, API và migration. Ghi nhận công việc hỗ trợ của TV1; owner FE-01 là TV3, owner catalog là TV2.
+
+Đồng bộ contract auth/session sang Accepted theo review provider PR #14 và consumer PR #12 ngày 29/09/2026; giữ bằng chứng Draft cũ làm lịch sử. Tách lại entry FE-01/BE-03 sau conflict, giữ nguyên nội dung và timestamp.
+
+Validation local: root `pwsh -File scripts/verify.ps1` đạt policy/links/lint/format/typecheck/build, 6 demo + 23 auth/consumer + 30 API tests; thêm 6 live PWA/backend tests đạt trên cả bốn vai trò, logout/revocation, reload và sai mật khẩu. Java 25 release 21/PostgreSQL 18.6, database disposable sạch. Kết quả hỗ trợ đã hoàn tất local; CI và approval độc lập sau push còn chờ, chưa ghi PR #12 hoặc issue #7 đã tích hợp.
+
+Diff-stat của đợt hỗ trợ so với PR head `e0fd44a`:
+
+- `CHANGELOG.md`: +3 -1
+- `CONTRIBUTION_LOG.md`: +25 -0
+- `contracts/AUTH_SESSION_REVIEW.md`: +15 -6
+- `contracts/README.md`: +3 -3
+- `contracts/auth-session.openapi.yaml`: +6 -4
+- `docs/README.md`: +1 -1
+- `services/api/README.md`: +2 -2
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +11 -9
+- `services/api/src/test/java/vn/simtim/api/catalog/CatalogApiTest.java`: +108 -3
+---
+
+---
+Nguyễn Văn Thi - 2026-09-28 16:18:06
+
+FE-01: tách AuthAdapter demo/API, bổ sung E2E API mode và sửa lỗi review.
+Bổ sung `ApiAuthAdapter` gọi `POST /api/auth/login` và `GET /api/me`; `DemoAuthAdapter` giữ nguyên hành vi offline. `onMounted` chỉ khôi phục phiên đúng mode, ngăn fallback tài khoản demo khi chạy API build. Form đăng nhập khóa submit và hiển thị trạng thái chờ khi `busy`. Thêm `playwright.api.config.ts` build với `VITE_USE_API=true` và 6 E2E test bao gồm reload, loading/guard submit trùng, HTTP 401/403, lỗi mạng và role không hợp lệ. Sửa strict-mode locator trong test guard submit. Verify gate PASS: policy/lint/format/typecheck/build/8 demo E2E/6 API E2E.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/package.json`: +3 -1
+- `apps/web/playwright.api.config.ts`: +18 -0
+- `apps/web/playwright.config.ts`: +1 -0
+- `apps/web/src/App.vue`: +21 -4
+- `apps/web/src/adapter.ts`: +49 -2
+- `apps/web/tests/adapter.spec.ts`: +1 -49
+- `apps/web/tests/api-auth.spec.ts`: +113 -0
+---
+
+---
 Nguyễn Văn Trung - 2026-09-28 14:38:45
 
 Thực hiện issue [BE-03] API danh mục, sản phẩm và nhà cung cấp. Khởi tạo toàn bộ module `catalog` theo kiến trúc Modular Monolith (ADR 0003), bao gồm lớp Domain, Infrastructure, Application và API. Cấu hình Testcontainers và hoàn thành 17 tests tích hợp đảm bảo CRUD và business rules.

@@ -30,6 +30,12 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- FE-01 căn chỉnh auth adapter với contract BE-02: scope doanh nghiệp/cửa hàng, `/api/v1/auth/*`, Bearer token và session do server trả về. Thay thế đề xuất `/api/auth/login` và `/api/me` trước đó; contract đã Accepted ngày 29/09/2026 theo provider/consumer review, FE-01 chờ tích hợp PR #12.
+- Sửa gate tích hợp BE-02/BE-03: tách route fixture kiểm thử quyền khỏi controller sản phẩm thật; test catalog đăng nhập HTTP bằng tài khoản fixture và gửi Bearer token, kiểm tra thiếu token, SALES ghi dữ liệu và giả mạo scope trên controller thật.
+- Tách lại hai entry FE-01/BE-03 trong nhật ký đóng góp sau khi giải quyết conflict PR #12, giữ nguyên nội dung và thời gian ghi nhận.
+- Token API chỉ giữ trong bộ nhớ; reload yêu cầu đăng nhập lại, đăng xuất thu hồi phiên server. Khóa form trong các thao tác auth và bỏ qua phản hồi khôi phục cũ sau đăng nhập/đăng xuất; không khôi phục vai trò API từ tài khoản demo.
+- Điều hướng API dùng permissions và cờ đào tạo từ server, hỗ trợ hiển thị bốn role BE-02. Các giao dịch demo vẫn chạy trong demo mode; API mode chỉ xem dữ liệu minh họa cho tới khi adapter nghiệp vụ tương ứng được tích hợp.
+- Bổ sung proxy API cho Vite dev/preview và consumer/E2E cho DTO, Bearer, permissions, logout, phản hồi chậm, token không lưu bền, HTTP lỗi và lỗi mạng.
 - Cho CI tải parent commit trước khi kiểm tra whitespace, tránh quét nhầm toàn bộ baseline trong shallow checkout; đồng thời chỉ chạy `push` gate trên `main` để không lặp check của Pull Request.
 
 ## 0.2.1 — 2026-09-21
