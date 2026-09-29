@@ -28,3 +28,12 @@ try {
 } finally {
   Pop-Location
 }
+
+Push-Location (Join-Path $root 'services/api')
+try {
+  $mavenWrapper = if ($IsWindows) { '.\mvnw.cmd' } else { './mvnw' }
+  & $mavenWrapper verify
+  if ($LASTEXITCODE -ne 0) { throw 'API verification failed.' }
+} finally {
+  Pop-Location
+}

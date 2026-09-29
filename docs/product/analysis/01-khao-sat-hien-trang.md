@@ -26,6 +26,8 @@ Phạm vi đồ án hiện không bao gồm quản lý nhiều chi nhánh, thư�
 
 ## 1.3. Trạng thái bằng chứng
 
+Cập nhật đối chiếu ngày 29/09/2026: [bản ghi REQ-01](../../project/REQ-01_SCOPE_RECORD_2026-09-29.md) nhận diện báo cáo tuần 4, Chương 1 (mô hình bán lẻ, tham khảo Sapo POS/KiotViet, các quy trình), cùng thông tin Project Owner về trao đổi của nhóm. Đây là nguồn nghiên cứu tham khảo, không phải bằng chứng khảo sát trực tiếp một cửa hàng. Các nhận định ở dưới lưu tình trạng tại lúc lập bản cơ sở 10/09/2026; kế hoạch phỏng vấn mục 1.7 chưa có kết quả và không phải điều kiện yêu cầu nhóm dựng lại biên bản cuộc họp.
+
 Tại thời điểm lập tài liệu, nhóm chưa cung cấp biên bản phỏng vấn, phiếu khảo sát, ảnh quan sát quy trình hoặc biểu mẫu nghiệp vụ từ một cửa hàng cụ thể. Vì vậy:
 
 - Nội dung tại mục 1.4 là **mô hình hiện trạng dự kiến** dựa trên phạm vi người dùng mô tả và quy trình bán lẻ phổ biến.
@@ -110,7 +112,7 @@ Phân hệ mô phỏng dự kiến chuẩn hóa một số bài thực hành; n�
 3. Cho phép tra cứu/ghi nhận nghiệp vụ phù hợp trên máy tính và điện thoại.
 4. Hỗ trợ một kịch bản đào tạo dùng cùng quy tắc nghiệp vụ.
 
-Khả năng làm việc ngoại tuyến đầy đủ là bài toán đồng bộ phức tạp. MVP chỉ xem xét lưu tạm **một quy trình được chọn sau khảo sát**, ưu tiên kiểm kê hoặc nhận hàng; giao dịch thanh toán ngoại tuyến nằm ngoài cam kết ban đầu.
+Khả năng làm việc ngoại tuyến đầy đủ là bài toán đồng bộ phức tạp. Bản đối chiếu REQ-01 chọn **kiểm kê offline** theo SYN-01/SYN-02, không nhận hàng offline; giao dịch thanh toán ngoại tuyến nằm ngoài cam kết ban đầu.
 
 ## 1.7. Kế hoạch khảo sát thực tế
 

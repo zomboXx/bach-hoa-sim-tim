@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="8b89865c-4cba-4cb4-a2fb-ceb1eaf0d65d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/api/ProductController.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/api/ProductController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/application/ProductService.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/application/ProductService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/domain/UnitRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/domain/UnitRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/ProductBarcodeJpa.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/ProductBarcodeJpa.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/ProductBarcodeJpaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/ProductBarcodeJpaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/UnitJpaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/UnitJpaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/UnitRepositoryAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/catalog/infrastructure/UnitRepositoryAdapter.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="3JwsTvR2FNc3JGTyXO93xNhqHKs" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feature/be-03-catalog-api",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/HCMUTE/Software engineering/bach-hoa-sim-tim",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-cffe25b9f5b3-intellij.indexing.shared.core-IU-253.28294.334" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8b89865c-4cba-4cb4-a2fb-ceb1eaf0d65d" name="Changes" comment="" />
+      <created>1790583479358</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1790583479358</updated>
+    </task>
+    <servers />
+  </component>
+</project>

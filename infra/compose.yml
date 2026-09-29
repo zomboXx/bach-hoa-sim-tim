@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-simtim}
+      POSTGRES_USER: ${POSTGRES_USER:-simtim}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - simtim_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  simtim_postgres_data:

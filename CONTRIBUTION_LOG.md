@@ -35,6 +35,16 @@ Bổ sung `ApiAuthAdapter` gọi `POST /api/auth/login` và `GET /api/me`; `Demo
 - `apps/web/src/adapter.ts`: +49 -2
 - `apps/web/tests/adapter.spec.ts`: +1 -49
 - `apps/web/tests/api-auth.spec.ts`: +113 -0
+Nguyễn Văn Trung - 2026-09-28 14:38:45
+
+Thực hiện issue [BE-03] API danh mục, sản phẩm và nhà cung cấp. Khởi tạo toàn bộ module `catalog` theo kiến trúc Modular Monolith (ADR 0003), bao gồm lớp Domain, Infrastructure, Application và API. Cấu hình Testcontainers và hoàn thành 17 tests tích hợp đảm bảo CRUD và business rules.
+
+- `services/api/pom.xml`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/catalog/`: +900 -0
+- `services/api/src/test/java/vn/simtim/api/catalog/`: +250 -0
+- `CONTRIBUTION_LOG.md`: +12 -0
+---
+
 ---
 Nguyễn Đức Phát - 2026-09-24 00:29:26
 

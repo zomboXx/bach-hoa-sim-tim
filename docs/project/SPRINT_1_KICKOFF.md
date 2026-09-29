@@ -8,7 +8,7 @@
 
 1. `REQ-01` và `DB-01`: chốt phạm vi, ERD MVP và data dictionary.
 2. `BE-01`: tạo `services/api`, Maven Wrapper, PostgreSQL Compose, Flyway và health check.
-3. `BE-02` và contract session: xác thực, năm role server và kiểm thử quyền.
+3. `BE-02` và contract session: xác thực, bốn vai trò server và kiểm thử quyền (theo [quyết định Project Owner ngày 26/09/2026](REQ-01_DECISION_DRAFT.md)).
 4. `BE-03` và contract catalog: categories, products, suppliers cùng validation.
 5. `FE-01`: thêm adapter API sau contract Accepted; giữ demo adapter để regression.
 6. `QA-01`: provider test, consumer test, Playwright và traceability trước khi đóng sprint.

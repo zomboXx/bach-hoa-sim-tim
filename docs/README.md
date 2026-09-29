@@ -10,13 +10,18 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/governance/TEAM.md`](project/governance/TEAM.md): owner, GitHub và reviewer.
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_1_KICKOFF.md`](project/SPRINT_1_KICKOFF.md): thứ tự tích hợp và PR đầu tiên của Sprint 1.
+- [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): đối chiếu phạm vi, từng yêu cầu và nguồn báo cáo tuần 4 để đóng REQ-01; Project Owner đã xác nhận phạm vi theo backlog hiện hành; chờ review của nhóm và tích hợp.
+- [`project/REQ-01_DECISION_DRAFT.md`](project/REQ-01_DECISION_DRAFT.md): phương án lịch sử ngày 26/09/2026, giữ để truy vết.
+- [`project/SPRINT_1_WORD_BACKLOG_DRAFT.md`](project/SPRINT_1_WORD_BACKLOG_DRAFT.md): bản đối chiếu Sprint 1 với báo cáo Word, giữ các khoảng trống cần review sau khi làm rõ backlog.
 
 ## Phân tích và thiết kế
 
 - [`product/analysis/README.md`](product/analysis/README.md): bộ yêu cầu bản nháp và sơ đồ Use Case.
 - [`architecture/database/01-thiet-ke-csdl-khai-niem.md`](architecture/database/01-thiet-ke-csdl-khai-niem.md): thiết kế dữ liệu đề xuất, chưa phải schema vật lý.
+- [`architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md`](architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md): DDL đích 39 bảng và đánh giá 3NF được nhóm đồng ý theo thông báo của Project Owner; 14 bảng Sprint 1 đã tách thành Flyway V2/V3, phần còn lại chờ sprint sở hữu.
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
+- [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Draft contract session/RBAC và ma trận quyền của BE-02, chờ API/web review.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
 ## Tài liệu lịch sử
