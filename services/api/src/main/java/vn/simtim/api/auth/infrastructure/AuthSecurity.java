@@ -20,6 +20,7 @@ public class AuthSecurity {
         var bearer = new BearerSessionFilter(service, mapper, limiter);
         String[] catalog = {"/api/v1/categories", "/api/v1/categories/**", "/api/v1/units", "/api/v1/units/**",
                 "/api/v1/products", "/api/v1/products/**", "/api/v1/suppliers", "/api/v1/suppliers/**"};
+        String[] invoices = {"/api/v1/invoices", "/api/v1/invoices/**"};
         return http
                 // Credentials are only accepted in an explicit Authorization header, never cookies or Basic auth.
                 .csrf(csrf -> csrf.disable())
@@ -35,6 +36,8 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.PUT, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.DELETE, catalog).hasAuthority("catalog.write")
+                    .requestMatchers(HttpMethod.GET, invoices).hasAuthority("invoices.read")
+                    .requestMatchers(HttpMethod.POST, invoices).hasAuthority("invoices.write")
                     .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                     .authenticationEntryPoint((request, response, ex) -> bearer.writeError(response, 401, "UNAUTHENTICATED", "Valid bearer session required"))
