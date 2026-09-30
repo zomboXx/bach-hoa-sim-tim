@@ -24,6 +24,10 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Accepted contract session/RBAC và ma trận quyền của BE-02, có bằng chứng provider/consumer review; FE-01 chờ tích hợp PR #12.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
+## Kiểm thử
+
+- [`testing/README.md`](testing/README.md): điểm vào test plan, ma trận quyền, ma trận truy vết và test report của QA-01.
+
 ## Tài liệu lịch sử
 
 - [`archive/PROJECT_CONTEXT.md`](archive/PROJECT_CONTEXT.md): quá trình hình thành ý tưởng và thay đổi phạm vi. Dùng để truy vết, không dùng thay backlog hoặc quyết định mới hơn.

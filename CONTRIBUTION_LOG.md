@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Lê Văn Chiến - 2026-09-29 21:00:00
+
+Hoàn thành QA-01 sau Request Changes của PR #15: chạy lại độc lập source tích hợp BE-02/BE-03, cập nhật đúng wire auth và class/method, chuyển 29/29 traceability cases sang Pass dựa trên evidence thực tế. Bổ sung regression test barcode trùng, kiểm tra `409` và không tạo thêm record.
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 31 backend tests trên PostgreSQL 17.11 disposable sạch. Issue #8 giữ mở tới khi reviewer chấp nhận và CI của head mới đạt.
+
+- `services/api/src/test/java/vn/simtim/api/catalog/CatalogApiTest.java`: +19 -0
+- `docs/testing/QA-01-authorize.md`: +22 -24
+- `docs/testing/QA-01-test-plan.md`: +18 -12
+- `docs/testing/QA-01-test-report.md`: +82 -70
+- `docs/testing/QA-01-traceability.md`: +68 -73
+- `docs/testing/README.md`: +3 -1
+- `CHANGELOG.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-09-29 20:01:32
 
 Hỗ trợ tích hợp PR #12 FE-01 với BE-02/BE-03 trên nền main `6ebf601`: tách route fixture kiểm thử quyền, cho test catalog đăng nhập HTTP bằng tài khoản fixture STOCK/SALES và gửi Bearer token; thêm ba ca thiếu token, SALES ghi dữ liệu và giả mạo scope trên controller thật. Giữ nguyên mã sản phẩm, ma trận quyền, API và migration. Ghi nhận công việc hỗ trợ của TV1; owner FE-01 là TV3, owner catalog là TV2.
@@ -41,6 +58,21 @@ Diff-stat của đợt hỗ trợ so với PR head `e0fd44a`:
 - `services/api/README.md`: +2 -2
 - `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +11 -9
 - `services/api/src/test/java/vn/simtim/api/catalog/CatalogApiTest.java`: +108 -3
+---
+
+---
+Lê Văn Chiến - 2026-09-28 17:26:58
+
+Nhận trách nhiệm cho đợt chuẩn bị QA-01: hoàn thiện test plan, ma trận quyền, ma trận requirement–contract–test và checkpoint report; phân biệt bằng chứng BE-02 do owner báo cáo với kết quả QA trực tiếp xác nhận, đồng thời giữ BE-03 ở trạng thái blocked đến khi có API thật.
+
+- `docs/testing/QA-01-authorize.md`: +73 -0
+- `docs/testing/QA-01-test-plan.md`: +227 -0
+- `docs/testing/QA-01-test-report.md`: +90 -0
+- `docs/testing/QA-01-traceability.md`: +90 -0
+- `docs/testing/README.md`: +14 -0
+- `docs/README.md`: +4 -0
+- `CHANGELOG.md`: +1 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
 ---
 
 ---

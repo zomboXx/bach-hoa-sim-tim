@@ -293,6 +293,25 @@ class CatalogApiTest {
     }
 
     @Test
+    void addProductBarcode_conflict_onDuplicateBarcode_withoutCreatingRecord() {
+        String url = "/api/v1/products/" + PRODUCT_RICE_ID + "/barcodes";
+        var before = rest.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), Object[].class);
+        assertThat(before.getStatusCode().value()).isEqualTo(200);
+
+        var duplicate = rest.exchange(url, HttpMethod.POST,
+                new HttpEntity<>("""
+                        {"barcode":"8930000000001","isPrimary":false}""", orgHeaders()),
+                Map.class);
+        assertThat(duplicate.getStatusCode().value()).isEqualTo(409);
+
+        var after = rest.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), Object[].class);
+        assertThat(after.getStatusCode().value()).isEqualTo(200);
+        assertThat(after.getBody()).hasSameSizeAs(before.getBody());
+    }
+
+    @Test
     void createProduct_then_updateAndDelete() {
         var createBody = """
                 {"categoryId":"%s","baseUnitId":"%s","sku":"ST-TEST-99",
