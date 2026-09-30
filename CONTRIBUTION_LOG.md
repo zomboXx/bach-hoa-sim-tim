@@ -22,6 +22,28 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-09-30 15:50:00
+
+SAL-01: Implement quote, checkout CASH, hóa đơn và trừ tồn FEFO trên `services/api`.
+
+Flyway V5 tạo `inventory` schema (goods_receipts, goods_receipt_lines, product_batches, inventory_balances, FEFO index). Flyway V6 tạo `sales` schema (invoices, invoice_lines, invoice_line_batches, payments) và `inventory.stock_movements` với cross-schema FK; thêm permissions `invoices.read`/`invoices.write`. Domain layer: Invoice, InvoiceLine, InvoiceLineBatch, Payment, BatchStock, ProductSnapshot, SaleRepository port, 3 custom exceptions. Application layer: SaleService với quote (read-only, không ghi DB) và checkout CASH (FEFO allocation, pessimistic lock, atomic: invoice + batch + balance deduction + movement + payment trong một transaction; validate cash trước khi lock stock). Infrastructure: 5 JPA entities + Spring Data repos + SaleRepositoryAdapter (JPA+JDBC, EntityManager.flush() trước JDBC insert để đảm bảo FK). API: POST /api/v1/invoices/quote, POST /api/v1/invoices, GET /api/v1/invoices, GET /api/v1/invoices/{id}; SaleExceptionHandler map 404/409/422. DemoAccounts mở rộng seedInventory() chạy sau khi users được tạo, thay thế stock_demo user đã xóa khỏi R__demo_seed.sql. 15 integration tests (SaleApiTest) trên PostgreSQL 17 Testcontainers — tổng 46/46 pass.
+
+- `services/api/src/main/resources/db/migration/V5__inventory.sql`: +87 -0
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +135 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +10 -100
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoAccounts.java`: +89 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/`: +162 -0
+- `services/api/src/main/java/vn/simtim/api/sale/application/`: +242 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/`: +511 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/`: +206 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +484 -0
+- `CHANGELOG.md`: +2 -1
+- `CONTRIBUTION_LOG.md`: +33 -0
+---
+
+
+---
 Lê Văn Chiến - 2026-09-29 21:00:00
 
 Hoàn thành QA-01 sau Request Changes của PR #15: chạy lại độc lập source tích hợp BE-02/BE-03, cập nhật đúng wire auth và class/method, chuyển 29/29 traceability cases sang Pass dựa trên evidence thực tế. Bổ sung regression test barcode trùng, kiểm tra `409` và không tạo thêm record.
