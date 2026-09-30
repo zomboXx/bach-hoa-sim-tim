@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-09-30 08:44:50
+
+Rút gọn bộ review Sprint 2 trên nền main: giữ quyết định nghiệp vụ đã xác nhận, owner/thứ tự P0-P1, ranh giới HTTP/Java và các điểm kỹ thuật cần TV2/TV3/TV4 chốt. Tách quyết định game đào tạo và các bản DDL, OpenAPI, QA quá chi tiết khỏi nhánh review này; giữ bản nháp cũ trong nhánh local để truy vết. Không mở Issue, thay schema/API hay push.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25 và PostgreSQL 18.6 disposable đạt policy, links, lint, format, typecheck/build, 6 demo E2E, 23 API-mode E2E và 31 backend tests. Database tạm đã được xóa.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -0
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +49 -0
+- `docs/README.md`: +2 -0
+- `docs/project/SPRINT_2_REVIEW_PLAN.md`: +47 -0
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 Lê Văn Chiến - 2026-09-29 21:00:00
 
 Hoàn thành QA-01 sau Request Changes của PR #15: chạy lại độc lập source tích hợp BE-02/BE-03, cập nhật đúng wire auth và class/method, chuyển 29/29 traceability cases sang Pass dựa trên evidence thực tế. Bổ sung regression test barcode trùng, kiểm tra `409` và không tạo thêm record.

@@ -10,6 +10,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/governance/TEAM.md`](project/governance/TEAM.md): owner, GitHub và reviewer.
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_1_KICKOFF.md`](project/SPRINT_1_KICKOFF.md): thứ tự tích hợp và PR đầu tiên của Sprint 1.
+- [`project/SPRINT_2_REVIEW_PLAN.md`](project/SPRINT_2_REVIEW_PLAN.md): kế hoạch review gọn cho Sprint 2, ghi quyết định đã chốt và các điểm nhóm cần thống nhất trước code.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): đối chiếu phạm vi, từng yêu cầu và nguồn báo cáo tuần 4 để đóng REQ-01; Project Owner đã xác nhận phạm vi theo backlog hiện hành; chờ review của nhóm và tích hợp.
 - [`project/REQ-01_DECISION_DRAFT.md`](project/REQ-01_DECISION_DRAFT.md): phương án lịch sử ngày 26/09/2026, giữ để truy vết.
 - [`project/SPRINT_1_WORD_BACKLOG_DRAFT.md`](project/SPRINT_1_WORD_BACKLOG_DRAFT.md): bản đối chiếu Sprint 1 với báo cáo Word, giữ các khoảng trống cần review sau khi làm rõ backlog.
@@ -22,6 +23,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
 - [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Accepted contract session/RBAC và ma trận quyền của BE-02, có bằng chứng provider/consumer review; FE-01 chờ tích hợp PR #12.
+- [Contract ranh giới Sprint 2](../contracts/SPRINT_2_BOUNDARY_DRAFT.md): Draft tên HTTP/DTO và public port để TV2/TV3/TV4 review.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
 ## Kiểm thử

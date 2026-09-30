@@ -63,6 +63,8 @@ Mục tiêu: hoàn thành luồng tạo sản phẩm → nhận lô → bán →
 | REP-01 | Báo cáo doanh thu và tồn | P0 | TV3 | TV2 | SAL-01 | Báo cáo phản ánh đúng giao dịch vừa thực hiện |
 | QA-02 | E2E luồng nhận–bán | P0 | TV4 | TV1 | REP-01 | Chạy tự động trên dữ liệu sạch và kiểm tra rollback lỗi |
 
+[Kế hoạch review Sprint 2](../SPRINT_2_REVIEW_PLAN.md) và [contract ranh giới Draft](../../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) chuẩn bị điểm giao cho nhóm; chưa thay trạng thái, owner hoặc tiêu chí chấp nhận của các item trên.
+
 Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: với hàng giao thiếu, thừa hoặc hư hỏng, MVP ghi số lượng và lý do trên phiếu nhận; chưa có quy trình điều chỉnh riêng. Tiêu chí INV-01 trước đây chỉ ghi tạo phiếu/lô, tăng tồn và biến động nguyên tử; xem [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md).
 
 ## Sprint 3 — Hiện trường và kiểm kê
