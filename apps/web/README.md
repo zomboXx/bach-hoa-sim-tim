@@ -26,9 +26,9 @@ Mật khẩu chung: `demo123`.
 
 Danh mục được nhập khi thêm sản phẩm. Chưa có màn hình sửa/xóa danh mục hoặc quản trị tài khoản.
 
-## Auth adapter FE-01 / BE-02 (đang review)
+## Auth adapter FE-01 / BE-02 (đã tích hợp)
 
-Mặc định `VITE_USE_API` không bật, giữ nguyên demo mode. API mode đang căn chỉnh với contract **Draft** trên [BE-02 PR #14](https://github.com/zomboXx/bach-hoa-sim-tim/pull/14); chưa phải quyết định Accepted hoặc backend đã tích hợp vào `main`.
+Mặc định `VITE_USE_API` không bật, giữ nguyên demo mode. FE-01 đã tích hợp qua PR #12 và dùng [contract session Accepted](../../contracts/AUTH_SESSION_REVIEW.md) của BE-02. Các luồng nhận, tồn, bán và báo cáo API mode thuộc [Sprint 2](../../docs/project/SPRINT_2_KICKOFF.md).
 
 ```powershell
 $env:VITE_USE_API = 'true'

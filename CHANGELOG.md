@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Hoàn thiện kickoff Sprint 2 trên GitHub: milestone hạn 07/10/2026, bảy Issue có owner/reviewer và tiêu chí kiểm thử; tách FE-02 để nối giao diện nhận/tồn với API, làm rõ contract giao dịch và cập nhật hướng dẫn bắt đầu theo nền Sprint 1 đã tích hợp.
 - Đối chiếu từng yêu cầu với backlog và báo cáo tuần 4 cho REQ-01; ghi rõ phần chấp nhận/hoãn/loại theo xác nhận của Project Owner ngày 29/09/2026, chờ nhóm review và tích hợp, giữ bản nháp cũ để truy vết và cho phép ghi quyết định trên Issue/PR thay vì dựng biên bản cuộc họp.
 
 - Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17, đã tích hợp qua PR #11.

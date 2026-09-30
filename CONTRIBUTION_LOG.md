@@ -22,6 +22,26 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-09-30 09:22:53
+
+Thiết lập Sprint 2 để nhóm bắt đầu code: đóng milestone Sprint 1 đã có 7/7 Issue xong; tạo milestone Sprint 2 hạn 07/10/2026, nhãn sprint:2 và bảy Issue #18–#24 có assignee, reviewer, ưu tiên, phụ thuộc, tiêu chí chấp nhận và kế hoạch test. Tách FE-02 làm phần PWA nhận/tồn của INV-01/02. Đồng bộ backlog, kickoff, contract ranh giới và README theo nền Sprint 1 đã tích hợp. Chưa push nhánh tài liệu hoặc mở PR; Project board chưa cập nhật vì credential hiện thiếu quyền project.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25/PostgreSQL 18.6 disposable đạt policy, links, lint, format, typecheck/build, 6 demo E2E, 23 API-mode E2E và 31 backend tests. CSDL tạm đã được xóa; GitHub xác nhận 7 Issue mở đúng milestone/assignee/nhãn và milestone Sprint 1 đã đóng.
+
+- `CHANGELOG.md`: +1 -0
+- `README.md`: +7 -7
+- `apps/web/README.md`: +2 -2
+- `contracts/README.md`: +1 -1
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +53 -6
+- `docs/README.md`: +2 -2
+- `docs/project/SPRINT_2_KICKOFF.md`: +57 -0
+- `docs/project/SPRINT_2_REVIEW_PLAN.md`: +0 -47
+- `docs/project/governance/BACKLOG.md`: +9 -8
+- `services/api/README.md`: +3 -3
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-09-30 08:44:50
 
 Rút gọn bộ review Sprint 2 trên nền main: giữ quyết định nghiệp vụ đã xác nhận, owner/thứ tự P0-P1, ranh giới HTTP/Java và các điểm kỹ thuật cần TV2/TV3/TV4 chốt. Tách quyết định game đào tạo và các bản DDL, OpenAPI, QA quá chi tiết khỏi nhánh review này; giữ bản nháp cũ trong nhánh local để truy vết. Không mở Issue, thay schema/API hay push.
