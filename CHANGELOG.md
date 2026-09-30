@@ -18,6 +18,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- BE-02 đã tích hợp qua PR #14: login/session/logout với opaque Bearer session thu hồi được, BCrypt, bốn vai trò và permission catalog read/write; server chặn giả mạo phạm vi và tải lại quyền/tài khoản ở mỗi request.
+- OpenAPI session/RBAC đã Accepted ngày 29/09/2026, thay thế trạng thái Draft trước đó; login có rate limit và tài khoản demo chỉ được tạo khi người chạy chủ động cung cấp mật khẩu qua môi trường, không có mật khẩu mặc định.
 - Bổ sung regression integration test cho barcode sản phẩm trùng; kiểm tra `409` và hậu điều kiện không tạo thêm record.
 - Bổ sung hồ sơ QA-01 gồm test plan, ma trận quyền, ma trận requirement–contract–test và checkpoint report; tách bằng chứng owner báo cáo khỏi kết quả QA trực tiếp xác nhận.
 - Khởi tạo API Spring Boot, Maven Wrapper, Flyway schema nền, PostgreSQL Compose và integration test health/migration cho `BE-01` trên nhánh triển khai.
