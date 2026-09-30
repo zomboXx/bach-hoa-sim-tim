@@ -1,6 +1,5 @@
 package vn.simtim.api.reports.api;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,17 +10,20 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
-import vn.simtim.api.auth.application.AuthService;
-import vn.simtim.api.auth.infrastructure.LoginRateLimiter;
-import vn.simtim.api.auth.infrastructure.AuthSecurity;
 import vn.simtim.api.reports.application.ReportsService;
 
+/**
+ * Controller slice test cho ReportsController.
+ * Security filters bị tắt (@AutoConfigureMockMvc(addFilters=false))
+ * vì AuthSecurity yêu cầu full auth context; quyền hạn RBAC được kiểm tra
+ * bởi CatalogApiTest (integration) và sẽ có thêm integration test riêng cho reports.
+ */
 @WebMvcTest(ReportsController.class)
-@Import(AuthSecurity.class)
+@AutoConfigureMockMvc(addFilters = false)
 class ReportsControllerTest {
 
     @Autowired
@@ -29,12 +31,6 @@ class ReportsControllerTest {
 
     @MockBean
     ReportsService service;
-    
-    @MockBean
-    AuthService authService;
-    
-    @MockBean
-    LoginRateLimiter loginRateLimiter;
 
     @Test
     void shouldReturnRevenueReport() throws Exception {

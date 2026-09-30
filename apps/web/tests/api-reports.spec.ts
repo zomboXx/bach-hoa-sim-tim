@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Reports API Adapter", () => {
-  test.use({ baseURL: "http://localhost:5173" }); 
-
   test("should show loading, empty and error states for reports", async ({ page }) => {
     await page.route("**/api/v1/auth/login", async (route) => {
       await route.fulfill({
@@ -18,9 +16,9 @@ test.describe("Reports API Adapter", () => {
             fullName: "Manager User",
             trainingEnabled: false,
             roles: ["MANAGER"],
-            permissions: ["reports.read", "catalog.read"]
-          }
-        }
+            permissions: ["reports.read", "catalog.read"],
+          },
+        },
       });
     });
 
@@ -39,7 +37,9 @@ test.describe("Reports API Adapter", () => {
     });
 
     await page.click("text=Báo cáo");
-    await expect(page.locator("text=Chưa có dữ liệu báo cáo trong khoảng thời gian này.")).toBeVisible();
+    await expect(
+      page.locator("text=Chưa có dữ liệu báo cáo trong khoảng thời gian này."),
+    ).toBeVisible();
 
     await page.route("**/api/v1/reports/revenue*", async (route) => {
       await route.fulfill({ status: 500 });
@@ -55,9 +55,9 @@ test.describe("Reports API Adapter", () => {
         status: 200,
         json: {
           items: [
-            { productId: "p1", sku: "SKU1", name: "Product 1", quantity: 10, status: "NORMAL" }
-          ]
-        }
+            { productId: "p1", sku: "SKU1", name: "Product 1", quantity: 10, status: "NORMAL" },
+          ],
+        },
       });
     });
 

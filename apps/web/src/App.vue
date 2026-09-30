@@ -93,7 +93,7 @@ function notify(message: string) {
 }
 const reportPeriod = reactive({ from: today(), to: today() });
 const reportStatus = ref<"loading" | "error" | "ready" | "empty">("ready");
-const apiReport = ref<{ revenue: number, invoiceCount: number, inventory: any[] }>();
+const apiReport = ref<{ revenue: number; invoiceCount: number; inventory: any[] }>();
 async function loadReports() {
   if (isDemoMode) {
     reportStatus.value = "ready";
@@ -106,18 +106,22 @@ async function loadReports() {
     const toStr = localDay(toDate);
     const [revRes, invRes] = await Promise.all([
       authAdapter.fetchApi(`/api/v1/reports/revenue?from=${reportPeriod.from}&to=${toStr}`),
-      authAdapter.fetchApi(`/api/v1/reports/inventory`)
+      authAdapter.fetchApi(`/api/v1/reports/inventory`),
     ]);
     if (!revRes.ok || !invRes.ok) throw new Error("Lỗi tải báo cáo");
     const revData = await revRes.json();
     const invData = await invRes.json();
-    apiReport.value = { revenue: revData.revenue, invoiceCount: revData.invoiceCount, inventory: invData.items };
+    apiReport.value = {
+      revenue: revData.revenue,
+      invoiceCount: revData.invoiceCount,
+      inventory: invData.items,
+    };
     if (revData.invoiceCount === 0 && invData.items.length === 0) {
       reportStatus.value = "empty";
     } else {
       reportStatus.value = "ready";
     }
-  } catch (_e) {
+  } catch {
     reportStatus.value = "error";
   }
 }
@@ -129,7 +133,7 @@ function go(id: string) {
   menu.value = false;
   error.value = "";
   window.scrollTo(0, 0);
-  if (id === 'reports') {
+  if (id === "reports") {
     reportPeriod.from = today();
     reportPeriod.to = today();
     loadReports();
@@ -811,7 +815,7 @@ const statuses = {
                   v-for="p in filtered"
                   :key="p.id"
                   class="product-card"
-                  :disabled="!connected || available(state, p.id) === 0"
+                  :disabled="!connected || available(state!, p.id) === 0"
                   @click="add(p.id)"
                 >
                   <div class="product-picture">
@@ -825,7 +829,7 @@ const statuses = {
                     <del v-if="price(state, p) < p.price">{{ money(p.price) }}</del>
                   </p>
                   <footer>
-                    <span>Còn {{ available(state, p.id) }} {{ p.unit.toLowerCase() }}</span
+                    <span>Còn {{ available(state!, p.id) }} {{ p.unit.toLowerCase() }}</span
                     ><b>＋</b>
                   </footer>
                 </button>
@@ -940,7 +944,7 @@ const statuses = {
                   <td>{{ p.category }}</td>
                   <td>{{ money(p.price) }}</td>
                   <td>
-                    <span class="status">{{ available(state, p.id) }} {{ p.unit }}</span>
+                    <span class="status">{{ available(state!, p.id) }} {{ p.unit }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -1274,7 +1278,7 @@ const statuses = {
               <p v-if="isDemoMode">Doanh thu hôm nay và tồn kho hiện tại từ dữ liệu demo.</p>
               <p v-else>Dữ liệu vận hành thực tế đã được ghi nhận vào hệ thống.</p>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;" v-if="!isDemoMode">
+            <div style="display: flex; gap: 8px; align-items: center" v-if="!isDemoMode">
               <input type="date" v-model="reportPeriod.from" @change="loadReports" />
               <span> - </span>
               <input type="date" v-model="reportPeriod.to" @change="loadReports" />
@@ -1298,19 +1302,33 @@ const statuses = {
           <div v-else class="metrics">
             <article>
               <span>Doanh thu</span>
-              <strong>{{ money(isDemoMode ? revenue : (apiReport?.revenue || 0)) }}</strong>
+              <strong>{{ money(isDemoMode ? revenue : apiReport?.revenue || 0) }}</strong>
             </article>
             <article>
               <span>Hóa đơn</span>
-              <strong>{{ isDemoMode ? sales.length : (apiReport?.invoiceCount || 0) }}</strong>
+              <strong>{{ isDemoMode ? sales.length : apiReport?.invoiceCount || 0 }}</strong>
             </article>
             <article>
               <span>Giá trị hóa đơn trung bình</span>
-              <strong>{{ money(isDemoMode ? (sales.length ? revenue / sales.length : 0) : (apiReport?.invoiceCount ? apiReport.revenue / apiReport.invoiceCount : 0)) }}</strong>
+              <strong>{{
+                money(
+                  isDemoMode
+                    ? sales.length
+                      ? revenue / sales.length
+                      : 0
+                    : apiReport?.invoiceCount
+                      ? apiReport.revenue / apiReport.invoiceCount
+                      : 0,
+                )
+              }}</strong>
             </article>
             <article>
               <span>Giá trị tồn theo giá bán</span>
-              <strong v-if="isDemoMode">{{ money(state?.products.reduce((n, p) => n + available(state, p.id) * p.price, 0) || 0) }}</strong>
+              <strong v-if="isDemoMode">{{
+                money(
+                  state?.products.reduce((n, p) => n + available(state!, p.id) * p.price, 0) || 0,
+                )
+              }}</strong>
               <strong v-else>Theo số lượng thực tế</strong>
             </article>
           </div>
@@ -1326,7 +1344,10 @@ const statuses = {
                         Math.max(
                           1,
                           (available(state!, p.id) /
-                            Math.max(...(state?.products.map((p) => available(state!, p.id)) || [1]), 1)) *
+                            Math.max(
+                              ...(state?.products.map((p) => available(state!, p.id)) || [1]),
+                              1,
+                            )) *
                             100,
                         ) + '%',
                     }"
@@ -1337,7 +1358,8 @@ const statuses = {
             </template>
             <template v-else>
               <div v-for="item in apiReport?.inventory" :key="item.sku" class="bar-row">
-                <span>{{ item.name }}
+                <span
+                  >{{ item.name }}
                   <span v-if="item.status === 'EXPIRED'" class="pill danger">Hết hạn</span>
                   <span v-if="item.status === 'NEAR_EXPIRY'" class="pill warning">Cận hạn</span>
                 </span>

@@ -51,7 +51,8 @@ export class DemoAuthAdapter implements AuthAdapter {
     return;
   }
 
-  async fetchApi(_path: string, _init?: RequestInit): Promise<Response> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
     throw new Error("API not available in demo mode");
   }
 }
