@@ -22,6 +22,41 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-09-30 10:31:47
+
+Hoàn thành PRO-01B: API khuyến mãi cơ bản theo sản phẩm. Flyway V5 tạo schema `sales`, bảng `promotions` và `promotion_products`, quyền `promotions.read` (mọi vai trò) / `promotions.write` (MANAGER/ADMIN). Implement đầy đủ clean-architecture (domain → application → infrastructure → api) theo đúng pattern đã có: 9 REST endpoints (CRUD + phạm vi sản phẩm + tra cứu applicable tại điểm bán), validation business rule (time window, discount value, unique code), RFC 7807 exception handler scoped cho module. Cập nhật AuthSecurity và R__demo_seed. Viết 14 integration test trên PostgreSQL 17.11 (Testcontainers) bao phủ auth matrix, CRUD lifecycle, conflict, validation và applicable query; tổng 45/45 tests pass.
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 45 backend tests trên PostgreSQL 17.11 disposable sạch.
+
+Defer có ghi chú: `promotion_batches` (chờ `inventory.product_batches` từ INV-01) và `applied_promotion_id` trong `invoice_lines` (thuộc SAL-01).
+
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +5 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +132 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionExceptionHandler.java`: +45 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionRequest.java`: +35 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionResponse.java`: +36 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +128 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/Promotion.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionConflictException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionNotFoundException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionProduct.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +26 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionValidationException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpa.java`: +62 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +55 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductId.java`: +37 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductJpa.java`: +27 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductJpaRepository.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +94 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +29 -0
+- `services/api/src/main/resources/db/migration/V5__sales_promotions.sql`: +45 -0
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +361 -0
+---
+
+
+
+---
 Lê Văn Chiến - 2026-09-29 21:00:00
 
 Hoàn thành QA-01 sau Request Changes của PR #15: chạy lại độc lập source tích hợp BE-02/BE-03, cập nhật đúng wire auth và class/method, chuyển 29/29 traceability cases sang Pass dựa trên evidence thực tế. Bổ sung regression test barcode trùng, kiểm tra `409` và không tạo thêm record.
