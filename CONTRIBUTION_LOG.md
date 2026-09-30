@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-09-30 09:40:37
+
+Chỉnh cách đọc Issue Sprint 2: tách Owner/Reviewer thành hai dòng và bỏ metadata ưu tiên/mã lặp với tiêu đề, nhãn. Điều chỉnh phân công theo trao đổi với Project Owner: TV4 nhận FE-02 cùng QA-02, TV2 nhận REP-01 sau INV-01/02, TV3 tập trung SAL-01 và PRO-01B P1; TV1 điều phối/review. Đồng bộ backlog, kickoff, contract ranh giới và ghi ngoại lệ Sprint 2 so với trách nhiệm module dài hạn. Issue là phân công kế hoạch, chưa ghi nhận code feature của thành viên khác. Giữ nhánh tài liệu ở máy, chưa push.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy, links, lint, format, build, 6 demo E2E, 23 API-mode E2E và 31 backend tests trên PostgreSQL 18.6 tạm; CSDL tạm đã xóa. Đã kiểm tra lại owner/reviewer/assignee của Issue #18–#24 trên GitHub.
+
+- `GitHub Issues #18–#24`: N/A
+- `CHANGELOG.md`: +1 -0
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +2 -2
+- `docs/project/SPRINT_2_KICKOFF.md`: +11 -11
+- `docs/project/governance/BACKLOG.md`: +3 -3
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-09-30 09:22:53
 
 Thiết lập Sprint 2 để nhóm bắt đầu code: đóng milestone Sprint 1 đã có 7/7 Issue xong; tạo milestone Sprint 2 hạn 07/10/2026, nhãn sprint:2 và bảy Issue #18–#24 có assignee, reviewer, ưu tiên, phụ thuộc, tiêu chí chấp nhận và kế hoạch test. Tách FE-02 làm phần PWA nhận/tồn của INV-01/02. Đồng bộ backlog, kickoff, contract ranh giới và README theo nền Sprint 1 đã tích hợp. Chưa push nhánh tài liệu hoặc mở PR; Project board chưa cập nhật vì credential hiện thiếu quyền project.

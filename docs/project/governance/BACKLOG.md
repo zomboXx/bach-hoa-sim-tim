@@ -58,13 +58,13 @@ Mục tiêu: hoàn thành luồng tạo sản phẩm → nhận lô → bán →
 |---|---|---:|---|---|---|---|
 | [INV-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/18) | Transaction nhận hàng | P0 | TV2 | TV1 | BE-03 | Ghi số giao/nhận/từ chối và lý do trên phiếu; tạo lô, tăng tồn và biến động nguyên tử |
 | [INV-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/19) | Tra cứu tồn, lô, hạn và biến động | P0 | TV2 | TV4 | INV-01 | Lọc còn hạn/cận hạn/hết hạn; truy được chứng từ nguồn |
-| [FE-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/20) | Giao diện nhận hàng và tồn qua API | P0 | TV3 | TV2 | INV-01, INV-02 | PWA API mode xác nhận phiếu, tra tồn/lô/biến động theo quyền; demo mode giữ regression |
+| [FE-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/20) | Giao diện nhận hàng và tồn qua API | P0 | TV4 | TV3 | INV-01, INV-02 | PWA API mode xác nhận phiếu, tra tồn/lô/biến động theo quyền; demo mode giữ regression |
 | [SAL-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/21) | Transaction bán hàng và hóa đơn | P0 | TV3 | TV2 | INV-02 | Server tính giá, chọn lô còn hạn, lưu hóa đơn và giảm tồn nguyên tử |
 | [PRO-01B](https://github.com/zomboXx/bach-hoa-sim-tim/issues/23) | Khuyến mãi cơ bản | P1 | TV3 | TV1 | SAL-01 | Chỉ áp dụng đúng thời gian/phạm vi; hóa đơn giữ giá đã bán |
-| [REP-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/22) | Báo cáo doanh thu và tồn | P0 | TV3 | TV2 | SAL-01 | Báo cáo phản ánh đúng giao dịch vừa thực hiện |
+| [REP-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/22) | Báo cáo doanh thu và tồn | P0 | TV2 | TV3 | SAL-01 | Báo cáo phản ánh đúng giao dịch vừa thực hiện |
 | [QA-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/24) | E2E luồng nhận–bán | P0 | TV4 | TV1 | REP-01 | Chạy tự động trên dữ liệu sạch và kiểm tra rollback lỗi |
 
-[Milestone Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2), [kickoff](../SPRINT_2_KICKOFF.md) và [contract ranh giới](../../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) quy định thứ tự triển khai và điểm giao. FE-02 tách phần giao diện đã cần cho INV-01/02 để TV3 có Issue/owner rõ; các tiêu chí nghiệp vụ INV-01/02 giữ nguyên. Trạng thái thực thi lấy từ GitHub Issues; Project board cần quyền truy cập riêng nếu nhóm dùng.
+[Milestone Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2), [kickoff](../SPRINT_2_KICKOFF.md) và [contract ranh giới](../../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) quy định thứ tự triển khai và điểm giao. Theo điều chỉnh phân công ngày 30/09/2026, TV4 nhận FE-02 để có phần code PWA nhận/tồn cùng QA-02; TV2 nhận REP-01 sau INV-01/02, TV3 tập trung SAL-01 và review giao diện; TV1 điều phối và review, không nhận thêm feature. FE-02 vẫn giữ nguyên tiêu chí nghiệp vụ INV-01/02. PRO-01B là P1 sau các P0; cần kiểm lại năng lực TV2 vì có ba Issue backend. Trạng thái thực thi lấy từ GitHub Issues; Project board cần quyền truy cập riêng nếu nhóm dùng.
 
 Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: với hàng giao thiếu, thừa hoặc hư hỏng, MVP ghi số lượng và lý do trên phiếu nhận; chưa có quy trình điều chỉnh riêng. Tiêu chí INV-01 trước đây chỉ ghi tạo phiếu/lô, tăng tồn và biến động nguyên tử; xem [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md).
 

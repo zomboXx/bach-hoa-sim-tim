@@ -1,6 +1,6 @@
 # Sprint 2 — Contract tại ranh giới module
 
-- **Working Draft, 30/09/2026.** Provider inventory TV2; provider sales/report TV3; consumer web TV3; QA TV4. Đây là mặc định triển khai cho các Issue, chưa được nhóm đánh dấu Accepted.
+- **Working Draft, 30/09/2026.** Provider inventory/report TV2; provider sales TV3; consumer web nhận/tồn TV4; consumer web bán TV3; QA TV4. Đây là mặc định triển khai cho các Issue, chưa được nhóm đánh dấu Accepted.
 - [Kickoff Sprint 2](../docs/project/SPRINT_2_KICKOFF.md) ghi phạm vi, owner và quyết định nghiệp vụ. Owner cập nhật contract/OpenAPI và test cùng PR khi cần đổi tên hoặc shape; reviewer của hai phía phải kiểm tra trước merge.
 
 ## HTTP tối thiểu cần thống nhất
@@ -60,7 +60,7 @@ Lỗi thống nhất `{code,message,fieldErrors?}`. Các code tối thiểu: `IN
 | INV-01 | `inventory.goods_receipts`, `goods_receipt_lines`, `product_batches`, `inventory_balances`, `stock_movements` (RECEIPT), `audit.audit_logs` | TV2, migration tiếp theo sau V4 |
 | SAL-01 | `sales.invoices`, `invoice_lines`, `invoice_line_batches`, `payments`; mở ledger cho SALE và FK tới invoice allocation | TV3, TV2 review migration và khóa |
 | PRO-01B | `sales.promotions`, `promotion_products`, `promotion_batches`; thêm promotion snapshot vào invoice line | TV3, migration riêng sau SAL-01 |
-| REP-01 | Query/read model từ bảng đã commit, không tạo bảng tổng hợp | TV3 |
+| REP-01 | Query/read model từ bảng đã commit, không tạo bảng tổng hợp | TV2; TV3 review web consumer |
 
 Giữ FK cùng organization/store/product, chứng từ không cascade xóa, `balance` không âm và ledger có nguồn đúng loại. `balance`/header total là dữ liệu dẫn xuất được cập nhật nguyên tử; invoice SKU/tên/giá là snapshot lịch sử. Các ngoại lệ chuẩn hóa 3NF này giữ toàn vẹn chức năng và phải được QA đối chiếu. Migration đã merge chỉ sửa bằng migration mới; test database sạch và upgrade từ V4.
 
