@@ -22,6 +22,30 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Trung - 2026-09-30 15:43:00
+
+Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu đã commit — nhánh `feature/REP-01-reports`.
+
+- API Backend: `ReportsController` (`GET /api/v1/reports/revenue`, `GET /api/v1/reports/inventory`), `ReportsService`, `JdbcReportsRepository`; RBAC với `reports.read` chỉ cho MANAGER/ADMIN; doanh thu SUM header `grand_total` COMPLETED, không join lines/payments; tồn phân loại EXPIRED/NEAR_EXPIRY/NORMAL theo quy tắc today..+7; timezone `Asia/Ho_Chi_Minh`.
+- DB: Migration `V5__sales_inventory_reports.sql` — schema `sales` (`invoices`, `invoice_lines`, `promotions`, `members`), `inventory` (`goods_receipts`, `goods_receipt_lines`, `product_batches`, `inventory_balances`); grant `reports.read` cho MANAGER/ADMIN.
+- Web: Thêm `fetchApi` vào `AuthAdapter`; trang báo cáo chuyển sang dual-mode: API mode gọi 2 endpoint, có loading/empty/error states và filter ngày; demo mode giữ nguyên regression.
+
+- `services/api/src/main/resources/db/migration/V5__sales_inventory_reports.sql`: +144 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/reports/api/ReportsController.java`: +43 -0
+- `services/api/src/main/java/vn/simtim/api/reports/api/RevenueReportResponse.java`: +6 -0
+- `services/api/src/main/java/vn/simtim/api/reports/api/InventoryReportResponse.java`: +10 -0
+- `services/api/src/main/java/vn/simtim/api/reports/api/InventoryBalanceDto.java`: +14 -0
+- `services/api/src/main/java/vn/simtim/api/reports/application/ReportsService.java`: +32 -0
+- `services/api/src/main/java/vn/simtim/api/reports/domain/ReportsRepository.java`: +10 -0
+- `services/api/src/main/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepository.java`: +62 -0
+- `services/api/src/test/java/vn/simtim/api/reports/api/ReportsControllerTest.java`: +57 -0
+- `services/api/src/test/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepositoryTest.java`: +29 -0
+- `apps/web/tests/api-reports.spec.ts`: +61 -0
+- `apps/web/src/adapter.ts`: +8 -2
+- `apps/web/src/App.vue`: +75 -30
+
+---
 Lê Văn Chiến - 2026-09-29 21:00:00
 
 Hoàn thành QA-01 sau Request Changes của PR #15: chạy lại độc lập source tích hợp BE-02/BE-03, cập nhật đúng wire auth và class/method, chuyển 29/29 traceability cases sang Pass dựa trên evidence thực tế. Bổ sung regression test barcode trùng, kiểm tra `409` và không tạo thêm record.

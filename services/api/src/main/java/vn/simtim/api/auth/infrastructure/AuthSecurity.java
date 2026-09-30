@@ -35,6 +35,7 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.PUT, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.DELETE, catalog).hasAuthority("catalog.write")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/reports/revenue", "/api/v1/reports/inventory").hasAuthority("reports.read")
                     .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                     .authenticationEntryPoint((request, response, ex) -> bearer.writeError(response, 401, "UNAUTHENTICATED", "Valid bearer session required"))

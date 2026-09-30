@@ -91,6 +91,36 @@ function notify(message: string) {
   clearTimeout(timer);
   timer = setTimeout(() => (toast.value = ""), 4000);
 }
+const reportPeriod = reactive({ from: today(), to: today() });
+const reportStatus = ref<"loading" | "error" | "ready" | "empty">("ready");
+const apiReport = ref<{ revenue: number, invoiceCount: number, inventory: any[] }>();
+async function loadReports() {
+  if (isDemoMode) {
+    reportStatus.value = "ready";
+    return;
+  }
+  try {
+    reportStatus.value = "loading";
+    const toDate = new Date(reportPeriod.to);
+    toDate.setDate(toDate.getDate() + 1);
+    const toStr = localDay(toDate);
+    const [revRes, invRes] = await Promise.all([
+      authAdapter.fetchApi(`/api/v1/reports/revenue?from=${reportPeriod.from}&to=${toStr}`),
+      authAdapter.fetchApi(`/api/v1/reports/inventory`)
+    ]);
+    if (!revRes.ok || !invRes.ok) throw new Error("Lỗi tải báo cáo");
+    const revData = await revRes.json();
+    const invData = await invRes.json();
+    apiReport.value = { revenue: revData.revenue, invoiceCount: revData.invoiceCount, inventory: invData.items };
+    if (revData.invoiceCount === 0 && invData.items.length === 0) {
+      reportStatus.value = "empty";
+    } else {
+      reportStatus.value = "ready";
+    }
+  } catch (e) {
+    reportStatus.value = "error";
+  }
+}
 function go(id: string) {
   if (!canGo(id)) return;
   route.value = id;
@@ -99,6 +129,11 @@ function go(id: string) {
   menu.value = false;
   error.value = "";
   window.scrollTo(0, 0);
+  if (id === 'reports') {
+    reportPeriod.from = today();
+    reportPeriod.to = today();
+    loadReports();
+  }
 }
 async function signIn() {
   if (busy.value || authPending.value) return;
@@ -1231,54 +1266,99 @@ const statuses = {
           </div></template
         >
 
-        <template v-else-if="route === 'reports'"
-          ><div class="page-head">
+        <template v-else-if="route === 'reports'">
+          <div class="page-head">
             <div>
               <p class="eyebrow">SỐ LIỆU TỪ VẬN HÀNH</p>
               <h1>Báo cáo cửa hàng</h1>
-              <p>Doanh thu hôm nay và tồn kho hiện tại từ dữ liệu demo.</p>
+              <p v-if="isDemoMode">Doanh thu hôm nay và tồn kho hiện tại từ dữ liệu demo.</p>
+              <p v-else>Dữ liệu vận hành thực tế đã được ghi nhận vào hệ thống.</p>
             </div>
-            <span class="pill">{{ today() }}</span>
+            <div style="display: flex; gap: 8px; align-items: center;" v-if="!isDemoMode">
+              <input type="date" v-model="reportPeriod.from" @change="loadReports" />
+              <span> - </span>
+              <input type="date" v-model="reportPeriod.to" @change="loadReports" />
+            </div>
+            <span class="pill" v-else>{{ today() }}</span>
           </div>
-          <div class="metrics">
+
+          <div v-if="reportStatus === 'loading'" class="empty-state">
+            <span class="icon">⌛</span>
+            <p>Đang tải dữ liệu báo cáo...</p>
+          </div>
+          <div v-else-if="reportStatus === 'error'" class="empty-state">
+            <span class="icon">❌</span>
+            <p>Đã xảy ra lỗi khi tải dữ liệu báo cáo.</p>
+            <button class="primary" @click="loadReports">Thử lại</button>
+          </div>
+          <div v-else-if="reportStatus === 'empty'" class="empty-state">
+            <span class="icon">📊</span>
+            <p>Chưa có dữ liệu báo cáo trong khoảng thời gian này.</p>
+          </div>
+          <div v-else class="metrics">
             <article>
-              <span>Doanh thu hôm nay</span><strong>{{ money(revenue) }}</strong>
+              <span>Doanh thu</span>
+              <strong>{{ money(isDemoMode ? revenue : (apiReport?.revenue || 0)) }}</strong>
             </article>
             <article>
-              <span>Hóa đơn</span><strong>{{ sales.length }}</strong>
+              <span>Hóa đơn</span>
+              <strong>{{ isDemoMode ? sales.length : (apiReport?.invoiceCount || 0) }}</strong>
             </article>
             <article>
-              <span>Giá trị hóa đơn trung bình</span
-              ><strong>{{ money(sales.length ? revenue / sales.length : 0) }}</strong>
+              <span>Giá trị hóa đơn trung bình</span>
+              <strong>{{ money(isDemoMode ? (sales.length ? revenue / sales.length : 0) : (apiReport?.invoiceCount ? apiReport.revenue / apiReport.invoiceCount : 0)) }}</strong>
             </article>
             <article>
-              <span>Giá trị tồn theo giá bán</span
-              ><strong>{{
-                money(state.products.reduce((n, p) => n + available(state!, p.id) * p.price, 0))
-              }}</strong>
+              <span>Giá trị tồn theo giá bán</span>
+              <strong v-if="isDemoMode">{{ money(state?.products.reduce((n, p) => n + available(state, p.id) * p.price, 0) || 0) }}</strong>
+              <strong v-else>Theo số lượng thực tế</strong>
             </article>
           </div>
-          <div class="card form-card">
+          <div v-if="reportStatus === 'ready'" class="card form-card">
             <h2>Tồn khả dụng theo sản phẩm</h2>
-            <div v-for="p in state.products" :key="p.id" class="bar-row">
-              <span>{{ p.name }}</span>
-              <div>
-                <i
-                  :style="{
-                    width:
-                      Math.max(
-                        1,
-                        (available(state, p.id) /
-                          Math.max(...state.products.map((p) => available(state!, p.id)), 1)) *
-                          100,
-                      ) + '%',
-                  }"
-                ></i>
+            <template v-if="isDemoMode">
+              <div v-for="p in state?.products" :key="p.id" class="bar-row">
+                <span>{{ p.name }}</span>
+                <div>
+                  <i
+                    :style="{
+                      width:
+                        Math.max(
+                          1,
+                          (available(state!, p.id) /
+                            Math.max(...(state?.products.map((p) => available(state!, p.id)) || [1]), 1)) *
+                            100,
+                        ) + '%',
+                    }"
+                  ></i>
+                </div>
+                <b>{{ available(state!, p.id) }}</b>
               </div>
-              <b>{{ available(state, p.id) }}</b>
-            </div>
-          </div></template
-        >
+            </template>
+            <template v-else>
+              <div v-for="item in apiReport?.inventory" :key="item.sku" class="bar-row">
+                <span>{{ item.name }}
+                  <span v-if="item.status === 'EXPIRED'" class="pill danger">Hết hạn</span>
+                  <span v-if="item.status === 'NEAR_EXPIRY'" class="pill warning">Cận hạn</span>
+                </span>
+                <div>
+                  <i
+                    :style="{
+                      width:
+                        Math.max(
+                          1,
+                          (item.quantity /
+                            Math.max(...(apiReport?.inventory.map((i) => i.quantity) || [1]), 1)) *
+                            100,
+                        ) + '%',
+                    }"
+                  ></i>
+                </div>
+                <b>{{ item.quantity }}</b>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
       <footer class="page-footer">
         <span>Sim Tím Workspace</span><span>Một cửa hàng mẫu · Prototype 02</span>
