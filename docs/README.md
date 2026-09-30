@@ -4,16 +4,14 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Quy trình và phạm vi hiện hành
 
+- [`project/README.md`](project/README.md): điểm vào tài liệu dự án, tiến độ có ngày và phân biệt bản hiện hành với bản lưu.
 - [`project/governance/README.md`](project/governance/README.md): điểm vào quy trình nhóm.
 - [`project/governance/SCRUM.md`](project/governance/SCRUM.md): Ready, Done, nhánh và Pull Request.
 - [`project/governance/BACKLOG.md`](project/governance/BACKLOG.md): phạm vi, ưu tiên và phụ thuộc của các sprint.
 - [`project/governance/TEAM.md`](project/governance/TEAM.md): owner, GitHub và reviewer.
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
-- [`project/SPRINT_1_KICKOFF.md`](project/SPRINT_1_KICKOFF.md): thứ tự tích hợp và PR đầu tiên của Sprint 1.
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
-- [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): đối chiếu phạm vi, từng yêu cầu và nguồn báo cáo tuần 4 để đóng REQ-01; Project Owner đã xác nhận phạm vi theo backlog hiện hành; chờ review của nhóm và tích hợp.
-- [`project/REQ-01_DECISION_DRAFT.md`](project/REQ-01_DECISION_DRAFT.md): phương án lịch sử ngày 26/09/2026, giữ để truy vết.
-- [`project/SPRINT_1_WORD_BACKLOG_DRAFT.md`](project/SPRINT_1_WORD_BACKLOG_DRAFT.md): bản đối chiếu Sprint 1 với báo cáo Word, giữ các khoảng trống cần review sau khi làm rõ backlog.
+- [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
 
 ## Phân tích và thiết kế
 
@@ -32,6 +30,9 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Tài liệu lịch sử
 
+- [`project/REQ-01_DECISION_DRAFT.md`](project/REQ-01_DECISION_DRAFT.md): phương án ngày 26/09/2026, đã được bản ghi ngày 29/09 thay thế.
+- [`project/SPRINT_1_WORD_BACKLOG_DRAFT.md`](project/SPRINT_1_WORD_BACKLOG_DRAFT.md): đối chiếu Word ban đầu, không là backlog hay cam kết sprint hiện tại.
+- [`project/SPRINT_1_KICKOFF.md`](project/SPRINT_1_KICKOFF.md): thứ tự tích hợp Sprint 1 đã kết thúc.
 - [`archive/PROJECT_CONTEXT.md`](archive/PROJECT_CONTEXT.md): quá trình hình thành ý tưởng và thay đổi phạm vi. Dùng để truy vết, không dùng thay backlog hoặc quyết định mới hơn.
 - [`../archive/prototype-v1/`](../archive/prototype-v1/README.md): prototype đầu tiên.
 

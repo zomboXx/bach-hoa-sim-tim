@@ -3,6 +3,7 @@
 - **Working baseline, 30/09/2026.** TV1 — Nguyễn Đức Phát điều phối. [Milestone Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) kết thúc ngày **07/10/2026** theo Project Owner; Issue là nơi owner cập nhật trạng thái/bằng chứng. Tài liệu này giữ quy tắc chung để bắt đầu code.
 - Phạm vi và owner lấy từ [backlog hiện hành](governance/BACKLOG.md). [ADR 0003](../architecture/adr/0003-application-architecture.md) quy định module theo nghiệp vụ; [DB-01](../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) là thiết kế dữ liệu đích đã được nhóm đồng ý. Tên giao tiếp cần review nằm trong [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md).
 - Quy tắc kỹ thuật trong contract là mặc định cho các Issue Sprint 2. Owner đề xuất thay đổi qua PR và nhờ reviewer của module liên quan kiểm tra; không tự đổi wire/schema một phía.
+- [Điểm vào tài liệu và mốc tiến độ](README.md) phân biệt kế hoạch ở đây với PR đang mở và phần đã tích hợp trên `main`.
 
 ## Quyết định nghiệp vụ đã có
 
