@@ -117,7 +117,7 @@ async function loadReports() {
     } else {
       reportStatus.value = "ready";
     }
-  } catch (e) {
+  } catch (_e) {
     reportStatus.value = "error";
   }
 }

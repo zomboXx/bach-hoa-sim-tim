@@ -15,6 +15,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import vn.simtim.api.auth.application.AuthService;
+import vn.simtim.api.auth.infrastructure.LoginRateLimiter;
 import vn.simtim.api.auth.infrastructure.AuthSecurity;
 import vn.simtim.api.reports.application.ReportsService;
 
@@ -27,6 +29,12 @@ class ReportsControllerTest {
 
     @MockBean
     ReportsService service;
+    
+    @MockBean
+    AuthService authService;
+    
+    @MockBean
+    LoginRateLimiter loginRateLimiter;
 
     @Test
     void shouldReturnRevenueReport() throws Exception {

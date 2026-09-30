@@ -51,7 +51,7 @@ export class DemoAuthAdapter implements AuthAdapter {
     return;
   }
 
-  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
+  async fetchApi(_path: string, _init?: RequestInit): Promise<Response> {
     throw new Error("API not available in demo mode");
   }
 }
