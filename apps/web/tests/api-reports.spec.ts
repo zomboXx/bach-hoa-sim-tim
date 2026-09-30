@@ -23,11 +23,11 @@ test.describe("Reports API Adapter", () => {
     });
 
     await page.goto("/?api=true");
-    await page.fill('input[type="text"]', "manager");
-    await page.fill('input[type="password"]', "password");
-    await page.click('button:has-text("Đăng nhập")');
+    await page.getByLabel("Mã nhân viên", { exact: true }).fill("manager");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("password");
+    await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
 
-    await expect(page.locator("text=Tổng quan")).toBeVisible();
+    await expect(page.locator("text=Tổng quan").first()).toBeVisible();
 
     await page.route("**/api/v1/reports/revenue*", async (route) => {
       await route.fulfill({ status: 200, json: { revenue: 0, invoiceCount: 0 } });
@@ -36,16 +36,16 @@ test.describe("Reports API Adapter", () => {
       await route.fulfill({ status: 200, json: { items: [] } });
     });
 
-    await page.click("text=Báo cáo");
+    await page.getByRole("button", { name: /Báo cáo/ }).click();
     await expect(
-      page.locator("text=Chưa có dữ liệu báo cáo trong khoảng thời gian này."),
+      page.locator("text=Chưa có dữ liệu báo cáo trong khoảng thời gian này.").first(),
     ).toBeVisible();
 
     await page.route("**/api/v1/reports/revenue*", async (route) => {
       await route.fulfill({ status: 500 });
     });
     await page.fill('input[type="date"]', "2026-09-01");
-    await expect(page.locator("text=Đã xảy ra lỗi khi tải dữ liệu báo cáo.")).toBeVisible();
+    await expect(page.locator("text=Đã xảy ra lỗi khi tải dữ liệu báo cáo.").first()).toBeVisible();
 
     await page.route("**/api/v1/reports/revenue*", async (route) => {
       await route.fulfill({ status: 200, json: { revenue: 1500000, invoiceCount: 5 } });
@@ -61,8 +61,8 @@ test.describe("Reports API Adapter", () => {
       });
     });
 
-    await page.click("button:has-text('Thử lại')");
-    await expect(page.locator("text=1.500.000")).toBeVisible();
-    await expect(page.locator("text=Product 1")).toBeVisible();
+    await page.getByRole("button", { name: "Thử lại" }).click();
+    await expect(page.locator("text=1.500.000").first()).toBeVisible();
+    await expect(page.locator("text=Product 1").first()).toBeVisible();
   });
 });
