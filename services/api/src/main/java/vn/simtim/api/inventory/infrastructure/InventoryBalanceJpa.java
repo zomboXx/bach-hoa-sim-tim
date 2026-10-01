@@ -1,14 +1,12 @@
-package vn.simtim.api.sale.infrastructure;
+package vn.simtim.api.inventory.infrastructure;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
-import vn.simtim.api.sale.domain.BatchStock;
-import java.time.LocalDate;
 
 /**
  * JPA entity cho inventory.inventory_balances.
- * Dùng @Version để hỗ trợ optimistic locking và @Lock PESSIMISTIC_WRITE khi checkout.
+ * Dùng @Version để hỗ trợ optimistic locking và @Lock PESSIMISTIC_WRITE khi thao tác xuất nhập kho.
  */
 @Entity
 @Table(schema = "inventory", name = "inventory_balances")

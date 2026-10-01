@@ -1,8 +1,6 @@
 package vn.simtim.api.sale.infrastructure;
 
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,9 +11,9 @@ import org.springframework.stereotype.Repository;
 import vn.simtim.api.sale.domain.*;
 
 /**
- * Infrastructure adapter: dịch giữa domain port và JPA/JDBC.
- * JdbcTemplate dùng cho cross-schema native queries (price, snapshot, stock_movement insert).
- * Spring Data JPA dùng cho write targets (invoice, lines, batches, payments, balances).
+ * Infrastructure adapter cho module sale: dịch giữa domain port và JPA/JDBC.
+ * Chỉ quản lý các thực thể của sales schema (invoices, invoice_lines, invoice_line_batches, payments)
+ * cùng native query tra cứu giá và snapshot.
  */
 @Repository
 class SaleRepositoryAdapter implements SaleRepository {
@@ -24,7 +22,6 @@ class SaleRepositoryAdapter implements SaleRepository {
     private final InvoiceLineJpaRepository lineRepo;
     private final InvoiceLineBatchJpaRepository lineBatchRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final InventoryBalanceJpaRepository balanceRepo;
     private final JdbcTemplate jdbc;
 
     @PersistenceContext
@@ -34,13 +31,11 @@ class SaleRepositoryAdapter implements SaleRepository {
                           InvoiceLineJpaRepository lineRepo,
                           InvoiceLineBatchJpaRepository lineBatchRepo,
                           PaymentJpaRepository paymentRepo,
-                          InventoryBalanceJpaRepository balanceRepo,
                           JdbcTemplate jdbc) {
         this.invoiceRepo = invoiceRepo;
         this.lineRepo = lineRepo;
         this.lineBatchRepo = lineBatchRepo;
         this.paymentRepo = paymentRepo;
-        this.balanceRepo = balanceRepo;
         this.jdbc = jdbc;
     }
 
@@ -74,21 +69,6 @@ class SaleRepositoryAdapter implements SaleRepository {
     }
 
     // -------------------------------------------------------------------------
-    // FEFO batch lookup (no lock — the lock is taken in deductBalance)
-    // -------------------------------------------------------------------------
-
-    @Override
-    public List<BatchStock> findAndLockAvailableBatches(UUID orgId, UUID storeId, UUID productId) {
-        return balanceRepo.findAvailableBatchesFEFO(orgId, storeId, productId).stream()
-                .map(row -> new BatchStock(
-                        UUID.fromString(row[0].toString()),
-                        UUID.fromString(row[1].toString()),
-                        new BigDecimal(row[2].toString()),
-                        row[3] != null ? LocalDate.parse(row[3].toString()) : null))
-                .toList();
-    }
-
-    // -------------------------------------------------------------------------
     // Write operations
     // -------------------------------------------------------------------------
 
@@ -105,7 +85,7 @@ class SaleRepositoryAdapter implements SaleRepository {
     @Override
     public InvoiceLineBatch saveInvoiceLineBatch(InvoiceLineBatch lineBatch) {
         InvoiceLineBatch saved = lineBatchRepo.save(new InvoiceLineBatchJpa(lineBatch)).toDomain();
-        // Flush JPA to DB so the stock_movements JDBC insert can satisfy the FK constraint
+        // Flush JPA to DB so cross-module stock_movements insert can satisfy FK constraint
         entityManager.flush();
         return saved;
     }
@@ -113,35 +93,6 @@ class SaleRepositoryAdapter implements SaleRepository {
     @Override
     public Payment savePayment(Payment payment) {
         return paymentRepo.save(new PaymentJpa(payment)).toDomain();
-    }
-
-    @Override
-    public void deductBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal quantity) {
-        var balance = balanceRepo.findAndLockByBatchId(orgId, storeId, batchId)
-                .orElseThrow(() -> new SaleConflictException(
-                        "Không tìm thấy số dư tồn kho cho lô: " + batchId));
-        BigDecimal newQty = balance.getQuantityOnHand().subtract(quantity);
-        if (newQty.compareTo(BigDecimal.ZERO) < 0) {
-            throw new SaleConflictException(
-                    "Tồn kho không đủ cho lô " + batchId + " (còn " + balance.getQuantityOnHand() + ", cần " + quantity + ")");
-        }
-        balance.setQuantityOnHand(newQty);
-        balanceRepo.save(balance);
-    }
-
-    @Override
-    public void saveStockMovement(UUID id, UUID orgId, UUID storeId, UUID batchId,
-                                   BigDecimal quantityDelta, UUID invoiceLineId,
-                                   UUID actorUserId, Instant occurredAt) {
-        jdbc.update("""
-                INSERT INTO inventory.stock_movements
-                    (id, organization_id, store_id, product_batch_id, movement_type,
-                     quantity_delta, invoice_line_id, occurred_at, actor_user_id)
-                VALUES (?, ?, ?, ?, 'SALE', ?, ?, ?, ?)
-                """,
-                id, orgId, storeId, batchId,
-                quantityDelta, invoiceLineId,
-                java.sql.Timestamp.from(occurredAt), actorUserId);
     }
 
     // -------------------------------------------------------------------------

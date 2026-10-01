@@ -122,14 +122,14 @@ CREATE TABLE inventory.stock_movements (
 CREATE INDEX invoice_history ON sales.invoices(store_id, sold_at DESC);
 CREATE INDEX stock_movement_history ON inventory.stock_movements(store_id, product_batch_id, occurred_at DESC);
 
--- Permissions for SAL-01
+-- Permissions for SAL-01: sales.*
 INSERT INTO iam.permissions(id, code, description) VALUES
-    ('30000000-0000-0000-0000-000000000001', 'invoices.read',  'Read invoices within session scope'),
-    ('30000000-0000-0000-0000-000000000002', 'invoices.write', 'Create and void invoices within session scope');
+    ('30000000-0000-0000-0000-000000000001', 'sales.read',  'Read sales invoices and preview quotes within session scope'),
+    ('30000000-0000-0000-0000-000000000002', 'sales.write', 'Create and checkout sales invoices within session scope');
 
--- invoices.read: all roles; invoices.write: SALES, MANAGER, ADMIN
+-- sales.read: all roles; sales.write: SALES, MANAGER, ADMIN
 INSERT INTO iam.role_permissions(role_id, permission_id)
 SELECT r.id, p.id FROM iam.roles r CROSS JOIN iam.permissions p
-WHERE p.code = 'invoices.read'
-   OR (p.code = 'invoices.write' AND r.code IN ('SALES', 'MANAGER', 'ADMIN'))
+WHERE p.code = 'sales.read'
+   OR (p.code = 'sales.write' AND r.code IN ('SALES', 'MANAGER', 'ADMIN'))
 ON CONFLICT DO NOTHING;

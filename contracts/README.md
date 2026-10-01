@@ -6,3 +6,5 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 
 - [BE-02 session/RBAC](AUTH_SESSION_REVIEW.md): Accepted, ma trận quyền và bằng chứng provider/consumer review.
 - [Auth/session OpenAPI 3.1](auth-session.openapi.yaml): Accepted wire contract cho BE-02/FE-01.
+- [SAL-01 sales/invoices](SALES_INVOICE_REVIEW.md): Working Draft cho Issue #21 / PR #26, wire `/api/v1/sales/...`, ma trận quyền `sales.*` và public `InventoryPort`.
+- [Sales/invoices OpenAPI 3.1](sales-invoices.openapi.yaml): Working Draft wire contract cho SAL-01.

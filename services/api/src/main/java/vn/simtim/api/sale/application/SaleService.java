@@ -8,20 +8,23 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.simtim.api.inventory.application.InventoryPort;
 import vn.simtim.api.sale.domain.*;
 
 /**
  * Use-case service cho SAL-01: Quote, Checkout CASH, xem hóa đơn.
- * Tất cả ràng buộc nghiệp vụ (khóa lô, giảm tồn nguyên tử, snapshot) nằm ở đây.
+ * Tương tác với inventory thông qua public InventoryPort trong cùng transactional context.
  */
 @Service
 @Transactional
 public class SaleService {
 
     private final SaleRepository repo;
+    private final InventoryPort inventoryPort;
 
-    public SaleService(SaleRepository repo) {
+    public SaleService(SaleRepository repo, InventoryPort inventoryPort) {
         this.repo = repo;
+        this.inventoryPort = inventoryPort;
     }
 
     // -------------------------------------------------------------------------
@@ -63,7 +66,7 @@ public class SaleService {
                     "Số tiền nhận (" + cashAmount + ") nhỏ hơn tổng hoá đơn (" + estimatedSubtotal + ")");
         }
 
-        // 1. Resolve price + snapshot; allocate batches FEFO (locked)
+        // 1. Resolve price + snapshot; allocate batches FEFO through InventoryPort
         record LineData(CheckoutItem item, ProductSnapshot snap, long unitPrice,
                         long lineTotal, List<InvoiceLineBatch> batchAllocs) {}
         var lineDataList = new ArrayList<LineData>();
@@ -75,8 +78,8 @@ public class SaleService {
             long lineTotal = computeLineTotal(unitPrice, item.quantity());
             subtotal += lineTotal;
 
-            // Lock and allocate FEFO batches
-            var batches = repo.findAndLockAvailableBatches(orgId, storeId, item.productId());
+            // Fetch available FEFO batches from InventoryPort
+            var batches = inventoryPort.findAvailableBatchesFEFO(orgId, storeId, item.productId());
             var allocs = allocateFEFO(orgId, storeId, item.productId(), item.quantity(), batches, snap.sku());
 
             lineDataList.add(new LineData(item, snap, unitPrice, lineTotal, allocs));
@@ -90,20 +93,20 @@ public class SaleService {
                 soldByUserId, now, subtotal, 0L, subtotal, cashAmount,
                 List.of(), List.of(), 0L));
 
-        // 3. Save lines, batch allocations, deduct stock, record movements
+        // 3. Save lines, batch allocations, deduct stock, record movements via InventoryPort
         for (var ld : lineDataList) {
             InvoiceLine savedLine = repo.saveInvoiceLine(new InvoiceLine(
-                    UUID.randomUUID(), orgId, storeId, invoice.id(), ld.item().productId(),
-                    ld.snap().sku(), ld.snap().name(), ld.item().quantity(),
-                    ld.unitPrice(), 0L, ld.lineTotal(), null));
+                UUID.randomUUID(), orgId, storeId, invoice.id(), ld.item().productId(),
+                ld.snap().sku(), ld.snap().name(), ld.item().quantity(),
+                ld.unitPrice(), 0L, ld.lineTotal(), null));
 
             for (var alloc : ld.batchAllocs()) {
                 InvoiceLineBatch withLineId = new InvoiceLineBatch(
                         alloc.organizationId(), alloc.storeId(), savedLine.id(),
                         alloc.productId(), alloc.productBatchId(), alloc.quantity());
                 repo.saveInvoiceLineBatch(withLineId);
-                repo.deductBalance(orgId, storeId, alloc.productBatchId(), alloc.quantity());
-                repo.saveStockMovement(
+                inventoryPort.deductBalance(orgId, storeId, alloc.productBatchId(), alloc.quantity());
+                inventoryPort.recordSaleMovement(
                         UUID.randomUUID(), orgId, storeId, alloc.productBatchId(),
                         alloc.quantity().negate(), savedLine.id(), soldByUserId, now);
             }
@@ -204,7 +207,7 @@ public class SaleService {
         return repo.findLinesByInvoiceId(orgId, invoiceId).stream()
                 .map(line -> {
                     var lineBatches = repo.findLineBatchesByInvoiceLineId(orgId, line.id());
-                    return line; // lineBatches accessible via separate fetch if needed by API layer
+                    return line;
                 }).toList();
     }
 }

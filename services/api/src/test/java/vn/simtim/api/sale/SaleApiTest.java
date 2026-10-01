@@ -204,7 +204,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 2)));
 
-        var resp = post("/api/v1/invoices/quote", body, salesToken);
+        var resp = post("/api/v1/sales/quote", body, salesToken);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         @SuppressWarnings("unchecked")
         var r = (Map<String, Object>) resp.getBody();
@@ -222,7 +222,7 @@ class SaleApiTest {
         var body = Map.of(
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", UUID.randomUUID().toString(), "quantity", 1)));
-        var resp = post("/api/v1/invoices/quote", body, salesToken);
+        var resp = post("/api/v1/sales/quote", body, salesToken);
         assertThat(resp.getStatusCode().value()).isIn(422, 404);
     }
 
@@ -230,8 +230,18 @@ class SaleApiTest {
     @Order(3)
     void quote_emptyItems_returns4xx() {
         var body = Map.of("storeId", STORE_ID, "items", List.of());
-        var resp = post("/api/v1/invoices/quote", body, salesToken);
+        var resp = post("/api/v1/sales/quote", body, salesToken);
         assertThat(resp.getStatusCode().is4xxClientError()).isTrue();
+    }
+
+    @Test
+    @Order(4)
+    void quote_stockRole_returns200() {
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)));
+        var resp = post("/api/v1/sales/quote", body, stockToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     // =========================================================================
@@ -247,7 +257,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 3)),
                 "cashAmount", 100000L);
-        var resp = post("/api/v1/invoices", body, salesToken);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         @SuppressWarnings("unchecked")
@@ -286,7 +296,7 @@ class SaleApiTest {
                         Map.of("productId", RICE_ID, "quantity", 2),
                         Map.of("productId", APPLE_ID, "quantity", 1)),
                 "cashAmount", 120000L);
-        var resp = post("/api/v1/invoices", body, salesToken);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         @SuppressWarnings("unchecked")
@@ -304,7 +314,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 9999)),
                 "cashAmount", 999999999L);
-        var resp = post("/api/v1/invoices", body, salesToken);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
         assertThat(resp.getStatusCode().value()).isEqualTo(409);
     }
 
@@ -315,7 +325,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 2)),
                 "cashAmount", 1L);  // 1 VND << 50000
-        var resp = post("/api/v1/invoices", body, salesToken);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
         assertThat(resp.getStatusCode().value()).isEqualTo(422);
     }
 
@@ -326,7 +336,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
                 "cashAmount", 30000L);
-        var resp = post("/api/v1/invoices", body, stockToken);
+        var resp = post("/api/v1/sales/invoices", body, stockToken);
         assertThat(resp.getStatusCode().value()).isEqualTo(403);
     }
 
@@ -337,7 +347,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
                 "cashAmount", 30000L);
-        var resp = post("/api/v1/invoices", body, null);
+        var resp = post("/api/v1/sales/invoices", body, null);
         assertThat(resp.getStatusCode().value()).isEqualTo(401);
     }
 
@@ -353,14 +363,14 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
                 "cashAmount", 30000L);
-        var createResp = post("/api/v1/invoices", body, salesToken);
+        var createResp = post("/api/v1/sales/invoices", body, salesToken);
         assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         @SuppressWarnings("unchecked")
         String invoiceId = ((Map<String, Object>) createResp.getBody()).get("id").toString();
 
         // Fetch it
-        var getResp = get("/api/v1/invoices/" + invoiceId, salesToken);
+        var getResp = get("/api/v1/sales/invoices/" + invoiceId, salesToken);
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         @SuppressWarnings("unchecked")
         var inv = (Map<String, Object>) getResp.getBody();
@@ -372,7 +382,7 @@ class SaleApiTest {
     @Order(21)
     void listInvoices_returnsInvoicesForStore() {
         var resp = rest.exchange(
-                "/api/v1/invoices?storeId=" + STORE_ID,
+                "/api/v1/sales/invoices?storeId=" + STORE_ID,
                 HttpMethod.GET, headers(salesToken, null), Object.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).isNotNull();
@@ -381,7 +391,7 @@ class SaleApiTest {
     @Test
     @Order(22)
     void getInvoice_notFound_returns404() {
-        var resp = get("/api/v1/invoices/" + UUID.randomUUID(), salesToken);
+        var resp = get("/api/v1/sales/invoices/" + UUID.randomUUID(), salesToken);
         assertThat(resp.getStatusCode().value()).isEqualTo(404);
     }
 
@@ -389,7 +399,7 @@ class SaleApiTest {
     @Order(23)
     void listInvoices_stockRole_returns200() {
         var resp = rest.exchange(
-                "/api/v1/invoices?storeId=" + STORE_ID,
+                "/api/v1/sales/invoices?storeId=" + STORE_ID,
                 HttpMethod.GET, headers(stockToken, null), Object.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
@@ -398,7 +408,7 @@ class SaleApiTest {
     @Order(24)
     void listInvoices_unauthenticated_returns401() {
         var resp = rest.exchange(
-                "/api/v1/invoices?storeId=" + STORE_ID,
+                "/api/v1/sales/invoices?storeId=" + STORE_ID,
                 HttpMethod.GET, headers(null, null), Object.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(401);
     }
@@ -416,7 +426,7 @@ class SaleApiTest {
                 "storeId", STORE_ID,
                 "items", List.of(Map.of("productId", APPLE_ID, "quantity", 5)),
                 "cashAmount", 300000L);
-        var resp = post("/api/v1/invoices", body, managerToken);
+        var resp = post("/api/v1/sales/invoices", body, managerToken);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(getBalance(APPLE_BATCH_ID)).isEqualTo(appleBefore - 5);
     }

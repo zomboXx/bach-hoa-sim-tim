@@ -24,22 +24,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 ---
 Nguyễn Văn Thi - 2026-09-30 15:50:00
 
-SAL-01: Implement quote, checkout CASH, hóa đơn và trừ tồn FEFO trên `services/api`.
+SAL-01: Chuẩn hóa wire /api/v1/sales/..., quyền sales.*, tách public InventoryPort và bổ sung Working Draft contract.
 
-Flyway V5 tạo `inventory` schema (goods_receipts, goods_receipt_lines, product_batches, inventory_balances, FEFO index). Flyway V6 tạo `sales` schema (invoices, invoice_lines, invoice_line_batches, payments) và `inventory.stock_movements` với cross-schema FK; thêm permissions `invoices.read`/`invoices.write`. Domain layer: Invoice, InvoiceLine, InvoiceLineBatch, Payment, BatchStock, ProductSnapshot, SaleRepository port, 3 custom exceptions. Application layer: SaleService với quote (read-only, không ghi DB) và checkout CASH (FEFO allocation, pessimistic lock, atomic: invoice + batch + balance deduction + movement + payment trong một transaction; validate cash trước khi lock stock). Infrastructure: 5 JPA entities + Spring Data repos + SaleRepositoryAdapter (JPA+JDBC, EntityManager.flush() trước JDBC insert để đảm bảo FK). API: POST /api/v1/invoices/quote, POST /api/v1/invoices, GET /api/v1/invoices, GET /api/v1/invoices/{id}; SaleExceptionHandler map 404/409/422. DemoAccounts mở rộng seedInventory() chạy sau khi users được tạo, thay thế stock_demo user đã xóa khỏi R__demo_seed.sql. 15 integration tests (SaleApiTest) trên PostgreSQL 17 Testcontainers — tổng 46/46 pass.
+Flyway V5 tạo `inventory` schema; Flyway V6 tạo `sales` schema và `inventory.stock_movements` (cross-schema FK); quyền `sales.read` (tất cả vai trò, gồm quote) và `sales.write` (SALES, MANAGER, ADMIN cho checkout). Tạo public boundary port `InventoryPort` (`vn.simtim.api.inventory.application`) và `InventoryPortAdapter` (`vn.simtim.api.inventory.infrastructure`), tách hoàn toàn JPA repo của inventory khỏi module sale. SaleService giao tiếp qua InventoryPort trong cùng transactional context. Wire controller chuyển sang `@RequestMapping("/api/v1/sales")` với `/quote`, `/invoices`, `/invoices/{id}`. Tạo Working Draft contract `sales-invoices.openapi.yaml` và ma trận quyền `SALES_INVOICE_REVIEW.md`. 16 integration tests (SaleApiTest) trên PostgreSQL 17 Testcontainers — tổng 47/47 tests backend pass.
 
-- `services/api/src/main/resources/db/migration/V5__inventory.sql`: +87 -0
-- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +135 -0
-- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +10 -100
-- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoAccounts.java`: +89 -0
-- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +3 -0
-- `services/api/src/main/java/vn/simtim/api/sale/domain/`: +162 -0
-- `services/api/src/main/java/vn/simtim/api/sale/application/`: +242 -0
-- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/`: +511 -0
-- `services/api/src/main/java/vn/simtim/api/sale/api/`: +206 -0
-- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +484 -0
+- `contracts/sales-invoices.openapi.yaml`: +235 -0
+- `contracts/SALES_INVOICE_REVIEW.md`: +65 -0
+- `contracts/README.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +130 -0
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +25 -15
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +15 -10
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +5 -25
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/`: +5 -120
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +5 -3
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +2 -2
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +6 -6
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +25 -15
 - `CHANGELOG.md`: +2 -1
-- `CONTRIBUTION_LOG.md`: +33 -0
 ---
 
 

@@ -1,13 +1,11 @@
-package vn.simtim.api.sale.infrastructure;
+package vn.simtim.api.inventory.infrastructure;
 
 import jakarta.persistence.LockModeType;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,7 +13,7 @@ interface InventoryBalanceJpaRepository extends JpaRepository<InventoryBalanceJp
 
     /**
      * Đặt khóa PESSIMISTIC_WRITE trên balance của một lô.
-     * Phải gọi trong transaction đang mở (SaleService.checkout đã có @Transactional).
+     * Phải gọi trong transaction đang mở.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM InventoryBalanceJpa b WHERE b.organizationId = :orgId AND b.storeId = :storeId AND b.productBatchId = :batchId")
@@ -40,6 +38,6 @@ interface InventoryBalanceJpaRepository extends JpaRepository<InventoryBalanceJp
             ORDER BY pb.expiry_date ASC NULLS LAST, pb.received_date ASC, pb.id ASC
             """, nativeQuery = true)
     List<Object[]> findAvailableBatchesFEFO(@Param("orgId") UUID orgId,
-                                             @Param("storeId") UUID storeId,
-                                             @Param("productId") UUID productId);
+                                           @Param("storeId") UUID storeId,
+                                           @Param("productId") UUID productId);
 }

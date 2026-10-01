@@ -1,6 +1,5 @@
 package vn.simtim.api.sale.domain;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -20,14 +19,7 @@ public interface SaleRepository {
     /** Snapshot SKU và tên sản phẩm để ghi vào invoice_line. */
     Optional<ProductSnapshot> findProductSnapshot(UUID orgId, UUID productId);
 
-    /**
-     * Danh sách lô còn hàng, đặt khóa PESSIMISTIC_WRITE trên inventory_balances.
-     * Trả về theo thứ tự FEFO: expiry_date ASC NULLS LAST, received_date ASC.
-     * Chỉ gọi trong transaction đang mở.
-     */
-    List<BatchStock> findAndLockAvailableBatches(UUID orgId, UUID storeId, UUID productId);
-
-    // --- Write operations (tất cả trong cùng transaction của SaleService) ---
+    // --- Write operations (trong transaction của SaleService) ---
 
     Invoice saveInvoice(Invoice invoice);
 
@@ -36,20 +28,6 @@ public interface SaleRepository {
     InvoiceLineBatch saveInvoiceLineBatch(InvoiceLineBatch lineBatch);
 
     Payment savePayment(Payment payment);
-
-    /**
-     * Trừ {@code quantity} khỏi inventory_balance của lô.
-     * Ném SaleConflictException nếu tồn thực tế không đủ.
-     */
-    void deductBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal quantity);
-
-    /**
-     * Ghi biến động tồn loại SALE cho một (invoice_line, batch) đã lưu.
-     * Phải gọi sau saveInvoiceLineBatch để FK thoả mãn.
-     */
-    void saveStockMovement(UUID id, UUID orgId, UUID storeId, UUID batchId,
-                           BigDecimal quantityDelta, UUID invoiceLineId,
-                           UUID actorUserId, Instant occurredAt);
 
     // --- Read operations ---
 
