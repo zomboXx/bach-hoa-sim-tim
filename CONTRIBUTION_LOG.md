@@ -22,17 +22,30 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
-Nguyễn Văn Thi - 2026-09-30 10:31:47
+Nguyễn Văn Thi - 2026-10-01 08:00:04
 
-Hoàn thành PRO-01B: Chuẩn hóa wire API khuyến mãi cơ bản sang `/api/v1/sales/promotions` (hỗ trợ alias `/api/v1/promotions`), bổ sung Working Draft OpenAPI 3.1 wire contract và ma trận quyền review. Flyway V5 tạo schema `sales` (`CREATE SCHEMA IF NOT EXISTS sales`), bảng `promotions` và `promotion_products`, quyền `promotions.read` (mọi vai trò) / `promotions.write` (MANAGER/ADMIN). Implement đầy đủ clean-architecture (domain → application → infrastructure → api): 9 REST endpoints (CRUD + phạm vi sản phẩm + tra cứu applicable tại điểm bán), validation business rule (time window, discount value, unique code), RFC 7807 exception handler. Cập nhật AuthSecurity, R__demo_seed. 15 integration test trên PostgreSQL 17 (Testcontainers) đạt 100% (tổng 46/46 tests pass).
+Chuẩn hóa PRO-01B theo review Sprint 2: cấu hình wire API khuyến mãi sang `/api/v1/sales/promotions` (hỗ trợ alias `/api/v1/promotions` tương thích ngược), bổ sung Working Draft OpenAPI 3.1 wire contract và ma trận quyền review tại `contracts/`. Cập nhật V5 migration với `CREATE SCHEMA IF NOT EXISTS sales;`. Bổ sung integration test kiểm tra route prefix `/api/v1/sales/promotions`, toàn bộ 15/15 test khuyến mãi và 46/46 backend integration test pass trên PostgreSQL 17 (Testcontainers).
 
 Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 46 backend tests trên PostgreSQL 17.11 disposable sạch.
 
-Defer có ghi chú: `promotion_batches` (chờ `inventory.product_batches` từ INV-01) và `applied_promotion_id` trong `invoice_lines` (kết nối FK khi rebase theo SAL-01).
-
-- `contracts/sales-promotions.openapi.yaml`: +230 -0
-- `contracts/SALES_PROMOTIONS_REVIEW.md`: +50 -0
+- `contracts/sales-promotions.openapi.yaml`: +336 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +48 -0
 - `contracts/README.md`: +2 -0
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +1 -1
+- `services/api/src/main/resources/db/migration/V5__sales_promotions.sql`: +1 -1
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +8 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-09-30 10:31:47
+
+Hoàn thành PRO-01B: API khuyến mãi cơ bản theo sản phẩm. Flyway V5 tạo schema `sales`, bảng `promotions` và `promotion_products`, quyền `promotions.read` (mọi vai trò) / `promotions.write` (MANAGER/ADMIN). Implement đầy đủ clean-architecture (domain → application → infrastructure → api) theo đúng pattern đã có: 9 REST endpoints (CRUD + phạm vi sản phẩm + tra cứu applicable tại điểm bán), validation business rule (time window, discount value, unique code), RFC 7807 exception handler scoped cho module. Cập nhật AuthSecurity và R__demo_seed. Viết 14 integration test trên PostgreSQL 17.11 (Testcontainers) bao phủ auth matrix, CRUD lifecycle, conflict, validation và applicable query; tổng 45/45 tests pass.
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 45 backend tests trên PostgreSQL 17.11 disposable sạch.
+
+Defer có ghi chú: `promotion_batches` (chờ `inventory.product_batches` từ INV-01) và `applied_promotion_id` trong `invoice_lines` (thuộc SAL-01).
 
 - `CHANGELOG.md`: +2 -0
 - `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +5 -0
