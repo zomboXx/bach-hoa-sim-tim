@@ -1,10 +1,10 @@
 # Đối chiếu backlog Sprint 1 với báo cáo Word
 
-- Trạng thái: **Draft — đề xuất để Project Owner và nhóm review**.
+- Trạng thái hiện tại: **Bản làm việc lịch sử ngày 26/09/2026**. Phần đã chốt nằm trong [REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) và [backlog hiện hành](governance/BACKLOG.md); các ứng viên chưa có Issue/sprint vẫn chỉ là đầu vào refinement, không là cam kết triển khai.
 - Ngày lập: 26/09/2026.
 - Nguồn: bản làm việc `Nhom04_BaoCaoHoanChinh.docx` do Project Owner cung cấp; [backlog hiện hành](governance/BACKLOG.md), [Sprint 1 kickoff](SPRINT_1_KICKOFF.md) và [quyết định REQ-01](REQ-01_DECISION_DRAFT.md).
 
-Báo cáo Word phân tích nhiều nghiệp vụ hơn các Issue đã lên lịch. Việc đưa một yêu cầu vào backlog giúp nhóm theo dõi và ưu tiên; chỉ khi có owner, reviewer, dependency, tiêu chí chấp nhận và sprint được nhóm chốt thì yêu cầu đó mới là cam kết triển khai. Ngày 27/09/2026, chi tiết của các Issue Sprint 1 và hai ứng viên ACC-01/PRC-01 đã được đưa vào [backlog](governance/BACKLOG.md) để review. Bản đối chiếu này vẫn là **Draft** cho các khoảng trống tiếp theo; không đổi trạng thái Issue hoặc tuyên bố Sprint 1 hoàn thành.
+Báo cáo Word phân tích nhiều nghiệp vụ hơn các Issue đã lên lịch. Việc đưa một yêu cầu vào backlog giúp nhóm theo dõi và ưu tiên; chỉ khi có owner, reviewer, dependency, tiêu chí chấp nhận và sprint được nhóm chốt thì yêu cầu đó mới là cam kết triển khai. Ngày 27/09/2026, chi tiết của các Issue Sprint 1 và hai ứng viên ACC-01/PRC-01 đã được đưa vào [backlog](governance/BACKLOG.md) để review. Sprint 1 sau đó đã đóng 7/7 Issue; bảng dưới đây giữ nguyên đối chiếu tại thời điểm lập và không thay trạng thái Issue hiện hành.
 
 ## Các Issue Sprint 1 đã có
 

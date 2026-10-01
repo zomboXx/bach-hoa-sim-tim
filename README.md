@@ -1,10 +1,10 @@
 # Bách Hóa Sim Tím
 
-Đây là baseline đã hoàn thành và nghiệm thu của Sprint 0, đồng thời là điểm xuất phát để cả nhóm triển khai Sprint 1. Code active đã được nghiệm thu chỉ gồm PWA dùng Vue 3, TypeScript, Vite, IndexedDB và Playwright. Nhánh `BE-01` đang bổ sung API và PostgreSQL để review; phần này chưa được nghiệm thu hoặc nhập vào `main`. Godot chưa thuộc baseline.
+Repository đã tích hợp nền Sprint 1: PWA Vue/TypeScript, API Spring Boot, PostgreSQL/Flyway, đăng nhập server, phân quyền và catalog. [Milestone Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) gồm các Issue nhận hàng, tồn, bán, báo cáo và QA; [kickoff](docs/project/SPRINT_2_KICKOFF.md) ghi thứ tự làm việc và [contract](contracts/SPRINT_2_BOUNDARY_DRAFT.md) ghi quy tắc chung. API nghiệp vụ Sprint 2 chưa được triển khai.
 
 ## Bắt đầu nhanh
 
-Yêu cầu Git, PowerShell 7 và Node.js 22.
+Yêu cầu Git, PowerShell 7 và Node.js 22. `scripts/dev.ps1` chạy PWA ở demo mode; API mode cần Java 21, PostgreSQL và lệnh riêng trong [hướng dẫn API](services/api/README.md).
 
 ```powershell
 pwsh -File scripts/setup.ps1
@@ -25,13 +25,13 @@ Mở `http://127.0.0.1:5174`. Các tài khoản demo dùng chung mật khẩu `d
 pwsh -File scripts/verify.ps1
 ```
 
-Lệnh này kiểm tra whitespace/link, ESLint, Prettier, TypeScript, production build, Playwright E2E và API integration test với PostgreSQL qua Docker. Xem [cổng baseline](docs/project/governance/MERGE_01.md), [hướng dẫn API](services/api/README.md) và [kế hoạch khởi động Sprint 1](docs/project/SPRINT_1_KICKOFF.md).
+Lệnh này kiểm tra whitespace/link, ESLint, Prettier, TypeScript, production build, Playwright E2E và API integration test với PostgreSQL qua Docker. Xem [cổng baseline](docs/project/governance/MERGE_01.md), [hướng dẫn API](services/api/README.md) và [kickoff Sprint 2](docs/project/SPRINT_2_KICKOFF.md).
 
 ## Cấu trúc repository
 
 ```text
-apps/web/           PWA Sprint 0 và điểm bắt đầu frontend Sprint 1
-services/api/       API bootstrap của BE-01, đang chờ review
+apps/web/           PWA demo và API mode; Sprint 2 nối nghiệp vụ thật theo Issue
+services/api/       API auth/catalog đã tích hợp; Sprint 2 thêm inventory/sales/reports
 contracts/          Hợp đồng liên module, luôn ghi trạng thái draft/accepted
 infra/              Hạ tầng local đi cùng dịch vụ sở hữu
 docs/               Product, kiến trúc, quản trị dự án, kiểm thử và lịch sử
@@ -50,6 +50,6 @@ archive/             Prototype cũ chỉ giữ để truy vết
 
 ## Trạng thái và giới hạn
 
-PWA baseline vẫn chạy hoàn toàn trong trình duyệt; đăng nhập, phân quyền, thanh toán và đồng bộ máy chủ trong PWA đang được mô phỏng. API BE-01 chỉ có health check và migration nền, chưa nối với PWA. Không sử dụng tài khoản demo hoặc dữ liệu prototype cho môi trường thật.
+Demo mode vẫn dùng dữ liệu trên thiết bị. API mode đã kết nối đăng nhập/session BE-02; nhận hàng, bán hàng và báo cáo thật sẽ được nối lần lượt trong Sprint 2. Các giao dịch demo không được gửi lên API hoặc tính vào báo cáo server. Không sử dụng tài khoản demo hoặc dữ liệu prototype cho môi trường thật.
 
-Prototype đời đầu nằm trong [archive/prototype-v1](archive/prototype-v1/README.md). Code Sprint 1 thử nghiệm trước baseline được giữ ngoài `main` để tham khảo, không được xem là nguồn sự thật hay tự động ghi nhận là đóng góp đã nghiệm thu.
+Prototype đời đầu nằm trong [archive/prototype-v1](archive/prototype-v1/README.md). Trạng thái công việc hiện hành nằm ở GitHub Issues/PR, không suy ra từ prototype lịch sử.

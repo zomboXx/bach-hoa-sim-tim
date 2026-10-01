@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-09-30 23:09:32
+
+Rà lại tài liệu `docs/project` theo `main` và GitHub ngày 30/09: thêm điểm vào phân biệt tài liệu hiện hành với bản lưu, ghi mốc Sprint 1 đã đóng và các PR Sprint 2 đang mở; sửa những câu còn nói REQ-01/BE-02 chờ review hoặc merge sau khi đã tích hợp. Giữ bản nháp lịch sử để truy vết, không xóa nội dung cũ. Bộ tài liệu vẫn ở nhánh local, chưa push hoặc mở PR.
+
+Đối chiếu GitHub: milestone Sprint 1 đóng 7/7 Issue; Sprint 2 mở 7/7 Issue; PR #25–#27 đang mở, chưa tính Done. Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy, links, lint, format, build, 6 demo E2E, 23 API-mode E2E và 31 backend tests trên PostgreSQL 18.6 tạm; server thử nghiệm đã dừng.
+
+- `CHANGELOG.md`: +1 -0
+- `docs/README.md`: +5 -4
+- `docs/project/README.md`: +30 -0
+- `docs/project/REQ-01_DECISION_DRAFT.md`: +1 -1
+- `docs/project/REQ-01_SCOPE_RECORD_2026-09-29.md`: +2 -2
+- `docs/project/SPRINT_1_KICKOFF.md`: +2 -0
+- `docs/project/SPRINT_1_WORD_BACKLOG_DRAFT.md`: +2 -2
+- `docs/project/SPRINT_2_KICKOFF.md`: +1 -0
+- `docs/project/governance/BACKLOG.md`: +4 -4
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 Nguyễn Văn Trung - 2026-09-30 15:43:00
 
 Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu đã commit — nhánh `feature/REP-01-reports`.
@@ -44,6 +63,58 @@ Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu 
 - `apps/web/tests/api-reports.spec.ts`: +61 -0
 - `apps/web/src/adapter.ts`: +8 -2
 - `apps/web/src/App.vue`: +75 -30
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-09-30 09:40:37
+
+Chỉnh cách đọc Issue Sprint 2: tách Owner/Reviewer thành hai dòng và bỏ metadata ưu tiên/mã lặp với tiêu đề, nhãn. Điều chỉnh phân công theo trao đổi với Project Owner: TV4 nhận FE-02 cùng QA-02, TV2 nhận REP-01 sau INV-01/02, TV3 tập trung SAL-01 và PRO-01B P1; TV1 điều phối/review. Đồng bộ backlog, kickoff, contract ranh giới và ghi ngoại lệ Sprint 2 so với trách nhiệm module dài hạn. Issue là phân công kế hoạch, chưa ghi nhận code feature của thành viên khác. Giữ nhánh tài liệu ở máy, chưa push.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy, links, lint, format, build, 6 demo E2E, 23 API-mode E2E và 31 backend tests trên PostgreSQL 18.6 tạm; CSDL tạm đã xóa. Đã kiểm tra lại owner/reviewer/assignee của Issue #18–#24 trên GitHub.
+
+- `GitHub Issues #18–#24`: N/A
+- `CHANGELOG.md`: +1 -0
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +2 -2
+- `docs/project/SPRINT_2_KICKOFF.md`: +11 -11
+- `docs/project/governance/BACKLOG.md`: +3 -3
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-09-30 09:22:53
+
+Thiết lập Sprint 2 để nhóm bắt đầu code: đóng milestone Sprint 1 đã có 7/7 Issue xong; tạo milestone Sprint 2 hạn 07/10/2026, nhãn sprint:2 và bảy Issue #18–#24 có assignee, reviewer, ưu tiên, phụ thuộc, tiêu chí chấp nhận và kế hoạch test. Tách FE-02 làm phần PWA nhận/tồn của INV-01/02. Đồng bộ backlog, kickoff, contract ranh giới và README theo nền Sprint 1 đã tích hợp. Chưa push nhánh tài liệu hoặc mở PR; Project board chưa cập nhật vì credential hiện thiếu quyền project.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25/PostgreSQL 18.6 disposable đạt policy, links, lint, format, typecheck/build, 6 demo E2E, 23 API-mode E2E và 31 backend tests. CSDL tạm đã được xóa; GitHub xác nhận 7 Issue mở đúng milestone/assignee/nhãn và milestone Sprint 1 đã đóng.
+
+- `CHANGELOG.md`: +1 -0
+- `README.md`: +7 -7
+- `apps/web/README.md`: +2 -2
+- `contracts/README.md`: +1 -1
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +53 -6
+- `docs/README.md`: +2 -2
+- `docs/project/SPRINT_2_KICKOFF.md`: +57 -0
+- `docs/project/SPRINT_2_REVIEW_PLAN.md`: +0 -47
+- `docs/project/governance/BACKLOG.md`: +9 -8
+- `services/api/README.md`: +3 -3
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-09-30 08:44:50
+
+Rút gọn bộ review Sprint 2 trên nền main: giữ quyết định nghiệp vụ đã xác nhận, owner/thứ tự P0-P1, ranh giới HTTP/Java và các điểm kỹ thuật cần TV2/TV3/TV4 chốt. Tách quyết định game đào tạo và các bản DDL, OpenAPI, QA quá chi tiết khỏi nhánh review này; giữ bản nháp cũ trong nhánh local để truy vết. Không mở Issue, thay schema/API hay push.
+
+Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25 và PostgreSQL 18.6 disposable đạt policy, links, lint, format, typecheck/build, 6 demo E2E, 23 API-mode E2E và 31 backend tests. Database tạm đã được xóa.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -0
+- `contracts/SPRINT_2_BOUNDARY_DRAFT.md`: +49 -0
+- `docs/README.md`: +2 -0
+- `docs/project/SPRINT_2_REVIEW_PLAN.md`: +47 -0
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
 
 ---
 Lê Văn Chiến - 2026-09-29 21:00:00

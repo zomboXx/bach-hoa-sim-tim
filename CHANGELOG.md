@@ -6,6 +6,9 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Cập nhật điểm vào tài liệu dự án và mốc tiến độ ngày 30/09/2026; phân biệt bản nháp lịch sử với backlog/contract hiện hành, sửa trạng thái REQ-01 và Sprint 1 đã tích hợp, ghi rõ các PR Sprint 2 còn đang review.
+- Trình bày owner/reviewer trên hai dòng riêng trong Issue Sprint 2, bỏ metadata lặp với tiêu đề/nhãn; cân lại phân công: TV4 nhận FE-02, TV2 nhận REP-01, TV3 tập trung SAL-01, TV1 điều phối và review.
+- Hoàn thiện kickoff Sprint 2 trên GitHub: milestone hạn 07/10/2026, bảy Issue có owner/reviewer và tiêu chí kiểm thử; tách FE-02 để nối giao diện nhận/tồn với API, làm rõ contract giao dịch và cập nhật hướng dẫn bắt đầu theo nền Sprint 1 đã tích hợp.
 - Đối chiếu từng yêu cầu với backlog và báo cáo tuần 4 cho REQ-01; ghi rõ phần chấp nhận/hoãn/loại theo xác nhận của Project Owner ngày 29/09/2026, chờ nhóm review và tích hợp, giữ bản nháp cũ để truy vết và cho phép ghi quyết định trên Issue/PR thay vì dựng biên bản cuộc họp.
 
 - Ghi nhận Project Owner thông báo nhóm đã review và đồng ý hướng DB-01 gồm 39 bảng đích và migration theo sprint; ba ERD đã đồng bộ, migration Sprint 1 đạt local và CI PostgreSQL 17, đã tích hợp qua PR #11.
@@ -18,6 +21,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Chuẩn bị bộ review Sprint 2 gọn gồm kế hoạch triển khai và contract ranh giới module; ghi các quyết định nghiệp vụ đã xác nhận, owner/reviewer và điểm kỹ thuật còn phải chốt trước code.
 - BE-02 đã tích hợp qua PR #14: login/session/logout với opaque Bearer session thu hồi được, BCrypt, bốn vai trò và permission catalog read/write; server chặn giả mạo phạm vi và tải lại quyền/tài khoản ở mỗi request.
 - OpenAPI session/RBAC đã Accepted ngày 29/09/2026, thay thế trạng thái Draft trước đó; login có rate limit và tài khoản demo chỉ được tạo khi người chạy chủ động cung cấp mật khẩu qua môi trường, không có mật khẩu mặc định.
 - Bổ sung regression integration test cho barcode sản phẩm trùng; kiểm tra `409` và hậu điều kiện không tạo thêm record.
