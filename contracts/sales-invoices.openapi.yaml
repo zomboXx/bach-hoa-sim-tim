@@ -43,6 +43,41 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '422': {$ref: '#/components/responses/UnprocessableEntity'}
 
+  /api/v1/sales/checkout:
+    post:
+      operationId: checkoutSaleDirect
+      summary: Checkout CASH sale (alias for /api/v1/sales/invoices)
+      description: Alias matching the Sprint 2 boundary route standard. Identical behavior to POST /api/v1/sales/invoices.
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CheckoutRequest'}
+      responses:
+        '201':
+          description: Invoice created and inventory deducted
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvoiceResponse'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409':
+          description: Insufficient stock balance for required FEFO allocation
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422':
+          description: Validation failure
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
   /api/v1/sales/invoices:
     post:
       operationId: checkoutSale

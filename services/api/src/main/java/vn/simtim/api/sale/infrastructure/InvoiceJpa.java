@@ -20,6 +20,7 @@ class InvoiceJpa {
     @Column(name = "discount_total", nullable = false) long discountTotal;
     @Column(name = "grand_total", nullable = false) long grandTotal;
     @Column(name = "paid_total", nullable = false) long paidTotal;
+    @Column(name = "change_amount", nullable = false) long changeAmount;
     @Column(name = "voided_by") UUID voidedBy;
     @Column(name = "void_reason", length = 500) String voidReason;
     @Version @Column(nullable = false) long version;
@@ -38,12 +39,13 @@ class InvoiceJpa {
         this.discountTotal = inv.discountTotal();
         this.grandTotal = inv.grandTotal();
         this.paidTotal = inv.paidTotal();
+        this.changeAmount = inv.changeAmount();
         this.version = inv.version();
     }
 
     Invoice toDomain() {
         return new Invoice(id, organizationId, storeId, invoiceNo, status,
-                soldBy, soldAt, subtotal, discountTotal, grandTotal, paidTotal,
+                soldBy, soldAt, subtotal, discountTotal, grandTotal, paidTotal, changeAmount,
                 java.util.List.of(), java.util.List.of(), version);
     }
 }

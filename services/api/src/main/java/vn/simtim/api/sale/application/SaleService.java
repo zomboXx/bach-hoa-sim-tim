@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.simtim.api.inventory.application.BatchStock;
 import vn.simtim.api.inventory.application.InventoryPort;
 import vn.simtim.api.sale.domain.*;
 
@@ -88,9 +89,14 @@ public class SaleService {
         // 2. Create invoice
         Instant now = Instant.now();
         String invoiceNo = "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        long discountTotal = 0L;
+        long grandTotal = subtotal - discountTotal;
+        long changeAmount = cashAmount - grandTotal;
+        long paidTotal = grandTotal;
+
         Invoice invoice = repo.saveInvoice(new Invoice(
                 UUID.randomUUID(), orgId, storeId, invoiceNo, "COMPLETED",
-                soldByUserId, now, subtotal, 0L, subtotal, cashAmount,
+                soldByUserId, now, subtotal, discountTotal, grandTotal, paidTotal, changeAmount,
                 List.of(), List.of(), 0L));
 
         // 3. Save lines, batch allocations, deduct stock, record movements via InventoryPort
@@ -112,12 +118,12 @@ public class SaleService {
             }
         }
 
-        // 4. Create payment
+        // 4. Create payment — recorded amount is grandTotal, changeAmount returned to customer
         repo.savePayment(new Payment(UUID.randomUUID(), orgId, storeId, invoice.id(),
-                "CASH", "COMPLETED", cashAmount, now));
+                "CASH", "COMPLETED", grandTotal, now));
 
         // 5. Return full invoice with lines and payments loaded
-        return getInvoice(orgId, invoice.id());
+        return getInvoice(orgId, storeId, invoice.id());
     }
 
     // -------------------------------------------------------------------------
@@ -125,14 +131,22 @@ public class SaleService {
     // -------------------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public Invoice getInvoice(UUID orgId, UUID id) {
+    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id) {
         var inv = repo.findInvoiceById(orgId, id)
                 .orElseThrow(() -> new SaleNotFoundException("Hóa đơn không tồn tại: " + id));
+        if (storeId != null && !inv.storeId().equals(storeId)) {
+            throw new SaleNotFoundException("Hóa đơn không tồn tại: " + id);
+        }
         var lines = loadLines(orgId, id);
         var payments = repo.findPaymentsByInvoiceId(orgId, id);
         return new Invoice(inv.id(), inv.organizationId(), inv.storeId(), inv.invoiceNo(),
                 inv.status(), inv.soldBy(), inv.soldAt(), inv.subtotal(), inv.discountTotal(),
-                inv.grandTotal(), inv.paidTotal(), lines, payments, inv.version());
+                inv.grandTotal(), inv.paidTotal(), inv.changeAmount(), lines, payments, inv.version());
+    }
+
+    @Transactional(readOnly = true)
+    public Invoice getInvoice(UUID orgId, UUID id) {
+        return getInvoice(orgId, null, id);
     }
 
     @Transactional(readOnly = true)
@@ -143,7 +157,7 @@ public class SaleService {
                     var payments = repo.findPaymentsByInvoiceId(orgId, inv.id());
                     return new Invoice(inv.id(), inv.organizationId(), inv.storeId(), inv.invoiceNo(),
                             inv.status(), inv.soldBy(), inv.soldAt(), inv.subtotal(), inv.discountTotal(),
-                            inv.grandTotal(), inv.paidTotal(), lines, payments, inv.version());
+                            inv.grandTotal(), inv.paidTotal(), inv.changeAmount(), lines, payments, inv.version());
                 }).toList();
     }
 

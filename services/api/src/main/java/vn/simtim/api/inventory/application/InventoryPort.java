@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import vn.simtim.api.sale.domain.BatchStock;
-
 /**
  * Public boundary port cho module inventory.
  * Cho phép các module khác (như sale) tra cứu lô hàng FEFO, trừ tồn kho
@@ -24,7 +22,7 @@ public interface InventoryPort {
 
     /**
      * Khóa bi quan và trừ tồn kho của lô.
-     * @throws vn.simtim.api.sale.domain.SaleConflictException nếu tồn kho không đủ
+     * @throws InventoryConflictException nếu tồn kho không đủ
      */
     void deductBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal quantity);
 

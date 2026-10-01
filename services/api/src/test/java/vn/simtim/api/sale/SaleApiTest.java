@@ -167,22 +167,18 @@ class SaleApiTest {
     @AfterAll
     void teardown() {
         try {
-            // Delete inventory seed data in FK-safe order (goods_receipts.created_by → fixture MANAGER user)
-            jdbc.update("DELETE FROM inventory.stock_movements WHERE id IN " +
-                    "('10000000-0000-0000-0000-0000000000c1'::uuid,'10000000-0000-0000-0000-0000000000c2'::uuid)");
-            jdbc.update("DELETE FROM inventory.stock_movements WHERE actor_user_id IN " +
-                    "(SELECT id FROM iam.users WHERE username LIKE '%-sale-test')");
+            // Clean up test data in FK-safe order
+            jdbc.update("DELETE FROM inventory.stock_movements WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.payments WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoice_line_batches WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoice_lines WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoices WHERE organization_id = ?::uuid", ORG_ID);
-            jdbc.update("DELETE FROM inventory.inventory_balances WHERE id IN " +
-                    "('10000000-0000-0000-0000-0000000000b1'::uuid,'10000000-0000-0000-0000-0000000000b2'::uuid)");
-            jdbc.update("DELETE FROM inventory.product_batches WHERE id IN " +
-                    "('10000000-0000-0000-0000-0000000000a1'::uuid,'10000000-0000-0000-0000-0000000000a2'::uuid)");
-            jdbc.update("DELETE FROM inventory.goods_receipt_lines WHERE id IN " +
-                    "('10000000-0000-0000-0000-000000000091'::uuid,'10000000-0000-0000-0000-000000000092'::uuid)");
-            jdbc.update("DELETE FROM inventory.goods_receipts WHERE id = '10000000-0000-0000-0000-000000000081'::uuid");
+            jdbc.update("DELETE FROM inventory.inventory_balances WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM inventory.product_batches WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM inventory.goods_receipt_lines WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM inventory.goods_receipts WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM catalog.product_prices WHERE organization_id = ?::uuid AND product_id NOT IN ('10000000-0000-0000-0000-000000000041'::uuid, '10000000-0000-0000-0000-000000000042'::uuid)", ORG_ID);
+            jdbc.update("DELETE FROM catalog.products WHERE organization_id = ?::uuid AND id NOT IN ('10000000-0000-0000-0000-000000000041'::uuid, '10000000-0000-0000-0000-000000000042'::uuid)", ORG_ID);
             for (UUID id : fixtureUsers) {
                 jdbc.update("DELETE FROM iam.auth_sessions WHERE user_id = ?", id);
                 jdbc.update("DELETE FROM iam.user_roles WHERE user_id = ?", id);
@@ -264,14 +260,17 @@ class SaleApiTest {
         var inv = (Map<String, Object>) resp.getBody();
         assertThat(inv).isNotNull();
         assertThat(inv.get("status")).isEqualTo("COMPLETED");
+        assertThat(inv.get("organizationId")).isEqualTo(ORG_ID);
         assertThat(inv.get("grandTotal")).isEqualTo(75000); // 3 × 25000
-        assertThat(inv.get("paidTotal")).isEqualTo(100000);
+        assertThat(inv.get("paidTotal")).isEqualTo(75000);
+        assertThat(inv.get("changeAmount")).isEqualTo(25000); // 100000 - 75000
         @SuppressWarnings("unchecked")
         var lines = (List<?>) inv.get("lines");
         assertThat(lines).hasSize(1);
         @SuppressWarnings("unchecked")
-        var payments = (List<?>) inv.get("payments");
+        var payments = (List<Map<String, Object>>) inv.get("payments");
         assertThat(payments).hasSize(1);
+        assertThat(payments.get(0).get("amount")).isEqualTo(75000);
 
         // Verify stock reduced
         long riceAfter = getBalance(RICE_BATCH_ID);
@@ -303,6 +302,8 @@ class SaleApiTest {
         var inv = (Map<String, Object>) resp.getBody();
         // subtotal = 2×25000 + 1×40000 = 90000
         assertThat(inv.get("grandTotal")).isEqualTo(90000);
+        assertThat(inv.get("paidTotal")).isEqualTo(90000);
+        assertThat(inv.get("changeAmount")).isEqualTo(30000);
         assertThat(getBalance(RICE_BATCH_ID)).isEqualTo(riceBefore - 2);
         assertThat(getBalance(APPLE_BATCH_ID)).isEqualTo(appleBefore - 1);
     }
@@ -349,6 +350,77 @@ class SaleApiTest {
                 "cashAmount", 30000L);
         var resp = post("/api/v1/sales/invoices", body, null);
         assertThat(resp.getStatusCode().value()).isEqualTo(401);
+    }
+
+    @Test
+    @Order(16)
+    void checkout_viaCheckoutAlias_returns201() {
+        var body = Map.of(
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 30000L);
+        var resp = post("/api/v1/sales/checkout", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        @SuppressWarnings("unchecked")
+        var inv = (Map<String, Object>) resp.getBody();
+        assertThat(inv.get("changeAmount")).isEqualTo(5000);
+    }
+
+    @Test
+    @Order(17)
+    void checkout_storeScopeMismatch_returns422() {
+        var body = Map.of(
+                "storeId", UUID.randomUUID().toString(),
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 30000L);
+        var resp = post("/api/v1/sales/checkout", body, salesToken);
+        assertThat(resp.getStatusCode().value()).isEqualTo(422);
+    }
+
+    @Test
+    @Order(18)
+    void checkout_zeroVndTotal_createsInvoiceAndReducesStock() {
+        UUID freeProdId = UUID.randomUUID();
+        UUID freeBatchId = UUID.randomUUID();
+        UUID freeReceiptId = UUID.randomUUID();
+        UUID freeLineId = UUID.randomUUID();
+        UUID balanceId = UUID.randomUUID();
+
+        jdbc.update("INSERT INTO catalog.products(id,organization_id,category_id,base_unit_id,sku,name,tracks_expiry,status) " +
+                "VALUES(?::uuid,?::uuid,'10000000-0000-0000-0000-000000000021'::uuid,'10000000-0000-0000-0000-000000000031'::uuid,'ST-FREE-01','Hàng tặng 0đ',false,'ACTIVE')",
+                freeProdId, ORG_ID);
+        jdbc.update("INSERT INTO catalog.product_prices(id,organization_id,store_id,product_id,sale_price,effective_from) " +
+                "VALUES(gen_random_uuid(),?::uuid,?::uuid,?::uuid,0,'2020-01-01T00:00:00Z')",
+                ORG_ID, STORE_ID, freeProdId);
+        jdbc.update("INSERT INTO inventory.goods_receipts(id,organization_id,store_id,supplier_id,receipt_no,status,received_at,created_by,confirmed_by) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,'10000000-0000-0000-0000-000000000061'::uuid,'RC-FREE','CONFIRMED',now(),?::uuid,?::uuid)",
+                freeReceiptId, ORG_ID, STORE_ID, fixtureUsers.get(0), fixtureUsers.get(0));
+        jdbc.update("INSERT INTO inventory.goods_receipt_lines(id,organization_id,store_id,receipt_id,product_id,expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,10,10,10,0,0)",
+                freeLineId, ORG_ID, STORE_ID, freeReceiptId, freeProdId);
+        jdbc.update("INSERT INTO inventory.product_batches(id,organization_id,store_id,product_id,receipt_line_id,internal_batch_code,received_date,status) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'BATCH-FREE',CURRENT_DATE,'AVAILABLE')",
+                freeBatchId, ORG_ID, STORE_ID, freeProdId, freeLineId);
+        jdbc.update("INSERT INTO inventory.inventory_balances(id,organization_id,store_id,product_batch_id,quantity_on_hand) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,10)",
+                balanceId, ORG_ID, STORE_ID, freeBatchId);
+
+        var body = Map.of(
+                "items", List.of(Map.of("productId", freeProdId.toString(), "quantity", 1)),
+                "cashAmount", 0L);
+        var resp = post("/api/v1/sales/checkout", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        @SuppressWarnings("unchecked")
+        var inv = (Map<String, Object>) resp.getBody();
+        assertThat(inv.get("grandTotal")).isEqualTo(0);
+        assertThat(inv.get("paidTotal")).isEqualTo(0);
+        assertThat(inv.get("changeAmount")).isEqualTo(0);
+        assertThat(inv.get("status")).isEqualTo("COMPLETED");
+
+        // Verify balance reduced from 10 to 9
+        BigDecimal qoh = jdbc.queryForObject(
+                "SELECT quantity_on_hand FROM inventory.inventory_balances WHERE id = ?::uuid",
+                BigDecimal.class, balanceId);
+        assertThat(qoh).isEqualByComparingTo("9");
     }
 
     // =========================================================================

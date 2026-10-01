@@ -1,4 +1,4 @@
-package vn.simtim.api.sale.domain;
+package vn.simtim.api.inventory.application;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

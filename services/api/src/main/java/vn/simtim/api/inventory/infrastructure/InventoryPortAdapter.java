@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import vn.simtim.api.inventory.application.BatchStock;
+import vn.simtim.api.inventory.application.InventoryConflictException;
 import vn.simtim.api.inventory.application.InventoryPort;
-import vn.simtim.api.sale.domain.BatchStock;
-import vn.simtim.api.sale.domain.SaleConflictException;
 
 /**
  * Adapter thực thi InventoryPort.
@@ -41,11 +41,11 @@ public class InventoryPortAdapter implements InventoryPort {
     @Override
     public void deductBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal quantity) {
         var balance = balanceRepo.findAndLockByBatchId(orgId, storeId, batchId)
-                .orElseThrow(() -> new SaleConflictException(
+                .orElseThrow(() -> new InventoryConflictException(
                         "Không tìm thấy số dư tồn kho cho lô: " + batchId));
         BigDecimal newQty = balance.getQuantityOnHand().subtract(quantity);
         if (newQty.compareTo(BigDecimal.ZERO) < 0) {
-            throw new SaleConflictException(
+            throw new InventoryConflictException(
                     "Tồn kho không đủ cho lô " + batchId + " (còn " + balance.getQuantityOnHand() + ", cần " + quantity + ")");
         }
         balance.setQuantityOnHand(newQty);

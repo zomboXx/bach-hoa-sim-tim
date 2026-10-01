@@ -18,6 +18,7 @@ public record Invoice(
         long discountTotal,
         long grandTotal,
         long paidTotal,
+        long changeAmount,
         List<InvoiceLine> lines,
         List<Payment> payments,
         long version) {

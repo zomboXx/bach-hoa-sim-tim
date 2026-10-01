@@ -21,12 +21,16 @@
 ## Key architectural decisions
 
 1. **Wire path & permissions alignment**:
-   - Standardized route to `/api/v1/sales/...` (with alias `/api/v1/sales/invoices/quote`), aligning with Issue #21 and the unified Sprint 2 wire contract convention.
+   - Standardized routes to `/api/v1/sales/...`:
+     - Quote preview: `POST /api/v1/sales/quote` (alias: `/api/v1/sales/invoices/quote`).
+     - Checkout CASH: `POST /api/v1/sales/checkout` (alias: `/api/v1/sales/invoices`).
+     - Invoices query: `GET /api/v1/sales/invoices` and `GET /api/v1/sales/invoices/{id}`.
    - Permissions standardized to `sales.read` and `sales.write` in IAM migrations (V6) and `AuthSecurity`.
+   - Store scope enforcement: operations strictly bounded to session store (`SessionPrincipal.storeId()`); cross-store access rejected with 422/404.
 
 2. **Public Inventory boundary port**:
-   - `SaleService` no longer owns or accesses inventory tables directly.
-   - Cross-module interaction uses `vn.simtim.api.inventory.application.InventoryPort`:
+   - `SaleService` interacts with inventory through public boundary port `vn.simtim.api.inventory.application.InventoryPort` using clean domain transfer models (`BatchStock`, `InventoryConflictException`) owned by the inventory package.
+   - Cross-module interaction methods:
      - `findAvailableBatchesFEFO(orgId, storeId, productId)`
      - `deductBalance(orgId, storeId, batchId, quantity)`
      - `recordSaleMovement(id, orgId, storeId, batchId, quantityDelta, invoiceLineId, actorUserId, occurredAt)`
@@ -36,17 +40,24 @@
    - Uses `SELECT ... FOR UPDATE` (PESSIMISTIC_WRITE) on `inventory.inventory_balances` when allocating and deducting.
    - FEFO batch order: `expiry_date ASC NULLS LAST, received_date ASC`. Expired batches are excluded.
 
-4. **Monetary precision**:
+4. **Monetary precision, changeAmount and 0 VND support**:
    - All monetary values are integer VND (`bigint` in PostgreSQL, `long` in Java and OpenAPI).
    - Quantity allows up to 3 decimal places (`numeric(14,3)`).
+   - `Payment.amount` and `Invoice.paidTotal` record the exact `grandTotal` owed.
+   - Customer change (`changeAmount = cashAmount - grandTotal`) is computed and returned on the invoice response and persisted in `sales.invoices`.
+   - 0 VND checkout (100% discount / free item) supported with `cashAmount = 0`, payment of 0 VND, and full stock deduction as mandated by Project Owner decision on 30/09/2026.
 
 ## Verification evidence — 01/10/2026
 
-- 16 automated integration tests (`SaleApiTest`) executed against clean PostgreSQL 17.11 Testcontainers:
+- 19 automated integration tests (`SaleApiTest`) executed against clean PostgreSQL 17.11 Testcontainers:
   - Quote calculation and validation (positive, unknown product 422/404, empty items 4xx).
   - Quote access by `STOCK` role succeeds (200 OK) with `sales.read`.
-  - Cash checkout with FEFO allocation, balance deduction and `inventory.stock_movements` creation (201 Created).
+  - Cash checkout with FEFO allocation, balance deduction, movement and payment creation (201 Created).
+  - Checkout alias route `POST /api/v1/sales/checkout` works identically to `/invoices`.
+  - Store scope violation returns 422 Unprocessable Entity.
+  - 0 VND order with cashAmount = 0 completes successfully and reduces stock.
+  - Correct `paidTotal`, `changeAmount`, and `Payment.amount` calculations.
   - Multiple products, insufficient stock conflict (409 Conflict), cash less than total validation (422).
   - Authorization enforcement: `STOCK` checkout attempt denied (403 Forbidden); unauthenticated request denied (401 Unauthorized).
   - Store invoice listing and detail retrieval (200 OK), non-existent invoice (404 Not Found).
-- Total API test suite: 47/47 passing tests.
+- Total API test suite: 50/50 passing tests.

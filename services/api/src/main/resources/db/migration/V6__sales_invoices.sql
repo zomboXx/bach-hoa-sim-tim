@@ -17,6 +17,7 @@ CREATE TABLE sales.invoices (
     discount_total bigint NOT NULL DEFAULT 0 CHECK (discount_total >= 0),
     grand_total bigint NOT NULL DEFAULT 0 CHECK (grand_total >= 0),
     paid_total bigint NOT NULL DEFAULT 0 CHECK (paid_total >= 0),
+    change_amount bigint NOT NULL DEFAULT 0 CHECK (change_amount >= 0),
     voided_by uuid,
     void_reason varchar(500),
     version bigint NOT NULL DEFAULT 0 CHECK (version >= 0),
@@ -73,7 +74,7 @@ CREATE TABLE sales.payments (
     invoice_id uuid NOT NULL,
     method varchar(24) NOT NULL CHECK (method IN ('CASH', 'TRANSFER', 'CARD', 'OTHER')),
     status varchar(16) NOT NULL CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED')),
-    amount bigint NOT NULL CHECK (amount > 0),
+    amount bigint NOT NULL CHECK (amount >= 0),
     reference_code varchar(100),
     paid_at timestamptz,
     FOREIGN KEY (organization_id, store_id, invoice_id)

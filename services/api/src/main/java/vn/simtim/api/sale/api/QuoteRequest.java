@@ -6,9 +6,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-/** Body của POST /api/v1/invoices/quote — chỉ tính giá, không ghi DB. */
+/** Body của POST /api/v1/sales/quote (hoặc /invoices/quote) — chỉ tính giá, không ghi DB. */
 public record QuoteRequest(
-        @NotNull UUID storeId,
+        UUID storeId,
         @NotEmpty List<ItemRequest> items) {
 
     public record ItemRequest(
