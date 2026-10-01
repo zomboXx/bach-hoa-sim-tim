@@ -6,3 +6,5 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 
 - [BE-02 session/RBAC](AUTH_SESSION_REVIEW.md): Accepted, ma trận quyền và bằng chứng provider/consumer review.
 - [Auth/session OpenAPI 3.1](auth-session.openapi.yaml): Accepted wire contract cho BE-02/FE-01.
+- [PRO-01B promotions](SALES_PROMOTIONS_REVIEW.md): Working Draft cho Issue #23 / PR #25, wire `/api/v1/sales/promotions` và ma trận quyền `promotions.*`.
+- [Promotions OpenAPI 3.1](sales-promotions.openapi.yaml): Working Draft wire contract cho PRO-01B.

@@ -1,7 +1,7 @@
 -- Sprint 2, PRO-01B: khuyến mãi cơ bản theo sản phẩm.
 -- sales.promotion_batches thêm trong migration INV-01 khi inventory.product_batches tồn tại.
 -- sales.invoices và bảng bán hàng khác thêm trong migration SAL-01 (TV3).
-CREATE SCHEMA sales;
+CREATE SCHEMA IF NOT EXISTS sales;
 
 CREATE TABLE sales.promotions (
     id uuid PRIMARY KEY,

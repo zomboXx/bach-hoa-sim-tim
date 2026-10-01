@@ -18,7 +18,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
-- PRO-01B: API khuyến mãi cơ bản — CRUD khuyến mãi theo thời gian và phạm vi (toàn org hoặc cửa hàng, toàn sản phẩm hoặc danh sách sản phẩm); endpoint tra cứu khuyến mãi hiệu lực tại điểm bán; Flyway V5 tạo `sales.promotions` và `sales.promotion_products`; quyền `promotions.read` (mọi vai trò) và `promotions.write` (MANAGER/ADMIN); integration test 10 ca trên PostgreSQL 17.
+- **PRO-01B**: API khuyến mãi cơ bản chuẩn hóa theo wire `/api/v1/sales/promotions` (hỗ trợ alias `/api/v1/promotions`) — CRUD khuyến mãi theo thời gian và phạm vi (toàn org hoặc cửa hàng, toàn sản phẩm hoặc danh sách sản phẩm); endpoint tra cứu khuyến mãi hiệu lực tại điểm bán; bổ sung Working Draft wire contract [sales-promotions.openapi.yaml](contracts/sales-promotions.openapi.yaml) và ma trận quyền [SALES_PROMOTIONS_REVIEW.md](contracts/SALES_PROMOTIONS_REVIEW.md); Flyway V5 tạo `sales.promotions` và `sales.promotion_products` (với `CREATE SCHEMA IF NOT EXISTS sales`); quyền `promotions.read` (mọi vai trò) và `promotions.write` (MANAGER/ADMIN); 15 integration tests trên PostgreSQL 17 Testcontainers đạt 100%. Defer: promotion_batches (INV-01) và FK từ invoice_lines (SAL-01).
 
 - BE-02 đã tích hợp qua PR #14: login/session/logout với opaque Bearer session thu hồi được, BCrypt, bốn vai trò và permission catalog read/write; server chặn giả mạo phạm vi và tải lại quyền/tài khoản ở mỗi request.
 - OpenAPI session/RBAC đã Accepted ngày 29/09/2026, thay thế trạng thái Draft trước đó; login có rate limit và tài khoản demo chỉ được tạo khi người chạy chủ động cung cấp mật khẩu qua môi trường, không có mật khẩu mặc định.

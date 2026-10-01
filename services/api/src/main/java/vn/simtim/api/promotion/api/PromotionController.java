@@ -27,7 +27,7 @@ import vn.simtim.api.promotion.domain.PromotionProduct;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/v1/promotions")
+@RequestMapping({"/api/v1/sales/promotions", "/api/v1/promotions"})
 public class PromotionController {
 
     private final PromotionService service;

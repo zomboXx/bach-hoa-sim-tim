@@ -20,7 +20,8 @@ public class AuthSecurity {
         var bearer = new BearerSessionFilter(service, mapper, limiter);
         String[] catalog = {"/api/v1/categories", "/api/v1/categories/**", "/api/v1/units", "/api/v1/units/**",
                 "/api/v1/products", "/api/v1/products/**", "/api/v1/suppliers", "/api/v1/suppliers/**"};
-        String[] promotions = {"/api/v1/promotions", "/api/v1/promotions/**"};
+        String[] promotions = {"/api/v1/promotions", "/api/v1/promotions/**",
+                "/api/v1/sales/promotions", "/api/v1/sales/promotions/**"};
         return http
                 // Credentials are only accepted in an explicit Authorization header, never cookies or Basic auth.
                 .csrf(csrf -> csrf.disable())

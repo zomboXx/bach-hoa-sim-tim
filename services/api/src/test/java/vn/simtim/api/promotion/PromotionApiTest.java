@@ -350,6 +350,14 @@ class PromotionApiTest {
         assertThat(codes).contains("PROMO-UNIVERSAL-01");
     }
 
+    @Test
+    void salesPromotionsPrefix_worksIdentically() {
+        var res = rest.exchange("/api/v1/sales/promotions", HttpMethod.GET,
+                new HttpEntity<>(salesHeaders()), Object[].class);
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        assertThat(res.getBody()).isNotNull();
+    }
+
     // ===== Helper =====
 
     private String validPromoJson(String code) {
