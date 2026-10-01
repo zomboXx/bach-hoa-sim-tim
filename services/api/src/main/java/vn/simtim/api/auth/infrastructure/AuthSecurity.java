@@ -20,6 +20,10 @@ public class AuthSecurity {
         var bearer = new BearerSessionFilter(service, mapper, limiter);
         String[] catalog = {"/api/v1/categories", "/api/v1/categories/**", "/api/v1/units", "/api/v1/units/**",
                 "/api/v1/products", "/api/v1/products/**", "/api/v1/suppliers", "/api/v1/suppliers/**"};
+        String[] receipts = {"/api/v1/inventory/receipts", "/api/v1/inventory/receipts/**"};
+        String[] inventory = {"/api/v1/inventory/products", "/api/v1/inventory/products/**",
+                "/api/v1/inventory/batches", "/api/v1/inventory/batches/**",
+                "/api/v1/inventory/movements", "/api/v1/inventory/movements/**"};
         return http
                 // Credentials are only accepted in an explicit Authorization header, never cookies or Basic auth.
                 .csrf(csrf -> csrf.disable())
@@ -35,6 +39,9 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.PUT, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.DELETE, catalog).hasAuthority("catalog.write")
+                    .requestMatchers(HttpMethod.GET, receipts).hasAuthority("receipts.read")
+                    .requestMatchers(HttpMethod.POST, receipts).hasAuthority("receipts.write")
+                    .requestMatchers(HttpMethod.GET, inventory).hasAuthority("inventory.read")
                     .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                     .authenticationEntryPoint((request, response, ex) -> bearer.writeError(response, 401, "UNAUTHENTICATED", "Valid bearer session required"))
