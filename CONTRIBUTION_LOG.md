@@ -45,11 +45,11 @@ Nguyễn Văn Trung - 2026-09-30 15:43:00
 
 Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu đã commit — nhánh `feature/REP-01-reports`.
 
-- API Backend: `ReportsController` (`GET /api/v1/reports/revenue`, `GET /api/v1/reports/inventory`), `ReportsService`, `JdbcReportsRepository`; RBAC với `reports.read` chỉ cho MANAGER/ADMIN; doanh thu SUM header `grand_total` COMPLETED, không join lines/payments; tồn phân loại EXPIRED/NEAR_EXPIRY/NORMAL theo quy tắc today..+7; timezone `Asia/Ho_Chi_Minh`.
-- DB: Migration `V5__sales_inventory_reports.sql` — schema `sales` (`invoices`, `invoice_lines`, `promotions`, `members`), `inventory` (`goods_receipts`, `goods_receipt_lines`, `product_batches`, `inventory_balances`); grant `reports.read` cho MANAGER/ADMIN.
+- API Backend: `ReportsController` (`GET /api/v1/reports/revenue`, `GET /api/v1/reports/inventory`), `ReportsService`, `JdbcReportsRepository`; RBAC với `reports.read` chỉ cho MANAGER/ADMIN; doanh thu SUM header `grand_total` COMPLETED, không join lines/payments; tồn phân loại EXPIRED/NEAR_EXPIRY/VALID/NO_EXPIRY theo quy tắc contract; timezone `Asia/Ho_Chi_Minh`.
+- DB: Migration `V5__reports_permissions.sql` — grant `reports.read` cho MANAGER/ADMIN.
 - Web: Thêm `fetchApi` vào `AuthAdapter`; trang báo cáo chuyển sang dual-mode: API mode gọi 2 endpoint, có loading/empty/error states và filter ngày; demo mode giữ nguyên regression.
 
-- `services/api/src/main/resources/db/migration/V5__sales_inventory_reports.sql`: +144 -0
+- `services/api/src/main/resources/db/migration/V5__reports_permissions.sql`: +8 -0
 - `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +1 -0
 - `services/api/src/main/java/vn/simtim/api/reports/api/ReportsController.java`: +43 -0
 - `services/api/src/main/java/vn/simtim/api/reports/api/RevenueReportResponse.java`: +6 -0
@@ -59,7 +59,6 @@ Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu 
 - `services/api/src/main/java/vn/simtim/api/reports/domain/ReportsRepository.java`: +10 -0
 - `services/api/src/main/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepository.java`: +62 -0
 - `services/api/src/test/java/vn/simtim/api/reports/api/ReportsControllerTest.java`: +57 -0
-- `services/api/src/test/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepositoryTest.java`: +29 -0
 - `apps/web/tests/api-reports.spec.ts`: +61 -0
 - `apps/web/src/adapter.ts`: +8 -2
 - `apps/web/src/App.vue`: +75 -30
@@ -115,6 +114,7 @@ Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25 và Postgr
 - `docs/project/SPRINT_2_REVIEW_PLAN.md`: +47 -0
 - `docs/project/governance/BACKLOG.md`: +2 -0
 - `CONTRIBUTION_LOG.md`: +16 -0
+---
 
 ---
 Lê Văn Chiến - 2026-09-29 21:00:00

@@ -62,6 +62,29 @@ class ReportsControllerTest {
                 .header("X-Store-Id", storeId.toString())
                 .param("from", "2026-09-30")
                 .param("to", "2026-09-01"))
-           .andExpect(status().isBadRequest());
+           .andExpect(status().isBadRequest())
+           .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldReturnInventoryReport() throws Exception {
+        UUID orgId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        when(service.getInventory(eq(orgId), eq(storeId)))
+                .thenReturn(new InventoryReportResponse(LocalDate.of(2026, 9, 30), null, java.util.List.of()));
+
+        mvc.perform(get("/api/v1/reports/inventory")
+                .header("X-Organization-Id", orgId.toString())
+                .header("X-Store-Id", storeId.toString()))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.businessDate").value("2026-09-30"));
+    }
+
+    @Test
+    void shouldRejectWhenScopeMissing() throws Exception {
+        mvc.perform(get("/api/v1/reports/inventory"))
+           .andExpect(status().isBadRequest())
+           .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
 }

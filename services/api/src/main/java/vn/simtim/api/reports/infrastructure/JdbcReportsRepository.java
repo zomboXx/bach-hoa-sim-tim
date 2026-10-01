@@ -54,10 +54,10 @@ public class JdbcReportsRepository implements ReportsRepository {
                 ib.quantity_on_hand,
                 pb.expiry_date,
                 CASE
-                    WHEN pb.expiry_date IS NULL THEN 'NORMAL'
+                    WHEN pb.expiry_date IS NULL THEN 'NO_EXPIRY'
                     WHEN pb.expiry_date < :today THEN 'EXPIRED'
                     WHEN pb.expiry_date <= :nearExpiry THEN 'NEAR_EXPIRY'
-                    ELSE 'NORMAL'
+                    ELSE 'VALID'
                 END AS status
             FROM inventory.inventory_balances ib
             JOIN inventory.product_batches pb ON ib.product_batch_id = pb.id
@@ -65,6 +65,7 @@ public class JdbcReportsRepository implements ReportsRepository {
             WHERE ib.organization_id = :orgId
               AND ib.store_id = :storeId
               AND pb.status != 'DEPLETED'
+              AND pb.status != 'BLOCKED'
               AND ib.quantity_on_hand > 0
             ORDER BY p.name, pb.expiry_date
         """;
