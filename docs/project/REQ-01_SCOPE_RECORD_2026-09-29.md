@@ -1,6 +1,6 @@
 # REQ-01 — Đối chiếu phạm vi ngày 29/09/2026
 
-- Trạng thái: **Project Owner xác nhận phạm vi theo backlog ngày 29/09/2026 — chờ review của nhóm và tích hợp**.
+- Trạng thái hiện tại: **Đã tích hợp qua [PR #17](https://github.com/zomboXx/bach-hoa-sim-tim/pull/17) ngày 29/09/2026; [Issue #2](https://github.com/zomboXx/bach-hoa-sim-tim/issues/2) đã đóng**. Tại ngày lập, Project Owner đã xác nhận phạm vi theo backlog; các chức năng trong phạm vi vẫn triển khai theo từng sprint.
 - Issue: [REQ-01 #2](https://github.com/zomboXx/bach-hoa-sim-tim/issues/2).
 - Người cung cấp thông tin: Nguyễn Đức Phát, TV1, Project Owner, `@zomboXx`.
 - Căn cứ phạm vi: [backlog hiện hành](governance/BACKLOG.md); bản ghi này không bổ sung cam kết sprint.
@@ -57,4 +57,4 @@ Các NFR về bảo mật, toàn vẹn, responsive, tin cậy, kiến trúc, bac
 - Giữ quyết định ngày 26–27/09/2026 về nhận hàng sai lệch, tiền/số lượng và cơ chế DB-01 review; bản ghi này không đổi kiểu dữ liệu, schema hoặc contract.
 - Thiết kế 39 bảng đích không biến các chức năng tương lai trong Word thành cam kết sprint. Nếu nhóm muốn thêm thành viên, hủy hóa đơn, trả hàng hoặc xử lý hàng vận hành, cần quyết định phạm vi và cập nhật backlog trước.
 - Owner/reviewer từng PR vẫn phải nghiệm thu code, contract và test; đóng REQ-01 không đóng QA-01, FE-01 hoặc các sprint.
-- Trước khi đóng #2: ghi nguồn và xác nhận của Project Owner trên Issue, cả nhóm review bản cập nhật, tích hợp SRS và bản ghi qua PR, rồi liên kết bằng chứng kiểm tra tài liệu. Không ghi từng thành viên đã phê duyệt riêng khi chưa có chứng cứ.
+- Điều kiện đóng được ghi lúc lập bản này: ghi nguồn và xác nhận của Project Owner trên Issue, cả nhóm review bản cập nhật, tích hợp SRS và bản ghi qua PR, rồi liên kết bằng chứng kiểm tra tài liệu. PR #17 đã tích hợp và Issue #2 đã đóng ngày 29/09/2026; không suy từ trạng thái đóng rằng từng thành viên đã phê duyệt riêng nếu chưa có chứng cứ.

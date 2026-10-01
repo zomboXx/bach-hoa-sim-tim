@@ -9,6 +9,8 @@ Danh sách được Project Owner xác nhận ngày 21/09/2026. Điều phối v
 | TV3 — Nguyễn Văn Thi (`@thinguyen135`) | Giao diện desktop/POS | Web adapter, bán hàng, hóa đơn, khuyến mãi, báo cáo | Nguyễn Đức Phát, Nguyễn Văn Trung |
 | TV4 — Lê Văn Chiến (`@VanChien11-02`) | QA và trải nghiệm hiện trường | Test plan, mobile, kiểm kê/offline, đào tạo | Nguyễn Văn Trung, Nguyễn Văn Thi |
 
+Phân công riêng cho Sprint 2 ngày 30/09/2026 nằm trong [backlog](BACKLOG.md#sprint-2--luồng-nghiệp-vụ-cốt-lõi): TV4 làm FE-02 và QA-02, TV2 làm INV-01/02 rồi REP-01, TV3 làm SAL-01 và PRO-01B (P1), TV1 điều phối và review. Bảng trách nhiệm module dài hạn ở trên vẫn là quyết định ngày 21/09/2026.
+
 ## Trách nhiệm chung của chủ module
 
 - Xác định pain point, yêu cầu và actor liên quan.
