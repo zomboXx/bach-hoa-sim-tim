@@ -1,7 +1,7 @@
 # REQ-01 — Bản chuẩn bị quyết định phạm vi
 
 - Trạng thái: **Bản nháp lịch sử ngày 26/09/2026 — chưa được nhóm xác nhận tại thời điểm lập**.
-- Bản đối chiếu mới: [REQ-01 ngày 29/09/2026](REQ-01_SCOPE_RECORD_2026-09-29.md), Project Owner đã xác nhận phạm vi theo backlog hiện hành, phần mở rộng để sau; chờ review của nhóm và tích hợp. Các yêu cầu lập biên bản dưới đây lưu đề xuất cũ, không yêu cầu nhóm tạo lại cuộc họp.
+- Bản thay thế: [REQ-01 ngày 29/09/2026](REQ-01_SCOPE_RECORD_2026-09-29.md), đã tích hợp qua PR #17 và đóng Issue #2. Các yêu cầu lập biên bản dưới đây lưu đề xuất cũ, không yêu cầu nhóm tạo lại cuộc họp.
 - Ngày lập: 26/09/2026.
 - Issue: [REQ-01 #2](https://github.com/zomboXx/bach-hoa-sim-tim/issues/2).
 - Nguồn đối chiếu: [backlog](governance/BACKLOG.md), [SRS 0.1-draft](../product/analysis/02-danh-sach-yeu-cau.md), [thiết kế dữ liệu đề xuất](../architecture/database/01-thiet-ke-csdl-khai-niem.md).

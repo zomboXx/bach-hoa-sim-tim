@@ -1,5 +1,7 @@
 # Khởi động Sprint 1 từ baseline Sprint 0
 
+Trạng thái: **Bản ghi lịch sử của Sprint 1 đã đóng ngày 30/09/2026**. Xem [backlog](governance/BACKLOG.md) và [kickoff Sprint 2](SPRINT_2_KICKOFF.md) để bắt đầu công việc hiện tại.
+
 ## Mục tiêu
 
 Đưa đăng nhập và dữ liệu danh mục của PWA từ mô phỏng cục bộ sang API/PostgreSQL thật mà không làm mất baseline demo đang chạy. Sprint 1 chưa triển khai giao dịch nhận hàng, bán hàng, kiểm kê đồng bộ hay Godot production.
