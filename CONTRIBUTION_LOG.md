@@ -22,6 +22,33 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-01 13:48:00
+
+Căn chỉnh SAL-01 khớp hoàn toàn tài liệu Sprint 2 và hợp đồng ranh giới: bổ sung route alias `POST /api/v1/sales/checkout`, hỗ trợ đơn hàng 0 VND và sửa CHECK constraint `sales.payments.amount >= 0`, chuẩn hóa tính toán tiền thanh toán theo `grandTotal` và tiền thối `change_amount` lưu vào `sales.invoices`, siết chặt kiểm tra phạm vi cửa hàng `storeId` theo session token, tách public model `BatchStock` và `InventoryConflictException` về module inventory để xóa phụ thuộc ngược.
+
+Bổ sung 3 ca kiểm thử mới (alias route checkout, chặn sai storeId, đơn hàng 0đ), nâng tổng số ca kiểm thử bán hàng lên 19/19 tests (toàn bộ 50/50 backend tests pass trên PostgreSQL 17 Testcontainers). Cập nhật wire contract OpenAPI và tài liệu review.
+
+- `contracts/sales-invoices.openapi.yaml`: +35 -0
+- `contracts/SALES_INVOICE_REVIEW.md`: +18 -7
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/application/BatchStock.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryConflictException.java`: +8 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryPort.java`: +1 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryPortAdapter.java`: +4 -4
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +33 -14
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +3 -3
+- `services/api/src/main/java/vn/simtim/api/sale/api/QuoteRequest.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/InvoiceResponse.java`: +4 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +3 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +21 -7
+- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +3 -1
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +86 -14
+- `CHANGELOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +29 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-01 07:46:16
 
 Chuẩn hóa SAL-01 theo review Sprint 2: cấu hình wire API bán hàng sang `/api/v1/sales/quote` và `/api/v1/sales/invoices`, ma trận quyền `sales.read` / `sales.write`. Tách ranh giới module với `InventoryPort` (`vn.simtim.api.inventory.application`) và `InventoryPortAdapter`, loại bỏ việc truy cập trực tiếp repo nội bộ của inventory từ sale. Bổ sung Working Draft OpenAPI 3.1 wire contract `contracts/sales-invoices.openapi.yaml` và `contracts/SALES_INVOICE_REVIEW.md`. Toàn bộ 16/16 test bán hàng và 47/47 backend integration test pass trên PostgreSQL 17 (Testcontainers).
