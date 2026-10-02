@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Lê Văn Chiến - 2026-10-02 15:11:50
+
+Thực hiện issue [INV-02] Tra cứu tồn, lô, hạn và biến động (#19). Triển khai ba API chỉ đọc tồn hiện tại theo session scope với bộ lọc và phân trang ổn định; tính đúng tồn thực tế, tồn khả dụng và trạng thái hạn theo `Asia/Ho_Chi_Minh`; không trả giá vốn cho SALES; cho phép truy biến động về chứng từ nguồn. Công bố `InventorySalePort` để SAL-01 khóa tồn, lập kế hoạch FEFO, trừ lô và ghi biến động SALE trong cùng transaction, không trả JPA entity hoặc tự commit.
+
+Bổ sung OpenAPI, migration index, provider tests cho hạn hôm qua/hôm nay/+7/+8, không hạn, lô BLOCKED và nhiều lô, cùng consumer compile test cho module sales. `pwsh -File scripts/verify.ps1` đạt toàn bộ root gate; API đạt 54/54 tests, web demo đạt 6/6 và API-mode E2E đạt 23/23. Chữ ký port vẫn chờ TV3 xác nhận và SAL-01 chuyển từ contract cũ trước khi hai module được tích hợp.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/`: +330 -0
+- `services/api/README.md`: +3 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +967 -2
+- `services/api/src/main/resources/db/migration/V8__inventory_read_indexes.sql`: +11 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/`: +456 -0
+- `services/api/src/test/java/vn/simtim/api/sale/InventorySalePortContractTest.java`: +55 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
 Nguyễn Văn Trung - 2026-10-01 17:01:05
 
 Thực hiện issue [INV-01] Transaction nhận hàng, lô và biến động (#18). Triển khai API nhận hàng POST /api/v1/inventory/receipts và GET danh sách/chi tiết; thực hiện transaction nguyên tử lưu phiếu, tạo lô hàng, tăng số dư tồn kho và ghi nhận biến động RECEIPT. Xử lý idempotency qua header Idempotency-Key và hash payload; áp dụng phân quyền RBAC (receipts.read, receipts.write cho STOCK, MANAGER, ADMIN; inventory.read cho tất cả các vai trò). Khởi tạo Flyway V5 (schema inventory + audit.audit_logs) và V6 (permissions). Hoàn thành 9 provider integration tests trên PostgreSQL 17 (Testcontainers) và vượt qua toàn bộ baseline gate kiểm thử verify.ps1 (40/40 tests).
