@@ -6,14 +6,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import vn.simtim.api.inventory.application.InventoryRequestException;
 import vn.simtim.api.inventory.domain.InventoryReceiptException;
 
 /**
  * Exception handler cho inventory module.
  * Trả về {code, message} theo contract SPRINT_2_BOUNDARY_DRAFT.md.
  */
-@RestControllerAdvice(assignableTypes = ReceiptController.class)
+@RestControllerAdvice(assignableTypes = {ReceiptController.class, InventoryController.class})
 public class InventoryExceptionHandler {
+
+    @ExceptionHandler(InventoryRequestException.class)
+    public ResponseEntity<Map<String, Object>> invalidInventoryQuery(InventoryRequestException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("code", "INVALID_REQUEST", "message", ex.getMessage()));
+    }
 
     @ExceptionHandler(ReceiptForbiddenException.class)
     public ResponseEntity<Map<String, Object>> forbidden(ReceiptForbiddenException ex) {
