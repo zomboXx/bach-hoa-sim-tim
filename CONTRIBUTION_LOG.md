@@ -22,6 +22,21 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Trung - 2026-10-01 17:01:05
+
+Thực hiện issue [INV-01] Transaction nhận hàng, lô và biến động (#18). Triển khai API nhận hàng POST /api/v1/inventory/receipts và GET danh sách/chi tiết; thực hiện transaction nguyên tử lưu phiếu, tạo lô hàng, tăng số dư tồn kho và ghi nhận biến động RECEIPT. Xử lý idempotency qua header Idempotency-Key và hash payload; áp dụng phân quyền RBAC (receipts.read, receipts.write cho STOCK, MANAGER, ADMIN; inventory.read cho tất cả các vai trò). Khởi tạo Flyway V5 (schema inventory + audit.audit_logs) và V6 (permissions). Hoàn thành 9 provider integration tests trên PostgreSQL 17 (Testcontainers) và vượt qua toàn bộ baseline gate kiểm thử verify.ps1 (40/40 tests).
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +735 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +5 -2
+- `services/api/src/main/resources/db/migration/V5__inventory.sql`: +115 -0
+- `services/api/src/main/resources/db/migration/V6__inventory_permissions.sql`: +19 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/`: +295 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-09-30 23:09:32
 
 Rà lại tài liệu `docs/project` theo `main` và GitHub ngày 30/09: thêm điểm vào phân biệt tài liệu hiện hành với bản lưu, ghi mốc Sprint 1 đã đóng và các PR Sprint 2 đang mở; sửa những câu còn nói REQ-01/BE-02 chờ review hoặc merge sau khi đã tích hợp. Giữ bản nháp lịch sử để truy vết, không xóa nội dung cũ. Bộ tài liệu vẫn ở nhánh local, chưa push hoặc mở PR.

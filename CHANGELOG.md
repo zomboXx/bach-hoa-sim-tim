@@ -21,6 +21,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- **INV-01**: Transaction nhận hàng — `POST /api/v1/inventory/receipts`, `GET /inventory/receipts`, `GET /inventory/receipts/{id}`. Xác nhận phiếu tạo lô, tăng tồn và ghi biến động RECEIPT nguyên tử trong một transaction; idempotency qua `Idempotency-Key` header; quyền `receipts.write`/`receipts.read` cho STOCK, MANAGER, ADMIN. Flyway V5 (inventory schema + audit.audit_logs) và V6 (grants). Provider integration test với Testcontainers.
 - Chuẩn bị bộ review Sprint 2 gọn gồm kế hoạch triển khai và contract ranh giới module; ghi các quyết định nghiệp vụ đã xác nhận, owner/reviewer và điểm kỹ thuật còn phải chốt trước code.
 - BE-02 đã tích hợp qua PR #14: login/session/logout với opaque Bearer session thu hồi được, BCrypt, bốn vai trò và permission catalog read/write; server chặn giả mạo phạm vi và tải lại quyền/tài khoản ở mỗi request.
 - OpenAPI session/RBAC đã Accepted ngày 29/09/2026, thay thế trạng thái Draft trước đó; login có rate limit và tài khoản demo chỉ được tạo khi người chạy chủ động cung cấp mật khẩu qua môi trường, không có mật khẩu mặc định.
