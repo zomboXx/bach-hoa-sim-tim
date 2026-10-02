@@ -2,6 +2,7 @@ package vn.simtim.api.inventory.infrastructure;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -111,7 +112,7 @@ class JdbcInventorySaleAdapter implements InventorySalePort {
             params.addValue("movementId", issue.movementId())
                     .addValue("invoiceLineId", issue.invoiceLineId())
                     .addValue("actorId", issue.actorId())
-                    .addValue("occurredAt", plan.capturedAt());
+                    .addValue("occurredAt", Timestamp.from(plan.capturedAt()));
             jdbc.update("""
                     INSERT INTO inventory.stock_movements(
                         id, organization_id, store_id, product_id, batch_id,

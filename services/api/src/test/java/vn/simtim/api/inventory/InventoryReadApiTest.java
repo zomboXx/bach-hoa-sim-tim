@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -382,7 +383,7 @@ class InventoryReadApiTest {
                     occurred_at, recorded_by)
                 VALUES (?, ?, ?, ?, ?, 'RECEIPT', ?, ?, 'GOODS_RECEIPT', ?, ?)
                 """, UUID.randomUUID(), ORG_ID, storeId, PRODUCT_ID, batchId,
-                quantity, receiptId, Instant.now().minusSeconds(sequence), actorId);
+                quantity, receiptId, Timestamp.from(Instant.now().minusSeconds(sequence)), actorId);
     }
 
     @SuppressWarnings("unchecked")

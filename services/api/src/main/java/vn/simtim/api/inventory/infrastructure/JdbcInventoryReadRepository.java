@@ -51,7 +51,8 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                 LEFT JOIN inventory.product_batches pb
                   ON pb.organization_id = ib.organization_id
                  AND pb.id = ib.batch_id
-                WHERE """ + where + """
+                WHERE
+                """ + where + """
                 GROUP BY p.id, p.sku, p.name, p.status
                 ORDER BY lower(p.sku), p.id
                 LIMIT :size OFFSET :offset
@@ -86,7 +87,8 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                 AND pb.store_id = :storeId
                 AND (CAST(:productId AS uuid) IS NULL OR pb.product_id = :productId)
                 AND (CAST(:status AS varchar) IS NULL OR pb.status = :status)
-                AND (CAST(:expiryStatus AS varchar) IS NULL OR """ + expiryCase + " = :expiryStatus)";
+                AND (CAST(:expiryStatus AS varchar) IS NULL OR
+                """ + expiryCase + " = :expiryStatus)";
         long total = count("SELECT count(*) FROM inventory.product_batches pb WHERE " + where, params);
         List<InventoryBatchView> items = jdbc.query("""
                 SELECT pb.id, pb.product_id, pb.batch_number, pb.supplier_lot_number,
@@ -102,7 +104,8 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                   ON ib.organization_id = pb.organization_id
                  AND ib.store_id = pb.store_id
                  AND ib.batch_id = pb.id
-                WHERE """ + where + """
+                WHERE
+                """ + where + """
                 ORDER BY pb.product_id, pb.expiry_date ASC NULLS LAST, pb.received_date, pb.id
                 LIMIT :size OFFSET :offset
                 """, params, (rs, rowNum) -> new InventoryBatchView(
@@ -136,7 +139,8 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                        sm.quantity_delta, sm.reference_type, sm.reference_id,
                        sm.occurred_at, sm.recorded_by
                 FROM inventory.stock_movements sm
-                WHERE """ + where + """
+                WHERE
+                """ + where + """
                 ORDER BY sm.occurred_at DESC, sm.id DESC
                 LIMIT :size OFFSET :offset
                 """, params, (rs, rowNum) -> new InventoryMovementView(
