@@ -32,7 +32,7 @@ Bổ sung OpenAPI, migration index, provider tests cho hạn hôm qua/hôm nay/+
 - `contracts/`: +330 -0
 - `services/api/README.md`: +3 -1
 - `services/api/src/main/java/vn/simtim/api/inventory/`: +967 -2
-- `services/api/src/main/resources/db/migration/V7__inventory_read_indexes.sql`: +11 -0
+- `services/api/src/main/resources/db/migration/V8__inventory_read_indexes.sql`: +11 -0
 - `services/api/src/test/java/vn/simtim/api/inventory/`: +456 -0
 - `services/api/src/test/java/vn/simtim/api/sale/InventorySalePortContractTest.java`: +55 -0
 - `CONTRIBUTION_LOG.md`: +17 -0
