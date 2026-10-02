@@ -1,6 +1,7 @@
 package vn.simtim.api.inventory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -27,8 +28,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import vn.simtim.api.auth.domain.PasswordHasher;
+import vn.simtim.api.inventory.application.FefoPlan;
+import vn.simtim.api.inventory.application.InventorySaleException;
+import vn.simtim.api.inventory.application.InventorySalePort;
+import vn.simtim.api.inventory.application.SaleIssue;
+import vn.simtim.api.inventory.application.StockDemand;
+import vn.simtim.api.inventory.application.StoreScope;
 
 /** Provider tests cho read API INV-02 trên PostgreSQL thật. */
 @ActiveProfiles("demo")
@@ -66,9 +74,11 @@ class InventoryReadApiTest {
     @Autowired TestRestTemplate rest;
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordHasher passwords;
+    @Autowired InventorySalePort salePort;
 
     private String salesMainToken;
     private String salesAltToken;
+    private UUID mainUserId;
 
     @BeforeAll
     void setup() {
@@ -78,6 +88,7 @@ class InventoryReadApiTest {
                 """, ALT_STORE_ID, ORG_ID);
         String hash = passwords.hash(PASSWORD);
         UUID mainUser = createUser("SALES", MAIN_STORE_ID, hash);
+        mainUserId = mainUser;
         UUID altUser = createUser("SALES", ALT_STORE_ID, hash);
         salesMainToken = login(mainUser, "MAIN");
         salesAltToken = login(altUser, "ALT");
@@ -210,6 +221,63 @@ class InventoryReadApiTest {
                 new HttpEntity<>(authHeaders(salesMainToken)), Map.class);
         assertThat(invalid.getStatusCode().value()).isEqualTo(400);
         assertThat(invalid.getBody()).containsEntry("code", "INVALID_REQUEST");
+    }
+
+    @Test
+    @Transactional
+    void salePort_plansFefoThenDeductsAndRecordsMovementsInCallerTransaction() {
+        StoreScope scope = new StoreScope(ORG_ID, MAIN_STORE_ID);
+        FefoPlan plan = salePort.planForCheckout(
+                scope, List.of(new StockDemand(PRODUCT_ID, new BigDecimal("8.000"))));
+
+        assertThat(plan.businessDate()).isEqualTo(LocalDate.now(BUSINESS_ZONE));
+        assertThat(plan.allocations()).hasSize(3);
+        assertThat(plan.allocations())
+                .extracting(allocation -> allocation.expiryDate())
+                .containsExactly(
+                        plan.businessDate(),
+                        plan.businessDate().plusDays(7),
+                        plan.businessDate().plusDays(8));
+        assertThat(plan.allocations())
+                .extracting(allocation -> allocation.quantity())
+                .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                .containsExactly(
+                        new BigDecimal("2.000"),
+                        new BigDecimal("3.000"),
+                        new BigDecimal("3.000"));
+
+        UUID invoiceLineId = UUID.randomUUID();
+        List<SaleIssue> issues = plan.allocations().stream()
+                .map(allocation -> new SaleIssue(
+                        UUID.randomUUID(), invoiceLineId,
+                        allocation.productId(), allocation.batchId(),
+                        allocation.quantity(), mainUserId))
+                .toList();
+        salePort.postSale(plan, issues);
+
+        BigDecimal total = jdbc.queryForObject("""
+                SELECT sum(on_hand_quantity)
+                FROM inventory.inventory_balances
+                WHERE organization_id=? AND store_id=? AND product_id=?
+                """, BigDecimal.class, ORG_ID, MAIN_STORE_ID, PRODUCT_ID);
+        assertThat(total).isEqualByComparingTo("13.000");
+        Integer saleMovements = jdbc.queryForObject("""
+                SELECT count(*) FROM inventory.stock_movements
+                WHERE organization_id=? AND store_id=?
+                  AND reference_id=? AND reference_type='INVOICE' AND movement_type='SALE'
+                """, Integer.class, ORG_ID, MAIN_STORE_ID, invoiceLineId);
+        assertThat(saleMovements).isEqualTo(3);
+    }
+
+    @Test
+    @Transactional
+    void salePort_rejectsDemandBeyondAvailableStock() {
+        assertThatThrownBy(() -> salePort.planForCheckout(
+                new StoreScope(ORG_ID, MAIN_STORE_ID),
+                List.of(new StockDemand(PRODUCT_ID, new BigDecimal("15.000")))))
+                .isInstanceOf(InventorySaleException.class)
+                .extracting(error -> ((InventorySaleException) error).getCode())
+                .isEqualTo("INSUFFICIENT_STOCK");
     }
 
     private UUID createUser(String role, UUID storeId, String hash) {

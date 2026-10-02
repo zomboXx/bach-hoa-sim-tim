@@ -27,11 +27,14 @@ public class GoodsReceiptService {
 
     private final GoodsReceiptRepository receiptRepo;
     private final ProductExistenceChecker productChecker;
+    private final InventoryProductLocker productLocker;
 
     public GoodsReceiptService(GoodsReceiptRepository receiptRepo,
-                               ProductExistenceChecker productChecker) {
+                               ProductExistenceChecker productChecker,
+                               InventoryProductLocker productLocker) {
         this.receiptRepo = receiptRepo;
         this.productChecker = productChecker;
+        this.productLocker = productLocker;
     }
 
     /**
@@ -64,6 +67,15 @@ public class GoodsReceiptService {
         Instant now = Instant.now();
         LocalDate businessDate = now.atZone(VN).toLocalDate();
         validateLines(cmd.lines(), organizationId, storeId, businessDate);
+        List<UUID> productIds = cmd.lines().stream()
+                .map(ConfirmReceiptCommand.LineCmd::productId)
+                .distinct()
+                .sorted()
+                .toList();
+        if (!productLocker.lockActiveProducts(organizationId, productIds).equals(productIds)) {
+            throw new InventoryReceiptException(
+                    "NOT_FOUND", "Sản phẩm không tồn tại hoặc không hoạt động");
+        }
 
         // 3. Tạo domain objects
         UUID receiptId = UUID.randomUUID();
