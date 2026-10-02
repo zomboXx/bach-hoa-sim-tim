@@ -21,6 +21,7 @@ export function routesFor(user: AuthUser): string[] {
   return [
     "dashboard",
     ...(user.session.permissions.includes("catalog.read") ? ["products", "suppliers"] : []),
+    ...(user.session.permissions.includes("reports.read") ? ["reports"] : []),
     ...(user.session.trainingEnabled ? ["training"] : []),
   ];
 }
@@ -30,6 +31,7 @@ export interface AuthAdapter {
   login(id: string, password: string): Promise<AuthUser>;
   restoreSession(): Promise<AuthUser | undefined>;
   logout(): Promise<void>;
+  fetchApi(path: string, init?: RequestInit): Promise<Response>;
 }
 
 export class DemoAuthAdapter implements AuthAdapter {
@@ -48,6 +50,11 @@ export class DemoAuthAdapter implements AuthAdapter {
 
   async logout(): Promise<void> {
     return;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
+    throw new Error("API not available in demo mode");
   }
 }
 
@@ -147,6 +154,14 @@ export class ApiAuthAdapter implements AuthAdapter {
       }
       throw e;
     }
+  }
+
+  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
+    const headers = new Headers(init?.headers);
+    if (this.accessToken) {
+      headers.set("Authorization", `Bearer ${this.accessToken}`);
+    }
+    return fetch(path, { ...init, headers });
   }
 }
 

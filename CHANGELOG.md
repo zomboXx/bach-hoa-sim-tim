@@ -38,6 +38,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- REP-01: Giải quyết xung đột phiên bản Flyway sau khi merge INV-01/INV-02/SAL-01 (đổi thành `V9__reports_permissions.sql`), cấp quyền `reports.read` cho vai trò MANAGER/ADMIN trong demo seed, bổ sung dọn `services/api/target` trong `scripts/clean.ps1` và hỗ trợ tự nhận diện named pipe Docker Desktop trên Windows trong `scripts/verify.ps1`.
 - Hoàn tất checkpoint QA-01 sau Request Changes: cập nhật wire auth `/api/v1/auth/*`, đối chiếu đúng test method, ghi evidence local trên source tích hợp BE-02/BE-03 và xác nhận 31/31 API tests cùng 29/29 traceability cases đạt.
 - FE-01 căn chỉnh auth adapter với contract BE-02: scope doanh nghiệp/cửa hàng, `/api/v1/auth/*`, Bearer token và session do server trả về. Thay thế đề xuất `/api/auth/login` và `/api/me` trước đó; contract đã Accepted ngày 29/09/2026 theo provider/consumer review, FE-01 chờ tích hợp PR #12.
 - Sửa gate tích hợp BE-02/BE-03: tách route fixture kiểm thử quyền khỏi controller sản phẩm thật; test catalog đăng nhập HTTP bằng tài khoản fixture và gửi Bearer token, kiểm tra thiếu token, SALES ghi dữ liệu và giả mạo scope trên controller thật.

@@ -31,6 +31,11 @@ try {
 
 Push-Location (Join-Path $root 'services/api')
 try {
+  if ($IsWindows -and -not $env:DOCKER_HOST) {
+    if (Test-Path '\\.\pipe\dockerDesktopLinuxEngine') {
+      $env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+    }
+  }
   $mavenWrapper = if ($IsWindows) { '.\mvnw.cmd' } else { './mvnw' }
   & $mavenWrapper verify
   if ($LASTEXITCODE -ne 0) { throw 'API verification failed.' }
