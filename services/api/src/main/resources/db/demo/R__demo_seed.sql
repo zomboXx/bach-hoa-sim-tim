@@ -64,5 +64,6 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
   AND (
     p.code IN ('catalog.read', 'inventory.read')
     OR (p.code IN ('catalog.write', 'receipts.read', 'receipts.write') AND r.code IN ('STOCK','MANAGER','ADMIN'))
+    OR (p.code = 'reports.read' AND r.code IN ('MANAGER','ADMIN'))
   )
 ON CONFLICT DO NOTHING;

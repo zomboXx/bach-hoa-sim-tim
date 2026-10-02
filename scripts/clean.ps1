@@ -3,7 +3,8 @@ $root = (Resolve-Path (Split-Path $PSScriptRoot -Parent)).Path
 $targets = @(
   'apps/web/dist',
   'apps/web/test-results',
-  'apps/web/playwright-report'
+  'apps/web/playwright-report',
+  'services/api/target'
 )
 
 foreach ($relative in $targets) {
