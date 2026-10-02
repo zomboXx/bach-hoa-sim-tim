@@ -35,7 +35,7 @@
 4. **Migration sequencing**:
    - Retains self-contained `V5__sales_promotions.sql` on branch PR #25 to permit clean, independent verification from `main` (V1..V4).
    - Uses `CREATE SCHEMA IF NOT EXISTS sales;` to avoid DDL collision.
-   - When merged to `main` following SAL-01, this migration sequences as V7 and introduces the foreign key from `sales.invoice_lines(applied_promotion_id)` to `sales.promotions(id)`.
+   - When merged to `main` following SAL-01, this migration sequences as V10 (following V7 sales, V8 inventory read indexes, V9 reports permissions) and introduces the foreign key from `sales.invoice_lines(applied_promotion_id)` to `sales.promotions(id)`.
 
 ## Verification evidence — 01/10/2026
 

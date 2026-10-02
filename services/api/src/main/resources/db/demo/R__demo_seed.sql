@@ -68,8 +68,14 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
   )
 ON CONFLICT DO NOTHING;
 
-<<<<<<< HEAD
--- PRO-01B: quyền khuyến mãi cho tổ chức demo (V5 đã grant toàn bộ, seed bổ sung cho profile demo).
+INSERT INTO iam.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
+WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
+  AND (p.code='sales.read'
+       OR (p.code='sales.write' AND r.code IN ('SALES','MANAGER','ADMIN')))
+ON CONFLICT DO NOTHING;
+
+-- PRO-01B: quyền khuyến mãi cho tổ chức demo (V10 đã grant toàn bộ, seed bổ sung cho profile demo).
 INSERT INTO iam.role_permissions(role_id,permission_id)
 SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
 WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
@@ -97,12 +103,3 @@ VALUES ('10000000-0000-0000-0000-000000000001',
         '10000000-0000-0000-0000-000000000081',
         '10000000-0000-0000-0000-000000000041')
 ON CONFLICT DO NOTHING;
-=======
-INSERT INTO iam.role_permissions(role_id,permission_id)
-SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
-WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
-  AND (p.code='sales.read'
-       OR (p.code='sales.write' AND r.code IN ('SALES','MANAGER','ADMIN')))
-ON CONFLICT DO NOTHING;
-
->>>>>>> origin/main

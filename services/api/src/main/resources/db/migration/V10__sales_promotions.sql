@@ -35,8 +35,8 @@ CREATE TABLE sales.promotion_products (
 
 -- Quyền khuyến mãi: MANAGER/ADMIN ghi, tất cả vai trò đọc.
 INSERT INTO iam.permissions(id, code, description) VALUES
-    ('20000000-0000-0000-0000-000000000003', 'promotions.read',  'Read promotions within session scope'),
-    ('20000000-0000-0000-0000-000000000004', 'promotions.write', 'Manage promotions within session scope');
+    ('20000000-0000-0000-0000-000000000004', 'promotions.read',  'Read promotions within session scope'),
+    ('20000000-0000-0000-0000-000000000005', 'promotions.write', 'Manage promotions within session scope');
 
 INSERT INTO iam.role_permissions(role_id, permission_id)
 SELECT r.id, p.id FROM iam.roles r CROSS JOIN iam.permissions p
