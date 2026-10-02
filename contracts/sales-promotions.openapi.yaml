@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  title: Sim Tim sales promotions API
+  version: 0.1.0
+  x-status: Working Draft
+  x-draft-date: '2026-10-01'
+  description: >-
+    Working Draft for PRO-01B (Issue #23 / PR #25).
+    Owner API: TV3 (Nguyễn Văn Thi); Reviewers: TV1 (Nguyễn Đức Phát) for wire route & RBAC.
+    Covers basic promotion creation, percentage or fixed amount discounts, effective time windows,
+    scoped product lists, and point-of-sale applicable lookup.
+servers:
+  - url: /
+security:
+  - bearerSession: []
+paths:
+  /api/v1/sales/promotions:
+    get:
+      operationId: listPromotions
+      summary: List promotions for organization
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: List of promotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PromotionResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+    post:
+      operationId: createPromotion
+      summary: Create a new promotion
+      description: Requires promotions.write authority (MANAGER, ADMIN).
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PromotionRequest'}
+      responses:
+        '201':
+          description: Promotion created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PromotionResponse'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409':
+          description: Code conflict within organization
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422':
+          description: Validation error (e.g. endsAt <= startsAt, discountValue <= 0 or > 100 for PERCENT)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+  /api/v1/sales/promotions/applicable:
+    get:
+      operationId: findApplicablePromotions
+      summary: Find applicable active promotions at point of sale
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: productId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+        - name: storeId
+          in: query
+          required: false
+          schema: {type: string, format: uuid}
+        - name: at
+          in: query
+          required: false
+          schema: {type: string, format: date-time}
+      responses:
+        '200':
+          description: Applicable promotions matching store and time
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PromotionResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /api/v1/sales/promotions/{id}:
+    get:
+      operationId: getPromotion
+      summary: Get promotion details by ID
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Promotion details
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PromotionResponse'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404':
+          description: Promotion not found
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+    put:
+      operationId: updatePromotion
+      summary: Update promotion
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PromotionRequest'}
+      responses:
+        '200':
+          description: Promotion updated
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PromotionResponse'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/UnprocessableEntity'}
+
+    delete:
+      operationId: deletePromotion
+      summary: Delete promotion
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204':
+          description: Promotion deleted
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+  /api/v1/sales/promotions/{id}/products:
+    get:
+      operationId: listPromotionProducts
+      summary: List product IDs scoped to this promotion
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: List of scoped product IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string, format: uuid}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+    post:
+      operationId: addPromotionProduct
+      summary: Add a product to the promotion scope
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId]
+              properties:
+                productId: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Product added to promotion scope
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /api/v1/sales/promotions/{id}/products/{productId}:
+    delete:
+      operationId: removePromotionProduct
+      summary: Remove a product from the promotion scope
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: productId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204':
+          description: Product removed from promotion scope
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerSession:
+      type: http
+      scheme: bearer
+      description: Opaque 43-character token from /api/v1/auth/login
+
+  responses:
+    InvalidRequest:
+      description: Malformed JSON or header validation failure
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unauthenticated:
+      description: Missing, invalid or expired Bearer token
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: User lacks required permission code in store scope
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: Unique constraint or duplicate entry conflict
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    UnprocessableEntity:
+      description: Business rule constraint violation
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+
+  schemas:
+    PromotionRequest:
+      type: object
+      required: [code, name, discountType, discountValue, startsAt, endsAt, status]
+      properties:
+        storeId: {type: string, format: uuid, nullable: true}
+        code: {type: string, minLength: 1, maxLength: 60}
+        name: {type: string, minLength: 1, maxLength: 200}
+        discountType: {type: string, enum: [AMOUNT, PERCENT]}
+        discountValue: {type: number, minimum: 0.01}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        status: {type: string, enum: [DRAFT, ACTIVE, INACTIVE]}
+
+    PromotionResponse:
+      type: object
+      required: [id, organizationId, code, name, discountType, discountValue, startsAt, endsAt, status]
+      properties:
+        id: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        storeId: {type: string, format: uuid, nullable: true}
+        code: {type: string}
+        name: {type: string}
+        discountType: {type: string, enum: [AMOUNT, PERCENT]}
+        discountValue: {type: number}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        status: {type: string, enum: [DRAFT, ACTIVE, INACTIVE]}
+        productIds:
+          type: array
+          items: {type: string, format: uuid}
+
+    Error:
+      type: object
+      required: [status, code, message]
+      properties:
+        status: {type: integer}
+        code: {type: string}
+        message: {type: string}
