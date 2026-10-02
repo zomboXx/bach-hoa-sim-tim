@@ -66,3 +66,11 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
     OR (p.code IN ('catalog.write', 'receipts.read', 'receipts.write') AND r.code IN ('STOCK','MANAGER','ADMIN'))
   )
 ON CONFLICT DO NOTHING;
+
+INSERT INTO iam.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
+WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
+  AND (p.code='sales.read'
+       OR (p.code='sales.write' AND r.code IN ('SALES','MANAGER','ADMIN')))
+ON CONFLICT DO NOTHING;
+
