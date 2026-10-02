@@ -75,12 +75,12 @@ class SaleApiTest {
         seedInventoryIfAbsent(actorId);
 
         // Reset demo batches to known quantities before each test run
-        jdbc.update("UPDATE inventory.inventory_balances SET quantity_on_hand = 100 WHERE product_batch_id = ?::uuid",
+        jdbc.update("UPDATE inventory.inventory_balances SET on_hand_quantity = 100 WHERE batch_id = ?::uuid",
                 RICE_BATCH_ID);
-        jdbc.update("UPDATE inventory.inventory_balances SET quantity_on_hand = 50  WHERE product_batch_id = ?::uuid",
+        jdbc.update("UPDATE inventory.inventory_balances SET on_hand_quantity = 50  WHERE batch_id = ?::uuid",
                 APPLE_BATCH_ID);
         // Clean up invoices from any previous partial run
-        jdbc.update("DELETE FROM inventory.stock_movements WHERE actor_user_id IN " +
+        jdbc.update("DELETE FROM inventory.stock_movements WHERE recorded_by IN " +
                 "(SELECT id FROM iam.users WHERE username LIKE '%-sale-test')");
         jdbc.update("DELETE FROM sales.payments WHERE organization_id = ?::uuid", ORG_ID);
         jdbc.update("DELETE FROM sales.invoice_line_batches WHERE organization_id = ?::uuid", ORG_ID);
@@ -91,7 +91,7 @@ class SaleApiTest {
     /** Insert demo goods_receipt chain if inventory_balances rows don't yet exist. */
     private void seedInventoryIfAbsent(UUID actorId) {
         Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory.inventory_balances WHERE product_batch_id = ?::uuid",
+                "SELECT count(*) FROM inventory.inventory_balances WHERE batch_id = ?::uuid",
                 Integer.class, RICE_BATCH_ID);
         if (count != null && count > 0) return; // already seeded
 
@@ -107,60 +107,60 @@ class SaleApiTest {
         UUID orgId        = UUID.fromString(ORG_ID);
 
         jdbc.update("INSERT INTO inventory.goods_receipts " +
-                "(id,organization_id,store_id,supplier_id,receipt_no,status,received_at,created_by,confirmed_by) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,'RCV-DEMO-001','CONFIRMED','2026-01-01T00:00:00Z',?,?) " +
+                "(id,organization_id,store_id,supplier_id,status,received_at,confirmed_by,client_operation_id,idempotency_key,payload_hash) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,'CONFIRMED','2026-01-01T00:00:00Z',?,?::uuid,?::uuid,'\\x00'::bytea) " +
                 "ON CONFLICT DO NOTHING",
-                receiptId, orgId, storeId, supplierId, actorId, actorId);
+                receiptId, orgId, storeId, supplierId, actorId, UUID.randomUUID(), UUID.randomUUID());
 
         jdbc.update("INSERT INTO inventory.goods_receipt_lines " +
-                "(id,organization_id,store_id,receipt_id,product_id," +
+                "(id,receipt_id,organization_id,product_id," +
                 " expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,100,100,100,0,18000) ON CONFLICT DO NOTHING",
-                lineRiceId, orgId, storeId, receiptId, productRice);
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,100,100,100,0,18000) ON CONFLICT DO NOTHING",
+                lineRiceId, receiptId, orgId, productRice);
 
         jdbc.update("INSERT INTO inventory.goods_receipt_lines " +
-                "(id,organization_id,store_id,receipt_id,product_id," +
+                "(id,receipt_id,organization_id,product_id," +
                 " expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost,expiry_date) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,50,50,50,0,28000,'2026-12-31') ON CONFLICT DO NOTHING",
-                lineAppleId, orgId, storeId, receiptId, productApple);
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,50,50,50,0,28000,'2026-12-31') ON CONFLICT DO NOTHING",
+                lineAppleId, receiptId, orgId, productApple);
 
         jdbc.update("INSERT INTO inventory.product_batches " +
                 "(id,organization_id,store_id,product_id,receipt_line_id," +
-                " internal_batch_code,received_date,expiry_date,status) " +
+                " batch_number,received_date,expiry_date,status) " +
                 "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'BATCH-RICE-001','2026-01-01',null,'AVAILABLE') " +
                 "ON CONFLICT DO NOTHING",
                 batchRiceId, orgId, storeId, productRice, lineRiceId);
 
         jdbc.update("INSERT INTO inventory.product_batches " +
                 "(id,organization_id,store_id,product_id,receipt_line_id," +
-                " internal_batch_code,received_date,expiry_date,status) " +
+                " batch_number,received_date,expiry_date,status) " +
                 "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'BATCH-APPLE-001','2026-01-01','2026-12-31','AVAILABLE') " +
                 "ON CONFLICT DO NOTHING",
                 batchAppleId, orgId, storeId, productApple, lineAppleId);
 
         jdbc.update("INSERT INTO inventory.inventory_balances " +
-                "(id,organization_id,store_id,product_batch_id,quantity_on_hand) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,100) ON CONFLICT DO NOTHING",
-                UUID.fromString("10000000-0000-0000-0000-0000000000b1"), orgId, storeId, batchRiceId);
+                "(id,organization_id,store_id,product_id,batch_id,on_hand_quantity) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,100) ON CONFLICT DO NOTHING",
+                UUID.fromString("10000000-0000-0000-0000-0000000000b1"), orgId, storeId, productRice, batchRiceId);
 
         jdbc.update("INSERT INTO inventory.inventory_balances " +
-                "(id,organization_id,store_id,product_batch_id,quantity_on_hand) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,50) ON CONFLICT DO NOTHING",
-                UUID.fromString("10000000-0000-0000-0000-0000000000b2"), orgId, storeId, batchAppleId);
+                "(id,organization_id,store_id,product_id,batch_id,on_hand_quantity) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,50) ON CONFLICT DO NOTHING",
+                UUID.fromString("10000000-0000-0000-0000-0000000000b2"), orgId, storeId, productApple, batchAppleId);
 
         jdbc.update("INSERT INTO inventory.stock_movements " +
-                "(id,organization_id,store_id,product_batch_id,movement_type," +
-                " quantity_delta,receipt_line_id,occurred_at,actor_user_id) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,'RECEIPT',100,?::uuid,'2026-01-01T00:00:00Z',?) " +
+                "(id,organization_id,store_id,product_id,batch_id,movement_type," +
+                " quantity_delta,reference_id,reference_type,occurred_at,recorded_by) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'RECEIPT',100,?::uuid,'GOODS_RECEIPT','2026-01-01T00:00:00Z',?) " +
                 "ON CONFLICT DO NOTHING",
-                UUID.fromString("10000000-0000-0000-0000-0000000000c1"), orgId, storeId, batchRiceId, lineRiceId, actorId);
+                UUID.fromString("10000000-0000-0000-0000-0000000000c1"), orgId, storeId, productRice, batchRiceId, receiptId, actorId);
 
         jdbc.update("INSERT INTO inventory.stock_movements " +
-                "(id,organization_id,store_id,product_batch_id,movement_type," +
-                " quantity_delta,receipt_line_id,occurred_at,actor_user_id) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,'RECEIPT',50,?::uuid,'2026-01-01T00:00:00Z',?) " +
+                "(id,organization_id,store_id,product_id,batch_id,movement_type," +
+                " quantity_delta,reference_id,reference_type,occurred_at,recorded_by) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'RECEIPT',50,?::uuid,'GOODS_RECEIPT','2026-01-01T00:00:00Z',?) " +
                 "ON CONFLICT DO NOTHING",
-                UUID.fromString("10000000-0000-0000-0000-0000000000c2"), orgId, storeId, batchAppleId, lineAppleId, actorId);
+                UUID.fromString("10000000-0000-0000-0000-0000000000c2"), orgId, storeId, productApple, batchAppleId, receiptId, actorId);
     }
 
 
@@ -278,7 +278,7 @@ class SaleApiTest {
 
         // Verify stock_movement created
         int movCount = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory.stock_movements WHERE movement_type = 'SALE' AND product_batch_id = ?::uuid",
+                "SELECT count(*) FROM inventory.stock_movements WHERE movement_type = 'SALE' AND batch_id = ?::uuid",
                 Integer.class, RICE_BATCH_ID);
         assertThat(movCount).isGreaterThanOrEqualTo(1);
     }
@@ -391,18 +391,18 @@ class SaleApiTest {
         jdbc.update("INSERT INTO catalog.product_prices(id,organization_id,store_id,product_id,sale_price,effective_from) " +
                 "VALUES(gen_random_uuid(),?::uuid,?::uuid,?::uuid,0,'2020-01-01T00:00:00Z')",
                 ORG_ID, STORE_ID, freeProdId);
-        jdbc.update("INSERT INTO inventory.goods_receipts(id,organization_id,store_id,supplier_id,receipt_no,status,received_at,created_by,confirmed_by) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,'10000000-0000-0000-0000-000000000061'::uuid,'RC-FREE','CONFIRMED',now(),?::uuid,?::uuid)",
-                freeReceiptId, ORG_ID, STORE_ID, fixtureUsers.get(0), fixtureUsers.get(0));
-        jdbc.update("INSERT INTO inventory.goods_receipt_lines(id,organization_id,store_id,receipt_id,product_id,expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,10,10,10,0,0)",
-                freeLineId, ORG_ID, STORE_ID, freeReceiptId, freeProdId);
-        jdbc.update("INSERT INTO inventory.product_batches(id,organization_id,store_id,product_id,receipt_line_id,internal_batch_code,received_date,status) " +
+        jdbc.update("INSERT INTO inventory.goods_receipts(id,organization_id,store_id,supplier_id,status,received_at,confirmed_by,client_operation_id,idempotency_key,payload_hash) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,'10000000-0000-0000-0000-000000000061'::uuid,'CONFIRMED',now(),?::uuid,?::uuid,?::uuid,'\\x00'::bytea)",
+                freeReceiptId, ORG_ID, STORE_ID, fixtureUsers.get(0), UUID.randomUUID(), UUID.randomUUID());
+        jdbc.update("INSERT INTO inventory.goods_receipt_lines(id,receipt_id,organization_id,product_id,expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,10,10,10,0,0)",
+                freeLineId, freeReceiptId, ORG_ID, freeProdId);
+        jdbc.update("INSERT INTO inventory.product_batches(id,organization_id,store_id,product_id,receipt_line_id,batch_number,received_date,status) " +
                 "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,'BATCH-FREE',CURRENT_DATE,'AVAILABLE')",
                 freeBatchId, ORG_ID, STORE_ID, freeProdId, freeLineId);
-        jdbc.update("INSERT INTO inventory.inventory_balances(id,organization_id,store_id,product_batch_id,quantity_on_hand) " +
-                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,10)",
-                balanceId, ORG_ID, STORE_ID, freeBatchId);
+        jdbc.update("INSERT INTO inventory.inventory_balances(id,organization_id,store_id,product_id,batch_id,on_hand_quantity) " +
+                "VALUES(?::uuid,?::uuid,?::uuid,?::uuid,?::uuid,10)",
+                balanceId, ORG_ID, STORE_ID, freeProdId, freeBatchId);
 
         var body = Map.of(
                 "items", List.of(Map.of("productId", freeProdId.toString(), "quantity", 1)),
@@ -418,7 +418,7 @@ class SaleApiTest {
 
         // Verify balance reduced from 10 to 9
         BigDecimal qoh = jdbc.queryForObject(
-                "SELECT quantity_on_hand FROM inventory.inventory_balances WHERE id = ?::uuid",
+                "SELECT on_hand_quantity FROM inventory.inventory_balances WHERE id = ?::uuid",
                 BigDecimal.class, balanceId);
         assertThat(qoh).isEqualByComparingTo("9");
     }
@@ -559,7 +559,7 @@ class SaleApiTest {
 
     private long getBalance(String batchId) {
         BigDecimal qty = jdbc.queryForObject(
-                "SELECT quantity_on_hand FROM inventory.inventory_balances WHERE product_batch_id = ?::uuid",
+                "SELECT on_hand_quantity FROM inventory.inventory_balances WHERE batch_id = ?::uuid",
                 BigDecimal.class, batchId);
         return qty == null ? 0L : qty.longValue();
     }

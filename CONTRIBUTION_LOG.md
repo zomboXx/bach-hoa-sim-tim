@@ -22,6 +22,21 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Trung - 2026-10-01 17:01:05
+
+Thực hiện issue [INV-01] Transaction nhận hàng, lô và biến động (#18). Triển khai API nhận hàng POST /api/v1/inventory/receipts và GET danh sách/chi tiết; thực hiện transaction nguyên tử lưu phiếu, tạo lô hàng, tăng số dư tồn kho và ghi nhận biến động RECEIPT. Xử lý idempotency qua header Idempotency-Key và hash payload; áp dụng phân quyền RBAC (receipts.read, receipts.write cho STOCK, MANAGER, ADMIN; inventory.read cho tất cả các vai trò). Khởi tạo Flyway V5 (schema inventory + audit.audit_logs) và V6 (permissions). Hoàn thành 9 provider integration tests trên PostgreSQL 17 (Testcontainers) và vượt qua toàn bộ baseline gate kiểm thử verify.ps1 (40/40 tests).
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +735 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +5 -2
+- `services/api/src/main/resources/db/migration/V5__inventory.sql`: +115 -0
+- `services/api/src/main/resources/db/migration/V6__inventory_permissions.sql`: +19 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/`: +295 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-01 13:48:00
 
 Căn chỉnh SAL-01 khớp hoàn toàn tài liệu Sprint 2 và hợp đồng ranh giới: bổ sung route alias `POST /api/v1/sales/checkout`, hỗ trợ đơn hàng 0 VND và sửa CHECK constraint `sales.payments.amount >= 0`, chuẩn hóa tính toán tiền thanh toán theo `grandTotal` và tiền thối `change_amount` lưu vào `sales.invoices`, siết chặt kiểm tra phạm vi cửa hàng `storeId` theo session token, tách public model `BatchStock` và `InventoryConflictException` về module inventory để xóa phụ thuộc ngược.
@@ -71,6 +86,7 @@ Root verification đạt repository policy/links, web lint/format/typecheck/buil
 - `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +6 -6
 - `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +21 -21
 - `CHANGELOG.md`: +1 -1
+---
 ---
 
 ---

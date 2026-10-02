@@ -56,13 +56,16 @@ public class InventoryPortAdapter implements InventoryPort {
     public void recordSaleMovement(UUID id, UUID orgId, UUID storeId, UUID batchId,
                                    BigDecimal quantityDelta, UUID invoiceLineId,
                                    UUID actorUserId, Instant occurredAt) {
+        UUID productId = jdbc.queryForObject(
+                "SELECT product_id FROM inventory.product_batches WHERE id = ?",
+                UUID.class, batchId);
         jdbc.update("""
                 INSERT INTO inventory.stock_movements
-                    (id, organization_id, store_id, product_batch_id, movement_type,
-                     quantity_delta, invoice_line_id, occurred_at, actor_user_id)
-                VALUES (?, ?, ?, ?, 'SALE', ?, ?, ?, ?)
+                    (id, organization_id, store_id, product_id, batch_id, movement_type,
+                     quantity_delta, reference_id, reference_type, occurred_at, recorded_by)
+                VALUES (?, ?, ?, ?, ?, 'SALE', ?, ?, 'INVOICE', ?, ?)
                 """,
-                id, orgId, storeId, batchId,
+                id, orgId, storeId, productId, batchId,
                 quantityDelta, invoiceLineId,
                 java.sql.Timestamp.from(occurredAt), actorUserId);
     }

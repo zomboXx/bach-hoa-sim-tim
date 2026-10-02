@@ -70,31 +70,32 @@ public class DemoAccounts implements ApplicationRunner {
 
         jdbc.update("""
                 insert into inventory.goods_receipts
-                    (id,organization_id,store_id,supplier_id,receipt_no,status,received_at,created_by,confirmed_by)
-                values(?,?,?,?,'RCV-DEMO-001','CONFIRMED','2026-01-01T00:00:00Z',?,?)
+                    (id,organization_id,store_id,supplier_id,status,received_at,confirmed_by,
+                     client_operation_id,idempotency_key,payload_hash)
+                values(?,?,?,?,'CONFIRMED','2026-01-01T00:00:00Z',?,?,?,'\\x00'::bytea)
                 on conflict do nothing
-                """, receiptId, org, store, supplierId, actorUserId, actorUserId);
+                """, receiptId, org, store, supplierId, actorUserId, UUID.randomUUID(), UUID.randomUUID());
 
         jdbc.update("""
                 insert into inventory.goods_receipt_lines
-                    (id,organization_id,store_id,receipt_id,product_id,
+                    (id,receipt_id,organization_id,product_id,
                      expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost)
-                values(?,?,?,?,?, 100,100,100,0,18000)
+                values(?,?,?,?, 100,100,100,0,18000)
                 on conflict do nothing
-                """, lineRiceId, org, store, receiptId, productRice);
+                """, lineRiceId, receiptId, org, productRice);
 
         jdbc.update("""
                 insert into inventory.goods_receipt_lines
-                    (id,organization_id,store_id,receipt_id,product_id,
+                    (id,receipt_id,organization_id,product_id,
                      expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost,expiry_date)
-                values(?,?,?,?,?, 50,50,50,0,28000,'2026-12-31')
+                values(?,?,?,?, 50,50,50,0,28000,'2026-12-31')
                 on conflict do nothing
-                """, lineAppleId, org, store, receiptId, productApple);
+                """, lineAppleId, receiptId, org, productApple);
 
         jdbc.update("""
                 insert into inventory.product_batches
                     (id,organization_id,store_id,product_id,receipt_line_id,
-                     internal_batch_code,received_date,expiry_date,status)
+                     batch_number,received_date,expiry_date,status)
                 values(?,?,?,?,?,'BATCH-RICE-001','2026-01-01',null,'AVAILABLE')
                 on conflict do nothing
                 """, batchRiceId, org, store, productRice, lineRiceId);
@@ -102,39 +103,39 @@ public class DemoAccounts implements ApplicationRunner {
         jdbc.update("""
                 insert into inventory.product_batches
                     (id,organization_id,store_id,product_id,receipt_line_id,
-                     internal_batch_code,received_date,expiry_date,status)
+                     batch_number,received_date,expiry_date,status)
                 values(?,?,?,?,?,'BATCH-APPLE-001','2026-01-01','2026-12-31','AVAILABLE')
                 on conflict do nothing
                 """, batchAppleId, org, store, productApple, lineAppleId);
 
         jdbc.update("""
                 insert into inventory.inventory_balances
-                    (id,organization_id,store_id,product_batch_id,quantity_on_hand)
-                values(?,?,?,?,100)
+                    (id,organization_id,store_id,product_id,batch_id,on_hand_quantity)
+                values(?,?,?,?,?,100)
                 on conflict do nothing
-                """, balRiceId, org, store, batchRiceId);
+                """, balRiceId, org, store, productRice, batchRiceId);
 
         jdbc.update("""
                 insert into inventory.inventory_balances
-                    (id,organization_id,store_id,product_batch_id,quantity_on_hand)
-                values(?,?,?,?,50)
+                    (id,organization_id,store_id,product_id,batch_id,on_hand_quantity)
+                values(?,?,?,?,?,50)
                 on conflict do nothing
-                """, balAppleId, org, store, batchAppleId);
+                """, balAppleId, org, store, productApple, batchAppleId);
 
         jdbc.update("""
                 insert into inventory.stock_movements
-                    (id,organization_id,store_id,product_batch_id,movement_type,
-                     quantity_delta,receipt_line_id,occurred_at,actor_user_id)
-                values(?,?,?,?,'RECEIPT',100,?,'2026-01-01T00:00:00Z',?)
+                    (id,organization_id,store_id,product_id,batch_id,movement_type,
+                     quantity_delta,reference_id,reference_type,occurred_at,recorded_by)
+                values(?,?,?,?,?,'RECEIPT',100,?,'GOODS_RECEIPT','2026-01-01T00:00:00Z',?)
                 on conflict do nothing
-                """, movRiceId, org, store, batchRiceId, lineRiceId, actorUserId);
+                """, movRiceId, org, store, productRice, batchRiceId, lineRiceId, actorUserId);
 
         jdbc.update("""
                 insert into inventory.stock_movements
-                    (id,organization_id,store_id,product_batch_id,movement_type,
-                     quantity_delta,receipt_line_id,occurred_at,actor_user_id)
-                values(?,?,?,?,'RECEIPT',50,?,'2026-01-01T00:00:00Z',?)
+                    (id,organization_id,store_id,product_id,batch_id,movement_type,
+                     quantity_delta,reference_id,reference_type,occurred_at,recorded_by)
+                values(?,?,?,?,?,'RECEIPT',50,?,'GOODS_RECEIPT','2026-01-01T00:00:00Z',?)
                 on conflict do nothing
-                """, movAppleId, org, store, batchAppleId, lineAppleId, actorUserId);
+                """, movAppleId, org, store, productApple, batchAppleId, lineAppleId, actorUserId);
     }
 }

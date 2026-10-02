@@ -63,8 +63,8 @@ CREATE TABLE sales.invoice_line_batches (
     UNIQUE (organization_id, store_id, invoice_line_id, product_batch_id),
     FOREIGN KEY (organization_id, store_id, invoice_line_id, product_id)
         REFERENCES sales.invoice_lines(organization_id, store_id, id, product_id),
-    FOREIGN KEY (organization_id, store_id, product_batch_id, product_id)
-        REFERENCES inventory.product_batches(organization_id, store_id, id, product_id)
+    FOREIGN KEY (organization_id, product_batch_id)
+        REFERENCES inventory.product_batches(organization_id, id)
 );
 
 CREATE TABLE sales.payments (
@@ -82,51 +82,12 @@ CREATE TABLE sales.payments (
     CHECK (status <> 'COMPLETED' OR paid_at IS NOT NULL)
 );
 
--- stock_movements placed here because it holds a cross-schema FK to sales.invoice_line_batches.
-CREATE TABLE inventory.stock_movements (
-    id uuid PRIMARY KEY,
-    organization_id uuid NOT NULL,
-    store_id uuid NOT NULL,
-    product_batch_id uuid NOT NULL,
-    movement_type varchar(24) NOT NULL CHECK (movement_type IN
-        ('RECEIPT', 'SALE', 'STOCKTAKE_ADJUSTMENT', 'DISPOSAL', 'SALE_VOID', 'REVERSAL')),
-    quantity_delta numeric(14,3) NOT NULL CHECK (quantity_delta <> 0),
-    receipt_line_id uuid UNIQUE,
-    invoice_line_id uuid,
-    stocktake_line_id uuid UNIQUE,
-    disposal_line_id uuid UNIQUE,
-    reversed_movement_id uuid UNIQUE,
-    occurred_at timestamptz NOT NULL,
-    actor_user_id uuid NOT NULL,
-    UNIQUE (organization_id, store_id, id, product_batch_id),
-    UNIQUE (invoice_line_id, product_batch_id),
-    FOREIGN KEY (organization_id, store_id, product_batch_id)
-        REFERENCES inventory.product_batches(organization_id, store_id, id),
-    FOREIGN KEY (organization_id, store_id, product_batch_id, receipt_line_id)
-        REFERENCES inventory.product_batches(organization_id, store_id, id, receipt_line_id),
-    FOREIGN KEY (organization_id, store_id, invoice_line_id, product_batch_id)
-        REFERENCES sales.invoice_line_batches(organization_id, store_id, invoice_line_id, product_batch_id),
-    FOREIGN KEY (organization_id, actor_user_id) REFERENCES iam.users(organization_id, id),
-    CHECK (num_nonnulls(receipt_line_id, invoice_line_id, stocktake_line_id,
-        disposal_line_id, reversed_movement_id) = 1),
-    CHECK (reversed_movement_id IS NULL OR reversed_movement_id <> id),
-    CHECK ((movement_type = 'RECEIPT' AND receipt_line_id IS NOT NULL)
-        OR (movement_type = 'SALE' AND invoice_line_id IS NOT NULL)
-        OR (movement_type = 'STOCKTAKE_ADJUSTMENT' AND stocktake_line_id IS NOT NULL)
-        OR (movement_type = 'DISPOSAL' AND disposal_line_id IS NOT NULL)
-        OR (movement_type IN ('SALE_VOID', 'REVERSAL') AND reversed_movement_id IS NOT NULL)),
-    CHECK ((movement_type IN ('RECEIPT', 'SALE_VOID') AND quantity_delta > 0)
-        OR (movement_type IN ('SALE', 'DISPOSAL') AND quantity_delta < 0)
-        OR movement_type IN ('STOCKTAKE_ADJUSTMENT', 'REVERSAL'))
-);
-
 CREATE INDEX invoice_history ON sales.invoices(store_id, sold_at DESC);
-CREATE INDEX stock_movement_history ON inventory.stock_movements(store_id, product_batch_id, occurred_at DESC);
 
 -- Permissions for SAL-01: sales.*
 INSERT INTO iam.permissions(id, code, description) VALUES
-    ('30000000-0000-0000-0000-000000000001', 'sales.read',  'Read sales invoices and preview quotes within session scope'),
-    ('30000000-0000-0000-0000-000000000002', 'sales.write', 'Create and checkout sales invoices within session scope');
+    ('30000000-0000-0000-0000-000000000011', 'sales.read',  'Read sales invoices and preview quotes within session scope'),
+    ('30000000-0000-0000-0000-000000000012', 'sales.write', 'Create and checkout sales invoices within session scope');
 
 -- sales.read: all roles; sales.write: SALES, MANAGER, ADMIN
 INSERT INTO iam.role_permissions(role_id, permission_id)
