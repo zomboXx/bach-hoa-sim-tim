@@ -24,8 +24,13 @@ public class AuthSecurity {
         String[] inventory = {"/api/v1/inventory/products", "/api/v1/inventory/products/**",
                 "/api/v1/inventory/batches", "/api/v1/inventory/batches/**",
                 "/api/v1/inventory/movements", "/api/v1/inventory/movements/**"};
+<<<<<<< HEAD
         String[] promotions = {"/api/v1/promotions", "/api/v1/promotions/**",
                 "/api/v1/sales/promotions", "/api/v1/sales/promotions/**"};
+=======
+        String[] sales = {"/api/v1/sales", "/api/v1/sales/**"};
+        String[] quotePaths = {"/api/v1/sales/quote", "/api/v1/sales/invoices/quote"};
+>>>>>>> origin/main
         return http
                 // Credentials are only accepted in an explicit Authorization header, never cookies or Basic auth.
                 .csrf(csrf -> csrf.disable())
@@ -41,13 +46,20 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.PUT, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.DELETE, catalog).hasAuthority("catalog.write")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/reports/revenue", "/api/v1/reports/inventory").hasAuthority("reports.read")
                     .requestMatchers(HttpMethod.GET, receipts).hasAuthority("receipts.read")
                     .requestMatchers(HttpMethod.POST, receipts).hasAuthority("receipts.write")
                     .requestMatchers(HttpMethod.GET, inventory).hasAuthority("inventory.read")
+<<<<<<< HEAD
                     .requestMatchers(HttpMethod.GET, promotions).hasAuthority("promotions.read")
                     .requestMatchers(HttpMethod.POST, promotions).hasAuthority("promotions.write")
                     .requestMatchers(HttpMethod.PUT, promotions).hasAuthority("promotions.write")
                     .requestMatchers(HttpMethod.DELETE, promotions).hasAuthority("promotions.write")
+=======
+                    .requestMatchers(HttpMethod.POST, quotePaths).hasAuthority("sales.read")
+                    .requestMatchers(HttpMethod.GET, sales).hasAuthority("sales.read")
+                    .requestMatchers(HttpMethod.POST, sales).hasAuthority("sales.write")
+>>>>>>> origin/main
                     .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                     .authenticationEntryPoint((request, response, ex) -> bearer.writeError(response, 401, "UNAUTHENTICATED", "Valid bearer session required"))

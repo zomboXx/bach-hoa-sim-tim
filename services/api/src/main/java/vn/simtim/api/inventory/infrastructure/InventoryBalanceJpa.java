@@ -20,4 +20,8 @@ class InventoryBalanceJpa {
     long version;
 
     InventoryBalanceJpa() {}
+
+    UUID getBatchId() { return batchId; }
+    BigDecimal getQuantityOnHand() { return onHandQuantity; }
+    void setQuantityOnHand(BigDecimal qty) { this.onHandQuantity = qty; }
 }

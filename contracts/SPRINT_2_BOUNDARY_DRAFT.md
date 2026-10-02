@@ -86,6 +86,8 @@ interface InventorySalePort {
 
 `StoreScope` chỉ chứa organization/store từ session; `StockDemand` là product/quantity; `FefoPlan` giữ `capturedAt`, `businessDate` và allocations sau khi đã khóa; `SaleIssue` nối invoice line + batch + quantity để ghi movement. TV3 gọi port, sở hữu quote/checkout, invoice/payment và transaction. Port không tự commit hoặc gọi HTTP. TV2/TV3 chốt chữ ký Java biên dịch được trong PR đầu tiên dùng port; không tạo lớp rỗng trước consumer thật. Web giữ interface adapter theo feature; demo/API là hai implementation, cùng tên DTO công khai. Tên biến private và component con thuộc owner feature.
 
+INV-02 triển khai chữ ký trên bằng các immutable DTO trong `inventory/application`: `StoreScope`, `StockDemand`, `FefoPlan`, `FefoAllocation` và `SaleIssue`. `SaleIssue` bổ sung `movementId`, `invoiceLineId` và `actorId` để movement có identity, chứng từ nguồn và người ghi nhận mà không truyền JPA entity. Adapter dùng `Propagation.MANDATORY`; compile-level consumer test tại `sale/InventorySalePortContractTest` chứng minh module sales gọi được boundary. TV3 vẫn phải review/xác nhận và đổi consumer SAL-01 cũ từ `InventoryPort` sang boundary này trước khi merge hai module.
+
 ## Các bất biến để viết test
 
 - Receipt tạo phiếu/dòng/lô/balance/RECEIPT movement nguyên tử; checkout tạo hóa đơn/dòng/phân bổ/payment/SALE movement và giảm balance nguyên tử. Lỗi bất kỳ bước nào rollback toàn bộ.

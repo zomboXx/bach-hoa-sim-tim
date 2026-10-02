@@ -1,0 +1,327 @@
+openapi: 3.1.0
+info:
+  title: Sim Tim Inventory Read API
+  version: 0.1.0
+  description: >-
+    Working Draft provider contract for INV-02. All results are current inventory
+    in the organization/store scope of the bearer session. No as-of inventory is exposed.
+servers:
+  - url: /api/v1
+security:
+  - bearerSession: []
+paths:
+  /inventory/products:
+    get:
+      operationId: listInventoryProducts
+      summary: Read current inventory totals by product
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProductStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Current product inventory; on-hand includes blocked and expired batches.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryProductPage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /inventory/batches:
+    get:
+      operationId: listInventoryBatches
+      summary: Read current inventory by batch and expiry
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/BatchStatus'
+        - name: expiryStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExpiryStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Current batches. Unit cost is never present in this response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryBatchPage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /inventory/movements:
+    get:
+      operationId: listInventoryMovements
+      summary: Read stock movement ledger with its source document
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+        - name: batchId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/MovementType'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Newest movements first, with movement UUID as the stable tie-breaker.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryMovementPage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+components:
+  securitySchemes:
+    bearerSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  parameters:
+    ProductId:
+      name: productId
+      in: query
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    InvalidRequest:
+      description: Invalid filter or pagination.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthenticated:
+      description: Valid bearer session required.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: The session does not have inventory.read.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Quantity:
+      type: string
+      pattern: '^-?(0|[1-9][0-9]{0,10})(\.[0-9]{1,3})?$'
+      examples: ['12.500']
+    ProductStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    BatchStatus:
+      type: string
+      enum: [AVAILABLE, BLOCKED, EXHAUSTED]
+    ExpiryStatus:
+      type: string
+      enum: [EXPIRED, NEAR_EXPIRY, VALID, NO_EXPIRY]
+    MovementType:
+      type: string
+      enum: [RECEIPT, SALE, ADJUSTMENT]
+    PageMetadata:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int64
+          minimum: 0
+    InventoryProduct:
+      type: object
+      required:
+        - productId
+        - sku
+        - productName
+        - productStatus
+        - onHandQuantity
+        - availableQuantity
+        - businessDate
+      properties:
+        productId:
+          type: string
+          format: uuid
+        sku:
+          type: string
+        productName:
+          type: string
+        productStatus:
+          $ref: '#/components/schemas/ProductStatus'
+        onHandQuantity:
+          $ref: '#/components/schemas/Quantity'
+        availableQuantity:
+          $ref: '#/components/schemas/Quantity'
+        businessDate:
+          type: string
+          format: date
+    InventoryBatch:
+      type: object
+      required:
+        - batchId
+        - productId
+        - batchNumber
+        - status
+        - expiryStatus
+        - receivedDate
+        - onHandQuantity
+        - availableQuantity
+        - businessDate
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        batchNumber:
+          type: string
+        supplierLotNumber:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/BatchStatus'
+        expiryStatus:
+          $ref: '#/components/schemas/ExpiryStatus'
+        expiryDate:
+          type: [string, 'null']
+          format: date
+        receivedDate:
+          type: string
+          format: date
+        onHandQuantity:
+          $ref: '#/components/schemas/Quantity'
+        availableQuantity:
+          $ref: '#/components/schemas/Quantity'
+        businessDate:
+          type: string
+          format: date
+    MovementSource:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          type: string
+          enum: [GOODS_RECEIPT, INVOICE, ADJUSTMENT]
+        id:
+          type: string
+          format: uuid
+    InventoryMovement:
+      type: object
+      required:
+        - movementId
+        - productId
+        - batchId
+        - type
+        - quantityDelta
+        - source
+        - occurredAt
+        - recordedBy
+      properties:
+        movementId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/MovementType'
+        quantityDelta:
+          $ref: '#/components/schemas/Quantity'
+        source:
+          $ref: '#/components/schemas/MovementSource'
+        occurredAt:
+          type: string
+          format: date-time
+        recordedBy:
+          type: string
+          format: uuid
+    InventoryProductPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryProduct'
+    InventoryBatchPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryBatch'
+    InventoryMovementPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/InventoryMovement'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
