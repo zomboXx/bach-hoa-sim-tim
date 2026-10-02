@@ -57,9 +57,12 @@ INSERT INTO catalog.product_prices
      40000, '2020-01-01T00:00:00Z')
 ON CONFLICT DO NOTHING;
 
--- Repeatable seed runs after V4, including on an empty demo database.
+-- Repeatable seed runs after migrations, including on an empty demo database.
 INSERT INTO iam.role_permissions(role_id,permission_id)
 SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
 WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
-  AND (p.code='catalog.read' OR (p.code='catalog.write' AND r.code IN ('STOCK','MANAGER','ADMIN')))
+  AND (
+    p.code IN ('catalog.read', 'inventory.read')
+    OR (p.code IN ('catalog.write', 'receipts.read', 'receipts.write') AND r.code IN ('STOCK','MANAGER','ADMIN'))
+  )
 ON CONFLICT DO NOTHING;

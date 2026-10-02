@@ -1,0 +1,295 @@
+package vn.simtim.api.inventory;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import vn.simtim.api.auth.domain.PasswordHasher;
+
+/**
+ * Provider integration test cho INV-01: Transaction nhận hàng.
+ * Kiểm tra: xác nhận phiếu, idempotency, quyền và dữ liệu nguyên tử.
+ */
+@ActiveProfiles("demo")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class InventoryReceiptApiTest {
+
+    static final String ORG_ID   = "10000000-0000-0000-0000-000000000001";
+    static final String STORE_ID = "10000000-0000-0000-0000-000000000002";
+    static final String SUPPLIER_ID = "10000000-0000-0000-0000-000000000061";
+    static final String PRODUCT_RICE_ID = "10000000-0000-0000-0000-000000000041";
+
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+            .withDatabaseName("simtim_inv_test");
+
+    @DynamicPropertySource
+    static void dbProps(DynamicPropertyRegistry r) {
+        String externalUrl = System.getenv("SIMTIM_TEST_DB_URL");
+        if (externalUrl == null || externalUrl.isBlank()) {
+            postgres.start();
+            r.add("spring.datasource.url",      postgres::getJdbcUrl);
+            r.add("spring.datasource.username", postgres::getUsername);
+            r.add("spring.datasource.password", postgres::getPassword);
+        } else {
+            r.add("spring.datasource.url",      () -> externalUrl);
+            r.add("spring.datasource.username", () -> System.getenv("SIMTIM_TEST_DB_USER"));
+            r.add("spring.datasource.password", () -> System.getenv().getOrDefault("SIMTIM_TEST_DB_PASSWORD", ""));
+        }
+    }
+
+    @AfterAll
+    void stop() {
+        try {
+            UUID orgId = UUID.fromString(ORG_ID);
+            jdbc.update("delete from inventory.stock_movements where organization_id=?", orgId);
+            jdbc.update("delete from inventory.inventory_balances where organization_id=?", orgId);
+            jdbc.update("delete from inventory.product_batches where organization_id=?", orgId);
+            jdbc.update("delete from inventory.goods_receipt_lines where organization_id=?", orgId);
+            jdbc.update("delete from inventory.goods_receipts where organization_id=?", orgId);
+            for (UUID id : fixtureUsers) {
+                jdbc.update("delete from iam.auth_sessions where user_id=?", id);
+                jdbc.update("delete from iam.user_roles where user_id=?", id);
+                jdbc.update("delete from iam.users where id=?", id);
+            }
+        } finally {
+            if (postgres.isRunning()) postgres.stop();
+        }
+    }
+
+    @Autowired TestRestTemplate rest;
+    @Autowired JdbcTemplate jdbc;
+    @Autowired PasswordHasher passwords;
+
+    private final List<UUID> fixtureUsers = new ArrayList<>();
+    private static final String PASSWORD = "inv-fixture-password-123";
+
+    private String stockToken;
+    private String salesToken;
+
+    @BeforeAll
+    void setup() {
+        String hash = passwords.hash(PASSWORD);
+        stockToken = createSession("STOCK", hash);
+        salesToken = createSession("SALES", hash);
+    }
+
+    private String createSession(String role, String hash) {
+        UUID id = UUID.randomUUID();
+        String username = "inv_" + role.toLowerCase(Locale.ROOT) + "_" + id;
+        jdbc.update("""
+                insert into iam.users(id,organization_id,username,password_hash,full_name,status)
+                values(?,?,?,?,?,'ACTIVE')
+                """, id, UUID.fromString(ORG_ID), username, hash, "Inv fixture " + role);
+        fixtureUsers.add(id);
+        assertThat(jdbc.update("""
+                insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
+                select organization_id,?,id,?,now(),? from iam.roles
+                where organization_id=? and code=?
+                """, id, UUID.fromString(STORE_ID), id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+        var resp = rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(Map.of(
+                "organizationCode", "SIMTIM", "storeCode", "MAIN",
+                "username", username, "password", PASSWORD), jsonHeaders()), Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        return (String) resp.getBody().get("accessToken");
+    }
+
+    // ── POST /api/v1/inventory/receipts ──────────────────────────────────────
+
+    @Test
+    void confirmReceipt_stock_creates201WithBody() {
+        UUID idemKey = UUID.randomUUID();
+        UUID clientOpId = UUID.randomUUID();
+
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(clientOpId), authHeaders(stockToken, idemKey)),
+                Map.class);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(201);
+        assertThat(resp.getBody()).containsKey("id");
+        assertThat(resp.getBody()).containsEntry("status", "CONFIRMED");
+        assertThat(resp.getBody()).containsKey("lines");
+
+        // Verify location header
+        assertThat(resp.getHeaders().getLocation()).isNotNull();
+    }
+
+    @Test
+    void confirmReceipt_idempotency_sameKeyReturns201Again() {
+        UUID idemKey    = UUID.randomUUID();
+        UUID clientOpId = UUID.randomUUID();
+        var body = validReceiptBody(clientOpId);
+        var headers = authHeaders(stockToken, idemKey);
+
+        var first  = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(body, headers), Map.class);
+        var second = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(body, headers), Map.class);
+
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+        // Second call with same key+payload → same document (idempotent)
+        assertThat(second.getStatusCode().value()).isIn(200, 201);
+        assertThat(first.getBody().get("id")).isEqualTo(second.getBody().get("id"));
+    }
+
+    @Test
+    void confirmReceipt_withoutBearer_returns401() {
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(UUID.randomUUID()), jsonHeaders()),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(401);
+        assertThat(resp.getBody()).containsEntry("code", "UNAUTHENTICATED");
+    }
+
+    @Test
+    void confirmReceipt_salesRole_returns403() {
+        UUID idemKey = UUID.randomUUID();
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(UUID.randomUUID()), authHeaders(salesToken, idemKey)),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+        assertThat(resp.getBody()).containsEntry("code", "FORBIDDEN");
+    }
+
+    @Test
+    void confirmReceipt_withDiscrepancy_requiresReason() {
+        UUID idemKey = UUID.randomUUID();
+        // accepted + rejected = delivered, but delivered != expected → need discrepancyReason
+        var body = Map.of(
+                "supplierId", SUPPLIER_ID,
+                "clientOperationId", UUID.randomUUID().toString(),
+                "lines", List.of(Map.of(
+                        "productId", PRODUCT_RICE_ID,
+                        "expectedQuantity", "10.000",
+                        "deliveredQuantity", "8.000",
+                        "acceptedQuantity", "8.000",
+                        "rejectedQuantity", "0.000",
+                        "unitCost", 5000
+                        // missing discrepancyReason
+                )));
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(body, authHeaders(stockToken, idemKey)),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(422);
+        assertThat(resp.getBody()).containsEntry("code", "INVALID_RECEIPT");
+    }
+
+    // ── GET /api/v1/inventory/receipts ───────────────────────────────────────
+
+    @Test
+    void listReceipts_stock_returns200() {
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Object[].class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void listReceipts_sales_returns403() {
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(salesToken)),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void getReceipt_unknownId_returns404() {
+        var resp = rest.exchange("/api/v1/inventory/receipts/" + UUID.randomUUID(),
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(404);
+        assertThat(resp.getBody()).containsEntry("code", "NOT_FOUND");
+    }
+
+    // ── Atomic: balance and movement created ────────────────────────────────
+
+    @Test
+    void confirmReceipt_createsBalanceAndMovement() {
+        UUID idemKey    = UUID.randomUUID();
+        UUID clientOpId = UUID.randomUUID();
+
+        var resp = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(clientOpId), authHeaders(stockToken, idemKey)),
+                Map.class);
+        assertThat(resp.getStatusCode().value()).isEqualTo(201);
+
+        String receiptId = (String) resp.getBody().get("id");
+
+        // Balance must exist
+        Integer balCount = jdbc.queryForObject(
+                "SELECT count(*) FROM inventory.inventory_balances ib " +
+                "JOIN inventory.product_batches pb ON pb.id = ib.batch_id " +
+                "JOIN inventory.goods_receipt_lines grl ON grl.id = pb.receipt_line_id " +
+                "WHERE grl.receipt_id = ?",
+                Integer.class, UUID.fromString(receiptId));
+        assertThat(balCount).isGreaterThan(0);
+
+        // Stock movement RECEIPT must exist
+        Integer mvCount = jdbc.queryForObject(
+                "SELECT count(*) FROM inventory.stock_movements " +
+                "WHERE reference_id=? AND reference_type='GOODS_RECEIPT' AND movement_type='RECEIPT'",
+                Integer.class, UUID.fromString(receiptId));
+        assertThat(mvCount).isGreaterThan(0);
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private HttpHeaders jsonHeaders() {
+        var h = new HttpHeaders();
+        h.setContentType(MediaType.APPLICATION_JSON);
+        return h;
+    }
+
+    private HttpHeaders authHeaders(String token) {
+        var h = jsonHeaders();
+        h.setBearerAuth(token);
+        return h;
+    }
+
+    private HttpHeaders authHeaders(String token, UUID idempotencyKey) {
+        var h = authHeaders(token);
+        h.set("Idempotency-Key", idempotencyKey.toString());
+        return h;
+    }
+
+    private Map<String, Object> validReceiptBody(UUID clientOpId) {
+        return Map.of(
+                "supplierId", SUPPLIER_ID,
+                "clientOperationId", clientOpId.toString(),
+                "lines", List.of(Map.of(
+                        "productId", PRODUCT_RICE_ID,
+                        "expectedQuantity", "10.000",
+                        "deliveredQuantity", "10.000",
+                        "acceptedQuantity", "10.000",
+                        "rejectedQuantity", "0.000",
+                        "unitCost", 5000,
+                        "expiryDate", LocalDate.now().plusDays(30).toString()
+                )));
+    }
+}
