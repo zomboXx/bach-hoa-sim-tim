@@ -37,6 +37,59 @@ Thực hiện issue [INV-01] Transaction nhận hàng, lô và biến động (#
 ---
 
 ---
+Nguyễn Văn Thi - 2026-10-01 13:48:00
+
+Căn chỉnh SAL-01 khớp hoàn toàn tài liệu Sprint 2 và hợp đồng ranh giới: bổ sung route alias `POST /api/v1/sales/checkout`, hỗ trợ đơn hàng 0 VND và sửa CHECK constraint `sales.payments.amount >= 0`, chuẩn hóa tính toán tiền thanh toán theo `grandTotal` và tiền thối `change_amount` lưu vào `sales.invoices`, siết chặt kiểm tra phạm vi cửa hàng `storeId` theo session token, tách public model `BatchStock` và `InventoryConflictException` về module inventory để xóa phụ thuộc ngược.
+
+Bổ sung 3 ca kiểm thử mới (alias route checkout, chặn sai storeId, đơn hàng 0đ), nâng tổng số ca kiểm thử bán hàng lên 19/19 tests (toàn bộ 50/50 backend tests pass trên PostgreSQL 17 Testcontainers). Cập nhật wire contract OpenAPI và tài liệu review.
+
+- `contracts/sales-invoices.openapi.yaml`: +35 -0
+- `contracts/SALES_INVOICE_REVIEW.md`: +18 -7
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/application/BatchStock.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryConflictException.java`: +8 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryPort.java`: +1 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryPortAdapter.java`: +4 -4
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +33 -14
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +3 -3
+- `services/api/src/main/java/vn/simtim/api/sale/api/QuoteRequest.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/InvoiceResponse.java`: +4 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +3 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +21 -7
+- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +3 -1
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +86 -14
+- `CHANGELOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +29 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-01 07:46:16
+
+Chuẩn hóa SAL-01 theo review Sprint 2: cấu hình wire API bán hàng sang `/api/v1/sales/quote` và `/api/v1/sales/invoices`, ma trận quyền `sales.read` / `sales.write`. Tách ranh giới module với `InventoryPort` (`vn.simtim.api.inventory.application`) và `InventoryPortAdapter`, loại bỏ việc truy cập trực tiếp repo nội bộ của inventory từ sale. Bổ sung Working Draft OpenAPI 3.1 wire contract `contracts/sales-invoices.openapi.yaml` và `contracts/SALES_INVOICE_REVIEW.md`. Toàn bộ 16/16 test bán hàng và 47/47 backend integration test pass trên PostgreSQL 17 (Testcontainers).
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 47 backend tests trên PostgreSQL 17.11 disposable sạch.
+
+- `contracts/sales-invoices.openapi.yaml`: +281 -0
+- `contracts/SALES_INVOICE_REVIEW.md`: +52 -0
+- `contracts/README.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryPort.java`: +37 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryPortAdapter.java`: +69 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryBalanceJpa.java`: +3 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryBalanceJpaRepository.java`: +5 -5
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +16 -16
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +13 -14
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +1 -23
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +11 -46
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +5 -3
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +2 -2
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +6 -6
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +21 -21
+- `CHANGELOG.md`: +1 -1
+---
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-09-30 23:09:32
 
 Rà lại tài liệu `docs/project` theo `main` và GitHub ngày 30/09: thêm điểm vào phân biệt tài liệu hiện hành với bản lưu, ghi mốc Sprint 1 đã đóng và các PR Sprint 2 đang mở; sửa những câu còn nói REQ-01/BE-02 chờ review hoặc merge sau khi đã tích hợp. Giữ bản nháp lịch sử để truy vết, không xóa nội dung cũ. Bộ tài liệu vẫn ở nhánh local, chưa push hoặc mở PR.
@@ -53,6 +106,27 @@ Rà lại tài liệu `docs/project` theo `main` và GitHub ngày 30/09: thêm �
 - `docs/project/SPRINT_2_KICKOFF.md`: +1 -0
 - `docs/project/governance/BACKLOG.md`: +4 -4
 - `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-09-30 15:50:00
+
+SAL-01: Implement quote, checkout CASH, hóa đơn và trừ tồn FEFO trên `services/api`.
+
+Flyway V5 tạo `inventory` schema (goods_receipts, goods_receipt_lines, product_batches, inventory_balances, FEFO index). Flyway V6 tạo `sales` schema (invoices, invoice_lines, invoice_line_batches, payments) và `inventory.stock_movements` với cross-schema FK; thêm permissions `invoices.read`/`invoices.write`. Domain layer: Invoice, InvoiceLine, InvoiceLineBatch, Payment, BatchStock, ProductSnapshot, SaleRepository port, 3 custom exceptions. Application layer: SaleService với quote (read-only, không ghi DB) và checkout CASH (FEFO allocation, pessimistic lock, atomic: invoice + batch + balance deduction + movement + payment trong một transaction; validate cash trước khi lock stock). Infrastructure: 5 JPA entities + Spring Data repos + SaleRepositoryAdapter (JPA+JDBC, EntityManager.flush() trước JDBC insert để đảm bảo FK). API: POST /api/v1/invoices/quote, POST /api/v1/invoices, GET /api/v1/invoices, GET /api/v1/invoices/{id}; SaleExceptionHandler map 404/409/422. DemoAccounts mở rộng seedInventory() chạy sau khi users được tạo, thay thế stock_demo user đã xóa khỏi R__demo_seed.sql. 15 integration tests (SaleApiTest) trên PostgreSQL 17 Testcontainers — tổng 46/46 pass.
+
+- `services/api/src/main/resources/db/migration/V5__inventory.sql`: +87 -0
+- `services/api/src/main/resources/db/migration/V6__sales_invoices.sql`: +135 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +10 -100
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoAccounts.java`: +89 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/`: +162 -0
+- `services/api/src/main/java/vn/simtim/api/sale/application/`: +242 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/`: +511 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/`: +206 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +484 -0
+- `CHANGELOG.md`: +2 -1
+- `CONTRIBUTION_LOG.md`: +33 -0
 ---
 
 ---
@@ -105,7 +179,6 @@ Validation: `pwsh -File scripts/verify.ps1 -SkipInstall` với JDK 25 và Postgr
 - `docs/project/SPRINT_2_REVIEW_PLAN.md`: +47 -0
 - `docs/project/governance/BACKLOG.md`: +2 -0
 - `CONTRIBUTION_LOG.md`: +16 -0
----
 
 ---
 Lê Văn Chiến - 2026-09-29 21:00:00
