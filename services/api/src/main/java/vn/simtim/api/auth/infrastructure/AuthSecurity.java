@@ -20,6 +20,10 @@ public class AuthSecurity {
         var bearer = new BearerSessionFilter(service, mapper, limiter);
         String[] catalog = {"/api/v1/categories", "/api/v1/categories/**", "/api/v1/units", "/api/v1/units/**",
                 "/api/v1/products", "/api/v1/products/**", "/api/v1/suppliers", "/api/v1/suppliers/**"};
+        String[] receipts = {"/api/v1/inventory/receipts", "/api/v1/inventory/receipts/**"};
+        String[] inventory = {"/api/v1/inventory/products", "/api/v1/inventory/products/**",
+                "/api/v1/inventory/batches", "/api/v1/inventory/batches/**",
+                "/api/v1/inventory/movements", "/api/v1/inventory/movements/**"};
         String[] promotions = {"/api/v1/promotions", "/api/v1/promotions/**",
                 "/api/v1/sales/promotions", "/api/v1/sales/promotions/**"};
         return http
@@ -37,6 +41,9 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.PUT, catalog).hasAuthority("catalog.write")
                     .requestMatchers(HttpMethod.DELETE, catalog).hasAuthority("catalog.write")
+                    .requestMatchers(HttpMethod.GET, receipts).hasAuthority("receipts.read")
+                    .requestMatchers(HttpMethod.POST, receipts).hasAuthority("receipts.write")
+                    .requestMatchers(HttpMethod.GET, inventory).hasAuthority("inventory.read")
                     .requestMatchers(HttpMethod.GET, promotions).hasAuthority("promotions.read")
                     .requestMatchers(HttpMethod.POST, promotions).hasAuthority("promotions.write")
                     .requestMatchers(HttpMethod.PUT, promotions).hasAuthority("promotions.write")
