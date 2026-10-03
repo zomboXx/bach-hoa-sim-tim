@@ -64,9 +64,16 @@ export interface State {
     id: string;
     supplier: string;
     product: string;
+    expected?: string;
+    delivered?: string;
     accepted: number;
     rejected: number;
+    unitCost?: number;
+    lot?: string;
+    expiry?: string;
     note: string;
+    receivedAt?: string;
+    clientOperationId?: string;
   }[];
 }
 export const localDay = (d: Date) =>
@@ -156,6 +163,16 @@ const seed = (): State => ({
   movements: [],
   counts: [],
   promotions: [{ productId: "SP001", percent: 10, end: day(3) }],
+  receipts: [],
+});
+export const emptyOperationalState = (): State => ({
+  products: [],
+  batches: [],
+  suppliers: [],
+  invoices: [],
+  movements: [],
+  counts: [],
+  promotions: [],
   receipts: [],
 });
 const dbPromise = new Promise<IDBDatabase>((resolve, reject) => {

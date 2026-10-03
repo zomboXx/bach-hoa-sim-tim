@@ -21,6 +21,11 @@ export function routesFor(user: AuthUser): string[] {
   return [
     "dashboard",
     ...(user.session.permissions.includes("catalog.read") ? ["products", "suppliers"] : []),
+    ...(user.session.permissions.includes("receipts.read") ||
+    user.session.permissions.includes("receipts.write")
+      ? ["receive"]
+      : []),
+    ...(user.session.permissions.includes("inventory.read") ? ["inventory"] : []),
     ...(user.session.permissions.includes("reports.read") ? ["reports"] : []),
     ...(user.session.trainingEnabled ? ["training"] : []),
   ];
@@ -61,6 +66,7 @@ export class DemoAuthAdapter implements AuthAdapter {
 export class ApiAuthAdapter implements AuthAdapter {
   readonly mode = "api" as const;
   private accessToken?: string;
+  private session?: ServerSession;
 
   constructor(
     private readonly organizationCode = "SIMTIM",
@@ -100,6 +106,7 @@ export class ApiAuthAdapter implements AuthAdapter {
         throw invalidSession();
       const user = parseSession(grant.session);
       this.accessToken = grant.accessToken;
+      this.session = user.session;
       return user;
     } catch (e) {
       if (e instanceof TypeError) {
@@ -121,10 +128,12 @@ export class ApiAuthAdapter implements AuthAdapter {
       if (token !== this.accessToken) return undefined;
       if (res.status === 401) {
         this.accessToken = undefined;
+        this.session = undefined;
         return undefined;
       }
       if (!res.ok) throw new Error(`Không thể khôi phục phiên đăng nhập (${res.status}).`);
       const user = parseSession(await readJson(res));
+      if (token === this.accessToken) this.session = user.session;
       return token === this.accessToken ? user : undefined;
     } catch (e) {
       if (e instanceof TypeError) {
@@ -137,6 +146,7 @@ export class ApiAuthAdapter implements AuthAdapter {
   async logout(): Promise<void> {
     const token = this.accessToken;
     this.accessToken = undefined;
+    this.session = undefined;
     if (!token) return;
     try {
       const res = await fetch("/api/v1/auth/logout", {
@@ -158,10 +168,23 @@ export class ApiAuthAdapter implements AuthAdapter {
 
   async fetchApi(path: string, init?: RequestInit): Promise<Response> {
     const headers = new Headers(init?.headers);
-    if (this.accessToken) {
-      headers.set("Authorization", `Bearer ${this.accessToken}`);
+    const requestToken = this.accessToken;
+    if (requestToken) {
+      headers.set("Authorization", `Bearer ${requestToken}`);
     }
-    return fetch(path, { ...init, headers });
+    if (this.session) {
+      headers.set("X-Organization-Id", this.session.organizationId);
+      headers.set("X-Store-Id", this.session.storeId);
+    }
+    const response = await fetch(path, { ...init, headers });
+    if (response.status === 401 && requestToken === this.accessToken) {
+      this.accessToken = undefined;
+      this.session = undefined;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("simtim:auth-required"));
+      }
+    }
+    return response;
   }
 }
 
