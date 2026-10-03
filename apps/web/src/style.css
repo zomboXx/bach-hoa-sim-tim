@@ -1260,6 +1260,11 @@ small {
   font-size: 12px;
   margin: 10px 0;
 }
+.receipt-item-line + .receipt-item-line {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 2px;
+}
 .movements {
   margin-top: 25px;
 }
@@ -1274,6 +1279,252 @@ small {
   display: block;
   font-size: 9px;
   margin-top: 7px;
+}
+.inventory-feature {
+  min-width: 0;
+}
+.business-date {
+  color: #756d79;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.feature-message {
+  border-radius: 10px;
+  padding: 13px 16px;
+  margin: 0 0 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.feature-message.error {
+  background: #fff7f5;
+  border-color: #efd8d3;
+}
+.feature-message.success-message {
+  background: #f3faf6;
+  border-color: #d4e9dc;
+}
+.operation-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: #fff7e8;
+  border: 1px solid #ecd9b7;
+}
+.operation-notice strong {
+  color: #72501f;
+  font-size: 13px;
+}
+.operation-notice p {
+  margin: 6px 0 0;
+  color: #846b47;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.operation-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.operation-actions .primary,
+.operation-actions .secondary {
+  min-height: 38px;
+  padding: 9px 12px;
+  font-size: 10px;
+}
+.receipt-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr);
+  gap: 24px;
+  align-items: start;
+}
+.receipt-form {
+  padding: 28px;
+}
+.form-title,
+.receipt-row-title {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.form-title h2,
+.form-title p,
+.recent-receipts .card-head p,
+.inventory-section .card-head p {
+  margin-bottom: 0;
+}
+.form-title p,
+.recent-receipts .card-head p,
+.inventory-section .card-head p {
+  font-size: 10px;
+  line-height: 1.7;
+}
+.quantity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.quantity-grid label,
+.receipt-form .form-row label {
+  min-width: 0;
+}
+.quantity-grid input {
+  font-variant-numeric: tabular-nums;
+}
+.field-error {
+  color: #a9463f;
+  font-size: 9px;
+  line-height: 1.5;
+}
+[aria-invalid="true"] {
+  border-color: #c76d65;
+  box-shadow: 0 0 0 3px #fae9e6;
+}
+.recent-receipts {
+  max-height: 760px;
+  overflow: auto;
+}
+.recent-receipts .card-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.compact {
+  min-height: 36px;
+  padding: 8px 11px;
+  font-size: 9px;
+}
+.recent-receipts .receipt-row {
+  padding: 18px 22px;
+}
+.receipt-row-title > div {
+  min-width: 0;
+}
+.receipt-row-title small {
+  overflow-wrap: anywhere;
+}
+.inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.stock-summary {
+  padding: 20px;
+}
+.stock-summary > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.stock-summary h2 {
+  margin: 17px 0 21px;
+  line-height: 1.5;
+}
+.stock-summary dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  gap: 14px;
+}
+.stock-summary dl > div {
+  display: grid;
+  gap: 7px;
+}
+.stock-summary dt {
+  color: var(--muted);
+  font-size: 9px;
+}
+.stock-summary dd {
+  margin: 0;
+  color: #4c365d;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.inventory-section {
+  margin-top: 22px;
+}
+.inventory-table-wrap {
+  overflow: auto;
+}
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.inventory-table th {
+  padding: 15px 20px;
+  color: #95899b;
+  background: #fcfbfc;
+  border-block: 1px solid var(--line);
+  font-size: 9px;
+  font-weight: 600;
+}
+.inventory-table td {
+  padding: 17px 20px;
+  border-bottom: 1px solid #f0edf1;
+  color: #756b79;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.inventory-table td b,
+.inventory-table td small {
+  display: block;
+}
+.inventory-table td b {
+  color: #55495a;
+  margin-bottom: 7px;
+}
+.inventory-table td small {
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+.inventory-table td .status + small {
+  margin-top: 7px;
+}
+.movement-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 17px 22px;
+  border-top: 1px solid #f0edf1;
+}
+.movement-entry > div {
+  min-width: 0;
+}
+.movement-entry b,
+.movement-entry small {
+  display: block;
+}
+.movement-entry b {
+  color: #55495a;
+  font-size: 11px;
+  margin-bottom: 7px;
+}
+.movement-entry small {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.movement-entry strong {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 .count-summary {
   display: flex;
@@ -1809,6 +2060,12 @@ dialog::backdrop {
   .supplier-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .quantity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inventory-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 950px) {
   .metrics {
@@ -1886,6 +2143,12 @@ dialog::backdrop {
   .bar-row > span {
     width: 145px;
     font-size: 10px;
+  }
+  .receipt-layout {
+    grid-template-columns: 1fr;
+  }
+  .recent-receipts {
+    max-height: none;
   }
 }
 @media (max-width: 720px) {
@@ -2197,6 +2460,66 @@ dialog::backdrop {
   }
   .dialog-inner {
     padding: 26px 22px;
+  }
+  .operation-notice,
+  .form-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .operation-actions {
+    justify-content: stretch;
+  }
+  .operation-actions .primary,
+  .operation-actions .secondary,
+  .operation-actions .text-button {
+    width: 100%;
+  }
+  .receipt-form {
+    padding: 20px 17px;
+  }
+  .quantity-grid,
+  .receipt-form .form-row,
+  .inventory-summary {
+    grid-template-columns: 1fr;
+  }
+  .quantity-grid label,
+  .receipt-form .form-row label {
+    margin-block: 12px;
+  }
+  .inventory-table,
+  .inventory-table tbody,
+  .inventory-table tr,
+  .inventory-table td {
+    display: block;
+    width: 100%;
+  }
+  .inventory-table thead {
+    display: none;
+  }
+  .inventory-table tr {
+    padding: 14px 17px;
+    border-top: 1px solid var(--line);
+  }
+  .inventory-table td {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    gap: 12px;
+    padding: 8px 0;
+    border: 0;
+    text-align: right;
+  }
+  .inventory-table td::before {
+    content: attr(data-label);
+    color: #9a909e;
+    text-align: left;
+    font-size: 9px;
+  }
+  .inventory-table td b,
+  .inventory-table td small {
+    text-align: right;
+  }
+  .movement-entry {
+    padding-inline: 17px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
