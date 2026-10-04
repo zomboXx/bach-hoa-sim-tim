@@ -1,7 +1,6 @@
 package vn.simtim.api.promotion.infrastructure;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
@@ -23,23 +22,25 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     }
 
     @Override
-    public List<Promotion> findByOrganization(UUID organizationId) {
-        return jpa.findByOrganizationId(organizationId).stream().map(PromotionJpa::toDomain).toList();
+    public List<Promotion> findByStore(UUID organizationId, UUID storeId) {
+        return jpa.findByOrganizationIdAndStoreId(organizationId, storeId).stream()
+                .map(PromotionJpa::toDomain).toList();
     }
 
     @Override
-    public Optional<Promotion> findById(UUID organizationId, UUID id) {
-        return jpa.findByOrganizationIdAndId(organizationId, id).map(PromotionJpa::toDomain);
+    public Optional<Promotion> findById(UUID organizationId, UUID storeId, UUID id) {
+        return jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, id)
+                .map(PromotionJpa::toDomain);
     }
 
     @Override
-    public boolean existsByCode(UUID organizationId, String code) {
-        return jpa.existsByCodeInsensitive(organizationId, code);
+    public boolean existsByCode(UUID organizationId, UUID storeId, String code) {
+        return jpa.existsByCodeInsensitive(organizationId, storeId, code);
     }
 
     @Override
-    public boolean existsByCodeExcluding(UUID organizationId, String code, UUID excludeId) {
-        return jpa.existsByCodeInsensitiveExcluding(organizationId, code, excludeId);
+    public boolean existsByCodeExcluding(UUID organizationId, UUID storeId, String code, UUID excludeId) {
+        return jpa.existsByCodeInsensitiveExcluding(organizationId, storeId, code, excludeId);
     }
 
     @Override
@@ -48,15 +49,19 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     }
 
     @Override
-    public void deleteById(UUID organizationId, UUID id) {
-        jpa.findByOrganizationIdAndId(organizationId, id).ifPresent(e -> {
+    public void deleteById(UUID organizationId, UUID storeId, UUID id) {
+        jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, id).ifPresent(e -> {
             productJpa.deleteAllByPromotionId(id);
             jpa.deleteById(e.id);
         });
     }
 
     @Override
-    public List<PromotionProduct> findProductsByPromotion(UUID organizationId, UUID promotionId) {
+    public List<PromotionProduct> findProductsByPromotion(UUID organizationId, UUID storeId, UUID promotionId) {
+        // Kiểm tra promotion tồn tại và thuộc đúng store trước khi trả danh sách sản phẩm
+        if (jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, promotionId).isEmpty()) {
+            return List.of();
+        }
         return productJpa.findByPromotionId(promotionId).stream()
                 .map(PromotionProductJpa::toDomain).toList();
     }

@@ -19,16 +19,18 @@ import vn.simtim.api.promotion.domain.PromotionProduct;
  * HTTP adapter cho PRO-01B — khuyến mãi cơ bản.
  *
  * <ul>
- *   <li>GET  /api/v1/promotions                              – danh sách (promotions.read)
- *   <li>GET  /api/v1/promotions/applicable?productId=&storeId=&at= – tra cứu điểm bán (promotions.read)
- *   <li>GET  /api/v1/promotions/{id}                         – chi tiết (promotions.read)
- *   <li>POST /api/v1/promotions                              – tạo (promotions.write)
- *   <li>PUT  /api/v1/promotions/{id}                         – cập nhật (promotions.write)
- *   <li>DELETE /api/v1/promotions/{id}                       – xóa (promotions.write)
- *   <li>GET  /api/v1/promotions/{id}/products               – sản phẩm trong phạm vi (promotions.read)
- *   <li>POST /api/v1/promotions/{id}/products               – thêm sản phẩm (promotions.write)
+ *   <li>GET  /api/v1/promotions                         – danh sách của store trong session (promotions.read)
+ *   <li>GET  /api/v1/promotions/applicable?productId=&at= – tra cứu điểm bán (promotions.read)
+ *   <li>GET  /api/v1/promotions/{id}                    – chi tiết (promotions.read)
+ *   <li>POST /api/v1/promotions                         – tạo (promotions.write)
+ *   <li>PUT  /api/v1/promotions/{id}                    – cập nhật (promotions.write)
+ *   <li>DELETE /api/v1/promotions/{id}                  – xóa (promotions.write)
+ *   <li>GET  /api/v1/promotions/{id}/products           – sản phẩm trong phạm vi (promotions.read)
+ *   <li>POST /api/v1/promotions/{id}/products           – thêm sản phẩm (promotions.write)
  *   <li>DELETE /api/v1/promotions/{id}/products/{productId} – xóa sản phẩm (promotions.write)
  * </ul>
+ *
+ * organizationId và storeId luôn lấy từ SessionPrincipal; client không được override.
  */
 @RestController
 @RequestMapping({"/api/v1/sales/promotions", "/api/v1/promotions"})
@@ -45,14 +47,14 @@ public class PromotionController {
                                         Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        return service.listByOrg(principal.organizationId()).stream()
+        return service.listByStore(principal.organizationId(), principal.storeId()).stream()
                 .map(PromotionResponse::from)
                 .toList();
     }
 
     /**
      * Tra cứu khuyến mãi áp dụng tại điểm bán.
-     * storeId lấy từ SessionPrincipal; client không được cung cấp storeId khác.
+     * storeId lấy từ SessionPrincipal — client không được cung cấp storeId.
      * Tham số {@code at} dạng ISO-8601; mặc định là thời điểm hiện tại.
      */
     @GetMapping("/applicable")
@@ -65,7 +67,8 @@ public class PromotionController {
         requireSameOrg(principal, orgId);
         UUID storeId = principal.storeId();
         return service.findApplicable(principal.organizationId(), storeId, productId, at).stream()
-                .map(p -> PromotionResponse.from(p, service.listProducts(principal.organizationId(), p.id())))
+                .map(p -> PromotionResponse.from(p,
+                        service.listProducts(principal.organizationId(), storeId, p.id())))
                 .toList();
     }
 
@@ -75,8 +78,8 @@ public class PromotionController {
                                  Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        var promotion = service.getById(principal.organizationId(), id);
-        var products = service.listProducts(principal.organizationId(), id);
+        var promotion = service.getById(principal.organizationId(), principal.storeId(), id);
+        var products = service.listProducts(principal.organizationId(), principal.storeId(), id);
         return PromotionResponse.from(promotion, products);
     }
 
@@ -87,7 +90,8 @@ public class PromotionController {
             Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        var created = service.create(principal.organizationId(), principal.storeId(), req.code(), req.name(),
+        var created = service.create(principal.organizationId(), principal.storeId(),
+                req.code(), req.name(),
                 req.discountType(), req.discountValue(), req.startsAt(), req.endsAt(), req.status());
         return ResponseEntity
                 .created(URI.create("/api/v1/promotions/" + created.id()))
@@ -102,9 +106,10 @@ public class PromotionController {
             Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        var updated = service.update(principal.organizationId(), id, principal.storeId(), req.code(), req.name(),
+        var updated = service.update(principal.organizationId(), principal.storeId(), id,
+                req.code(), req.name(),
                 req.discountType(), req.discountValue(), req.startsAt(), req.endsAt(), req.status());
-        var products = service.listProducts(principal.organizationId(), id);
+        var products = service.listProducts(principal.organizationId(), principal.storeId(), id);
         return PromotionResponse.from(updated, products);
     }
 
@@ -114,7 +119,7 @@ public class PromotionController {
                                        Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        service.delete(principal.organizationId(), id);
+        service.delete(principal.organizationId(), principal.storeId(), id);
         return ResponseEntity.noContent().build();
     }
 
@@ -127,7 +132,7 @@ public class PromotionController {
             Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        return service.listProducts(principal.organizationId(), id).stream()
+        return service.listProducts(principal.organizationId(), principal.storeId(), id).stream()
                 .map(pp -> Map.of("promotionId", pp.promotionId(), "productId", pp.productId()))
                 .toList();
     }
@@ -144,7 +149,7 @@ public class PromotionController {
         if (productId == null) {
             return ResponseEntity.badRequest().build();
         }
-        service.addProduct(principal.organizationId(), id, productId);
+        service.addProduct(principal.organizationId(), principal.storeId(), id, productId);
         return ResponseEntity
                 .created(URI.create("/api/v1/promotions/" + id + "/products/" + productId))
                 .build();
@@ -158,7 +163,7 @@ public class PromotionController {
             Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
-        service.removeProduct(principal.organizationId(), id, productId);
+        service.removeProduct(principal.organizationId(), principal.storeId(), id, productId);
         return ResponseEntity.noContent().build();
     }
 

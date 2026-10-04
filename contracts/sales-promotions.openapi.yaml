@@ -3,12 +3,13 @@ info:
   title: Sim Tim sales promotions API
   version: 0.1.0
   x-status: Working Draft
-  x-draft-date: '2026-10-01'
+  x-draft-date: '2026-10-05'
   description: >-
     Working Draft for PRO-01B (Issue #23 / PR #25).
     Owner API: TV3 (Nguyễn Văn Thi); Reviewers: TV1 (Nguyễn Đức Phát) for wire route & RBAC.
     Covers basic promotion creation, percentage or fixed amount discounts, effective time windows,
     scoped product lists, and point-of-sale applicable lookup.
+    All operations are scoped to the authenticated session's storeId — clients cannot override store scope.
 servers:
   - url: /
 security:
@@ -72,6 +73,9 @@ paths:
     get:
       operationId: findApplicablePromotions
       summary: Find applicable active promotions at point of sale
+      description: >
+        Returns ACTIVE promotions covering the given product for the store bound to the session.
+        storeId is taken from the authenticated session — clients cannot supply a different store.
       parameters:
         - name: X-Organization-Id
           in: header
@@ -80,10 +84,6 @@ paths:
         - name: productId
           in: query
           required: true
-          schema: {type: string, format: uuid}
-        - name: storeId
-          in: query
-          required: false
           schema: {type: string, format: uuid}
         - name: at
           in: query
@@ -297,13 +297,20 @@ components:
   schemas:
     PromotionRequest:
       type: object
-      required: [code, name, discountType, discountValue, startsAt, endsAt, status]
+      description: >
+        Request body for creating or updating a promotion.
+        storeId is NOT accepted — the server always uses the store bound to the session.
+      required: [code, name, discountType, discountValue, startsAt, endsAt]
       properties:
-        storeId: {type: string, format: uuid, nullable: true}
         code: {type: string, minLength: 1, maxLength: 60}
         name: {type: string, minLength: 1, maxLength: 200}
         discountType: {type: string, enum: [AMOUNT, PERCENT]}
-        discountValue: {type: number, minimum: 0.01}
+        discountValue:
+          type: number
+          minimum: 0.01
+          description: >
+            For PERCENT: value 0.01..100, at most 2 decimal places (stored as numeric(14,2)).
+            For AMOUNT: positive integer VND (no decimal places).
         startsAt: {type: string, format: date-time}
         endsAt: {type: string, format: date-time}
         status: {type: string, enum: [DRAFT, ACTIVE, INACTIVE]}

@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-05 00:43:12
+
+Khắc phục triệt để các phản hồi review của Project Owner trên PR #25 (Issue #23): (1) Đảm bảo tính nhất quán giữa OpenAPI contract, DTO và implementation — loại bỏ hoàn toàn query param `storeId` ở endpoint `/promotions/applicable` và trường `storeId` trong `PromotionRequest`, làm rõ cơ chế suy diễn store từ session. (2) Siết chặt phạm vi store-scope trên mọi route và layer (`PromotionRepository`, `PromotionJpaRepository`, `PromotionRepositoryAdapter`, `PromotionService`, `PromotionController`): thay thế `listByOrg` bằng `listByStore`, kiểm tra `(organizationId, storeId)` cho tất cả các thao tác `getById`, `update`, `delete`, `addProduct`, `removeProduct`, `listProducts`, ngăn hoàn toàn MANAGER ở store A truy cập/sửa/xóa khuyến mãi của store B cùng tổ chức. (3) Bổ sung 4 integration test cô lập cross-store cùng tổ chức (`crossStore_list`, `crossStore_get`, `crossStore_delete`, `crossStore_applicable`). Chạy toàn bộ test suite API đạt 101/101 tests và toàn bộ kiểm thử `scripts/verify.ps1` đều đạt.
+
+- `CHANGELOG.md`: +1 -1
+- `contracts/sales-promotions.openapi.yaml`: +15 -8
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +25 -20
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionRequest.java`: +4 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +21 -18
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +11 -6
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +14 -8
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +17 -12
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +83 -14
+- `CONTRIBUTION_LOG.md`: +18 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-04 17:36:46
 
 Fix hai lỗi bảo mật PRO-01B theo review của Project Owner (Issue #23): (1) Ràng buộc phạm vi đọc/ghi theo `SessionPrincipal` — bỏ `storeId` khỏi query param `applicable` và khỏi body `create`/`update`; mọi endpoint lấy `organizationId`/`storeId` từ session; thêm `requireSameOrg()` trả 403 nếu `X-Organization-Id` header không khớp principal, chặn cross-store spoofing. (2) Kiểm tra `scale ≤ 2` cho `discountValue` kiểu PERCENT trước khi lưu — tránh `numeric(14,2)` làm tròn ngầm giá trị 3+ chữ số thập phân hoặc biến giá trị rất nhỏ thành 0 và gây lỗi DB. Bổ sung 6 integration test mới (cross-org 403, applicable từ principal không cần storeId, scale 3 bậc từ chối, scale 2 bậc hợp lệ). Tổng 4 file thay đổi, 147 dòng thêm / 25 dòng xóa.

@@ -10,20 +10,26 @@ import org.springframework.data.repository.query.Param;
 
 interface PromotionJpaRepository extends JpaRepository<PromotionJpa, UUID> {
 
-    List<PromotionJpa> findByOrganizationId(UUID organizationId);
+    /** Danh sách theo org + store (store null = toàn tổ chức, đã lọc đúng store). */
+    @Query("SELECT p FROM PromotionJpa p WHERE p.organizationId = :orgId AND p.storeId = :storeId")
+    List<PromotionJpa> findByOrganizationIdAndStoreId(
+            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId);
 
-    @Query("SELECT p FROM PromotionJpa p WHERE p.organizationId = :orgId AND p.id = :id")
-    Optional<PromotionJpa> findByOrganizationIdAndId(
-            @Param("orgId") UUID orgId, @Param("id") UUID id);
+    @Query("SELECT p FROM PromotionJpa p WHERE p.organizationId = :orgId AND p.storeId = :storeId AND p.id = :id")
+    Optional<PromotionJpa> findByOrganizationIdAndStoreIdAndId(
+            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId, @Param("id") UUID id);
 
     @Query("SELECT COUNT(p) > 0 FROM PromotionJpa p " +
-           "WHERE p.organizationId = :orgId AND lower(p.code) = lower(:code)")
-    boolean existsByCodeInsensitive(@Param("orgId") UUID orgId, @Param("code") String code);
+           "WHERE p.organizationId = :orgId AND p.storeId = :storeId AND lower(p.code) = lower(:code)")
+    boolean existsByCodeInsensitive(
+            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId, @Param("code") String code);
 
     @Query("SELECT COUNT(p) > 0 FROM PromotionJpa p " +
-           "WHERE p.organizationId = :orgId AND lower(p.code) = lower(:code) AND p.id <> :excludeId")
+           "WHERE p.organizationId = :orgId AND p.storeId = :storeId " +
+           "  AND lower(p.code) = lower(:code) AND p.id <> :excludeId")
     boolean existsByCodeInsensitiveExcluding(
-            @Param("orgId") UUID orgId, @Param("code") String code, @Param("excludeId") UUID excludeId);
+            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId,
+            @Param("code") String code, @Param("excludeId") UUID excludeId);
 
     /**
      * Khuyến mãi ACTIVE trong khung thời gian, đúng cửa hàng, KHÔNG giới hạn sản phẩm

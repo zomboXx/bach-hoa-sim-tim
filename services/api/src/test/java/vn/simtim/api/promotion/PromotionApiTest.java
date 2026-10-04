@@ -60,15 +60,25 @@ class PromotionApiTest {
     @Autowired PasswordHasher passwords;
 
     private final List<UUID> fixtureUsers = new ArrayList<>();
+    private final List<UUID> fixtureStores = new ArrayList<>();
     private static final String PASSWORD = "promo-fixture-password-123";
     private String managerToken;
     private String salesToken;
+    /** Manager thuộc store thứ hai (cùng org) dùng để kiểm tra cross-store isolation. */
+    private String otherStoreManagerToken;
 
     @BeforeAll
     void authenticateFixtures() {
         String hash = passwords.hash(PASSWORD);
-        managerToken = createSession("MANAGER", hash);
-        salesToken   = createSession("SALES", hash);
+        managerToken         = createSession("MANAGER", hash, UUID.fromString(STORE_ID));
+        salesToken           = createSession("SALES",   hash, UUID.fromString(STORE_ID));
+        // Tạo store thứ 2 cùng org cho cross-store tests
+        UUID store2Id = UUID.randomUUID();
+        fixtureStores.add(store2Id);
+        jdbc.update("insert into core.stores(id,organization_id,code,name,status) values(?,?,'STORE2','Cửa hàng 2','ACTIVE')",
+                store2Id, UUID.fromString(ORG_ID));
+        // Tạo role MANAGER trong store2 (dùng lại role id của org)
+        otherStoreManagerToken = createSession("MANAGER", hash, store2Id);
     }
 
     @AfterAll
@@ -79,12 +89,15 @@ class PromotionApiTest {
                 jdbc.update("delete from iam.user_roles where user_id=?", id);
                 jdbc.update("delete from iam.users where id=?", id);
             }
+            for (UUID id : fixtureStores) {
+                jdbc.update("delete from core.stores where id=?", id);
+            }
         } finally {
             if (postgres.isRunning()) postgres.stop();
         }
     }
 
-    private String createSession(String role, String hash) {
+    private String createSession(String role, String hash, UUID storeId) {
         UUID id = UUID.randomUUID();
         String username = "promo_" + role.toLowerCase(Locale.ROOT) + "_" + id;
         jdbc.update("""
@@ -96,9 +109,12 @@ class PromotionApiTest {
                 insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
                 select organization_id,?,id,?,now(),? from iam.roles
                 where organization_id=? and code=?
-                """, id, UUID.fromString(STORE_ID), id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+                """, id, storeId, id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+        // Đăng nhập: tìm storeCode
+        String storeCode = jdbc.queryForObject(
+                "select code from core.stores where id=?", String.class, storeId);
         var response = rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(Map.of(
-                "organizationCode", "SIMTIM", "storeCode", "MAIN",
+                "organizationCode", "SIMTIM", "storeCode", storeCode,
                 "username", username, "password", PASSWORD), scopeHeaders()), Map.class);
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         return (String) response.getBody().get("accessToken");
@@ -129,6 +145,13 @@ class PromotionApiTest {
         h.set("X-Organization-Id", UUID.randomUUID().toString());
         h.setContentType(MediaType.APPLICATION_JSON);
         h.setBearerAuth(managerToken);
+        return h;
+    }
+
+    /** Header của manager ở store thứ 2 (cùng org). */
+    private HttpHeaders otherStoreHeaders() {
+        var h = scopeHeaders();
+        h.setBearerAuth(otherStoreManagerToken);
         return h;
     }
 
@@ -349,10 +372,9 @@ class PromotionApiTest {
 
     @Test
     void applicable_returnsDemoPromotion_forRiceInOctober() {
-        // Thời điểm trong cửa sổ khuyến mãi demo (10/2026)
+        // Thời điểm trong cửa sổ khuyến mãi demo (10/2026); storeId lấy từ principal
         String at = "2026-10-15T12:00:00Z";
-        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID
-                + "&storeId=" + STORE_ID + "&at=" + at;
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID + "&at=" + at;
         var res = rest.exchange(url, HttpMethod.GET,
                 new HttpEntity<>(salesHeaders()), Object[].class);
         assertThat(res.getStatusCode().value()).isEqualTo(200);
@@ -366,8 +388,7 @@ class PromotionApiTest {
     void applicable_returnsEmpty_forAppleInOctober() {
         // Khuyến mãi demo chỉ áp dụng cho gạo, táo không được giảm
         String at = "2026-10-15T12:00:00Z";
-        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_APPLE_ID
-                + "&storeId=" + STORE_ID + "&at=" + at;
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_APPLE_ID + "&at=" + at;
         var res = rest.exchange(url, HttpMethod.GET,
                 new HttpEntity<>(salesHeaders()), Object[].class);
         assertThat(res.getStatusCode().value()).isEqualTo(200);
@@ -379,8 +400,7 @@ class PromotionApiTest {
     void applicable_returnsEmpty_outsideTimeWindow() {
         // Ngày 1/9/2026 — trước cửa sổ khuyến mãi tháng 10
         String at = "2026-09-01T00:00:00Z";
-        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID
-                + "&storeId=" + STORE_ID + "&at=" + at;
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID + "&at=" + at;
         var res = rest.exchange(url, HttpMethod.GET,
                 new HttpEntity<>(salesHeaders()), Object[].class);
         assertThat(res.getStatusCode().value()).isEqualTo(200);
@@ -400,8 +420,7 @@ class PromotionApiTest {
 
         // Táo phải được hưởng khuyến mãi universal
         String at = "2026-10-15T12:00:00Z";
-        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_APPLE_ID
-                + "&storeId=" + STORE_ID + "&at=" + at;
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_APPLE_ID + "&at=" + at;
         var res = rest.exchange(url, HttpMethod.GET,
                 new HttpEntity<>(salesHeaders()), Object[].class);
         assertThat(res.getStatusCode().value()).isEqualTo(200);
@@ -419,6 +438,56 @@ class PromotionApiTest {
                 new HttpEntity<>(salesHeaders()), Object[].class);
         assertThat(res.getStatusCode().value()).isEqualTo(200);
         assertThat(res.getBody()).isNotNull();
+    }
+
+    // ===== Cross-store isolation (cùng org, store khác) =====
+
+    @Test
+    void crossStore_list_returnsEmptyForOtherStore() {
+        // Store 2 chưa có promotion nào → danh sách trống
+        var res = rest.exchange("/api/v1/promotions", HttpMethod.GET,
+                new HttpEntity<>(otherStoreHeaders()), Object[].class);
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        assertThat(res.getBody()).isEmpty();
+    }
+
+    @Test
+    void crossStore_get_returns404ForPromotionOfOtherStore() {
+        // Demo promotion thuộc STORE MAIN; manager ở store2 không được thấy
+        var res = rest.exchange("/api/v1/promotions/" + DEMO_PROMO_ID, HttpMethod.GET,
+                new HttpEntity<>(otherStoreHeaders()), Map.class);
+        assertThat(res.getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void crossStore_delete_returns404ForPromotionOfOtherStore() {
+        // Tạo promotion ở store MAIN
+        var created = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson("CS-DEL-01"), managerHeaders()), Map.class);
+        assertThat(created.getStatusCode().value()).isEqualTo(201);
+        String id = created.getBody().get("id").toString();
+
+        // Manager ở store2 cố xóa → 404
+        var del = rest.exchange("/api/v1/promotions/" + id, HttpMethod.DELETE,
+                new HttpEntity<>(otherStoreHeaders()), Map.class);
+        assertThat(del.getStatusCode().value()).isEqualTo(404);
+
+        // Manager store MAIN vẫn xóa được
+        var ok = rest.exchange("/api/v1/promotions/" + id, HttpMethod.DELETE,
+                new HttpEntity<>(managerHeaders()), Void.class);
+        assertThat(ok.getStatusCode().value()).isEqualTo(204);
+    }
+
+    @Test
+    void crossStore_applicable_returnsEmptyForOtherStore() {
+        // Store2 chưa có promotion nào → applicable trả về danh sách trống
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID
+                + "&at=2026-10-15T12:00:00Z";
+        var res = rest.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(otherStoreHeaders()), Object[].class);
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        // Demo promo thuộc MAIN, không lộ sang store2
+        assertThat(res.getBody()).isEmpty();
     }
 
     // ===== Helper =====

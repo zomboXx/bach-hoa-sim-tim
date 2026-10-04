@@ -3,12 +3,12 @@ package vn.simtim.api.promotion.api;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
-/** Request body dùng chung cho tạo/cập nhật khuyến mãi. */
+/**
+ * Request body dùng chung cho tạo/cập nhật khuyến mãi.
+ * storeId không còn là trường của request — lấy từ SessionPrincipal.
+ */
 public record PromotionRequest(
-        UUID storeId,
-
         @NotBlank(message = "code không được trống")
         @Size(max = 60, message = "code tối đa 60 ký tự")
         String code,

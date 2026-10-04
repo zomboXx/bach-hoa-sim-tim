@@ -12,6 +12,9 @@ import vn.simtim.api.promotion.domain.*;
 /**
  * Use-case service cho PRO-01B: CRUD khuyến mãi, quản lý phạm vi sản phẩm và tra
  * cứu khuyến mãi hiệu lực tại điểm bán.
+ *
+ * Mọi thao tác đọc/ghi đều scoped theo (organizationId, storeId) từ SessionPrincipal —
+ * không truy cập khuyến mãi của cửa hàng khác trong cùng tổ chức.
  */
 @Service
 @Transactional
@@ -28,20 +31,20 @@ public class PromotionService {
     // ===== Queries =====
 
     @Transactional(readOnly = true)
-    public List<Promotion> listByOrg(UUID organizationId) {
-        return repo.findByOrganization(organizationId);
+    public List<Promotion> listByStore(UUID organizationId, UUID storeId) {
+        return repo.findByStore(organizationId, storeId);
     }
 
     @Transactional(readOnly = true)
-    public Promotion getById(UUID organizationId, UUID id) {
-        return repo.findById(organizationId, id)
+    public Promotion getById(UUID organizationId, UUID storeId, UUID id) {
+        return repo.findById(organizationId, storeId, id)
                 .orElseThrow(() -> new PromotionNotFoundException("Khuyến mãi không tồn tại: " + id));
     }
 
     @Transactional(readOnly = true)
-    public List<PromotionProduct> listProducts(UUID organizationId, UUID promotionId) {
-        getById(organizationId, promotionId); // ensure exists
-        return repo.findProductsByPromotion(organizationId, promotionId);
+    public List<PromotionProduct> listProducts(UUID organizationId, UUID storeId, UUID promotionId) {
+        getById(organizationId, storeId, promotionId); // ensure exists and belongs to store
+        return repo.findProductsByPromotion(organizationId, storeId, promotionId);
     }
 
     /**
@@ -62,7 +65,7 @@ public class PromotionService {
                             Instant startsAt, Instant endsAt, String status) {
         validateTimeWindow(startsAt, endsAt);
         validateDiscountValue(discountType, discountValue);
-        if (repo.existsByCode(organizationId, code)) {
+        if (repo.existsByCode(organizationId, storeId, code)) {
             throw new PromotionConflictException("Mã khuyến mãi đã tồn tại: " + code);
         }
         var promotion = new Promotion(UUID.randomUUID(), organizationId, storeId, code, name,
@@ -71,13 +74,13 @@ public class PromotionService {
         return repo.save(promotion);
     }
 
-    public Promotion update(UUID organizationId, UUID id, UUID storeId, String code, String name,
+    public Promotion update(UUID organizationId, UUID storeId, UUID id, String code, String name,
                             String discountType, BigDecimal discountValue,
                             Instant startsAt, Instant endsAt, String status) {
-        var existing = getById(organizationId, id);
+        var existing = getById(organizationId, storeId, id);
         validateTimeWindow(startsAt, endsAt);
         validateDiscountValue(discountType, discountValue);
-        if (repo.existsByCodeExcluding(organizationId, code, id)) {
+        if (repo.existsByCodeExcluding(organizationId, storeId, code, id)) {
             throw new PromotionConflictException("Mã khuyến mãi đã tồn tại: " + code);
         }
         var updated = new Promotion(id, organizationId, storeId, code, name,
@@ -86,13 +89,13 @@ public class PromotionService {
         return repo.save(updated);
     }
 
-    public void delete(UUID organizationId, UUID id) {
-        getById(organizationId, id); // ensure exists
-        repo.deleteById(organizationId, id);
+    public void delete(UUID organizationId, UUID storeId, UUID id) {
+        getById(organizationId, storeId, id); // ensure exists and belongs to store
+        repo.deleteById(organizationId, storeId, id);
     }
 
-    public void addProduct(UUID organizationId, UUID promotionId, UUID productId) {
-        getById(organizationId, promotionId);
+    public void addProduct(UUID organizationId, UUID storeId, UUID promotionId, UUID productId) {
+        getById(organizationId, storeId, promotionId);
         productRepo.findById(organizationId, productId)
                 .orElseThrow(() -> new PromotionNotFoundException("Sản phẩm không tồn tại: " + productId));
         if (repo.existsProduct(organizationId, promotionId, productId)) {
@@ -101,8 +104,8 @@ public class PromotionService {
         repo.saveProduct(new PromotionProduct(organizationId, promotionId, productId));
     }
 
-    public void removeProduct(UUID organizationId, UUID promotionId, UUID productId) {
-        getById(organizationId, promotionId);
+    public void removeProduct(UUID organizationId, UUID storeId, UUID promotionId, UUID productId) {
+        getById(organizationId, storeId, promotionId);
         if (!repo.existsProduct(organizationId, promotionId, productId)) {
             throw new PromotionNotFoundException("Sản phẩm không có trong phạm vi khuyến mãi");
         }
