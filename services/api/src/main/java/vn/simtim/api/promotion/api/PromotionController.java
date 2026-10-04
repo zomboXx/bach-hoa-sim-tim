@@ -6,8 +6,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import vn.simtim.api.auth.domain.SessionPrincipal;
 import vn.simtim.api.promotion.application.PromotionService;
 import vn.simtim.api.promotion.domain.PromotionProduct;
 
@@ -37,40 +41,53 @@ public class PromotionController {
     }
 
     @GetMapping
-    public List<PromotionResponse> list(@RequestHeader("X-Organization-Id") UUID orgId) {
-        return service.listByOrg(orgId).stream()
+    public List<PromotionResponse> list(@RequestHeader("X-Organization-Id") UUID orgId,
+                                        Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        return service.listByOrg(principal.organizationId()).stream()
                 .map(PromotionResponse::from)
                 .toList();
     }
 
     /**
      * Tra cứu khuyến mãi áp dụng tại điểm bán.
+     * storeId lấy từ SessionPrincipal; client không được cung cấp storeId khác.
      * Tham số {@code at} dạng ISO-8601; mặc định là thời điểm hiện tại.
      */
     @GetMapping("/applicable")
     public List<PromotionResponse> applicable(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @RequestParam UUID productId,
-            @RequestParam UUID storeId,
-            @RequestParam(required = false) Instant at) {
-        return service.findApplicable(orgId, storeId, productId, at).stream()
-                .map(p -> PromotionResponse.from(p, service.listProducts(orgId, p.id())))
+            @RequestParam(required = false) Instant at,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        UUID storeId = principal.storeId();
+        return service.findApplicable(principal.organizationId(), storeId, productId, at).stream()
+                .map(p -> PromotionResponse.from(p, service.listProducts(principal.organizationId(), p.id())))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public PromotionResponse get(@RequestHeader("X-Organization-Id") UUID orgId,
-                                 @PathVariable UUID id) {
-        var promotion = service.getById(orgId, id);
-        var products = service.listProducts(orgId, id);
+                                 @PathVariable UUID id,
+                                 Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        var promotion = service.getById(principal.organizationId(), id);
+        var products = service.listProducts(principal.organizationId(), id);
         return PromotionResponse.from(promotion, products);
     }
 
     @PostMapping
     public ResponseEntity<PromotionResponse> create(
             @RequestHeader("X-Organization-Id") UUID orgId,
-            @Valid @RequestBody PromotionRequest req) {
-        var created = service.create(orgId, req.storeId(), req.code(), req.name(),
+            @Valid @RequestBody PromotionRequest req,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        var created = service.create(principal.organizationId(), principal.storeId(), req.code(), req.name(),
                 req.discountType(), req.discountValue(), req.startsAt(), req.endsAt(), req.status());
         return ResponseEntity
                 .created(URI.create("/api/v1/promotions/" + created.id()))
@@ -81,17 +98,23 @@ public class PromotionController {
     public PromotionResponse update(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @PathVariable UUID id,
-            @Valid @RequestBody PromotionRequest req) {
-        var updated = service.update(orgId, id, req.storeId(), req.code(), req.name(),
+            @Valid @RequestBody PromotionRequest req,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        var updated = service.update(principal.organizationId(), id, principal.storeId(), req.code(), req.name(),
                 req.discountType(), req.discountValue(), req.startsAt(), req.endsAt(), req.status());
-        var products = service.listProducts(orgId, id);
+        var products = service.listProducts(principal.organizationId(), id);
         return PromotionResponse.from(updated, products);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@RequestHeader("X-Organization-Id") UUID orgId,
-                                       @PathVariable UUID id) {
-        service.delete(orgId, id);
+                                       @PathVariable UUID id,
+                                       Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        service.delete(principal.organizationId(), id);
         return ResponseEntity.noContent().build();
     }
 
@@ -100,8 +123,11 @@ public class PromotionController {
     @GetMapping("/{id}/products")
     public List<Map<String, UUID>> listProducts(
             @RequestHeader("X-Organization-Id") UUID orgId,
-            @PathVariable UUID id) {
-        return service.listProducts(orgId, id).stream()
+            @PathVariable UUID id,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        return service.listProducts(principal.organizationId(), id).stream()
                 .map(pp -> Map.of("promotionId", pp.promotionId(), "productId", pp.productId()))
                 .toList();
     }
@@ -110,12 +136,15 @@ public class PromotionController {
     public ResponseEntity<Void> addProduct(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @PathVariable UUID id,
-            @RequestBody Map<String, UUID> body) {
+            @RequestBody Map<String, UUID> body,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
         UUID productId = body.get("productId");
         if (productId == null) {
             return ResponseEntity.badRequest().build();
         }
-        service.addProduct(orgId, id, productId);
+        service.addProduct(principal.organizationId(), id, productId);
         return ResponseEntity
                 .created(URI.create("/api/v1/promotions/" + id + "/products/" + productId))
                 .build();
@@ -125,8 +154,29 @@ public class PromotionController {
     public ResponseEntity<Void> removeProduct(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @PathVariable UUID id,
-            @PathVariable UUID productId) {
-        service.removeProduct(orgId, id, productId);
+            @PathVariable UUID productId,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        service.removeProduct(principal.organizationId(), id, productId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ===== Private helpers =====
+
+    private static SessionPrincipal principal(Authentication auth) {
+        return (SessionPrincipal) auth.getPrincipal();
+    }
+
+    /**
+     * Đảm bảo session thuộc đúng organization được yêu cầu.
+     * Header X-Organization-Id vẫn được chấp nhận (tương thích BE-03 transition)
+     * nhưng phải khớp với principal; không khớp → 403.
+     */
+    private static void requireSameOrg(SessionPrincipal principal, UUID requestedOrgId) {
+        if (!principal.organizationId().equals(requestedOrgId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "X-Organization-Id không khớp với phiên làm việc");
+        }
     }
 }

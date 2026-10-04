@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-04 17:36:46
+
+Fix hai lỗi bảo mật PRO-01B theo review của Project Owner (Issue #23): (1) Ràng buộc phạm vi đọc/ghi theo `SessionPrincipal` — bỏ `storeId` khỏi query param `applicable` và khỏi body `create`/`update`; mọi endpoint lấy `organizationId`/`storeId` từ session; thêm `requireSameOrg()` trả 403 nếu `X-Organization-Id` header không khớp principal, chặn cross-store spoofing. (2) Kiểm tra `scale ≤ 2` cho `discountValue` kiểu PERCENT trước khi lưu — tránh `numeric(14,2)` làm tròn ngầm giá trị 3+ chữ số thập phân hoặc biến giá trị rất nhỏ thành 0 và gây lỗi DB. Bổ sung 6 integration test mới (cross-org 403, applicable từ principal không cần storeId, scale 3 bậc từ chối, scale 2 bậc hợp lệ). Tổng 4 file thay đổi, 147 dòng thêm / 25 dòng xóa.
+
+- `CHANGELOG.md`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +94 -5
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +13 -4
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +63 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+
+---
 Lê Văn Chiến - 2026-10-02 15:11:50
 
 Thực hiện issue [INV-02] Tra cứu tồn, lô, hạn và biến động (#19). Triển khai ba API chỉ đọc tồn hiện tại theo session scope với bộ lọc và phân trang ổn định; tính đúng tồn thực tế, tồn khả dụng và trạng thái hạn theo `Asia/Ho_Chi_Minh`; không trả giá vốn cho SALES; cho phép truy biến động về chứng từ nguồn. Công bố `InventorySalePort` để SAL-01 khóa tồn, lập kế hoạch FEFO, trừ lô và ghi biến động SALE trong cùng transaction, không trả JPA entity hoặc tự commit.

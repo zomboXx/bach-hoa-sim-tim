@@ -123,6 +123,15 @@ class PromotionApiTest {
         return h;
     }
 
+    /** Header với org-id khác để kiểm tra 403 cross-org scope. */
+    private HttpHeaders wrongOrgHeaders() {
+        var h = new HttpHeaders();
+        h.set("X-Organization-Id", UUID.randomUUID().toString());
+        h.setContentType(MediaType.APPLICATION_JSON);
+        h.setBearerAuth(managerToken);
+        return h;
+    }
+
     // ===== Bảo mật =====
 
     @Test
@@ -131,6 +140,38 @@ class PromotionApiTest {
                 new HttpEntity<>(scopeHeaders()), Map.class);
         assertThat(res.getStatusCode().value()).isEqualTo(401);
         assertThat(res.getBody()).containsEntry("code", "UNAUTHENTICATED");
+    }
+
+    @Test
+    void list_withWrongOrg_returns403() {
+        var res = rest.exchange("/api/v1/promotions", HttpMethod.GET,
+                new HttpEntity<>(wrongOrgHeaders()), Map.class);
+        assertThat(res.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void applicable_withWrongOrg_returns403() {
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID
+                + "&at=2026-10-15T12:00:00Z";
+        var res = rest.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(wrongOrgHeaders()), Map.class);
+        assertThat(res.getStatusCode().value()).isEqualTo(403);
+    }
+
+    /**
+     * Xác nhận applicable dùng storeId từ principal (cửa hàng MAIN của session),
+     * không cần client cung cấp storeId qua query param.
+     */
+    @Test
+    void applicable_usesStoreFromPrincipal_notQueryParam() {
+        // Không truyền storeId → vẫn trả về kết quả (storeId lấy từ principal)
+        String url = "/api/v1/promotions/applicable?productId=" + PRODUCT_RICE_ID
+                + "&at=2026-10-15T12:00:00Z";
+        var res = rest.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(salesHeaders()), Object[].class);
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        // Demo promo áp dụng cho gạo tại MAIN
+        assertThat(res.getBody()).isNotEmpty();
     }
 
     @Test
@@ -211,6 +252,28 @@ class PromotionApiTest {
         var res = rest.exchange("/api/v1/promotions", HttpMethod.POST,
                 new HttpEntity<>(body, managerHeaders()), Map.class);
         assertThat(res.getStatusCode().value()).isEqualTo(422);
+    }
+
+    @Test
+    void createPromotion_percentWith3DecimalPlaces_returns422() {
+        // 12.345 có scale=3 > 2 → numeric(14,2) sẽ làm tròn thành 12.35 không như mong muốn
+        String body = """
+                {"code":"BAD-SCALE","name":"Scale quá 2","discountType":"PERCENT","discountValue":12.345,
+                 "startsAt":"2026-10-01T00:00:00Z","endsAt":"2026-10-31T00:00:00Z","status":"DRAFT"}""";
+        var res = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(body, managerHeaders()), Map.class);
+        assertThat(res.getStatusCode().value()).isEqualTo(422);
+    }
+
+    @Test
+    void createPromotion_percentWith2DecimalPlaces_succeeds() {
+        // 10.50 có scale=2 → hợp lệ
+        String body = """
+                {"code":"GOOD-SCALE","name":"Scale đúng 2","discountType":"PERCENT","discountValue":10.50,
+                 "startsAt":"2026-10-01T00:00:00Z","endsAt":"2026-10-31T00:00:00Z","status":"DRAFT"}""";
+        var res = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(body, managerHeaders()), Map.class);
+        assertThat(res.getStatusCode().value()).isEqualTo(201);
     }
 
     @Test

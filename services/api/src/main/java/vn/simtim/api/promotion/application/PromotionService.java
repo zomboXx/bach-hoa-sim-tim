@@ -118,8 +118,17 @@ public class PromotionService {
     }
 
     private void validateDiscountValue(String discountType, BigDecimal discountValue) {
-        if ("PERCENT".equals(discountType) && discountValue.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new PromotionValidationException("Giá trị giảm theo phần trăm không được vượt quá 100");
+        if ("PERCENT".equals(discountType)) {
+            // numeric(14,2) chỉ lưu tối đa 2 chữ số thập phân; scale > 2 gây làm tròn
+            // ngầm hoặc thành 0 với giá trị rất nhỏ → từ chối sớm.
+            if (discountValue.stripTrailingZeros().scale() > 2) {
+                throw new PromotionValidationException(
+                        "Giá trị giảm theo phần trăm tối đa 2 chữ số thập phân");
+            }
+            if (discountValue.compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new PromotionValidationException(
+                        "Giá trị giảm theo phần trăm không được vượt quá 100");
+            }
         }
         if ("AMOUNT".equals(discountType) && discountValue.stripTrailingZeros().scale() > 0) {
             throw new PromotionValidationException("Giá trị giảm theo số tiền phải là số nguyên VND");
