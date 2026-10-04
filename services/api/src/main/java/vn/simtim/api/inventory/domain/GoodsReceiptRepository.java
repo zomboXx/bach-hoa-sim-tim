@@ -10,7 +10,7 @@ public interface GoodsReceiptRepository {
                       UUID idempotencyKey, byte[] payloadHash);
     Optional<GoodsReceipt> findById(UUID organizationId, UUID storeId, UUID id);
     List<GoodsReceipt> findByStore(UUID organizationId, UUID storeId, int limit, int offset);
-    Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID clientOperationId);
+    Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID storeId, UUID clientOperationId);
     Optional<GoodsReceipt> findByIdempotencyKey(UUID idempotencyKey);
     byte[] findPayloadHash(UUID idempotencyKey);
 }

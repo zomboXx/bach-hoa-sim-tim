@@ -42,15 +42,10 @@ export class ApiInventoryAdapter implements InventoryPort {
   }
 
   async findReceiptByClientOperationId(clientOperationId: string) {
-    const size = 100;
-    for (let offset = 0; offset < 10000; offset += size) {
-      const receipts = await this.get<Receipt[]>(
-        `/api/v1/inventory/receipts?clientOperationId=${encodeURIComponent(clientOperationId)}&limit=${size}&offset=${offset}`,
-      );
-      const found = receipts.find((receipt) => receipt.clientOperationId === clientOperationId);
-      if (found || receipts.length < size) return found;
-    }
-    return undefined;
+    const receipts = await this.get<Receipt[]>(
+      `/api/v1/inventory/receipts?clientOperationId=${encodeURIComponent(clientOperationId)}`,
+    );
+    return receipts[0];
   }
 
   async confirmReceipt(command: ConfirmReceiptCommand) {

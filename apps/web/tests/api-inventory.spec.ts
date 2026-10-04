@@ -389,9 +389,12 @@ test("a saved receipt followed by HTTP 502 is recovered without a second POST", 
   await installInventory(page);
   let confirmed: ReturnType<typeof receiptResponse> | undefined;
   let posts = 0;
-  await page.route("**/api/v1/inventory/receipts?*", (route) =>
-    json(route, 200, confirmed ? [confirmed] : []),
-  );
+  const recoveryRequests: URL[] = [];
+  await page.route("**/api/v1/inventory/receipts?*", (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has("clientOperationId")) recoveryRequests.push(url);
+    return json(route, 200, confirmed ? [confirmed] : []);
+  });
   await page.route("**/api/v1/inventory/receipts", async (route) => {
     posts++;
     const body = route.request().postDataJSON();
@@ -413,6 +416,12 @@ test("a saved receipt followed by HTTP 502 is recovered without a second POST", 
   await openReceive(page);
   await expect(page.getByRole("status")).toContainText("Máy chủ đã ghi phiếu");
   expect(posts).toBe(1);
+  expect(recoveryRequests).toHaveLength(1);
+  expect(recoveryRequests[0].searchParams.get("clientOperationId")).toBe(
+    confirmed?.clientOperationId,
+  );
+  expect(recoveryRequests[0].searchParams.has("limit")).toBe(false);
+  expect(recoveryRequests[0].searchParams.has("offset")).toBe(false);
 });
 
 test("inventory reads every server page instead of silently stopping at 100 rows", async ({

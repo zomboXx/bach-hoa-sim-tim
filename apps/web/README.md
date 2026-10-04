@@ -54,7 +54,7 @@ FE-02 tách trong `src/modules/inventory/` theo ADR 0003: domain/validation thu�
 - `401` xóa phiên/token trong bộ nhớ và về đăng nhập; `403` giữ màn hình và báo thiếu quyền. SALES chỉ có màn hình tồn nếu server cấp `inventory.read`; response tồn/lô/biến động không có giá nhập.
 - Trạng thái hạn dùng `businessDate`/`expiryStatus` do server tính theo `Asia/Ho_Chi_Minh`. Màn hình đọc hết các trang dữ liệu, hiển thị riêng on-hand, available, trạng thái lô, mọi dòng của phiếu nhận và chứng từ nguồn của movement.
 
-Backend hiện có repository tìm theo `clientOperationId`, nhưng controller đã merge chưa công bố query parameter tương ứng. Để recovery hoạt động trên đúng API hiện tại, adapter đọc `GET /api/v1/inventory/receipts` theo trang (kèm query để tương thích contract sau này) và lọc chính xác `clientOperationId` ở client. Khi provider công bố filter, client không cần đổi wire request.
+Recovery gọi đúng một `GET /api/v1/inventory/receipts?clientOperationId=...`. Backend lọc theo organization/store của Bearer session và trả danh sách rỗng hoặc đúng một phiếu; client không quét danh sách phân trang và không thể thấy phiếu của cửa hàng khác.
 
 ## Kịch bản trình diễn
 
@@ -86,6 +86,8 @@ npm run verify
 Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), khởi chạy preview nếu cổng 4174 chưa được dùng. Có kiểm tra nhận hàng/bán hàng/FEFO, giá khuyến mãi, hóa đơn, reload offline, đồng bộ, duyệt tồn, cách ly đào tạo, đăng nhập sai và quyền giao diện.
 
 `npm run test:e2e:api` tự build API mode và chạy cổng 4175 với HTTP mock theo DTO BE-02, INV-01 và INV-02. Consumer/E2E bao phủ form hợp lệ/sai, server field error, pending/double-click, 401/403, timeout/reload, giữ idempotency key, đọc lại tồn, SALES không thấy giá nhập và viewport mobile. Bộ này không thay thế kiểm thử kết nối với backend/PostgreSQL thật trước khi merge.
+
+Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 17 disposable, chạy Spring API với mật khẩu demo sinh ngẫu nhiên và thực thi Playwright qua proxy thật. Test cho POST commit vào database nhưng response bị cắt ở trình duyệt, rồi reload/đăng nhập lại và xác nhận UI chỉ GET theo `clientOperationId`, tìm được phiếu và không POST lần hai. Script luôn dừng API, xóa container cùng credential tạm sau khi chạy.
 
 ## Tài liệu và cấu trúc
 
