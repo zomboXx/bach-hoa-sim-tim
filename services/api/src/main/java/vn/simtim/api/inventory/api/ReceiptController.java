@@ -57,7 +57,11 @@ public class ReceiptController {
                 .body(ReceiptResponse.from(receipt));
     }
 
-    /** GET /api/v1/inventory/receipts — danh sách phiếu theo store. */
+    /**
+     * GET /api/v1/inventory/receipts — danh sách phiếu theo store.
+     * <p>Khi {@code clientOperationId} được truyền, bộ lọc được áp dụng TRƯỚC phân trang
+     * (limit/offset bị bỏ qua) và kết quả luôn trong phạm vi {@code storeId} của session.</p>
+     */
     @GetMapping
     public List<ReceiptResponse> list(
             @RequestParam(defaultValue = "20") int limit,
@@ -69,6 +73,7 @@ public class ReceiptController {
         requirePermission(principal, "receipts.read");
 
         if (clientOperationId != null) {
+            // Filter trước phân trang: limit/offset không áp dụng khi có bộ lọc clientOperationId
             return service.findByClientOperationId(
                             principal.organizationId(), principal.storeId(), clientOperationId)
                     .stream().map(ReceiptResponse::from).toList();

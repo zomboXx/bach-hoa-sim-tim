@@ -166,8 +166,8 @@ public class GoodsReceiptService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID storeId,
-                                                           UUID clientOperationId) {
+    public List<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID storeId,
+                                                       UUID clientOperationId) {
         return receiptRepo.findByClientOperationId(organizationId, storeId, clientOperationId);
     }
 

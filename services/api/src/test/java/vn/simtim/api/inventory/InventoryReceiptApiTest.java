@@ -266,6 +266,76 @@ class InventoryReceiptApiTest {
         }
     }
 
+    /**
+     * Chứng minh filter clientOperationId xảy ra TRƯỚC phân trang (filter-before-pagination).
+     * <p>Kịch bản: tạo 3 phiếu, sau đó lấy danh sách với limit=1 và đặt clientOperationId
+     * của phiếu cuối cùng. Kết quả phải trả đúng 1 phiếu — phiếu khớp filter —
+     * bất kể limit/offset; nếu pagination được áp trước filter thì phiếu đó sẽ bị cắt mất.</p>
+     */
+    @Test
+    void listReceipts_clientOperationId_filterBeforePagination() {
+        // Tạo 3 phiếu — clientOpIdTarget là phiếu thứ hai (giữa)
+        UUID clientOpIdOther1 = UUID.randomUUID();
+        UUID clientOpIdTarget = UUID.randomUUID();
+        UUID clientOpIdOther2 = UUID.randomUUID();
+
+        for (UUID opId : new UUID[]{clientOpIdOther1, clientOpIdTarget, clientOpIdOther2}) {
+            var post = rest.exchange("/api/v1/inventory/receipts",
+                    HttpMethod.POST,
+                    new HttpEntity<>(validReceiptBody(opId),
+                            authHeaders(stockToken, UUID.randomUUID())),
+                    Map.class);
+            assertThat(post.getStatusCode().value()).isEqualTo(201);
+        }
+
+        // Lấy danh sách với limit=1 và filter clientOperationId — filter phải thắng pagination
+        var resp = rest.exchange(
+                "/api/v1/inventory/receipts?clientOperationId=" + clientOpIdTarget + "&limit=1&offset=0",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map[].class);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        // Phải trả đúng 1 phần tử và đúng clientOperationId — không bị cắt bởi limit
+        assertThat(resp.getBody()).hasSize(1);
+        assertThat(resp.getBody()[0]).containsEntry("clientOperationId", clientOpIdTarget.toString());
+    }
+
+    /**
+     * Chứng minh filter clientOperationId chỉ trả phiếu đúng clientOperationId,
+     * không trả phiếu khác của cùng store.
+     */
+    @Test
+    void listReceipts_clientOperationId_exactMatchOnly() {
+        UUID clientOpIdA = UUID.randomUUID();
+        UUID clientOpIdB = UUID.randomUUID();
+
+        // Tạo phiếu A và phiếu B trong cùng store
+        for (UUID opId : new UUID[]{clientOpIdA, clientOpIdB}) {
+            var post = rest.exchange("/api/v1/inventory/receipts",
+                    HttpMethod.POST,
+                    new HttpEntity<>(validReceiptBody(opId),
+                            authHeaders(stockToken, UUID.randomUUID())),
+                    Map.class);
+            assertThat(post.getStatusCode().value()).isEqualTo(201);
+        }
+
+        // Filter theo A — phải chỉ trả A, không trả B
+        var resp = rest.exchange(
+                "/api/v1/inventory/receipts?clientOperationId=" + clientOpIdA,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map[].class);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).hasSize(1);
+        assertThat(resp.getBody()[0]).containsEntry("clientOperationId", clientOpIdA.toString());
+        // Đảm bảo không lẫn phiếu B
+        for (var body : resp.getBody()) {
+            assertThat(body).doesNotContainEntry("clientOperationId", clientOpIdB.toString());
+        }
+    }
+
     @Test
     void listReceipts_sales_returns403() {
         var resp = rest.exchange("/api/v1/inventory/receipts",

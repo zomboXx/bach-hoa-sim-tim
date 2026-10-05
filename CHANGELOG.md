@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- **INV-01 fix** (#18): Bổ sung bộ lọc `clientOperationId` đúng contract cho `GET /api/v1/inventory/receipts`. Đổi signature `findByClientOperationId` từ `Optional` sang `List` xuyên suốt domain port → infrastructure adapter → service → controller; đảm bảo filter áp dụng TRƯỚC phân trang (limit/offset bị bỏ qua khi có filter), luôn trong phạm vi `storeId` của session. Bổ sung 2 provider test: `filterBeforePagination` và `exactMatchOnly`.
 - Cập nhật điểm vào tài liệu dự án và mốc tiến độ ngày 30/09/2026; phân biệt bản nháp lịch sử với backlog/contract hiện hành, sửa trạng thái REQ-01 và Sprint 1 đã tích hợp, ghi rõ các PR Sprint 2 còn đang review.
 - Trình bày owner/reviewer trên hai dòng riêng trong Issue Sprint 2, bỏ metadata lặp với tiêu đề/nhãn; cân lại phân công: TV4 nhận FE-02, TV2 nhận REP-01, TV3 tập trung SAL-01, TV1 điều phối và review.
 - Hoàn thiện kickoff Sprint 2 trên GitHub: milestone hạn 07/10/2026, bảy Issue có owner/reviewer và tiêu chí kiểm thử; tách FE-02 để nối giao diện nhận/tồn với API, làm rõ contract giao dịch và cập nhật hướng dẫn bắt đầu theo nền Sprint 1 đã tích hợp.
