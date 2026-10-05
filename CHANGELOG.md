@@ -4,6 +4,10 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+### Fixed
+
+- **PRO-01B**: Thống nhất phạm vi kiểm tra trùng mã khuyến mãi với unique constraint của DB. Precheck `existsByCode` / `existsByCodeExcluding` trước đây lọc theo `(orgId, storeId)` nhưng DB có `UNIQUE (organization_id, lower(code))` toàn org — MANAGER store B tạo code đã dùng ở store A cùng org sẽ qua precheck rồi vấp constraint → 500 sai cấu trúc. Sau sửa, precheck kiểm tra toàn org → trả 409 đúng. Thêm hai integration test `crossStore_sameOrg_duplicateCode_returns409` và `crossStore_sameOrg_duplicateCode_caseInsensitive_returns409`.
+
 ### Changed
 
 - Cập nhật điểm vào tài liệu dự án và mốc tiến độ ngày 30/09/2026; phân biệt bản nháp lịch sử với backlog/contract hiện hành, sửa trạng thái REQ-01 và Sprint 1 đã tích hợp, ghi rõ các PR Sprint 2 còn đang review.

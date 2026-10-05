@@ -490,6 +490,40 @@ class PromotionApiTest {
         assertThat(res.getBody()).isEmpty();
     }
 
+    /**
+     * Hai store trong cùng một org không được dùng trùng code khuyến mãi (kể cả case-insensitive).
+     * Trước khi sửa lỗi, store B sẽ qua precheck rồi vấp UNIQUE constraint → 500.
+     * Sau khi sửa, precheck kiểm tra toàn org → trả về 409 đúng cấu trúc.
+     */
+    @Test
+    void crossStore_sameOrg_duplicateCode_returns409() {
+        String code = "CROSS-CODE-01";
+        // Store MAIN tạo trước
+        var first = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), managerHeaders()), Map.class);
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+
+        // Store2 (cùng org) dùng cùng code → phải bị từ chối 409
+        var dup = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), otherStoreHeaders()), Map.class);
+        assertThat(dup.getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
+    void crossStore_sameOrg_duplicateCode_caseInsensitive_returns409() {
+        String codeUpper = "CROSS-CODE-CASE-01";
+        String codeLower = "cross-code-case-01";
+        // Store MAIN tạo với chữ hoa
+        var first = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(codeUpper), managerHeaders()), Map.class);
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+
+        // Store2 dùng chữ thường → vẫn trùng theo unique index lower(code)
+        var dup = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(codeLower), otherStoreHeaders()), Map.class);
+        assertThat(dup.getStatusCode().value()).isEqualTo(409);
+    }
+
     // ===== Helper =====
 
     private String validPromoJson(String code) {

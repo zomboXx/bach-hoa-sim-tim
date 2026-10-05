@@ -65,7 +65,7 @@ public class PromotionService {
                             Instant startsAt, Instant endsAt, String status) {
         validateTimeWindow(startsAt, endsAt);
         validateDiscountValue(discountType, discountValue);
-        if (repo.existsByCode(organizationId, storeId, code)) {
+        if (repo.existsByCode(organizationId, code)) {
             throw new PromotionConflictException("Mã khuyến mãi đã tồn tại: " + code);
         }
         var promotion = new Promotion(UUID.randomUUID(), organizationId, storeId, code, name,
@@ -80,7 +80,7 @@ public class PromotionService {
         var existing = getById(organizationId, storeId, id);
         validateTimeWindow(startsAt, endsAt);
         validateDiscountValue(discountType, discountValue);
-        if (repo.existsByCodeExcluding(organizationId, storeId, code, id)) {
+        if (repo.existsByCodeExcluding(organizationId, code, id)) {
             throw new PromotionConflictException("Mã khuyến mãi đã tồn tại: " + code);
         }
         var updated = new Promotion(id, organizationId, storeId, code, name,

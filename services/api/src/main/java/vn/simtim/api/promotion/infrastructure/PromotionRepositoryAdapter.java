@@ -34,13 +34,13 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     }
 
     @Override
-    public boolean existsByCode(UUID organizationId, UUID storeId, String code) {
-        return jpa.existsByCodeInsensitive(organizationId, storeId, code);
+    public boolean existsByCode(UUID organizationId, String code) {
+        return jpa.existsByCodeInsensitive(organizationId, code);
     }
 
     @Override
-    public boolean existsByCodeExcluding(UUID organizationId, UUID storeId, String code, UUID excludeId) {
-        return jpa.existsByCodeInsensitiveExcluding(organizationId, storeId, code, excludeId);
+    public boolean existsByCodeExcluding(UUID organizationId, String code, UUID excludeId) {
+        return jpa.existsByCodeInsensitiveExcluding(organizationId, code, excludeId);
     }
 
     @Override

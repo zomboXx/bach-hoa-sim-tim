@@ -12,8 +12,9 @@ public interface PromotionRepository {
     /** Tìm theo ID, phải thuộc đúng org + store. */
     Optional<Promotion> findById(UUID organizationId, UUID storeId, UUID id);
 
-    boolean existsByCode(UUID organizationId, UUID storeId, String code);
-    boolean existsByCodeExcluding(UUID organizationId, UUID storeId, String code, UUID excludeId);
+    /** Kiểm tra trùng code trong toàn org (không phân biệt store) — khớp với UNIQUE constraint của DB. */
+    boolean existsByCode(UUID organizationId, String code);
+    boolean existsByCodeExcluding(UUID organizationId, String code, UUID excludeId);
     Promotion save(Promotion promotion);
     void deleteById(UUID organizationId, UUID storeId, UUID id);
 

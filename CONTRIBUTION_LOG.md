@@ -22,6 +22,20 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-05 17:03:00
+
+Khắc phục lỗi mã khuyến mãi trùng giữa hai cửa hàng cùng tổ chức theo review inline của Project Owner: (1) Thống nhất phạm vi kiểm tra trùng mã khuyến mãi (precheck) với DB constraint `UNIQUE (organization_id, code)` và unique index `(organization_id, lower(code))` trên bảng `sales.promotions`. (2) Bỏ tham số `storeId` khỏi `existsByCodeInsensitive` và `existsByCodeInsensitiveExcluding` trong `PromotionJpaRepository`, `PromotionRepository`, `PromotionRepositoryAdapter` và `PromotionService` để kiểm tra trùng mã trên toàn tổ chức thay vì chỉ trong cùng cửa hàng. MANAGER ở store B khi tạo hoặc cập nhật mã đã dùng ở store A sẽ nhận lỗi HTTP 409 có cấu trúc từ tầng nghiệp vụ, thay vì vượt qua precheck rồi vấp DB constraint văng lỗi 500. (3) Bổ sung 2 integration test cross-store `crossStore_sameOrg_duplicateCode_returns409` và `crossStore_sameOrg_duplicateCode_caseInsensitive_returns409`. Biên dịch thành công mã nguồn chính và test (`mvnw compile test-compile` đạt 0).
+
+- `CHANGELOG.md`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +3 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +8 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +4 -4
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +34 -0
+- `CONTRIBUTION_LOG.md`: +14 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-05 00:43:12
 
 Khắc phục triệt để các phản hồi review của Project Owner trên PR #25 (Issue #23): (1) Đảm bảo tính nhất quán giữa OpenAPI contract, DTO và implementation — loại bỏ hoàn toàn query param `storeId` ở endpoint `/promotions/applicable` và trường `storeId` trong `PromotionRequest`, làm rõ cơ chế suy diễn store từ session. (2) Siết chặt phạm vi store-scope trên mọi route và layer (`PromotionRepository`, `PromotionJpaRepository`, `PromotionRepositoryAdapter`, `PromotionService`, `PromotionController`): thay thế `listByOrg` bằng `listByStore`, kiểm tra `(organizationId, storeId)` cho tất cả các thao tác `getById`, `update`, `delete`, `addProduct`, `removeProduct`, `listProducts`, ngăn hoàn toàn MANAGER ở store A truy cập/sửa/xóa khuyến mãi của store B cùng tổ chức. (3) Bổ sung 4 integration test cô lập cross-store cùng tổ chức (`crossStore_list`, `crossStore_get`, `crossStore_delete`, `crossStore_applicable`). Chạy toàn bộ test suite API đạt 101/101 tests và toàn bộ kiểm thử `scripts/verify.ps1` đều đạt.

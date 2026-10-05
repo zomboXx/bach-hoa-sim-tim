@@ -19,16 +19,20 @@ interface PromotionJpaRepository extends JpaRepository<PromotionJpa, UUID> {
     Optional<PromotionJpa> findByOrganizationIdAndStoreIdAndId(
             @Param("orgId") UUID orgId, @Param("storeId") UUID storeId, @Param("id") UUID id);
 
+    /**
+     * Kiểm tra trùng code trong toàn org — khớp với UNIQUE (organization_id, lower(code)) trên DB.
+     * storeId không tham gia vì constraint áp dụng toàn tổ chức.
+     */
     @Query("SELECT COUNT(p) > 0 FROM PromotionJpa p " +
-           "WHERE p.organizationId = :orgId AND p.storeId = :storeId AND lower(p.code) = lower(:code)")
+           "WHERE p.organizationId = :orgId AND lower(p.code) = lower(:code)")
     boolean existsByCodeInsensitive(
-            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId, @Param("code") String code);
+            @Param("orgId") UUID orgId, @Param("code") String code);
 
     @Query("SELECT COUNT(p) > 0 FROM PromotionJpa p " +
-           "WHERE p.organizationId = :orgId AND p.storeId = :storeId " +
+           "WHERE p.organizationId = :orgId " +
            "  AND lower(p.code) = lower(:code) AND p.id <> :excludeId")
     boolean existsByCodeInsensitiveExcluding(
-            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId,
+            @Param("orgId") UUID orgId,
             @Param("code") String code, @Param("excludeId") UUID excludeId);
 
     /**
