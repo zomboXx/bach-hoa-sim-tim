@@ -22,6 +22,33 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-06 01:16:00
+
+Hoàn thiện bổ sung theo review Issue #23: (1) Target BATCH — tạo bảng `sales.promotion_batches`, domain record `PromotionBatch`, JPA entities, repository và 3 endpoints quản lý phạm vi lô (`/promotions/{id}/batches`). Thêm quy tắc ràng buộc không cho phép trộn lẫn phạm vi BATCH và PRODUCT. (2) Tích hợp bán hàng FEFO — trong `SaleService.quote` và `checkout`, sau khi giải thuật FEFO phân bổ lô hàng, gọi `bestPromotion` để chọn mức giảm tối ưu nhất cho từng dòng theo sản phẩm/lô và khung giờ hiệu lực. (3) Snapshot hóa đơn bất biến — bổ sung 4 cột `applied_promotion_code`, `applied_promotion_name`, `promotion_discount_type`, `promotion_discount_value` vào `sales.invoice_lines`, thêm DB CHECK constraint bảo toàn giá trị và hỗ trợ giao dịch giảm 100% (0 VND). (4) Cập nhật migration Flyway V11 và tài liệu ranh giới `contracts/SALES_PROMOTIONS_REVIEW.md`.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +13 -10
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +49 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionResponse.java`: +13 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +34 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionBatch.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +9 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchId.java`: +32 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchJpa.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchJpaRepository.java`: +29 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +20 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +43 -13
+- `services/api/src/main/java/vn/simtim/api/sale/api/InvoiceResponse.java`: +9 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/QuoteResponse.java`: +12 -4
+- `services/api/src/main/java/vn/simtim/api/sale/application/QuoteResult.java`: +8 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +174 -160
+- `services/api/src/main/java/vn/simtim/api/sale/domain/InvoiceLine.java`: +5 -2
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceLineJpa.java`: +16 -4
+- `services/api/src/main/resources/db/migration/V11__promotion_batch_targets_and_invoice_snapshots.sql`: +31 -0
+- `CONTRIBUTION_LOG.md`: +27 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-05 17:03:00
 
 Khắc phục lỗi mã khuyến mãi trùng giữa hai cửa hàng cùng tổ chức theo review inline của Project Owner: (1) Thống nhất phạm vi kiểm tra trùng mã khuyến mãi (precheck) với DB constraint `UNIQUE (organization_id, code)` và unique index `(organization_id, lower(code))` trên bảng `sales.promotions`. (2) Bỏ tham số `storeId` khỏi `existsByCodeInsensitive` và `existsByCodeInsensitiveExcluding` trong `PromotionJpaRepository`, `PromotionRepository`, `PromotionRepositoryAdapter` và `PromotionService` để kiểm tra trùng mã trên toàn tổ chức thay vì chỉ trong cùng cửa hàng. MANAGER ở store B khi tạo hoặc cập nhật mã đã dùng ở store A sẽ nhận lỗi HTTP 409 có cấu trúc từ tầng nghiệp vụ, thay vì vượt qua precheck rồi vấp DB constraint văng lỗi 500. (3) Bổ sung 2 integration test cross-store `crossStore_sameOrg_duplicateCode_returns409` và `crossStore_sameOrg_duplicateCode_caseInsensitive_returns409`. Biên dịch thành công mã nguồn chính và test (`mvnw compile test-compile` đạt 0).

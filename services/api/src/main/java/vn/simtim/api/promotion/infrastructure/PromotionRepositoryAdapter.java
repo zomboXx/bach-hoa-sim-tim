@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 import vn.simtim.api.promotion.domain.Promotion;
+import vn.simtim.api.promotion.domain.PromotionBatch;
 import vn.simtim.api.promotion.domain.PromotionProduct;
 import vn.simtim.api.promotion.domain.PromotionRepository;
 
@@ -15,16 +16,21 @@ class PromotionRepositoryAdapter implements PromotionRepository {
 
     private final PromotionJpaRepository jpa;
     private final PromotionProductJpaRepository productJpa;
+    private final PromotionBatchJpaRepository batchJpa;
 
-    PromotionRepositoryAdapter(PromotionJpaRepository jpa, PromotionProductJpaRepository productJpa) {
+    PromotionRepositoryAdapter(
+            PromotionJpaRepository jpa,
+            PromotionProductJpaRepository productJpa,
+            PromotionBatchJpaRepository batchJpa) {
         this.jpa = jpa;
         this.productJpa = productJpa;
+        this.batchJpa = batchJpa;
     }
 
     @Override
     public List<Promotion> findByStore(UUID organizationId, UUID storeId) {
-        return jpa.findByOrganizationIdAndStoreId(organizationId, storeId).stream()
-                .map(PromotionJpa::toDomain).toList();
+        return jpa.findByOrganizationIdAndStoreId(organizationId, storeId)
+                .stream().map(PromotionJpa::toDomain).toList();
     }
 
     @Override
@@ -52,18 +58,17 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     public void deleteById(UUID organizationId, UUID storeId, UUID id) {
         jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, id).ifPresent(e -> {
             productJpa.deleteAllByPromotionId(id);
+            batchJpa.deleteAllByPromotionId(id);
             jpa.deleteById(e.id);
         });
     }
 
     @Override
     public List<PromotionProduct> findProductsByPromotion(UUID organizationId, UUID storeId, UUID promotionId) {
-        // Kiểm tra promotion tồn tại và thuộc đúng store trước khi trả danh sách sản phẩm
         if (jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, promotionId).isEmpty()) {
             return List.of();
         }
-        return productJpa.findByPromotionId(promotionId).stream()
-                .map(PromotionProductJpa::toDomain).toList();
+        return productJpa.findByPromotionId(promotionId).stream().map(PromotionProductJpa::toDomain).toList();
     }
 
     @Override
@@ -81,19 +86,44 @@ class PromotionRepositoryAdapter implements PromotionRepository {
         productJpa.deleteByPromotionIdAndProductId(promotionId, productId);
     }
 
-    /**
-     * Ghép hai tập kết quả:
-     * 1. Khuyến mãi không giới hạn sản phẩm (universal)
-     * 2. Khuyến mãi có sản phẩm cụ thể trong phạm vi
-     * Loại bỏ trùng theo id.
-     */
     @Override
-    public List<Promotion> findApplicable(UUID organizationId, UUID storeId, UUID productId, Instant at) {
+    public List<PromotionBatch> findBatchesByPromotion(UUID organizationId, UUID storeId, UUID promotionId) {
+        if (jpa.findByOrganizationIdAndStoreIdAndId(organizationId, storeId, promotionId).isEmpty()) {
+            return List.of();
+        }
+        return batchJpa.findByPromotionId(promotionId).stream().map(PromotionBatchJpa::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsBatch(UUID organizationId, UUID promotionId, UUID productBatchId) {
+        return batchJpa.existsByPromotionIdAndProductBatchId(promotionId, productBatchId);
+    }
+
+    @Override
+    public void saveBatch(PromotionBatch batch) {
+        batchJpa.save(new PromotionBatchJpa(batch));
+    }
+
+    @Override
+    public void deleteBatch(UUID organizationId, UUID promotionId, UUID productBatchId) {
+        batchJpa.deleteByPromotionIdAndProductBatchId(promotionId, productBatchId);
+    }
+
+    @Override
+    public boolean isReferencedByInvoiceLine(UUID organizationId, UUID promotionId) {
+        return jpa.isReferencedByInvoiceLine(organizationId, promotionId);
+    }
+
+    @Override
+    public List<Promotion> findApplicable(
+            UUID organizationId, UUID storeId, UUID productId, UUID productBatchId, Instant at) {
         var universal = jpa.findActiveUniversal(organizationId, storeId, at);
         var specific = jpa.findActiveForProduct(organizationId, storeId, productId, at);
+        var batchSpecific = jpa.findActiveForBatch(organizationId, storeId, productBatchId, at);
         var merged = new LinkedHashMap<UUID, PromotionJpa>();
         for (var p : universal) merged.put(p.id, p);
         for (var p : specific) merged.put(p.id, p);
+        for (var p : batchSpecific) merged.put(p.id, p);
         return merged.values().stream().map(PromotionJpa::toDomain).toList();
     }
 }

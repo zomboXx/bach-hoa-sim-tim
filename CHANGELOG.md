@@ -10,6 +10,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- **PRO-01B**: Bổ sung target BATCH (`sales.promotion_batches`), chọn mức giảm tối ưu sau phân bổ FEFO trong quote và checkout, lưu snapshot thông tin khuyến mãi bất biến vào `sales.invoice_lines` (hỗ trợ đơn hàng 0 VND khi giảm 100%) và migration `V11__promotion_batch_targets_and_invoice_snapshots.sql`; cập nhật migration nền `V10__sales_promotions.sql` và siết chặt `storeId` theo `SessionPrincipal`. Hoãn phần giao diện PWA và consumer E2E sang Issue tiếp theo; giữ Issue #23 mở.
 - Cập nhật điểm vào tài liệu dự án và mốc tiến độ ngày 30/09/2026; phân biệt bản nháp lịch sử với backlog/contract hiện hành, sửa trạng thái REQ-01 và Sprint 1 đã tích hợp, ghi rõ các PR Sprint 2 còn đang review.
 - Trình bày owner/reviewer trên hai dòng riêng trong Issue Sprint 2, bỏ metadata lặp với tiêu đề/nhãn; cân lại phân công: TV4 nhận FE-02, TV2 nhận REP-01, TV3 tập trung SAL-01, TV1 điều phối và review.
 - Hoàn thiện kickoff Sprint 2 trên GitHub: milestone hạn 07/10/2026, bảy Issue có owner/reviewer và tiêu chí kiểm thử; tách FE-02 để nối giao diện nhận/tồn với API, làm rõ contract giao dịch và cập nhật hướng dẫn bắt đầu theo nền Sprint 1 đã tích hợp.

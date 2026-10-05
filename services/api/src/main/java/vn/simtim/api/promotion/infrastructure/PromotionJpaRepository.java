@@ -37,7 +37,7 @@ interface PromotionJpaRepository extends JpaRepository<PromotionJpa, UUID> {
 
     /**
      * Khuyến mãi ACTIVE trong khung thời gian, đúng cửa hàng, KHÔNG giới hạn sản phẩm
-     * (không có dòng nào trong promotion_products).
+     * (không có dòng nào trong promotion_products và promotion_batches).
      */
     @Query("SELECT p FROM PromotionJpa p " +
            "WHERE p.organizationId = :orgId " +
@@ -45,7 +45,9 @@ interface PromotionJpaRepository extends JpaRepository<PromotionJpa, UUID> {
            "  AND p.startsAt <= :at AND p.endsAt > :at " +
            "  AND (p.storeId IS NULL OR p.storeId = :storeId) " +
            "  AND NOT EXISTS (" +
-           "      SELECT pp FROM PromotionProductJpa pp WHERE pp.id.promotionId = p.id)")
+           "      SELECT pp FROM PromotionProductJpa pp WHERE pp.id.promotionId = p.id) " +
+           "  AND NOT EXISTS (" +
+           "      SELECT pb FROM PromotionBatchJpa pb WHERE pb.id.promotionId = p.id)")
     List<PromotionJpa> findActiveUniversal(
             @Param("orgId") UUID orgId, @Param("storeId") UUID storeId, @Param("at") Instant at);
 
@@ -62,4 +64,20 @@ interface PromotionJpaRepository extends JpaRepository<PromotionJpa, UUID> {
     List<PromotionJpa> findActiveForProduct(
             @Param("orgId") UUID orgId, @Param("storeId") UUID storeId,
             @Param("productId") UUID productId, @Param("at") Instant at);
+
+    @Query("SELECT DISTINCT p FROM PromotionJpa p "
+           + "JOIN PromotionBatchJpa pb ON pb.id.promotionId = p.id "
+           + "WHERE p.organizationId = :orgId "
+           + "  AND p.status = 'ACTIVE' "
+           + "  AND p.startsAt <= :at AND p.endsAt > :at "
+           + "  AND (p.storeId IS NULL OR p.storeId = :storeId) "
+           + "  AND pb.id.productBatchId = :batchId")
+    List<PromotionJpa> findActiveForBatch(
+            @Param("orgId") UUID orgId, @Param("storeId") UUID storeId,
+            @Param("batchId") UUID batchId, @Param("at") Instant at);
+
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM sales.invoice_lines "
+            + "WHERE organization_id = :orgId AND applied_promotion_id = :promotionId)", nativeQuery = true)
+    boolean isReferencedByInvoiceLine(
+            @Param("orgId") UUID orgId, @Param("promotionId") UUID promotionId);
 }

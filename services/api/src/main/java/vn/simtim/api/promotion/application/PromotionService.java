@@ -47,15 +47,22 @@ public class PromotionService {
         return repo.findProductsByPromotion(organizationId, storeId, promotionId);
     }
 
+    @Transactional(readOnly = true)
+    public List<PromotionBatch> listBatches(UUID organizationId, UUID storeId, UUID promotionId) {
+        getById(organizationId, storeId, promotionId);
+        return repo.findBatchesByPromotion(organizationId, storeId, promotionId);
+    }
+
     /**
      * Trả về danh sách khuyến mãi hiệu lực tại {@code at} cho sản phẩm + cửa hàng.
      * Bao gồm cả khuyến mãi không giới hạn phạm vi sản phẩm (toàn sản phẩm).
      * at null → dùng Instant.now().
      */
     @Transactional(readOnly = true)
-    public List<Promotion> findApplicable(UUID organizationId, UUID storeId, UUID productId, Instant at) {
+    public List<Promotion> findApplicable(
+            UUID organizationId, UUID storeId, UUID productId, UUID productBatchId, Instant at) {
         Instant effectiveAt = at != null ? at : Instant.now();
-        return repo.findApplicable(organizationId, storeId, productId, effectiveAt);
+        return repo.findApplicable(organizationId, storeId, productId, productBatchId, effectiveAt);
     }
 
     // ===== Commands =====
@@ -91,11 +98,17 @@ public class PromotionService {
 
     public void delete(UUID organizationId, UUID storeId, UUID id) {
         getById(organizationId, storeId, id); // ensure exists and belongs to store
+        if (repo.isReferencedByInvoiceLine(organizationId, id)) {
+            throw new PromotionConflictException("Không thể xóa khuyến mãi đã xuất hiện trên hóa đơn");
+        }
         repo.deleteById(organizationId, storeId, id);
     }
 
     public void addProduct(UUID organizationId, UUID storeId, UUID promotionId, UUID productId) {
         getById(organizationId, storeId, promotionId);
+        if (!repo.findBatchesByPromotion(organizationId, storeId, promotionId).isEmpty()) {
+            throw new PromotionValidationException("Khuyến mãi target PRODUCT không thể trộn với target BATCH");
+        }
         productRepo.findById(organizationId, productId)
                 .orElseThrow(() -> new PromotionNotFoundException("Sản phẩm không tồn tại: " + productId));
         if (repo.existsProduct(organizationId, promotionId, productId)) {
@@ -110,6 +123,25 @@ public class PromotionService {
             throw new PromotionNotFoundException("Sản phẩm không có trong phạm vi khuyến mãi");
         }
         repo.deleteProduct(organizationId, promotionId, productId);
+    }
+
+    public void addBatch(UUID organizationId, UUID storeId, UUID promotionId, UUID productBatchId) {
+        getById(organizationId, storeId, promotionId);
+        if (!repo.findProductsByPromotion(organizationId, storeId, promotionId).isEmpty()) {
+            throw new PromotionValidationException("Khuyến mãi target BATCH không thể trộn với target PRODUCT");
+        }
+        if (repo.existsBatch(organizationId, promotionId, productBatchId)) {
+            throw new PromotionConflictException("Lô đã có trong phạm vi khuyến mãi");
+        }
+        repo.saveBatch(new PromotionBatch(organizationId, promotionId, productBatchId));
+    }
+
+    public void removeBatch(UUID organizationId, UUID storeId, UUID promotionId, UUID productBatchId) {
+        getById(organizationId, storeId, promotionId);
+        if (!repo.existsBatch(organizationId, promotionId, productBatchId)) {
+            throw new PromotionNotFoundException("Lô không có trong phạm vi khuyến mãi");
+        }
+        repo.deleteBatch(organizationId, promotionId, productBatchId);
     }
 
     // ===== Private validation =====

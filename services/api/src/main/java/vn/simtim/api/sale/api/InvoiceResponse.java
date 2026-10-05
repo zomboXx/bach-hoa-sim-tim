@@ -33,7 +33,12 @@ public record InvoiceResponse(
             BigDecimal quantity,
             long unitPrice,
             long discountAmount,
-            long lineTotal) {}
+            long lineTotal,
+            UUID appliedPromotionId,
+            String appliedPromotionCode,
+            String appliedPromotionName,
+            String promotionDiscountType,
+            BigDecimal promotionDiscountValue) {}
 
     public record PaymentResponse(
             UUID id,
@@ -52,7 +57,9 @@ public record InvoiceResponse(
 
     private static LineResponse lineFrom(InvoiceLine l) {
         return new LineResponse(l.id(), l.productId(), l.skuSnapshot(), l.productNameSnapshot(),
-                l.quantity(), l.unitPrice(), l.discountAmount(), l.lineTotal());
+                l.quantity(), l.unitPrice(), l.discountAmount(), l.lineTotal(), l.appliedPromotionId(),
+                l.appliedPromotionCode(), l.appliedPromotionName(), l.promotionDiscountType(),
+                l.promotionDiscountValue());
     }
 
     private static PaymentResponse paymentFrom(Payment p) {

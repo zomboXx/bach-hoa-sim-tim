@@ -24,9 +24,17 @@ public interface PromotionRepository {
     void saveProduct(PromotionProduct pp);
     void deleteProduct(UUID organizationId, UUID promotionId, UUID productId);
 
+    List<PromotionBatch> findBatchesByPromotion(UUID organizationId, UUID storeId, UUID promotionId);
+    boolean existsBatch(UUID organizationId, UUID promotionId, UUID productBatchId);
+    void saveBatch(PromotionBatch batch);
+    void deleteBatch(UUID organizationId, UUID promotionId, UUID productBatchId);
+
+    boolean isReferencedByInvoiceLine(UUID organizationId, UUID promotionId);
+
     /**
      * Tìm các khuyến mãi đang hiệu lực tại thời điểm {@code at} áp dụng cho sản phẩm và cửa hàng.
      * Bao gồm khuyến mãi toàn sản phẩm (không giới hạn phạm vi sản phẩm).
      */
-    List<Promotion> findApplicable(UUID organizationId, UUID storeId, UUID productId, Instant at);
+    List<Promotion> findApplicable(
+            UUID organizationId, UUID storeId, UUID productId, UUID productBatchId, Instant at);
 }

@@ -1,6 +1,6 @@
 # PRO-01B — Sales promotions review
 
-- Status: **Working Draft**, 01/10/2026. Owner API TV3 (Nguyễn Văn Thi); reviewer API & governance TV1 (Nguyễn Đức Phát).
+- Status: **Working Draft**, cập nhật ngày 06/10/2026 (Component PR: API quản lý khuyến mãi theo sản phẩm; giữ Issue #23 mở cho phần tiếp theo). Owner API TV3 (Nguyễn Văn Thi); reviewer API & governance TV1 (Nguyễn Đức Phát).
 - Issue: [PRO-01B #23](https://github.com/zomboXx/bach-hoa-sim-tim/issues/23).
 - Provider PR: [PR #25](https://github.com/zomboXx/bach-hoa-sim-tim/pull/25).
 - Wire contract: [sales-promotions.openapi.yaml](sales-promotions.openapi.yaml).
@@ -29,19 +29,22 @@
 
 3. **Effective window and scope**:
    - Must satisfy `ends_at > starts_at`.
-   - Optional `store_id`: applies to a specific store when present, or all stores of the organization when null.
-   - `sales.promotion_products`: empty product scope implies the promotion applies to all products.
+   - Store scope enforced from `SessionPrincipal`: Mọi thao tác CRUD và tra cứu `findApplicable` đều được ràng buộc tự động theo `principal.storeId()` từ session JWT, loại bỏ `storeId` tự do trong request body để ngăn truy cập trái phép xuyên cửa hàng.
+   - `sales.promotion_products`: Phạm vi sản phẩm (product scope). Danh sách rỗng biểu thị khuyến mãi áp dụng cho toàn bộ sản phẩm.
+   - **Target BATCH & Tích hợp bán hàng**: Bổ sung `sales.promotion_batches` (target BATCH, không trộn với PRODUCT); chọn mức giảm tối ưu sau phân bổ FEFO trong `quote` và `checkout`; lưu snapshot khuyến mãi bất biến trên `sales.invoice_lines` (kể cả trường hợp hóa đơn 0 VND khi giảm 100%).
+   - **Giao diện PWA & Consumer E2E**: Hoãn lại cho issue tiếp theo; Issue #23 tiếp tục mở.
 
 4. **Migration sequencing**:
-   - Retains self-contained `V5__sales_promotions.sql` on branch PR #25 to permit clean, independent verification from `main` (V1..V4).
-   - Uses `CREATE SCHEMA IF NOT EXISTS sales;` to avoid DDL collision.
-   - When merged to `main` following SAL-01, this migration sequences as V10 (following V7 sales, V8 inventory read indexes, V9 reports permissions) and introduces the foreign key from `sales.invoice_lines(applied_promotion_id)` to `sales.promotions(id)`.
+   - Nhánh `PRO-01B` gồm hai migration:
+     - `V10__sales_promotions.sql`: Tạo schema `sales`, bảng `promotions`, `promotion_products`, các indexes và quyền `promotions.read` / `promotions.write`.
+     - `V11__promotion_batch_targets_and_invoice_snapshots.sql`: Tạo bảng `sales.promotion_batches` và bổ sung snapshot khuyến mãi bất biến cùng check constraint trên `sales.invoice_lines`.
 
-## Verification evidence — 01/10/2026
+## Verification evidence — 06/10/2026
 
-- 15 automated integration tests (`PromotionApiTest`) executed against clean PostgreSQL 17 Testcontainers with `demo` profile:
+- Automated integration tests (`PromotionApiTest`) executed against clean PostgreSQL 17 Testcontainers with `demo` profile:
   - CRUD operations with permissions check (MANAGER/ADMIN allowed, SALES/STOCK denied write).
   - Applicable promotion calculation matching store, product and active time window.
-  - Validation: endsAt before startsAt (422), negative discount (422), percent > 100 (422), duplicate code (409).
+  - Store-scoped isolation: kiểm tra không đọc/sửa/xóa khuyến mãi của store khác cùng tổ chức.
+  - Validation: endsAt before startsAt (422), negative discount (422), percent > 100 (422), percent > 2 decimals (422), duplicate code precheck toàn organization (409).
   - Wire alias `/api/v1/sales/promotions` verified.
-- Suite result: 15/15 tests passing.
+- Suite result: All promotion tests passing. CI GitHub Actions trên HEAD xanh.

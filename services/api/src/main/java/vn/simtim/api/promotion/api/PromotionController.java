@@ -28,6 +28,9 @@ import vn.simtim.api.promotion.domain.PromotionProduct;
  *   <li>GET  /api/v1/promotions/{id}/products           – sản phẩm trong phạm vi (promotions.read)
  *   <li>POST /api/v1/promotions/{id}/products           – thêm sản phẩm (promotions.write)
  *   <li>DELETE /api/v1/promotions/{id}/products/{productId} – xóa sản phẩm (promotions.write)
+ *   <li>GET  /api/v1/promotions/{id}/batches            – lô trong phạm vi (promotions.read)
+ *   <li>POST /api/v1/promotions/{id}/batches            – thêm lô (promotions.write)
+ *   <li>DELETE /api/v1/promotions/{id}/batches/{batchId} – xóa lô (promotions.write)
  * </ul>
  *
  * organizationId và storeId luôn lấy từ SessionPrincipal; client không được override.
@@ -61,14 +64,16 @@ public class PromotionController {
     public List<PromotionResponse> applicable(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @RequestParam UUID productId,
+            @RequestParam(required = false) UUID productBatchId,
             @RequestParam(required = false) Instant at,
             Authentication auth) {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
         UUID storeId = principal.storeId();
-        return service.findApplicable(principal.organizationId(), storeId, productId, at).stream()
+        return service.findApplicable(principal.organizationId(), storeId, productId, productBatchId, at).stream()
                 .map(p -> PromotionResponse.from(p,
-                        service.listProducts(principal.organizationId(), storeId, p.id())))
+                        service.listProducts(principal.organizationId(), storeId, p.id()),
+                        service.listBatches(principal.organizationId(), storeId, p.id())))
                 .toList();
     }
 
@@ -80,7 +85,8 @@ public class PromotionController {
         requireSameOrg(principal, orgId);
         var promotion = service.getById(principal.organizationId(), principal.storeId(), id);
         var products = service.listProducts(principal.organizationId(), principal.storeId(), id);
-        return PromotionResponse.from(promotion, products);
+        var batches = service.listBatches(principal.organizationId(), principal.storeId(), id);
+        return PromotionResponse.from(promotion, products, batches);
     }
 
     @PostMapping
@@ -110,7 +116,8 @@ public class PromotionController {
                 req.code(), req.name(),
                 req.discountType(), req.discountValue(), req.startsAt(), req.endsAt(), req.status());
         var products = service.listProducts(principal.organizationId(), principal.storeId(), id);
-        return PromotionResponse.from(updated, products);
+        var batches = service.listBatches(principal.organizationId(), principal.storeId(), id);
+        return PromotionResponse.from(updated, products, batches);
     }
 
     @DeleteMapping("/{id}")
@@ -164,6 +171,44 @@ public class PromotionController {
         SessionPrincipal principal = principal(auth);
         requireSameOrg(principal, orgId);
         service.removeProduct(principal.organizationId(), principal.storeId(), id, productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/batches")
+    public List<Map<String, UUID>> listBatches(
+            @RequestHeader("X-Organization-Id") UUID orgId,
+            @PathVariable UUID id,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        return service.listBatches(principal.organizationId(), principal.storeId(), id).stream()
+                .map(batch -> Map.of("promotionId", batch.promotionId(), "productBatchId", batch.productBatchId()))
+                .toList();
+    }
+
+    @PostMapping("/{id}/batches")
+    public ResponseEntity<Void> addBatch(
+            @RequestHeader("X-Organization-Id") UUID orgId,
+            @PathVariable UUID id,
+            @RequestBody Map<String, UUID> body,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        UUID batchId = body.get("productBatchId");
+        if (batchId == null) return ResponseEntity.badRequest().build();
+        service.addBatch(principal.organizationId(), principal.storeId(), id, batchId);
+        return ResponseEntity.created(URI.create("/api/v1/promotions/" + id + "/batches/" + batchId)).build();
+    }
+
+    @DeleteMapping("/{id}/batches/{batchId}")
+    public ResponseEntity<Void> removeBatch(
+            @RequestHeader("X-Organization-Id") UUID orgId,
+            @PathVariable UUID id,
+            @PathVariable UUID batchId,
+            Authentication auth) {
+        SessionPrincipal principal = principal(auth);
+        requireSameOrg(principal, orgId);
+        service.removeBatch(principal.organizationId(), principal.storeId(), id, batchId);
         return ResponseEntity.noContent().build();
     }
 
