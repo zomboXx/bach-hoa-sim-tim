@@ -62,11 +62,17 @@ public class ReceiptController {
     public List<ReceiptResponse> list(
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) UUID clientOperationId,
             Authentication auth) {
 
         SessionPrincipal principal = (SessionPrincipal) auth.getPrincipal();
         requirePermission(principal, "receipts.read");
 
+        if (clientOperationId != null) {
+            return service.findByClientOperationId(
+                            principal.organizationId(), principal.storeId(), clientOperationId)
+                    .stream().map(ReceiptResponse::from).toList();
+        }
         return service.list(principal.organizationId(), principal.storeId(), limit, offset)
                 .stream().map(ReceiptResponse::from).toList();
     }

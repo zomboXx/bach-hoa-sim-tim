@@ -42,7 +42,19 @@ npm run dev
 
 API gửi `POST /api/v1/auth/login` với `{ organizationCode, storeCode, username, password }`, nhận `{ accessToken, tokenType, expiresAt, session }`. Dùng tài khoản backend đã tạo, không dùng tài khoản demo `NV001`/`demo123`. Token opaque chỉ giữ trong bộ nhớ, không ghi storage, cookie, URL hoặc log. Reload quay lại form đăng nhập; demo mode vẫn khôi phục tài khoản trên cùng tab. `restoreSession()` chỉ gọi `GET /api/v1/auth/session` khi adapter đang giữ token; `POST /api/v1/auth/logout` dùng Bearer và thu hồi phiên server. Nếu thu hồi thất bại, giao diện vẫn đăng xuất và báo lỗi; phiên server còn tồn tại tới khi hết hạn hoặc được thu hồi.
 
-API mode hiển thị danh mục theo `catalog.read`, đào tạo theo `trainingEnabled`; role dùng để hiển thị, không tự cấp quyền thao tác. Danh mục hiện vẫn là dữ liệu minh họa trên thiết bị và chỉ để xem. Giao dịch bán hàng/nhập hàng/kiểm kê và sửa danh mục chỉ chạy trong demo mode cho tới khi adapter nghiệp vụ được tích hợp. Backend luôn phải kiểm tra quyền độc lập.
+API mode hiển thị danh mục theo `catalog.read`, nhận hàng theo `receipts.read`/`receipts.write`, tồn kho theo `inventory.read`, báo cáo theo `reports.read` và đào tạo theo `trainingEnabled`; role chỉ dùng để hiển thị, không tự cấp quyền thao tác. Backend luôn kiểm tra quyền độc lập.
+
+## FE-02 · Nhận hàng và tồn kho qua API
+
+FE-02 tách trong `src/modules/inventory/` theo ADR 0003: domain/validation thuần, API và demo adapter riêng, presentation không đọc trực tiếp IndexedDB hay tự gắn Bearer token. API mode khởi tạo trạng thái vận hành rỗng và chỉ hiển thị dữ liệu nhận/tồn do server trả về; lỗi API không fallback sang demo. Demo mode tiếp tục dùng IndexedDB và cùng giao diện mới để regression.
+
+- Danh mục nhận hàng gọi `GET /api/v1/suppliers` và `GET /api/v1/products`, chỉ cho chọn record `ACTIVE`.
+- Xác nhận gọi `POST /api/v1/inventory/receipts` với `Idempotency-Key` UUID ổn định, `clientOperationId`, số lượng dạng chuỗi tối đa ba chữ số thập phân và giá nguyên VND. Sau `201`, client đọc lại phiếu và ba API tồn sản phẩm/lô/biến động.
+- Dấu thao tác đang gửi chỉ lưu trong `sessionStorage` của tab, không chứa Bearer token. Timeout, lỗi mạng hoặc `5xx` giữ nguyên payload, `Idempotency-Key` và `clientOperationId`; reload/đăng nhập lại chỉ GET để đối soát. Kết quả rỗng không tự tạo key hoặc tự POST. Người dùng phải chủ động thử lại cùng mã hoặc bỏ dấu thao tác. Nhận hàng không có offline queue.
+- `401` xóa phiên/token trong bộ nhớ và về đăng nhập; `403` giữ màn hình và báo thiếu quyền. SALES chỉ có màn hình tồn nếu server cấp `inventory.read`; response tồn/lô/biến động không có giá nhập.
+- Trạng thái hạn dùng `businessDate`/`expiryStatus` do server tính theo `Asia/Ho_Chi_Minh`. Màn hình đọc hết các trang dữ liệu, hiển thị riêng on-hand, available, trạng thái lô, mọi dòng của phiếu nhận và chứng từ nguồn của movement.
+
+Recovery gọi đúng một `GET /api/v1/inventory/receipts?clientOperationId=...`. Backend lọc theo organization/store của Bearer session và trả danh sách rỗng hoặc đúng một phiếu; client không quét danh sách phân trang và không thể thấy phiếu của cửa hàng khác.
 
 ## Kịch bản trình diễn
 
@@ -56,10 +68,10 @@ API mode hiển thị danh mục theo `catalog.read`, đào tạo theo `training
 
 ## Đã hoạt động / đang mô phỏng
 
-- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; dialog có quản lý focus native.
-- **Đang mô phỏng:** đăng nhập, phân quyền, lớp API, xác nhận thanh toán, đồng bộ và lưu dữ liệu vận hành. Không có REST server đang chạy. Dữ liệu chỉ ở thiết bị/browser profile hiện tại, chưa hỗ trợ nhiều tab cùng chỉnh sửa hoặc nhiều thiết bị dùng chung dữ liệu.
+- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động và báo cáo theo quyền server.
+- **Đang mô phỏng:** demo mode vẫn mô phỏng đăng nhập, phân quyền, thanh toán, đồng bộ và lưu dữ liệu vận hành trên thiết bị. API mode không dùng các dữ liệu mô phỏng này làm fallback; các feature chưa có adapter server sẽ hiển thị trạng thái rỗng hoặc bị ẩn theo quyền.
 - **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt, dùng Vue/SVG để thử trải nghiệm trước khi tích hợp Godot. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch bao gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả chỉ tồn tại trong phiên chơi; chưa lưu qua backend, chưa phải runtime Godot.
-- **Chưa triển khai:** Spring Boot/Spring Security, PostgreSQL/Flyway, API thật, Godot thực tế, quét camera, xuất/in hóa đơn, quản lý sửa/xóa đầy đủ. Đó là các phần của kế hoạch cuối kỳ, không được tính là đã hoàn thành bởi prototype này.
+- **Chưa triển khai:** Godot thực tế, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
 
 Quyền ở frontend chỉ giúp trình diễn; backend thật phải xác thực và kiểm tra quyền độc lập. Các tài khoản demo là công khai, không dùng dữ liệu cửa hàng thật ở đây. Giới hạn offline dành cho kiểm kê; các thao tác ghi khác bị chặn khi mất kết nối được phát hiện.
 
@@ -73,11 +85,14 @@ npm run verify
 
 Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), khởi chạy preview nếu cổng 4174 chưa được dùng. Có kiểm tra nhận hàng/bán hàng/FEFO, giá khuyến mãi, hóa đơn, reload offline, đồng bộ, duyệt tồn, cách ly đào tạo, đăng nhập sai và quyền giao diện.
 
-`npm run test:e2e:api` tự build API mode và chạy cổng 4175 với HTTP mock theo DTO BE-02 cùng consumer test cho Bearer/session. Bộ này không thay thế kiểm thử kết nối với backend/PostgreSQL thật trước khi merge.
+`npm run test:e2e:api` tự build API mode và chạy cổng 4175 với HTTP mock theo DTO BE-02, INV-01 và INV-02. Consumer/E2E bao phủ form hợp lệ/sai, server field error, pending/double-click, 401/403, timeout/reload, giữ idempotency key, đọc lại tồn, SALES không thấy giá nhập và viewport mobile. Bộ này không thay thế kiểm thử kết nối với backend/PostgreSQL thật trước khi merge.
+
+Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 17 disposable, chạy Spring API với mật khẩu demo sinh ngẫu nhiên và thực thi Playwright qua proxy thật. Test cho POST commit vào database nhưng response bị cắt ở trình duyệt, rồi reload/đăng nhập lại và xác nhận UI chỉ GET theo `clientOperationId`, tìm được phiếu và không POST lần hai. Script luôn dừng API, xóa container cùng credential tạm sau khi chạy.
 
 ## Tài liệu và cấu trúc
 
 - `src/App.vue`: các màn hình quản lý và cổng chuyển sang khu đào tạo.
+- `src/modules/inventory/`: domain, validation, demo/API adapter, dấu thao tác theo tab và giao diện nhận/tồn FE-02.
 - `src/training/TrainingGame.vue`: phiên nhập vai riêng, NPC, hội thoại, hành động và nhiệm vụ; không import dữ liệu vận hành.
 - `src/training/world.ts`: bố cục cửa hàng, kiểm tra va chạm, tìm đường tới mục tiêu.
 - `src/training/PixelPerson.vue`, `src/training/training.css`: nhân vật pixel, chuyển động và giao diện game desktop/mobile.

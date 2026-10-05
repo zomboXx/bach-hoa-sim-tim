@@ -5,6 +5,7 @@ import {
   accounts,
   available,
   checkout,
+  emptyOperationalState,
   persist,
   price,
   readState,
@@ -16,6 +17,10 @@ import {
   type Count,
 } from "./api";
 import { authAdapter, routesFor, type AuthUser } from "./adapter";
+import InventoryWorkspace from "./modules/inventory/presentation/InventoryWorkspace.vue";
+import { ApiInventoryAdapter } from "./modules/inventory/infrastructure/api-inventory-adapter";
+import { DemoInventoryAdapter } from "./modules/inventory/infrastructure/demo-inventory-adapter";
+import type { InventoryPort } from "./modules/inventory/domain/inventory";
 const state = ref<State>();
 const user = ref<AuthUser>();
 const route = ref("dashboard");
@@ -30,6 +35,20 @@ const online = ref(navigator.onLine);
 const simulateOffline = ref(false);
 const connected = computed(() => online.value && !simulateOffline.value);
 const isDemoMode = authAdapter.mode === "demo";
+const inventoryAdapter: InventoryPort = isDemoMode
+  ? new DemoInventoryAdapter(
+      () => state.value!,
+      async (next) => {
+        await persist(next);
+        state.value = next;
+      },
+    )
+  : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
+const canConfirmReceipt = computed(
+  () =>
+    isDemoMode ||
+    (!!user.value?.session && user.value.session.permissions.includes("receipts.write")),
+);
 const credentials = reactive({
   id: isDemoMode ? "NV001" : "",
   password: isDemoMode ? "demo123" : "",
@@ -226,6 +245,15 @@ function connectionChanged() {
   online.value = navigator.onLine;
   if (connected.value) void sync();
 }
+function requireLogin() {
+  authRevision++;
+  user.value = undefined;
+  route.value = "dashboard";
+  clearSessionMarkers();
+  error.value = "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.";
+  authPending.value = undefined;
+  busy.value = false;
+}
 function toggleNetwork() {
   simulateOffline.value = !simulateOffline.value;
   if (connected.value) void sync();
@@ -233,7 +261,7 @@ function toggleNetwork() {
 onMounted(async () => {
   const revision = authRevision;
   try {
-    state.value = await readState();
+    state.value = isDemoMode ? await readState() : emptyOperationalState();
     if (connected.value) void sync();
   } catch {
     error.value =
@@ -256,12 +284,14 @@ onMounted(async () => {
   if (revision === authRevision) authPending.value = undefined;
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
+  window.addEventListener("simtim:auth-required", requireLogin);
 });
 onUnmounted(() => {
   authRevision++;
   clearTimeout(timer);
   window.removeEventListener("online", connectionChanged);
   window.removeEventListener("offline", connectionChanged);
+  window.removeEventListener("simtim:auth-required", requireLogin);
 });
 const query = ref("");
 const category = ref("Tất cả");
@@ -383,59 +413,6 @@ async function submitDialog() {
     }
   }, "Đã lưu thay đổi.");
   if (ok) closeDialog();
-}
-const receipt = reactive({
-  supplier: "NCC01",
-  product: "SP001",
-  lot: "",
-  expiry: "",
-  delivered: 20,
-  accepted: 18,
-  note: "",
-});
-async function receive() {
-  const ok = await change((s) => {
-    if (!canGo("receive")) throw Error("Không có quyền nhận hàng.");
-    if (!receipt.lot.trim() || !receipt.expiry || receipt.expiry < today())
-      throw Error("Nhập mã lô và hạn sử dụng còn hiệu lực.");
-    if (s.batches.some((b) => b.id === receipt.lot.trim())) throw Error("Mã lô đã tồn tại.");
-    if (
-      !Number.isInteger(receipt.delivered) ||
-      !Number.isInteger(receipt.accepted) ||
-      receipt.accepted < 1 ||
-      receipt.accepted > receipt.delivered
-    )
-      throw Error("Số lượng nhận phải là số nguyên dương và không vượt số giao.");
-    if (receipt.accepted < receipt.delivered && !receipt.note.trim())
-      throw Error("Ghi lý do từ chối hàng.");
-    const id = uid("NH");
-    s.batches.push({
-      id: receipt.lot.trim(),
-      productId: receipt.product,
-      quantity: receipt.accepted,
-      expiry: receipt.expiry,
-    });
-    s.receipts.unshift({
-      id,
-      supplier: receipt.supplier,
-      product: receipt.product,
-      accepted: receipt.accepted,
-      rejected: receipt.delivered - receipt.accepted,
-      note: receipt.note,
-    });
-    s.movements.unshift({
-      id: uid("BD"),
-      at: new Date().toISOString(),
-      productId: receipt.product,
-      quantity: receipt.accepted,
-      kind: "Nhận hàng",
-      reference: id,
-    });
-  }, "Đã nhận hàng, tạo lô và tăng tồn.");
-  if (ok) {
-    receipt.lot = "";
-    receipt.note = "";
-  }
 }
 const count = reactive({ batch: "LO01", actual: 0, note: "" });
 const countBatch = computed(() => state.value?.batches.find((b) => b.id === count.batch));
@@ -626,7 +603,7 @@ const statuses = {
           {{
             isDemoMode
               ? "Dữ liệu trên thiết bị · đồng bộ với API mô phỏng"
-              : "Đăng nhập máy chủ · dữ liệu minh họa trên thiết bị chỉ để xem"
+              : "Phiên máy chủ · dữ liệu nghiệp vụ đọc trực tiếp từ API"
           }}</span
         ><button v-if="isDemoMode" @click="toggleNetwork">
           {{ simulateOffline ? "Kết nối lại" : "Thử mất mạng" }} ↔
@@ -978,154 +955,14 @@ const statuses = {
           </div></template
         >
 
-        <template v-else-if="route === 'receive'"
-          ><div class="page-head">
-            <div>
-              <p class="eyebrow">TỪ NHÀ CUNG CẤP ĐẾN KỆ HÀNG</p>
-              <h1>Nhận hàng & nhập kho</h1>
-              <p>Chỉ ghi nhận số lượng đạt yêu cầu. Hàng từ chối được lưu cùng lý do.</p>
-            </div>
-          </div>
-          <div class="two-columns">
-            <form class="card form-card" @submit.prevent="receive">
-              <h2>Phiếu nhận hàng mới</h2>
-              <label
-                >Nhà cung cấp<select v-model="receipt.supplier">
-                  <option v-for="s in state.suppliers" :key="s.id" :value="s.id">
-                    {{ s.name }}
-                  </option>
-                </select></label
-              ><label
-                >Sản phẩm<select v-model="receipt.product">
-                  <option v-for="p in state.products" :key="p.id" :value="p.id">
-                    {{ p.name }}
-                  </option>
-                </select></label
-              >
-              <div class="form-row">
-                <label
-                  >Mã lô<input
-                    v-model="receipt.lot"
-                    placeholder="Ví dụ: SUA-1409"
-                    required /></label
-                ><label
-                  >Hạn sử dụng<input v-model="receipt.expiry" type="date" :min="today()" required
-                /></label>
-              </div>
-              <div class="form-row">
-                <label
-                  >Số lượng giao<input
-                    v-model.number="receipt.delivered"
-                    type="number"
-                    min="1"
-                    required /></label
-                ><label
-                  >Số lượng chấp nhận<input
-                    v-model.number="receipt.accepted"
-                    type="number"
-                    min="1"
-                    :max="receipt.delivered"
-                    required
-                /></label>
-              </div>
-              <label
-                >Lý do từ chối / ghi chú<textarea
-                  v-model="receipt.note"
-                  placeholder="Ví dụ: 2 hộp bị móp, rách bao bì"
-                ></textarea></label
-              ><button class="primary wide" :disabled="busy || !connected">
-                Xác nhận nhận {{ receipt.accepted }} sản phẩm →
-              </button>
-            </form>
-            <section class="card form-card">
-              <h2>Phiếu nhận gần đây</h2>
-              <p v-if="!state.receipts.length" class="empty">Chưa có phiếu nhận hàng.</p>
-              <div v-for="r in state.receipts" :key="r.id" class="receipt-row">
-                <b>{{ name(r.product) }}</b
-                ><small
-                  >{{ r.id }} · {{ state.suppliers.find((s) => s.id === r.supplier)?.name }}</small
-                >
-                <p>
-                  Đã nhận <strong>{{ r.accepted }}</strong> · Từ chối
-                  {{ r.rejected }}
-                </p>
-                <small>{{ r.note }}</small>
-              </div>
-            </section>
-          </div></template
-        >
-
-        <template v-else-if="route === 'inventory'"
-          ><div class="page-head">
-            <div>
-              <p class="eyebrow">TỒN KHO THEO TỪNG LÔ</p>
-              <h1>Biết rõ hàng của mình.</h1>
-              <p>Lô hết hạn được loại khỏi tồn khả dụng khi bán hàng.</p>
-            </div>
-            <button v-if="user.role !== 'sales'" class="primary" @click="go('count')">
-              ☑ Kiểm kê ngay
-            </button>
-          </div>
-          <div class="card table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Sản phẩm / lô</th>
-                  <th>Hạn sử dụng</th>
-                  <th>Số lượng</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="b in state.batches" :key="b.id">
-                  <td>
-                    <b>{{ name(b.productId) }}</b
-                    ><small>{{ b.id }}</small>
-                  </td>
-                  <td>{{ b.expiry }}</td>
-                  <td>{{ b.quantity }}</td>
-                  <td>
-                    <span
-                      :class="[
-                        'status',
-                        b.expiry < today()
-                          ? 'danger'
-                          : alerts.some((a) => a.id === b.id)
-                            ? 'amber'
-                            : '',
-                      ]"
-                      >{{
-                        b.expiry < today()
-                          ? "Hết hạn · không bán"
-                          : alerts.some((a) => a.id === b.id)
-                            ? "Cận hạn"
-                            : "Còn hạn"
-                      }}</span
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <section class="card movements">
-            <div class="card-head">
-              <h2>Lịch sử biến động</h2>
-              <span>{{ state.movements.length }} thao tác</span>
-            </div>
-            <div v-if="!state.movements.length" class="empty">
-              Nhận hàng, bán hàng và kiểm kê được duyệt sẽ xuất hiện ở đây.
-            </div>
-            <div v-for="m in state.movements.slice(0, 15)" :key="m.id" class="movement-row">
-              <div>
-                <b>{{ name(m.productId) }}</b
-                ><small>{{ m.kind }} · {{ m.reference }} · {{ time(m.at) }}</small>
-              </div>
-              <strong :class="m.quantity > 0 ? 'positive' : 'negative'"
-                >{{ m.quantity > 0 ? "+" : "" }}{{ m.quantity }}</strong
-              >
-            </div>
-          </section></template
-        >
+        <InventoryWorkspace
+          v-else-if="route === 'receive' || route === 'inventory'"
+          :view="route"
+          :adapter="inventoryAdapter"
+          :user-id="user.id"
+          :online="connected"
+          :can-receive="canConfirmReceipt"
+        />
 
         <template v-else-if="route === 'count'"
           ><div class="page-head">

@@ -16,6 +16,6 @@ public interface GoodsReceiptJpaRepository extends JpaRepository<GoodsReceiptJpa
 
     Optional<GoodsReceiptJpa> findByIdempotencyKey(UUID idempotencyKey);
 
-    @Query("SELECT r FROM GoodsReceiptJpa r WHERE r.organizationId=:orgId AND r.clientOperationId=:clientOpId")
-    Optional<GoodsReceiptJpa> findByClientOperationId(UUID orgId, UUID clientOpId);
+    @Query("SELECT r FROM GoodsReceiptJpa r WHERE r.organizationId=:orgId AND r.storeId=:storeId AND r.clientOperationId=:clientOpId")
+    Optional<GoodsReceiptJpa> findByClientOperationId(UUID orgId, UUID storeId, UUID clientOpId);
 }
