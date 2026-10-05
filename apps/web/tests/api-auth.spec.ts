@@ -305,3 +305,40 @@ for (const action of ["new login", "logout"] as const) {
     );
   });
 }
+
+test("late API 401 cannot discard a newer in-memory session", async () => {
+  let logins = 0;
+  let releaseOldRequest: ((response: Response) => void) | undefined;
+  let latestAuthorization = "";
+  await withFetch(
+    async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/login")) {
+        logins++;
+        return jsonResponse(
+          grant(
+            { ...stockSession, fullName: `User ${logins}` },
+            logins === 1 ? token : "b".repeat(43),
+          ),
+        );
+      }
+      if (url === "/old-request") {
+        return new Promise<Response>((resolve) => {
+          releaseOldRequest = resolve;
+        });
+      }
+      latestAuthorization = new Headers(init?.headers).get("Authorization") || "";
+      return jsonResponse({ ok: true });
+    },
+    async () => {
+      const adapter = new ApiAuthAdapter();
+      await adapter.login("stock", "server-pass");
+      const oldRequest = adapter.fetchApi("/old-request");
+      await adapter.login("manager", "server-pass");
+      releaseOldRequest?.(new Response(null, { status: 401 }));
+      await oldRequest;
+      await adapter.fetchApi("/new-request");
+      expect(latestAuthorization).toBe(`Bearer ${"b".repeat(43)}`);
+    },
+  );
+});

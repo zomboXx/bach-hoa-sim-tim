@@ -50,6 +50,26 @@ Fix hai lỗi bảo mật PRO-01B theo review của Project Owner (Issue #23): (
 - `CONTRIBUTION_LOG.md`: +17 -0
 ---
 
+---
+TV4 — Lê Văn Chiến - 2026-10-03 16:39:57
+
+Thực hiện issue [FE-02] Nhận hàng và tồn kho trên PWA (#20). Tách feature nhận/tồn theo ADR 0003 với domain, validation, presentation và demo/API adapter riêng; API mode dùng Bearer session do auth adapter quản lý, không lưu token bền và không fallback sang dữ liệu demo. Hoàn thiện form catalog ACTIVE, kiểm tra số lượng/giá/lô/hạn, field error server, khóa thao tác đang gửi, đọc lại tồn sau xác nhận, phân trang tồn/lô/biến động, phiếu nhiều dòng, quyền 401/403 và ẩn giá nhập với SALES.
+
+Bảo vệ xác nhận nhận hàng bằng `Idempotency-Key` và `clientOperationId` ổn định trong session tab: timeout, lỗi mạng hoặc 5xx giữ dấu thao tác để GET đối soát; kết quả rỗng không tự POST, retry chủ động dùng lại cùng key và không tạo offline queue. Root gate `pwsh -File scripts/verify.ps1` đạt repository policy/links, web lint/format/typecheck/build, demo E2E 6/6, API consumer/E2E 35/35 và backend integration 77/77 trên PostgreSQL 17 Testcontainers; Maven kết thúc `BUILD SUCCESS`. Reviewer được chỉ định: TV3 — Nguyễn Văn Thi.
+
+Sau review PR #31, bổ sung filter provider `GET receipts?clientOperationId` bắt buộc organization/store từ session, bỏ vòng quét tối đa 10.000 phiếu ở web và thêm provider test chống rò cửa hàng. Live Playwright test chạy qua Spring API cùng PostgreSQL 17 disposable đã chứng minh trường hợp POST commit nhưng response bị mất: reload tìm lại đúng phiếu bằng GET filter và tổng số POST vẫn là một. Root gate sau thay đổi đạt demo E2E 6/6, API consumer/E2E 35/35, backend integration 79/79 và Maven `BUILD SUCCESS`; live integration đạt 1/1.
+
+- `apps/web/src/modules/inventory/`: +1169 -0
+- `apps/web/src/App.vue`: +40 -203
+- `apps/web/src/adapter.ts`, `apps/web/src/api.ts`: +43 -3
+- `apps/web/src/style.css`: +323 -0
+- `apps/web/tests/api-inventory.spec.ts`: +501 -0
+- `apps/web/tests/api-auth.spec.ts`, `apps/web/tests/workflows.spec.ts`: +52 -5
+- `apps/web/playwright.api.config.ts`: +2 -1
+- `apps/web/README.md`: +18 -5
+- `CHANGELOG.md`: +4 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
 
 ---
 Lê Văn Chiến - 2026-10-02 15:11:50

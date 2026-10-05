@@ -165,6 +165,12 @@ public class GoodsReceiptService {
         return receiptRepo.findByStore(organizationId, storeId, limit, offset);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID storeId,
+                                                           UUID clientOperationId) {
+        return receiptRepo.findByClientOperationId(organizationId, storeId, clientOperationId);
+    }
+
     private static byte[] sha256(String input) {
         try {
             return MessageDigest.getInstance("SHA-256")

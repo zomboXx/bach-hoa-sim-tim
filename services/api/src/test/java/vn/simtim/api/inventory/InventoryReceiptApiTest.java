@@ -208,6 +208,65 @@ class InventoryReceiptApiTest {
     }
 
     @Test
+    void listReceipts_clientOperationId_recoversCommittedPostAfterResponseLoss() {
+        UUID clientOpId = UUID.randomUUID();
+
+        // Simulate the client losing the POST response: commit it, then deliberately
+        // recover only through the public GET filter without using the response body.
+        var post = rest.exchange("/api/v1/inventory/receipts",
+                HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(clientOpId),
+                        authHeaders(stockToken, UUID.randomUUID())),
+                Map.class);
+        assertThat(post.getStatusCode().value()).isEqualTo(201);
+
+        var recovery = rest.exchange(
+                "/api/v1/inventory/receipts?clientOperationId=" + clientOpId,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map[].class);
+
+        assertThat(recovery.getStatusCode().value()).isEqualTo(200);
+        assertThat(recovery.getBody()).hasSize(1);
+        assertThat(recovery.getBody()[0]).containsEntry("clientOperationId", clientOpId.toString());
+    }
+
+    @Test
+    void listReceipts_clientOperationId_doesNotLeakAnotherStore() {
+        UUID otherStoreId = UUID.randomUUID();
+        UUID receiptId = UUID.randomUUID();
+        UUID clientOpId = UUID.randomUUID();
+        UUID organizationId = UUID.fromString(ORG_ID);
+        jdbc.update("""
+                insert into core.stores(id,organization_id,code,name,status)
+                values(?,?,?,?,'ACTIVE')
+                """, otherStoreId, organizationId,
+                "OTHER-" + otherStoreId.toString().substring(0, 8),
+                "Other inventory fixture");
+        try {
+            jdbc.update("""
+                    insert into inventory.goods_receipts
+                        (id,organization_id,store_id,supplier_id,status,received_at,confirmed_by,
+                         client_operation_id,idempotency_key,payload_hash)
+                    values(?,?,?,?,'CONFIRMED',now(),?,?,?,'\\x00'::bytea)
+                    """, receiptId, organizationId, otherStoreId, UUID.fromString(SUPPLIER_ID),
+                    fixtureUsers.get(0), clientOpId, UUID.randomUUID());
+
+            var recovery = rest.exchange(
+                    "/api/v1/inventory/receipts?clientOperationId=" + clientOpId,
+                    HttpMethod.GET,
+                    new HttpEntity<>(authHeaders(stockToken)),
+                    Map[].class);
+
+            assertThat(recovery.getStatusCode().value()).isEqualTo(200);
+            assertThat(recovery.getBody()).isEmpty();
+        } finally {
+            jdbc.update("delete from inventory.goods_receipts where id=?", receiptId);
+            jdbc.update("delete from core.stores where id=?", otherStoreId);
+        }
+    }
+
+    @Test
     void listReceipts_sales_returns403() {
         var resp = rest.exchange("/api/v1/inventory/receipts",
                 HttpMethod.GET,

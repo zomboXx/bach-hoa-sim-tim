@@ -144,8 +144,9 @@ class GoodsReceiptRepositoryAdapter implements GoodsReceiptRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID clientOperationId) {
-        return receiptJpa.findByClientOperationId(organizationId, clientOperationId)
+    public Optional<GoodsReceipt> findByClientOperationId(UUID organizationId, UUID storeId,
+                                                           UUID clientOperationId) {
+        return receiptJpa.findByClientOperationId(organizationId, storeId, clientOperationId)
                 .map(r -> toReceipt(r, lineJpa.findByReceiptId(r.id)));
     }
 

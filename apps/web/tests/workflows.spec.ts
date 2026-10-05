@@ -110,11 +110,15 @@ test("receive → sell → invoice → offline count → approval; training isol
   await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
   const nav = page.locator("nav");
   await nav.getByRole("button", { name: "Nhận hàng", exact: false }).click();
-  await page.getByLabel("Mã lô", { exact: true }).fill("TEST-LOT");
-  await page.getByLabel("Hạn sử dụng", { exact: true }).fill("2099-12-31");
-  await page.getByLabel("Lý do từ chối / ghi chú").fill("2 hộp rách bao bì");
-  await page.getByRole("button", { name: "Xác nhận nhận 18 sản phẩm" }).click();
-  await expect(page.getByText("Đã nhận", { exact: false }).last()).toBeVisible();
+  await page.getByLabel("Số dự kiến", { exact: true }).fill("20");
+  await page.getByLabel("Số giao", { exact: true }).fill("20");
+  await page.getByLabel("Số nhận", { exact: true }).fill("18");
+  await page.getByLabel("Số từ chối", { exact: true }).fill("2");
+  await page.getByLabel("Số lô nhà cung cấp", { exact: true }).fill("TEST-LOT");
+  await page.getByLabel(/Hạn sử dụng/).fill("2099-12-31");
+  await page.getByLabel("Lý do sai lệch / từ chối", { exact: true }).fill("2 hộp rách bao bì");
+  await page.getByRole("button", { name: "Xác nhận phiếu nhận" }).click();
+  await expect(page.locator(".recent-receipts .receipt-row").first()).toContainText("Nhận 18");
   await nav.getByRole("button", { name: "Tồn kho & lô hàng", exact: false }).click();
   await expect(page.locator("tr").filter({ hasText: "TEST-LOT" })).toContainText("18");
   await nav.getByRole("button", { name: "Bán hàng", exact: false }).click();
@@ -155,6 +159,12 @@ test("receive → sell → invoice → offline count → approval; training isol
   await nav.getByRole("button", { name: "Tồn kho & lô hàng", exact: false }).click();
   await expect(page.locator("tr").filter({ hasText: "LO01" })).toContainText("46");
   await expect(page.locator("tr").filter({ hasText: "TEST-LOT" })).toContainText("18");
+  await expect(
+    page.locator(".movement-entry").filter({ hasText: "Bán hàng" }).first(),
+  ).toContainText("Hóa đơn");
+  await expect(
+    page.locator(".movement-entry").filter({ hasText: "Điều chỉnh" }).first(),
+  ).toContainText("Phiếu điều chỉnh");
   expect(errors).toEqual([]);
 });
 test("demo login and sales role hide managerial controls", async ({ page }) => {
