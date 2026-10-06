@@ -35,6 +35,7 @@ class PromotionApiTest {
     static final String STORE_ID  = "10000000-0000-0000-0000-000000000002";
     static final String PRODUCT_RICE_ID  = "10000000-0000-0000-0000-000000000041";
     static final String PRODUCT_APPLE_ID = "10000000-0000-0000-0000-000000000042";
+    static final String BATCH_RICE_ID    = "10000000-0000-0000-0000-0000000000a1";
     static final String DEMO_PROMO_ID    = "10000000-0000-0000-0000-000000000081";
 
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
@@ -79,11 +80,20 @@ class PromotionApiTest {
                 store2Id, UUID.fromString(ORG_ID));
         // Tạo role MANAGER trong store2 (dùng lại role id của org)
         otherStoreManagerToken = createSession("MANAGER", hash, store2Id);
+        seedBatchIfAbsent();
     }
 
     @AfterAll
     void stop() {
         try {
+            jdbc.update("delete from sales.promotion_batches where organization_id=?", UUID.fromString(ORG_ID));
+            jdbc.update("delete from sales.promotion_products where organization_id=? and promotion_id <> ?",
+                    UUID.fromString(ORG_ID), UUID.fromString(DEMO_PROMO_ID));
+            jdbc.update("delete from sales.promotions where organization_id=? and id <> ?",
+                    UUID.fromString(ORG_ID), UUID.fromString(DEMO_PROMO_ID));
+            jdbc.update("delete from inventory.product_batches where organization_id=?", UUID.fromString(ORG_ID));
+            jdbc.update("delete from inventory.goods_receipt_lines where organization_id=?", UUID.fromString(ORG_ID));
+            jdbc.update("delete from inventory.goods_receipts where organization_id=?", UUID.fromString(ORG_ID));
             for (UUID id : fixtureUsers) {
                 jdbc.update("delete from iam.auth_sessions where user_id=?", id);
                 jdbc.update("delete from iam.user_roles where user_id=?", id);
@@ -95,6 +105,41 @@ class PromotionApiTest {
         } finally {
             if (postgres.isRunning()) postgres.stop();
         }
+    }
+
+    private void seedBatchIfAbsent() {
+        UUID org = UUID.fromString(ORG_ID);
+        UUID store = UUID.fromString(STORE_ID);
+        UUID supplierId = UUID.fromString("10000000-0000-0000-0000-000000000061");
+        UUID receiptId = UUID.fromString("10000000-0000-0000-0000-000000000081");
+        UUID lineRiceId = UUID.fromString("10000000-0000-0000-0000-000000000091");
+        UUID batchRiceId = UUID.fromString(BATCH_RICE_ID);
+        UUID productRice = UUID.fromString(PRODUCT_RICE_ID);
+        UUID user = fixtureUsers.get(0);
+
+        jdbc.update("""
+                insert into inventory.goods_receipts
+                    (id,organization_id,store_id,supplier_id,status,received_at,confirmed_by,
+                     client_operation_id,idempotency_key,payload_hash)
+                values(?,?,?,?,'CONFIRMED','2026-01-01T00:00:00Z',?,?,?,'\\\\x00'::bytea)
+                on conflict do nothing
+                """, receiptId, org, store, supplierId, user, UUID.randomUUID(), UUID.randomUUID());
+
+        jdbc.update("""
+                insert into inventory.goods_receipt_lines
+                    (id,receipt_id,organization_id,product_id,
+                     expected_quantity,delivered_quantity,accepted_quantity,rejected_quantity,unit_cost)
+                values(?,?,?,?,100,100,100,0,18000)
+                on conflict do nothing
+                """, lineRiceId, receiptId, org, productRice);
+
+        jdbc.update("""
+                insert into inventory.product_batches
+                    (id,organization_id,store_id,product_id,receipt_line_id,batch_number,
+                     received_date,expiry_date,status)
+                values(?,?,?,?,?,'BATCH-RICE-01','2026-01-01','2027-01-01','AVAILABLE')
+                on conflict do nothing
+                """, batchRiceId, org, store, productRice, lineRiceId);
     }
 
     private String createSession(String role, String hash, UUID storeId) {
@@ -522,6 +567,116 @@ class PromotionApiTest {
         var dup = rest.exchange("/api/v1/promotions", HttpMethod.POST,
                 new HttpEntity<>(validPromoJson(codeLower), otherStoreHeaders()), Map.class);
         assertThat(dup.getStatusCode().value()).isEqualTo(409);
+    }
+
+    // ===== Target BATCH scope tests =====
+
+    @Test
+    void batchScope_lifecycle_add_list_and_remove() {
+        String code = "PROMO-BATCH-CRUD-01";
+        var createRes = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), managerHeaders()), Map.class);
+        assertThat(createRes.getStatusCode().value()).isEqualTo(201);
+        String promoId = (String) createRes.getBody().get("id");
+
+        // 1. Thêm batch target
+        var addRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), managerHeaders()), Void.class);
+        assertThat(addRes.getStatusCode().value()).isEqualTo(201);
+
+        // 2. Liệt kê batches qua endpoint /batches
+        var listRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.GET,
+                new HttpEntity<>(managerHeaders()), List.class);
+        assertThat(listRes.getStatusCode().value()).isEqualTo(200);
+        assertThat(listRes.getBody()).hasSize(1);
+
+        // 3. Tra cứu chi tiết promotion chứa batchIds
+        var getRes = rest.exchange("/api/v1/promotions/" + promoId, HttpMethod.GET,
+                new HttpEntity<>(managerHeaders()), Map.class);
+        assertThat(getRes.getStatusCode().value()).isEqualTo(200);
+        var batchIds = (List<?>) getRes.getBody().get("batchIds");
+        assertThat(batchIds.toString()).contains(BATCH_RICE_ID);
+
+        // 4. Xóa batch target
+        var delRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches/" + BATCH_RICE_ID,
+                HttpMethod.DELETE, new HttpEntity<>(managerHeaders()), Void.class);
+        assertThat(delRes.getStatusCode().value()).isEqualTo(204);
+
+        // 5. Kiểm tra danh sách sau xóa rỗng
+        var listAfterDel = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.GET,
+                new HttpEntity<>(managerHeaders()), List.class);
+        assertThat(listAfterDel.getBody()).isEmpty();
+    }
+
+    @Test
+    void cannotMix_batchAndProductTargets() {
+        // Khuyến mãi có sẵn PRODUCT target -> không thể thêm BATCH
+        String codeP = "PROMO-MIX-P-01";
+        var createP = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(codeP), managerHeaders()), Map.class);
+        String promoPId = (String) createP.getBody().get("id");
+        rest.exchange("/api/v1/promotions/" + promoPId + "/products", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productId", PRODUCT_RICE_ID), managerHeaders()), Void.class);
+
+        var addBatchFail = rest.exchange("/api/v1/promotions/" + promoPId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), managerHeaders()), Map.class);
+        assertThat(addBatchFail.getStatusCode().value()).isEqualTo(422);
+
+        // Khuyến mãi có sẵn BATCH target -> không thể thêm PRODUCT
+        String codeB = "PROMO-MIX-B-01";
+        var createB = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(codeB), managerHeaders()), Map.class);
+        String promoBId = (String) createB.getBody().get("id");
+        rest.exchange("/api/v1/promotions/" + promoBId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), managerHeaders()), Void.class);
+
+        var addProductFail = rest.exchange("/api/v1/promotions/" + promoBId + "/products", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productId", PRODUCT_RICE_ID), managerHeaders()), Map.class);
+        assertThat(addProductFail.getStatusCode().value()).isEqualTo(422);
+    }
+
+    @Test
+    void duplicateBatchTarget_returns409() {
+        String code = "PROMO-BATCH-DUP-01";
+        var createRes = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), managerHeaders()), Map.class);
+        String promoId = (String) createRes.getBody().get("id");
+
+        var add1 = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), managerHeaders()), Void.class);
+        assertThat(add1.getStatusCode().value()).isEqualTo(201);
+
+        var addDup = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), managerHeaders()), Map.class);
+        assertThat(addDup.getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
+    void removeNonExistentBatch_returns404() {
+        String code = "PROMO-BATCH-404-01";
+        var createRes = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), managerHeaders()), Map.class);
+        String promoId = (String) createRes.getBody().get("id");
+
+        var delRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches/" + UUID.randomUUID(),
+                HttpMethod.DELETE, new HttpEntity<>(managerHeaders()), Map.class);
+        assertThat(delRes.getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void salesRoleCannotManageBatches_returns403() {
+        String code = "PROMO-BATCH-RBAC-01";
+        var createRes = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson(code), managerHeaders()), Map.class);
+        String promoId = (String) createRes.getBody().get("id");
+
+        var postRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), salesHeaders()), Map.class);
+        assertThat(postRes.getStatusCode().value()).isEqualTo(403);
+
+        var delRes = rest.exchange("/api/v1/promotions/" + promoId + "/batches/" + BATCH_RICE_ID,
+                HttpMethod.DELETE, new HttpEntity<>(salesHeaders()), Map.class);
+        assertThat(delRes.getStatusCode().value()).isEqualTo(403);
     }
 
     // ===== Helper =====

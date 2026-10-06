@@ -41,10 +41,20 @@
 
 ## Verification evidence — 06/10/2026
 
-- Automated integration tests (`PromotionApiTest`) executed against clean PostgreSQL 17 Testcontainers with `demo` profile:
-  - CRUD operations with permissions check (MANAGER/ADMIN allowed, SALES/STOCK denied write).
-  - Applicable promotion calculation matching store, product and active time window.
-  - Store-scoped isolation: kiểm tra không đọc/sửa/xóa khuyến mãi của store khác cùng tổ chức.
-  - Validation: endsAt before startsAt (422), negative discount (422), percent > 100 (422), percent > 2 decimals (422), duplicate code precheck toàn organization (409).
-  - Wire alias `/api/v1/sales/promotions` verified.
-- Suite result: All promotion tests passing. CI GitHub Actions trên HEAD xanh.
+- **Backend Integration Tests (`PromotionApiTest` & `SaleApiTest`)**: chạy trên PostgreSQL 17 Testcontainers với profile `demo`:
+  - `PromotionApiTest` (31/31 passed):
+    - Quản lý khuyến mãi CRUD với kiểm tra phân quyền (MANAGER/ADMIN ghi, SALES/STOCK chỉ đọc, từ chối ghi 403).
+    - Tra cứu khuyến mãi áp dụng (`applicable`) theo store, product và cửa sổ thời gian hiệu lực.
+    - Cô lập store-scope chặt chẽ: không thể đọc/sửa/xóa khuyến mãi của cửa hàng khác trong cùng tổ chức.
+    - Ràng buộc & validation: `endsAt <= startsAt` (422), chiết khấu âm (422), phần trăm > 100 hoặc > 2 chữ số thập phân (422).
+    - Kiểm tra trùng mã toàn organization khớp unique constraint DB (409).
+    - Quản lý target BATCH (`GET/POST/DELETE /api/v1/sales/promotions/{id}/batches`): thêm lô, danh sách lô, xóa lô, kiểm tra không trộn lẫn target PRODUCT và BATCH trên cùng một khuyến mãi (422), trùng lô (409), lô không tồn tại (404).
+  - `SaleApiTest` (24/24 passed):
+    - Quote tính giá và chiết khấu chính xác theo khuyến mãi khả dụng.
+    - Checkout áp dụng khuyến mãi sản phẩm, tính toán giảm trừ sau phân bổ FEFO.
+    - Checkout với khuyến mãi theo lô (BATCH target): chỉ áp dụng giảm giá cho đúng lô được hưởng khuyến mãi sau khi phân bổ FEFO.
+    - Hóa đơn 0 VND khi chiết khấu 100%: thanh toán 0 VND thành công, lưu trạng thái COMPLETED và ghi nhận chiết khấu đầy đủ.
+    - Snapshot bất biến: `applied_promotion_code`, `applied_promotion_name`, `promotion_discount_type`, `promotion_discount_value` được lưu cố định trên `sales.invoice_lines`, thỏa mãn DB check constraint. Ngăn xóa khuyến mãi (409) khi đã phát sinh hóa đơn liên kết.
+- **Component PR Scope Boundary**:
+  - PR #25 đóng vai trò component PR cho phần Backend API & Data Model của Issue #23 (bao gồm cả product target và batch target, tính toán FEFO quote/checkout và immutable snapshot).
+  - Phần giao diện PWA UI và Consumer E2E test được tách sang Issue/PR thành phần tiếp theo; Issue [#23](https://github.com/zomboXx/bach-hoa-sim-tim/issues/23) được giữ mở cho tới khi hoàn tất toàn bộ trải nghiệm người dùng.

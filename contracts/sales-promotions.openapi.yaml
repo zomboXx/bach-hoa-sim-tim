@@ -255,6 +255,89 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
 
+  /api/v1/sales/promotions/{id}/batches:
+    get:
+      operationId: listPromotionBatches
+      summary: List batch IDs scoped to this promotion
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: List of scoped batch IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string, format: uuid}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
+    post:
+      operationId: addPromotionBatch
+      summary: Add a batch to the promotion scope
+      description: >-
+        Adds a batch to the promotion scope. A promotion cannot target both products and batches
+        simultaneously; attempting to add a batch when product targets already exist returns 422.
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchId]
+              properties:
+                batchId: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Batch added to promotion scope
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/UnprocessableEntity'}
+
+  /api/v1/sales/promotions/{id}/batches/{batchId}:
+    delete:
+      operationId: removePromotionBatch
+      summary: Remove a batch from the promotion scope
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: batchId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '204':
+          description: Batch removed from promotion scope
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+
 components:
   securitySchemes:
     bearerSession:
@@ -330,6 +413,9 @@ components:
         endsAt: {type: string, format: date-time}
         status: {type: string, enum: [DRAFT, ACTIVE, INACTIVE]}
         productIds:
+          type: array
+          items: {type: string, format: uuid}
+        batchIds:
           type: array
           items: {type: string, format: uuid}
 
