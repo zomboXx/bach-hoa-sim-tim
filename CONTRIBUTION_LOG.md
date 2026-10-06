@@ -22,6 +22,21 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-06 09:42:00
+
+Hoàn thiện hợp đồng API, exception handler và integration tests cho review PR #25 (Issue #23): (1) Cập nhật wire contracts — bổ sung các endpoints quản lý target BATCH (`GET/POST/DELETE /api/v1/sales/promotions/{id}/batches`) và trường `batchIds` vào `contracts/sales-promotions.openapi.yaml`; bổ sung 5 trường snapshot khuyến mãi (`appliedPromotionId`, `appliedPromotionCode`, `appliedPromotionName`, `promotionDiscountType`, `promotionDiscountValue`) vào schema `InvoiceLineResponse` trong `contracts/sales-invoices.openapi.yaml`. (2) Xử lý ngoại lệ — ánh xạ `InventorySaleException` trong `SaleExceptionHandler` sang HTTP 409, 404, 422. (3) Bổ sung integration tests — thêm 6 test cases trong `PromotionApiTest` (CRUD batch target, phân quyền ghi 403, cấm trộn target BATCH/PRODUCT trả 422, trùng batch 409) và 5 test cases trong `SaleApiTest` (quote preview giảm giá, checkout chiết khấu theo sản phẩm và theo lô FEFO, đơn 0 VND khi giảm 100%, snapshot bất biến trên `sales.invoice_lines`, chặn xóa khuyến mãi đã dùng trả 409); cấu hình `@TestMethodOrder` và cô lập dữ liệu giữa các test. (4) Cập nhật `contracts/SALES_PROMOTIONS_REVIEW.md` ghi nhận bằng chứng kiểm thử và phạm vi component PR.
+
+- `.gitignore`: +1 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +17 -7
+- `contracts/sales-invoices.openapi.yaml`: +5 -0
+- `contracts/sales-promotions.openapi.yaml`: +86 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +12 -0
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +155 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +188 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-06 01:16:00
 
 Hoàn thiện bổ sung theo review Issue #23: (1) Target BATCH — tạo bảng `sales.promotion_batches`, domain record `PromotionBatch`, JPA entities, repository và 3 endpoints quản lý phạm vi lô (`/promotions/{id}/batches`). Thêm quy tắc ràng buộc không cho phép trộn lẫn phạm vi BATCH và PRODUCT. (2) Tích hợp bán hàng FEFO — trong `SaleService.quote` và `checkout`, sau khi giải thuật FEFO phân bổ lô hàng, gọi `bestPromotion` để chọn mức giảm tối ưu nhất cho từng dòng theo sản phẩm/lô và khung giờ hiệu lực. (3) Snapshot hóa đơn bất biến — bổ sung 4 cột `applied_promotion_code`, `applied_promotion_name`, `promotion_discount_type`, `promotion_discount_value` vào `sales.invoice_lines`, thêm DB CHECK constraint bảo toàn giá trị và hỗ trợ giao dịch giảm 100% (0 VND). (4) Cập nhật migration Flyway V11 và tài liệu ranh giới `contracts/SALES_PROMOTIONS_REVIEW.md`.
