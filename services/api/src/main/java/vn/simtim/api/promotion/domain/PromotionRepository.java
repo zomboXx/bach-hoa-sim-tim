@@ -26,6 +26,7 @@ public interface PromotionRepository {
 
     List<PromotionBatch> findBatchesByPromotion(UUID organizationId, UUID storeId, UUID promotionId);
     boolean existsBatch(UUID organizationId, UUID promotionId, UUID productBatchId);
+    boolean existsBatchInStore(UUID organizationId, UUID storeId, UUID productBatchId);
     void saveBatch(PromotionBatch batch);
     void deleteBatch(UUID organizationId, UUID promotionId, UUID productBatchId);
 

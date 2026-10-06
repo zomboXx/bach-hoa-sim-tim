@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import vn.simtim.api.promotion.domain.Promotion;
 import vn.simtim.api.promotion.domain.PromotionBatch;
@@ -17,14 +18,17 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     private final PromotionJpaRepository jpa;
     private final PromotionProductJpaRepository productJpa;
     private final PromotionBatchJpaRepository batchJpa;
+    private final JdbcTemplate jdbc;
 
     PromotionRepositoryAdapter(
             PromotionJpaRepository jpa,
             PromotionProductJpaRepository productJpa,
-            PromotionBatchJpaRepository batchJpa) {
+            PromotionBatchJpaRepository batchJpa,
+            JdbcTemplate jdbc) {
         this.jpa = jpa;
         this.productJpa = productJpa;
         this.batchJpa = batchJpa;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -97,6 +101,15 @@ class PromotionRepositoryAdapter implements PromotionRepository {
     @Override
     public boolean existsBatch(UUID organizationId, UUID promotionId, UUID productBatchId) {
         return batchJpa.existsByPromotionIdAndProductBatchId(promotionId, productBatchId);
+    }
+
+    @Override
+    public boolean existsBatchInStore(UUID organizationId, UUID storeId, UUID productBatchId) {
+        Integer count = jdbc.queryForObject("""
+                SELECT count(*) FROM inventory.product_batches
+                WHERE organization_id = ? AND store_id = ? AND id = ?
+                """, Integer.class, organizationId, storeId, productBatchId);
+        return count != null && count > 0;
     }
 
     @Override

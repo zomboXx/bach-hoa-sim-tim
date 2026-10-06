@@ -21,6 +21,8 @@ import InventoryWorkspace from "./modules/inventory/presentation/InventoryWorksp
 import { ApiInventoryAdapter } from "./modules/inventory/infrastructure/api-inventory-adapter";
 import { DemoInventoryAdapter } from "./modules/inventory/infrastructure/demo-inventory-adapter";
 import type { InventoryPort } from "./modules/inventory/domain/inventory";
+import PromotionWorkspace from "./modules/promotion/PromotionWorkspace.vue";
+import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 const state = ref<State>();
 const user = ref<AuthUser>();
 const route = ref("dashboard");
@@ -44,6 +46,10 @@ const inventoryAdapter: InventoryPort = isDemoMode
       },
     )
   : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
+const promotionAdapter = new ApiPromotionAdapter((path, init) => authAdapter.fetchApi(path, init));
+const canManagePromotions = computed(
+  () => !!user.value?.session?.permissions.includes("promotions.write"),
+);
 const canConfirmReceipt = computed(
   () =>
     isDemoMode ||
@@ -1084,7 +1090,14 @@ const statuses = {
           </section></template
         >
 
-        <template v-else-if="route === 'promotions'"
+        <PromotionWorkspace
+          v-else-if="route === 'promotions' && !isDemoMode"
+          :adapter="promotionAdapter"
+          :can-manage="canManagePromotions"
+          :online="connected"
+        />
+
+        <template v-else-if="route === 'promotions' && isDemoMode"
           ><div class="page-head">
             <div>
               <p class="eyebrow">THÊM LÝ DO ĐỂ KHÁCH GHÉ QUA</p>

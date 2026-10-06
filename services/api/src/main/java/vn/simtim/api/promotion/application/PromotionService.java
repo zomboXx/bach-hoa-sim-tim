@@ -127,6 +127,9 @@ public class PromotionService {
 
     public void addBatch(UUID organizationId, UUID storeId, UUID promotionId, UUID productBatchId) {
         getById(organizationId, storeId, promotionId);
+        if (!repo.existsBatchInStore(organizationId, storeId, productBatchId)) {
+            throw new PromotionNotFoundException("Lô không tồn tại trong cửa hàng hiện tại");
+        }
         if (!repo.findProductsByPromotion(organizationId, storeId, promotionId).isEmpty()) {
             throw new PromotionValidationException("Khuyến mãi target BATCH không thể trộn với target PRODUCT");
         }

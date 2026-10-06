@@ -609,6 +609,45 @@ class PromotionApiTest {
     }
 
     @Test
+    void batchScope_rejectsBatchFromAnotherStoreInSameOrganization() {
+        var created = rest.exchange("/api/v1/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson("PROMO-BATCH-STORE-02"), otherStoreHeaders()), Map.class);
+        assertThat(created.getStatusCode().value()).isEqualTo(201);
+        String promotionId = (String) created.getBody().get("id");
+
+        var rejected = rest.exchange("/api/v1/promotions/" + promotionId + "/batches",
+                HttpMethod.POST,
+                new HttpEntity<>(Map.of("productBatchId", BATCH_RICE_ID), otherStoreHeaders()),
+                Map.class);
+        assertThat(rejected.getStatusCode().value()).isEqualTo(404);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from sales.promotion_batches where promotion_id=?",
+                Integer.class, UUID.fromString(promotionId))).isZero();
+    }
+
+    @Test
+    void applicable_includesStartAndExcludesEndOfWindow() {
+        var created = rest.exchange("/api/v1/sales/promotions", HttpMethod.POST,
+                new HttpEntity<>(validPromoJson("PROMO-WINDOW-BOUNDARY").replace(
+                        "\"status\":\"DRAFT\"", "\"status\":\"ACTIVE\""), managerHeaders()), Map.class);
+        assertThat(created.getStatusCode().value()).isEqualTo(201);
+        String id = (String) created.getBody().get("id");
+
+        for (String instant : List.of("2026-09-30T23:59:59Z", "2026-10-01T00:00:00Z",
+                "2026-10-30T23:59:59Z", "2026-10-31T00:00:00Z")) {
+            var response = rest.exchange("/api/v1/sales/promotions/applicable?productId="
+                            + PRODUCT_RICE_ID + "&at=" + instant,
+                    HttpMethod.GET, new HttpEntity<>(managerHeaders()), List.class);
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            boolean present = response.getBody().stream().anyMatch(item ->
+                    id.equals(((Map<?, ?>) item).get("id")));
+            assertThat(present).as(instant).isEqualTo(
+                    instant.equals("2026-10-01T00:00:00Z")
+                            || instant.equals("2026-10-30T23:59:59Z"));
+        }
+    }
+
+    @Test
     void cannotMix_batchAndProductTargets() {
         // Khuyến mãi có sẵn PRODUCT target -> không thể thêm BATCH
         String codeP = "PROMO-MIX-P-01";
