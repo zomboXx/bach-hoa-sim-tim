@@ -574,15 +574,19 @@ class SaleApiTest {
                 UPDATE sales.promotions SET code='PROMO-RICE-UPDATED', name='Đã đổi', discount_value=30
                 WHERE id=?::uuid
                 """, promoId);
-        var oldInvoice = rest.exchange("/api/v1/sales/invoices/" + inv.get("id"),
-                HttpMethod.GET, headers(salesToken, null), Map.class);
-        assertThat(oldInvoice.getStatusCode()).isEqualTo(HttpStatus.OK);
-        @SuppressWarnings("unchecked")
-        var oldLines = (List<Map<String, Object>>) oldInvoice.getBody().get("lines");
-        assertThat(oldLines.get(0).get("appliedPromotionCode")).isEqualTo("PROMO-RICE-SNAP-10");
-        assertThat(((Number) oldLines.get(0).get("promotionDiscountValue")).doubleValue())
-                .isEqualTo(10.0);
-        assertThat(oldInvoice.getBody().get("grandTotal")).isEqualTo(45000);
+        try {
+            var oldInvoice = rest.exchange("/api/v1/sales/invoices/" + inv.get("id"),
+                    HttpMethod.GET, headers(salesToken, null), Map.class);
+            assertThat(oldInvoice.getStatusCode()).isEqualTo(HttpStatus.OK);
+            @SuppressWarnings("unchecked")
+            var oldLines = (List<Map<String, Object>>) oldInvoice.getBody().get("lines");
+            assertThat(oldLines.get(0).get("appliedPromotionCode")).isEqualTo("PROMO-RICE-SNAP-10");
+            assertThat(((Number) oldLines.get(0).get("promotionDiscountValue")).doubleValue())
+                    .isEqualTo(10.0);
+            assertThat(oldInvoice.getBody().get("grandTotal")).isEqualTo(45000);
+        } finally {
+            jdbc.update("UPDATE sales.promotions SET status='INACTIVE' WHERE id=?::uuid", promoId);
+        }
     }
 
     @Test

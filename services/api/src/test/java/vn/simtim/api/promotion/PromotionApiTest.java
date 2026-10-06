@@ -632,18 +632,25 @@ class PromotionApiTest {
                         "\"status\":\"DRAFT\"", "\"status\":\"ACTIVE\""), managerHeaders()), Map.class);
         assertThat(created.getStatusCode().value()).isEqualTo(201);
         String id = (String) created.getBody().get("id");
+        var scope = rest.exchange("/api/v1/sales/promotions/" + id + "/products", HttpMethod.POST,
+                new HttpEntity<>(Map.of("productId", PRODUCT_RICE_ID), managerHeaders()), Void.class);
+        assertThat(scope.getStatusCode().value()).isEqualTo(201);
 
-        for (String instant : List.of("2026-09-30T23:59:59Z", "2026-10-01T00:00:00Z",
-                "2026-10-30T23:59:59Z", "2026-10-31T00:00:00Z")) {
-            var response = rest.exchange("/api/v1/sales/promotions/applicable?productId="
-                            + PRODUCT_RICE_ID + "&at=" + instant,
-                    HttpMethod.GET, new HttpEntity<>(managerHeaders()), List.class);
-            assertThat(response.getStatusCode().value()).isEqualTo(200);
-            boolean present = response.getBody().stream().anyMatch(item ->
-                    id.equals(((Map<?, ?>) item).get("id")));
-            assertThat(present).as(instant).isEqualTo(
-                    instant.equals("2026-10-01T00:00:00Z")
-                            || instant.equals("2026-10-30T23:59:59Z"));
+        try {
+            for (String instant : List.of("2026-09-30T23:59:59Z", "2026-10-01T00:00:00Z",
+                    "2026-10-30T23:59:59Z", "2026-10-31T00:00:00Z")) {
+                var response = rest.exchange("/api/v1/sales/promotions/applicable?productId="
+                                + PRODUCT_RICE_ID + "&at=" + instant,
+                        HttpMethod.GET, new HttpEntity<>(managerHeaders()), List.class);
+                assertThat(response.getStatusCode().value()).isEqualTo(200);
+                boolean present = response.getBody().stream().anyMatch(item ->
+                        id.equals(((Map<?, ?>) item).get("id")));
+                assertThat(present).as(instant).isEqualTo(
+                        instant.equals("2026-10-01T00:00:00Z")
+                                || instant.equals("2026-10-30T23:59:59Z"));
+            }
+        } finally {
+            jdbc.update("UPDATE sales.promotions SET status='INACTIVE' WHERE id=?::uuid", id);
         }
     }
 
