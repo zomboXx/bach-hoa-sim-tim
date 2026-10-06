@@ -53,7 +53,14 @@ public class GoodsReceiptService {
         Optional<GoodsReceipt> existing = receiptRepo.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
             GoodsReceipt old = existing.get();
-            // Cùng payload → trả lại, khác payload → 409
+            // Key có phạm vi toàn cục: không trả chứng từ của actor hoặc store khác.
+            if (!old.organizationId().equals(organizationId)
+                    || !old.storeId().equals(storeId)
+                    || !old.confirmedBy().equals(actorId)) {
+                throw new InventoryReceiptException("IDEMPOTENCY_KEY_REUSED",
+                        "Idempotency-Key đã dùng trong phiên khác");
+            }
+            // Cùng actor, store và payload → trả lại; khác payload → 409.
             byte[] newHash = sha256(cmd.payloadJson());
             byte[] oldHash = receiptRepo.findPayloadHash(idempotencyKey);
             if (!MessageDigest.isEqual(newHash, oldHash)) {
@@ -126,6 +133,12 @@ public class GoodsReceiptService {
         for (int i = 0; i < lines.size(); i++) {
             var lc = lines.get(i);
             String prefix = "lines[" + i + "]";
+
+            if (lc.expectedQuantity().scale() > 3 || lc.deliveredQuantity().scale() > 3
+                    || lc.acceptedQuantity().scale() > 3 || lc.rejectedQuantity().scale() > 3) {
+                throw new InventoryReceiptException("INVALID_RECEIPT",
+                        prefix + ": số lượng tối đa 3 chữ số thập phân");
+            }
 
             // accepted + rejected = delivered
             if (lc.acceptedQuantity().add(lc.rejectedQuantity())
