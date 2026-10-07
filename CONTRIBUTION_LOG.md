@@ -22,6 +22,41 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-07 14:53:55
+
+Xử lý hai nhận xét independent review của TV1 trên PR #33 cho QA-02: bỏ hoàn toàn nhánh `SIMTIM_TEST_DB_URL` để suite chỉ có thể chạy trên PostgreSQL Testcontainers disposable; nâng oracle doanh thu thành một hóa đơn hai dòng APPLE KG + RICE EA, assert hai invoice lines/hai allocation và đối chiếu `SUM(grand_total)` cùng `COUNT(*)` trực tiếp trên `sales.invoices`. Cập nhật test plan, traceability và report để ghi đúng reviewer, evidence, hai lần lỗi khởi tạo môi trường không tới assertion, quy tắc dùng `Refs #24` và việc các gap P0 còn lại phải giao đúng owner.
+
+Chạy lại `Qa02E2eTest` đạt 5/5 và root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy/links, web lint/format/typecheck/build, demo E2E 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL 17.11 Testcontainers. Kết luận tổng thể vẫn là 17 Pass, 3 Fail, 3 Blocked; chưa đóng Issue #24.
+
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +29 -26
+- `docs/testing/QA-02-test-plan.md`: +1 -1
+- `docs/testing/QA-02-traceability.md`: +4 -4
+- `docs/testing/QA-02-test-report.md`: +16 -8
+- `docs/testing/README.md`: +1 -1
+- `CHANGELOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
+TV4 — Lê Văn Chiến - 2026-10-07 10:32:07
+
+Thực hiện issue [QA-02] E2E luồng nhận–bán (#24). Bổ sung suite `Qa02E2eTest` chạy qua HTTP thật và PostgreSQL 17 Testcontainers sạch, kiểm chứng nhận đủ/từ chối/replay, CASH checkout–hóa đơn–báo cáo, rollback giỏ nhiều sản phẩm, hai checkout cạnh tranh đơn vị cuối, RBAC bốn vai trò và đối chiếu độc lập `balance = SUM(movement)` cùng doanh thu `SUM(invoice)` một lần. Suite mới đã phát hiện query báo cáo tồn REP-01 lệch migration; sửa tên cột/khóa/trạng thái thành `on_hand_quantity`, `batch_id`, `EXHAUSTED` và ràng buộc join organization/store/product. Đồng thời xóa import trùng trong `App.vue` do merge để root gate chạy được.
+
+Hoàn thiện test plan, ma trận quyền, ma trận backlog–contract–test–evidence và test report. Chạy đúng `pwsh -File scripts/verify.ps1` đạt policy/links, web lint/format/typecheck/build, demo E2E 6/6, API-consumer E2E 36/36 và backend 129/129 trên PostgreSQL 17.11; riêng QA-02 đạt 5/5. Báo cáo giữ kết luận chưa nghiệm thu P0 với 17 Pass, 3 Fail và 3 Blocked do còn unit precision EA/KG, `PRICE_CHANGED`, invoice privacy SALES, checkout idempotency và live PWA sales E2E; việc TV4 tự chạy không thay thế review độc lập của TV1. `npm audit` còn một cảnh báo dependency mức high và được ghi riêng, không bị che bởi kết quả gate.
+
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +384 -0
+- `services/api/src/main/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepository.java`: +9 -5
+- `apps/web/src/App.vue`: +0 -1
+- `docs/testing/QA-02-authorize.md`: +16 -0
+- `docs/testing/QA-02-test-plan.md`: +68 -0
+- `docs/testing/QA-02-test-report.md`: +83 -0
+- `docs/testing/QA-02-traceability.md`: +41 -0
+- `docs/testing/README.md`: +11 -0
+- `CHANGELOG.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-06 09:42:00
 
 Hoàn thiện hợp đồng API, exception handler và integration tests cho review PR #25 (Issue #23): (1) Cập nhật wire contracts — bổ sung các endpoints quản lý target BATCH (`GET/POST/DELETE /api/v1/sales/promotions/{id}/batches`) và trường `batchIds` vào `contracts/sales-promotions.openapi.yaml`; bổ sung 5 trường snapshot khuyến mãi (`appliedPromotionId`, `appliedPromotionCode`, `appliedPromotionName`, `promotionDiscountType`, `promotionDiscountValue`) vào schema `InvoiceLineResponse` trong `contracts/sales-invoices.openapi.yaml`. (2) Xử lý ngoại lệ — ánh xạ `InventorySaleException` trong `SaleExceptionHandler` sang HTTP 409, 404, 422. (3) Bổ sung integration tests — thêm 6 test cases trong `PromotionApiTest` (CRUD batch target, phân quyền ghi 403, cấm trộn target BATCH/PRODUCT trả 422, trùng batch 409) và 5 test cases trong `SaleApiTest` (quote preview giảm giá, checkout chiết khấu theo sản phẩm và theo lô FEFO, đơn 0 VND khi giảm 100%, snapshot bất biến trên `sales.invoice_lines`, chặn xóa khuyến mãi đã dùng trả 409); cấu hình `@TestMethodOrder` và cô lập dữ liệu giữa các test. (4) Cập nhật `contracts/SALES_PROMOTIONS_REVIEW.md` ghi nhận bằng chứng kiểm thử và phạm vi component PR.
@@ -115,6 +150,27 @@ Sửa INV-01: chuẩn hóa `findByClientOperationId` trả `List` thay vì `Opti
 - `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptJpaRepository.java`: +2 -2
 - `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptRepositoryAdapter.java`: +5 -3
 - `services/api/src/test/java/vn/simtim/api/inventory/InventoryReceiptApiTest.java`: +70 -0
+---
+
+---
+TV4 — Lê Văn Chiến - 2026-10-03 16:39:57
+
+Thực hiện issue [FE-02] Nhận hàng và tồn kho trên PWA (#20). Tách feature nhận/tồn theo ADR 0003 với domain, validation, presentation và demo/API adapter riêng; API mode dùng Bearer session do auth adapter quản lý, không lưu token bền và không fallback sang dữ liệu demo. Hoàn thiện form catalog ACTIVE, kiểm tra số lượng/giá/lô/hạn, field error server, khóa thao tác đang gửi, đọc lại tồn sau xác nhận, phân trang tồn/lô/biến động, phiếu nhiều dòng, quyền 401/403 và ẩn giá nhập với SALES.
+
+Bảo vệ xác nhận nhận hàng bằng `Idempotency-Key` và `clientOperationId` ổn định trong session tab: timeout, lỗi mạng hoặc 5xx giữ dấu thao tác để GET đối soát; kết quả rỗng không tự POST, retry chủ động dùng lại cùng key và không tạo offline queue. Root gate `pwsh -File scripts/verify.ps1` đạt repository policy/links, web lint/format/typecheck/build, demo E2E 6/6, API consumer/E2E 35/35 và backend integration 77/77 trên PostgreSQL 17 Testcontainers; Maven kết thúc `BUILD SUCCESS`. Reviewer được chỉ định: TV3 — Nguyễn Văn Thi.
+
+Sau review PR #31, bổ sung filter provider `GET receipts?clientOperationId` bắt buộc organization/store từ session, bỏ vòng quét tối đa 10.000 phiếu ở web và thêm provider test chống rò cửa hàng. Live Playwright test chạy qua Spring API cùng PostgreSQL 17 disposable đã chứng minh trường hợp POST commit nhưng response bị mất: reload tìm lại đúng phiếu bằng GET filter và tổng số POST vẫn là một. Root gate sau thay đổi đạt demo E2E 6/6, API consumer/E2E 35/35, backend integration 79/79 và Maven `BUILD SUCCESS`; live integration đạt 1/1.
+
+- `apps/web/src/modules/inventory/`: +1169 -0
+- `apps/web/src/App.vue`: +40 -203
+- `apps/web/src/adapter.ts`, `apps/web/src/api.ts`: +43 -3
+- `apps/web/src/style.css`: +323 -0
+- `apps/web/tests/api-inventory.spec.ts`: +501 -0
+- `apps/web/tests/api-auth.spec.ts`, `apps/web/tests/workflows.spec.ts`: +52 -5
+- `apps/web/playwright.api.config.ts`: +2 -1
+- `apps/web/README.md`: +18 -5
+- `CHANGELOG.md`: +4 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
 ---
 
 ---

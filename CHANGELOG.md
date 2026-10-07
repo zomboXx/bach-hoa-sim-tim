@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- **QA-02 / REP-01**: Sửa query báo cáo tồn dùng sai tên cột/khóa/trạng thái so với migration (`on_hand_quantity`, `batch_id`, `EXHAUSTED`) và ràng buộc join theo organization/store/product. Bổ sung E2E PostgreSQL xuyên receipt → checkout → invoice → reports với oracle ledger độc lập, rollback và checkout cạnh tranh.
 - **PRO-01B** (#23): Chặn lô khác cửa hàng cùng tổ chức khi thêm target; kiểm thử biên thời gian, mức giảm tốt nhất/tie-break, snapshot sau khi sửa chương trình và làm tròn quote/checkout.
 - **PRO-01B**: Thống nhất phạm vi kiểm tra trùng mã khuyến mãi với unique constraint của DB. Precheck `existsByCode` / `existsByCodeExcluding` trước đây lọc theo `(orgId, storeId)` nhưng DB có `UNIQUE (organization_id, lower(code))` toàn org — MANAGER store B tạo code đã dùng ở store A cùng org sẽ qua precheck rồi vấp constraint → 500 sai cấu trúc. Sau sửa, precheck kiểm tra toàn org → trả 409 đúng. Thêm hai integration test `crossStore_sameOrg_duplicateCode_returns409` và `crossStore_sameOrg_duplicateCode_caseInsensitive_returns409`.
 
@@ -29,6 +30,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- **QA-02**: Bổ sung test plan, ma trận quyền, ma trận backlog–contract–test–evidence và test report. Sau independent review, suite bắt buộc dùng PostgreSQL Testcontainers disposable và oracle revenue dùng hóa đơn hai dòng cùng query trực tiếp `sales.invoices`. Các khoảng trống price-change, checkout replay, unit precision, invoice privacy và live PWA sales E2E được ghi Fail/Blocked, không đánh dấu Pass từ test owner hoặc mock consumer.
 - **FE-02**: Tách feature nhận hàng/tồn kho Vue theo ADR 0003 với demo/API adapter riêng; API mode xác nhận phiếu bằng Bearer session và `Idempotency-Key`, đọc phiếu, tồn sản phẩm, lô/hạn và movement/source từ INV-01/02. Form chỉ chọn catalog ACTIVE, kiểm tra quantity tối đa ba chữ số thập phân, quan hệ giao/nhận/từ chối, VND nguyên và hiển thị field error server; màn hình responsive hiển thị on-hand/available cùng trạng thái hạn theo ngày nghiệp vụ Việt Nam.
 - Bổ sung consumer/E2E FE-02 cho form hợp lệ/sai, pending/double-click, 401/403, timeout hoặc 5xx qua reload, GET đối soát không tự POST, retry cùng idempotency key, phân trang tồn, phiếu nhiều dòng, đọc lại tồn sau nhận và quyền SALES không lộ giá nhập.
 - Xác minh FE-02 bằng root gate trên PostgreSQL 17 Testcontainers: repository policy và Markdown links đạt, web lint/format/typecheck/build đạt, demo E2E 6/6, API consumer/E2E 35/35 và backend integration 79/79; Maven kết thúc `BUILD SUCCESS`. Live Playwright với Spring API/PostgreSQL thật đạt 1/1.

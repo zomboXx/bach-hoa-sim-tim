@@ -51,7 +51,7 @@ public class JdbcReportsRepository implements ReportsRepository {
                 p.id AS product_id,
                 p.sku,
                 p.name,
-                ib.quantity_on_hand,
+                ib.on_hand_quantity,
                 pb.expiry_date,
                 CASE
                     WHEN pb.expiry_date IS NULL THEN 'NO_EXPIRY'
@@ -60,13 +60,17 @@ public class JdbcReportsRepository implements ReportsRepository {
                     ELSE 'VALID'
                 END AS status
             FROM inventory.inventory_balances ib
-            JOIN inventory.product_batches pb ON ib.product_batch_id = pb.id
+            JOIN inventory.product_batches pb
+              ON ib.organization_id = pb.organization_id
+             AND ib.store_id = pb.store_id
+             AND ib.product_id = pb.product_id
+             AND ib.batch_id = pb.id
             JOIN catalog.products p ON pb.product_id = p.id
             WHERE ib.organization_id = :orgId
               AND ib.store_id = :storeId
-              AND pb.status != 'DEPLETED'
+              AND pb.status != 'EXHAUSTED'
               AND pb.status != 'BLOCKED'
-              AND ib.quantity_on_hand > 0
+              AND ib.on_hand_quantity > 0
             ORDER BY p.name, pb.expiry_date
         """;
 
@@ -79,7 +83,7 @@ public class JdbcReportsRepository implements ReportsRepository {
                         rs.getObject("product_id", UUID.class),
                         rs.getString("sku"),
                         rs.getString("name"),
-                        rs.getBigDecimal("quantity_on_hand"),
+                        rs.getBigDecimal("on_hand_quantity"),
                         rs.getDate("expiry_date") != null ? rs.getDate("expiry_date").toLocalDate() : null,
                         rs.getString("status")
                 )).list();
