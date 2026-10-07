@@ -1,6 +1,6 @@
 # Sim Tím Workspace · Prototype 02 (Sprint 0 baseline)
 
-PWA tương tác đã được chốt làm baseline Sprint 0. Ứng dụng dùng Vue 3, TypeScript, Vite và IndexedDB để kiểm chứng luồng nghiệp vụ trước khi Sprint 1 kết nối API tập trung. Baseline không cam kết SaaS đa doanh nghiệp và không được xem là lớp bảo mật production.
+PWA tương tác đã được chốt làm baseline Sprint 0. Ứng dụng dùng Vue 3, TypeScript và Vite; demo mode dùng IndexedDB, API mode kết nối Spring API. Cách chạy đủ ba dịch vụ bằng Compose nằm trong [README gốc](../../README.md). Baseline không cam kết SaaS đa doanh nghiệp và không được xem là lớp bảo mật production.
 
 ## Chạy
 
@@ -28,7 +28,7 @@ Danh mục được nhập khi thêm sản phẩm. Chưa có màn hình sửa/x�
 
 ## Auth adapter FE-01 / BE-02 (đã tích hợp)
 
-Mặc định `VITE_USE_API` không bật, giữ nguyên demo mode. FE-01 đã tích hợp qua PR #12 và dùng [contract session Accepted](../../contracts/AUTH_SESSION_REVIEW.md) của BE-02. Các luồng nhận, tồn, bán và báo cáo API mode thuộc [Sprint 2](../../docs/project/SPRINT_2_KICKOFF.md).
+Mặc định `VITE_USE_API` không bật, giữ nguyên demo mode. FE-01 đã tích hợp qua PR #12 và dùng [contract session Accepted](../../contracts/AUTH_SESSION_REVIEW.md) của BE-02. API mode đã nối nhận hàng, tồn, khuyến mãi và báo cáo; màn hình bán hàng/hóa đơn chưa nối checkout server. [QA-02](../../docs/testing/QA-02-test-report.md) ghi rõ phần còn thiếu.
 
 ```powershell
 $env:VITE_USE_API = 'true'

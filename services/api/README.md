@@ -1,12 +1,12 @@
-# API module (Sprint 1 baseline)
+# API module
 
-BE-01, BE-02 and BE-03 đã tích hợp qua PR #11, #14 và #13. Sprint 2 bổ sung inventory/sales/reports theo [kickoff](../../docs/project/SPRINT_2_KICKOFF.md) và [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md). Requires Java 21 for the supported runtime; integration tests use Docker or a disposable PostgreSQL database configured as described below.
+BE-01, BE-02 và BE-03 đã tích hợp qua PR #11, #14 và #13. Sprint 2 đã tích hợp API inventory, checkout tiền mặt, promotions và reports theo [backlog](../../docs/project/governance/BACKLOG.md); các khoảng trống nghiệm thu P0 nằm trong [QA-02](../../docs/testing/QA-02-test-report.md). Runtime hỗ trợ Java 21; integration tests dùng PostgreSQL 17 qua Testcontainers.
 
-Flyway V1 creates the `core` schema. V2 adds core/IAM tables and V3 adds catalog tables, following the Project Owner's DB-01 direction. They represent **14 Sprint 1 tables** of the [39-table target draft](../../docs/architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md). V4 adds permission codes/grants without changing V1–V3. INV-01 adds inventory/receipt tables and permissions in V5/V6; INV-02 adds read/FEFO indexes in V7. Sales, sync and training tables remain owned by their later issues.
+Flyway V1 tạo schema nền; V2/V3 thêm **14 bảng Sprint 1** theo [bản thiết kế đích 39 bảng](../../docs/architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md). V4 thêm quyền; V5/V6 thêm inventory/receipt; V7 thêm sales invoices; V8 thêm index đọc tồn; V9 thêm quyền báo cáo; V10/V11 thêm promotions và snapshot hóa đơn. Các bảng sync/training còn thuộc backlog sau.
 
 INV-02 exposes read-only `GET /api/v1/inventory/products`, `/batches` and `/movements` under `inventory.read`; organization/store always come from the bearer session. See the [inventory OpenAPI](../../contracts/inventory.openapi.yaml). The application package also publishes `InventorySalePort` for SAL-01; its implementation requires the caller's active transaction and never commits independently.
 
-From repository root, start PostgreSQL as described in [infra](../../infra/README.md), then set `DB_PASSWORD` to the same local value. To load the **demo-only** organization, store, four roles, category, units, products, supplier and prices, run:
+Để chạy trọn bộ web/API/PostgreSQL, dùng [Compose demo](../../infra/README.md). Nếu chỉ chạy API khi phát triển, khởi động PostgreSQL bằng `docker compose --env-file infra/.env -f infra/compose.yml up -d --wait` từ root, đặt `DB_PASSWORD` bằng `POSTGRES_PASSWORD` trong `infra/.env`, rồi chạy API với profile `demo`:
 
 ```powershell
 cd services/api

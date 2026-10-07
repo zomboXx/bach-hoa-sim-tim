@@ -1,6 +1,6 @@
 # Tài liệu điều hành dự án
 
-**Mốc kiểm tra: 30/09/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công; [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) và Pull Request ghi tiến độ thực tế. PR mở hoặc code trên nhánh chưa phải chức năng đã tích hợp vào `main`.
+**Mốc kiểm tra: 07/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công; [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) và Pull Request ghi tiến độ thực tế. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
 
 ## Đọc tài liệu nào
 
@@ -11,7 +11,13 @@
 | Phạm vi yêu cầu | [Bản ghi REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) | Đã tích hợp qua PR #17; Issue #2 đã đóng. |
 | Quy trình và trạng thái | [SCRUM.md](governance/SCRUM.md), Issue/PR | Không dùng các bản nháp cũ để suy ra trạng thái hiện tại. |
 
-## Tiến độ tại mốc kiểm tra
+## Tiến độ tại mốc 07/10/2026
+
+- [Sprint 1](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/1) đã đóng 7/7 Issue. [Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) có 7/7 Issue đóng và các PR triển khai/QA đã merge vào `main` tại commit `cc65009`. Milestone Sprint 2 vẫn mở tại thời điểm kiểm tra.
+- API nhận, tồn, checkout tiền mặt, khuyến mãi, báo cáo đã tích hợp; PWA API mode nối nhận/tồn, khuyến mãi và báo cáo. Màn hình bán hàng/hóa đơn PWA chưa nối API checkout. [README gốc](../../README.md) và [hướng dẫn Compose](../../infra/README.md) chỉ cách tự chạy và thử trên máy.
+- [QA-02](../testing/QA-02-test-report.md) xác nhận root gate đạt, nhưng traceability còn **3 Fail và 3 Blocked P0**. Project Owner đã [nghiệm thu Sprint 2 có ngoại lệ ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md); [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) theo dõi sáu điểm thiếu. Quyết định này không đổi trạng thái Fail/Blocked của QA và chưa tự xếp các điểm thiếu vào Sprint 3.
+
+## Ảnh chụp tiến độ ngày 30/09/2026
 
 - [Sprint 1](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/1) đã đóng, 7/7 Issue hoàn tất. Đây là nền `main` cho Sprint 2.
 - [Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) hạn 07/10/2026, hiện có 7/7 Issue mở. [PRO-01B PR #25](https://github.com/zomboXx/bach-hoa-sim-tim/pull/25), [SAL-01 PR #26](https://github.com/zomboXx/bach-hoa-sim-tim/pull/26) và [REP-01 PR #27](https://github.com/zomboXx/bach-hoa-sim-tim/pull/27) đang mở; chưa tính là Done. Xem PR/CI mới nhất trước khi báo cáo tiến độ.

@@ -2,7 +2,7 @@
 
 Tài liệu này chốt phạm vi, ưu tiên và phụ thuộc ở mức sprint. Sau khi GitHub Project được tạo, trạng thái thực thi từng ngày chỉ cập nhật trên Issue/Project; không sửa đồng thời một cột trạng thái trùng lặp tại đây.
 
-Ưu tiên: `P0` bắt buộc cho luồng quản lý; `P1` cần cho bản cuối kỳ; `P2` chỉ làm khi P0/P1 ổn định. Sprint 0 là baseline ngày 21/09/2026; Sprint 1 đã đóng 7/7 Issue ngày 30/09/2026; Sprint 2 là kế hoạch đang triển khai. [Điểm vào tài liệu và mốc tiến độ](../README.md) giúp phân biệt phần đã tích hợp với PR đang review. TV1–TV4 được ánh xạ trong [TEAM.md](TEAM.md).
+Ưu tiên: `P0` bắt buộc cho luồng quản lý; `P1` cần cho bản cuối kỳ; `P2` chỉ làm khi P0/P1 ổn định. Sprint 0 là baseline ngày 21/09/2026; Sprint 1 đã đóng 7/7 Issue ngày 30/09/2026. Tại mốc 07/10/2026, Sprint 2 có 7/7 Issue đóng và [được nghiệm thu có ngoại lệ](../SPRINT_2_ACCEPTANCE_2026-10-07.md); [QA-02](../../testing/QA-02-test-report.md) còn 3 Fail và 3 Blocked P0 cần theo dõi. [Điểm vào tài liệu và mốc tiến độ](../README.md) phân biệt trạng thái Issue với bằng chứng nghiệm thu. TV1–TV4 được ánh xạ trong [TEAM.md](TEAM.md).
 
 ## Sprint 0 — Baseline có thể merge
 

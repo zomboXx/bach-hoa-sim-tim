@@ -22,6 +22,34 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-07 23:13:01
+
+Đối chiếu kết quả Sprint 2 sau khi các PR đã tích hợp: ghi quyết định nghiệm thu có ngoại lệ và mở Issue #34 theo dõi 3 Fail, 3 Blocked của QA-02, chưa phân công Sprint 3. Cập nhật README bắt đầu nhanh và hướng dẫn chạy demo web/API/PostgreSQL bằng một lệnh Docker Compose, tài khoản server, kịch bản nhận/tồn/báo cáo và checkout API; CI kiểm tra Compose trên PR. Đồng bộ các điểm vào tài liệu còn ghi trạng thái Sprint 1/2 cũ.
+
+Kiểm tra Compose config đạt; build hai image và khởi động ba service healthy. Smoke test qua web proxy: login MANAGER, quote 22.500 VND, checkout một hóa đơn 22.500 VND và báo cáo ghi doanh thu 22.500 VND, một hóa đơn. Root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy/links, lint/format/typecheck/build, demo E2E 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL 17 Testcontainers. Dữ liệu demo và mật khẩu local nằm trong file bị ignore và named volume, không thuộc commit.
+
+- `.github/workflows/ci.yml`: +26 -0
+- `CHANGELOG.md`: +9 -0
+- `README.md`: +38 -31
+- `apps/web/.dockerignore`: +6 -0
+- `apps/web/Dockerfile.demo`: +23 -0
+- `apps/web/README.md`: +2 -2
+- `apps/web/nginx.demo.conf`: +18 -0
+- `docs/README.md`: +3 -2
+- `docs/project/README.md`: +8 -2
+- `docs/project/SPRINT_2_ACCEPTANCE_2026-10-07.md`: +22 -0
+- `docs/project/governance/BACKLOG.md`: +1 -1
+- `docs/testing/README.md`: +1 -1
+- `infra/.env.example`: +4 -1
+- `infra/README.md`: +75 -6
+- `infra/compose.demo.yml`: +49 -0
+- `services/api/.dockerignore`: +4 -0
+- `services/api/Dockerfile.demo`: +18 -0
+- `services/api/README.md`: +4 -4
+- `CONTRIBUTION_LOG.md`: +28 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-07 14:53:55
 
 Xử lý hai nhận xét independent review của TV1 trên PR #33 cho QA-02: bỏ hoàn toàn nhánh `SIMTIM_TEST_DB_URL` để suite chỉ có thể chạy trên PostgreSQL Testcontainers disposable; nâng oracle doanh thu thành một hóa đơn hai dòng APPLE KG + RICE EA, assert hai invoice lines/hai allocation và đối chiếu `SUM(grand_total)` cùng `COUNT(*)` trực tiếp trên `sales.invoices`. Cập nhật test plan, traceability và report để ghi đúng reviewer, evidence, hai lần lỗi khởi tạo môi trường không tới assertion, quy tắc dùng `Refs #24` và việc các gap P0 còn lại phải giao đúng owner.
