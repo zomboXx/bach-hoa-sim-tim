@@ -58,10 +58,10 @@ Baseline trước thay đổi cũng đã chạy `services/api/mvnw.cmd verify`: 
 
 `Qa02E2eTest` có hậu tố `Test`, nên Maven Surefire tự chạy trong `mvnw verify`, và `scripts/verify.ps1` gọi Maven verify sau web gate. Không cần một script phụ có thể bị CI bỏ qua.
 
-Lệnh local tại commit `654992fc8b44be9719b7fa4f82028894f2f9e6f8` (chứa source test `2e6eb1b18d3b8918887871b9101c25edc0385f6e`):
+Lệnh local tại commit hồ sơ `6dbead254a006be815241befab21a684c004765e` (chứa source test `2e6eb1b18d3b8918887871b9101c25edc0385f6e` và integration fix `654992fc8b44be9719b7fa4f82028894f2f9e6f8`):
 
 ```powershell
-pwsh -File scripts/verify.ps1 -SkipInstall
+pwsh -File scripts/verify.ps1
 ```
 
 Kết quả `E-QA02-ROOT-20261007`:
@@ -70,7 +70,9 @@ Kết quả `E-QA02-ROOT-20261007`:
 - web lint/format/typecheck/build: Pass;
 - demo Playwright: 6/6 Pass;
 - API-consumer Playwright: 36/36 Pass;
-- backend Maven verify: 129 tests, 0 failure, 0 error, 0 skipped; `BUILD SUCCESS` trong 2:39.
+- backend Maven verify: 129 tests, 0 failure, 0 error, 0 skipped; `BUILD SUCCESS` trong 2:17.
+
+`npm ci` hoàn tất nhưng `npm audit` báo một dependency mức `high`; root gate hiện không coi audit warning là failure. Cảnh báo này không làm thay đổi kết quả các ca QA-02, nhưng cần được dependency owner triage riêng.
 
 Lần chạy root đầu tiên dừng ở ESLint vì merge head `4a665f7` chứa hai import `emptyOperationalState` liên tiếp trong `App.vue`. QA xóa đúng import trùng, chạy lại toàn bộ root gate và có kết quả xanh ở trên. Đây là sửa lỗi tích hợp, không thay đổi hành vi sản phẩm.
 
