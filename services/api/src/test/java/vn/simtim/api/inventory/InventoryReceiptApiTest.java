@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +71,9 @@ class InventoryReceiptApiTest {
                 jdbc.update("delete from iam.user_roles where user_id=?", id);
                 jdbc.update("delete from iam.users where id=?", id);
             }
+            for (UUID id : fixtureStores) {
+                jdbc.update("delete from core.stores where id=?", id);
+            }
         } finally {
             if (postgres.isRunning()) postgres.stop();
         }
@@ -80,6 +84,7 @@ class InventoryReceiptApiTest {
     @Autowired PasswordHasher passwords;
 
     private final List<UUID> fixtureUsers = new ArrayList<>();
+    private final List<UUID> fixtureStores = new ArrayList<>();
     private static final String PASSWORD = "inv-fixture-password-123";
 
     private String stockToken;
@@ -93,6 +98,10 @@ class InventoryReceiptApiTest {
     }
 
     private String createSession(String role, String hash) {
+        return createSession(role, hash, UUID.fromString(STORE_ID), "MAIN");
+    }
+
+    private String createSession(String role, String hash, UUID storeId, String storeCode) {
         UUID id = UUID.randomUUID();
         String username = "inv_" + role.toLowerCase(Locale.ROOT) + "_" + id;
         jdbc.update("""
@@ -104,9 +113,9 @@ class InventoryReceiptApiTest {
                 insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
                 select organization_id,?,id,?,now(),? from iam.roles
                 where organization_id=? and code=?
-                """, id, UUID.fromString(STORE_ID), id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+                """, id, storeId, id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
         var resp = rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(Map.of(
-                "organizationCode", "SIMTIM", "storeCode", "MAIN",
+                "organizationCode", "SIMTIM", "storeCode", storeCode,
                 "username", username, "password", PASSWORD), jsonHeaders()), Map.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         return (String) resp.getBody().get("accessToken");
@@ -149,6 +158,84 @@ class InventoryReceiptApiTest {
         // Second call with same key+payload → same document (idempotent)
         assertThat(second.getStatusCode().value()).isIn(200, 201);
         assertThat(first.getBody().get("id")).isEqualTo(second.getBody().get("id"));
+    }
+
+    @Test
+    void confirmReceipt_idempotency_otherActorOrStoreReturns409WithoutLeakingReceipt() {
+        UUID key = UUID.randomUUID();
+        var body = validReceiptBody(UUID.randomUUID());
+        var first = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(body, authHeaders(stockToken, key)), Map.class);
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+
+        String otherActorToken = createSession("STOCK", passwords.hash(PASSWORD));
+        UUID otherStoreId = UUID.randomUUID();
+        String otherStoreCode = "REPLAY-" + otherStoreId.toString().substring(0, 8);
+        jdbc.update("""
+                insert into core.stores(id,organization_id,code,name,status)
+                values(?,?,?,?,'ACTIVE')
+                """, otherStoreId, UUID.fromString(ORG_ID), otherStoreCode, "Replay fixture");
+        fixtureStores.add(otherStoreId);
+        String otherStoreToken = createSession("STOCK", passwords.hash(PASSWORD), otherStoreId, otherStoreCode);
+
+        for (String token : List.of(otherActorToken, otherStoreToken)) {
+            var replay = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                    new HttpEntity<>(body, authHeaders(token, key)), Map.class);
+            assertThat(replay.getStatusCode().value()).isEqualTo(409);
+            assertThat(replay.getBody()).containsEntry("code", "IDEMPOTENCY_KEY_REUSED");
+            assertThat(replay.getBody()).doesNotContainKey("id");
+        }
+        assertThat(jdbc.queryForObject(
+                "select count(*) from inventory.goods_receipts where idempotency_key=?", Integer.class, key))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void confirmReceipt_idempotency_sameActorDifferentPayloadReturns409() {
+        UUID key = UUID.randomUUID();
+        var first = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(UUID.randomUUID()), authHeaders(stockToken, key)),
+                Map.class);
+        assertThat(first.getStatusCode().value()).isEqualTo(201);
+
+        var replay = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(validReceiptBody(UUID.randomUUID()), authHeaders(stockToken, key)),
+                Map.class);
+        assertThat(replay.getStatusCode().value()).isEqualTo(409);
+        assertThat(replay.getBody()).containsEntry("code", "IDEMPOTENCY_KEY_REUSED");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from inventory.goods_receipts where idempotency_key=?", Integer.class, key))
+                .isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void confirmReceipt_quantityBeyondThreeDecimalsRejectsAllFieldsBeforeWriting() {
+        for (String field : List.of("expectedQuantity", "deliveredQuantity",
+                "acceptedQuantity", "rejectedQuantity")) {
+            UUID clientOpId = UUID.randomUUID();
+            Map<String, Object> body = new HashMap<>(validReceiptBody(clientOpId));
+            Map<String, Object> line = new HashMap<>((Map<String, Object>) ((List<?>) body.get("lines")).get(0));
+            line.put(field, "1.0005");
+            body.put("lines", List.of(line));
+            int batchesBefore = jdbc.queryForObject("select count(*) from inventory.product_batches", Integer.class);
+            int balancesBefore = jdbc.queryForObject("select count(*) from inventory.inventory_balances", Integer.class);
+            int movementsBefore = jdbc.queryForObject("select count(*) from inventory.stock_movements", Integer.class);
+
+            var response = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                    new HttpEntity<>(body, authHeaders(stockToken, UUID.randomUUID())), Map.class);
+            assertThat(response.getStatusCode().value()).as(field).isEqualTo(422);
+            assertThat(response.getBody()).containsEntry("code", "INVALID_RECEIPT");
+            assertThat(jdbc.queryForObject(
+                    "select count(*) from inventory.goods_receipts where client_operation_id=?",
+                    Integer.class, clientOpId)).isZero();
+            assertThat(jdbc.queryForObject("select count(*) from inventory.product_batches", Integer.class))
+                    .isEqualTo(batchesBefore);
+            assertThat(jdbc.queryForObject("select count(*) from inventory.inventory_balances", Integer.class))
+                    .isEqualTo(balancesBefore);
+            assertThat(jdbc.queryForObject("select count(*) from inventory.stock_movements", Integer.class))
+                    .isEqualTo(movementsBefore);
+        }
     }
 
     @Test
@@ -263,6 +350,76 @@ class InventoryReceiptApiTest {
         } finally {
             jdbc.update("delete from inventory.goods_receipts where id=?", receiptId);
             jdbc.update("delete from core.stores where id=?", otherStoreId);
+        }
+    }
+
+    /**
+     * Chứng minh filter clientOperationId xảy ra TRƯỚC phân trang (filter-before-pagination).
+     * <p>Kịch bản: tạo 3 phiếu, sau đó lấy danh sách với limit=1 và đặt clientOperationId
+     * của phiếu cuối cùng. Kết quả phải trả đúng 1 phiếu — phiếu khớp filter —
+     * bất kể limit/offset; nếu pagination được áp trước filter thì phiếu đó sẽ bị cắt mất.</p>
+     */
+    @Test
+    void listReceipts_clientOperationId_filterBeforePagination() {
+        // Tạo 3 phiếu — clientOpIdTarget là phiếu thứ hai (giữa)
+        UUID clientOpIdOther1 = UUID.randomUUID();
+        UUID clientOpIdTarget = UUID.randomUUID();
+        UUID clientOpIdOther2 = UUID.randomUUID();
+
+        for (UUID opId : new UUID[]{clientOpIdOther1, clientOpIdTarget, clientOpIdOther2}) {
+            var post = rest.exchange("/api/v1/inventory/receipts",
+                    HttpMethod.POST,
+                    new HttpEntity<>(validReceiptBody(opId),
+                            authHeaders(stockToken, UUID.randomUUID())),
+                    Map.class);
+            assertThat(post.getStatusCode().value()).isEqualTo(201);
+        }
+
+        // Lấy danh sách với limit=1 và filter clientOperationId — filter phải thắng pagination
+        var resp = rest.exchange(
+                "/api/v1/inventory/receipts?clientOperationId=" + clientOpIdTarget + "&limit=1&offset=0",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map[].class);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        // Phải trả đúng 1 phần tử và đúng clientOperationId — không bị cắt bởi limit
+        assertThat(resp.getBody()).hasSize(1);
+        assertThat(resp.getBody()[0]).containsEntry("clientOperationId", clientOpIdTarget.toString());
+    }
+
+    /**
+     * Chứng minh filter clientOperationId chỉ trả phiếu đúng clientOperationId,
+     * không trả phiếu khác của cùng store.
+     */
+    @Test
+    void listReceipts_clientOperationId_exactMatchOnly() {
+        UUID clientOpIdA = UUID.randomUUID();
+        UUID clientOpIdB = UUID.randomUUID();
+
+        // Tạo phiếu A và phiếu B trong cùng store
+        for (UUID opId : new UUID[]{clientOpIdA, clientOpIdB}) {
+            var post = rest.exchange("/api/v1/inventory/receipts",
+                    HttpMethod.POST,
+                    new HttpEntity<>(validReceiptBody(opId),
+                            authHeaders(stockToken, UUID.randomUUID())),
+                    Map.class);
+            assertThat(post.getStatusCode().value()).isEqualTo(201);
+        }
+
+        // Filter theo A — phải chỉ trả A, không trả B
+        var resp = rest.exchange(
+                "/api/v1/inventory/receipts?clientOperationId=" + clientOpIdA,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(stockToken)),
+                Map[].class);
+
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).hasSize(1);
+        assertThat(resp.getBody()[0]).containsEntry("clientOperationId", clientOpIdA.toString());
+        // Đảm bảo không lẫn phiếu B
+        for (var body : resp.getBody()) {
+            assertThat(body).doesNotContainEntry("clientOperationId", clientOpIdB.toString());
         }
     }
 
