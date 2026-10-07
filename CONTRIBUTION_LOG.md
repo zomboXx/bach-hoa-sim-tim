@@ -104,6 +104,17 @@ Fix hai lỗi bảo mật PRO-01B theo review của Project Owner (Issue #23): (
 - `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +13 -4
 - `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +63 -0
 - `CONTRIBUTION_LOG.md`: +17 -0
+TV2 — Nguyễn Văn Trung - 2026-10-05 15:22:49
+
+Sửa INV-01: chuẩn hóa `findByClientOperationId` trả `List` thay vì `Optional` xuyên suốt domain port → JPA repository → infrastructure adapter → service → controller; đảm bảo filter `clientOperationId` được áp dụng TRƯỚC phân trang (`limit`/`offset` bị bỏ qua khi có filter), luôn trong phạm vi `organizationId`/`storeId` của session. Cập nhật truy vấn JPQL thêm `ORDER BY receivedAt DESC`. Bổ sung 2 provider integration test trên PostgreSQL 17 Testcontainers: `filterBeforePagination` (tạo 3 phiếu, limit=1, chứng minh phiếu khớp filter vẫn được trả dù bị cắt nếu pagination đến trước) và `exactMatchOnly` (hai phiếu cùng store, filter A không trả B). Root gate `pwsh -File scripts/verify.ps1` chưa chạy lại sau thay đổi này; cần chạy trước khi mở PR.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/ReceiptController.java`: +4 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/application/GoodsReceiptService.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/GoodsReceiptRepository.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptJpaRepository.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptRepositoryAdapter.java`: +5 -3
+- `services/api/src/test/java/vn/simtim/api/inventory/InventoryReceiptApiTest.java`: +70 -0
 ---
 
 ---
