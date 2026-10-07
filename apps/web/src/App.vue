@@ -6,7 +6,6 @@ import {
   available,
   checkout,
   emptyOperationalState,
-  emptyOperationalState,
   persist,
   price,
   readState,
