@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-07 14:53:55
+
+Xử lý hai nhận xét independent review của TV1 trên PR #33 cho QA-02: bỏ hoàn toàn nhánh `SIMTIM_TEST_DB_URL` để suite chỉ có thể chạy trên PostgreSQL Testcontainers disposable; nâng oracle doanh thu thành một hóa đơn hai dòng APPLE KG + RICE EA, assert hai invoice lines/hai allocation và đối chiếu `SUM(grand_total)` cùng `COUNT(*)` trực tiếp trên `sales.invoices`. Cập nhật test plan, traceability và report để ghi đúng reviewer, evidence, hai lần lỗi khởi tạo môi trường không tới assertion, quy tắc dùng `Refs #24` và việc các gap P0 còn lại phải giao đúng owner.
+
+Chạy lại `Qa02E2eTest` đạt 5/5 và root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy/links, web lint/format/typecheck/build, demo E2E 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL 17.11 Testcontainers. Kết luận tổng thể vẫn là 17 Pass, 3 Fail, 3 Blocked; chưa đóng Issue #24.
+
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +29 -26
+- `docs/testing/QA-02-test-plan.md`: +1 -1
+- `docs/testing/QA-02-traceability.md`: +4 -4
+- `docs/testing/QA-02-test-report.md`: +16 -8
+- `docs/testing/README.md`: +1 -1
+- `CHANGELOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-07 10:32:07
 
 Thực hiện issue [QA-02] E2E luồng nhận–bán (#24). Bổ sung suite `Qa02E2eTest` chạy qua HTTP thật và PostgreSQL 17 Testcontainers sạch, kiểm chứng nhận đủ/từ chối/replay, CASH checkout–hóa đơn–báo cáo, rollback giỏ nhiều sản phẩm, hai checkout cạnh tranh đơn vị cuối, RBAC bốn vai trò và đối chiếu độc lập `balance = SUM(movement)` cùng doanh thu `SUM(invoice)` một lần. Suite mới đã phát hiện query báo cáo tồn REP-01 lệch migration; sửa tên cột/khóa/trạng thái thành `on_hand_quantity`, `batch_id`, `EXHAUSTED` và ràng buộc join organization/store/product. Đồng thời xóa import trùng trong `App.vue` do merge để root gate chạy được.

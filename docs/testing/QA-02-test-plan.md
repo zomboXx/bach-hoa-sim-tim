@@ -21,7 +21,7 @@ Oracle bắt buộc:
 
 ## 2. Fixture cách ly
 
-`Qa02E2eTest` khởi động PostgreSQL 17 disposable qua Testcontainers, Flyway từ V1 đến V11 và demo seed chỉ chứa catalog nền. Suite tạo bốn user fixture SALES/STOCK/MANAGER/ADMIN, đăng nhập qua HTTP, dọn chứng từ theo thứ tự khóa ngoại trước từng ca và xóa user/session khi kết thúc.
+`Qa02E2eTest` bắt buộc tự khởi động PostgreSQL 17 disposable qua Testcontainers, không đọc URL/user/password DB từ biến môi trường. Flyway chạy từ V1 đến V11 và demo seed chỉ chứa catalog nền. Suite tạo bốn user fixture SALES/STOCK/MANAGER/ADMIN, đăng nhập qua HTTP, dọn chứng từ theo thứ tự khóa ngoại trước từng ca và xóa user/session khi kết thúc. Vì không có đường dẫn tới DB ngoài, các lệnh dọn fixture không thể chạy nhầm trên DB dùng chung hoặc DB vận hành.
 
 Fixture nghiệp vụ có:
 
