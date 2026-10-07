@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-07 10:32:07
+
+Thực hiện issue [QA-02] E2E luồng nhận–bán (#24). Bổ sung suite `Qa02E2eTest` chạy qua HTTP thật và PostgreSQL 17 Testcontainers sạch, kiểm chứng nhận đủ/từ chối/replay, CASH checkout–hóa đơn–báo cáo, rollback giỏ nhiều sản phẩm, hai checkout cạnh tranh đơn vị cuối, RBAC bốn vai trò và đối chiếu độc lập `balance = SUM(movement)` cùng doanh thu `SUM(invoice)` một lần. Suite mới đã phát hiện query báo cáo tồn REP-01 lệch migration; sửa tên cột/khóa/trạng thái thành `on_hand_quantity`, `batch_id`, `EXHAUSTED` và ràng buộc join organization/store/product. Đồng thời xóa import trùng trong `App.vue` do merge để root gate chạy được.
+
+Hoàn thiện test plan, ma trận quyền, ma trận backlog–contract–test–evidence và test report. Chạy đúng `pwsh -File scripts/verify.ps1` đạt policy/links, web lint/format/typecheck/build, demo E2E 6/6, API-consumer E2E 36/36 và backend 129/129 trên PostgreSQL 17.11; riêng QA-02 đạt 5/5. Báo cáo giữ kết luận chưa nghiệm thu P0 với 17 Pass, 3 Fail và 3 Blocked do còn unit precision EA/KG, `PRICE_CHANGED`, invoice privacy SALES, checkout idempotency và live PWA sales E2E; việc TV4 tự chạy không thay thế review độc lập của TV1. `npm audit` còn một cảnh báo dependency mức high và được ghi riêng, không bị che bởi kết quả gate.
+
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +384 -0
+- `services/api/src/main/java/vn/simtim/api/reports/infrastructure/JdbcReportsRepository.java`: +9 -5
+- `apps/web/src/App.vue`: +0 -1
+- `docs/testing/QA-02-authorize.md`: +16 -0
+- `docs/testing/QA-02-test-plan.md`: +68 -0
+- `docs/testing/QA-02-test-report.md`: +83 -0
+- `docs/testing/QA-02-traceability.md`: +41 -0
+- `docs/testing/README.md`: +11 -0
+- `CHANGELOG.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 Nguyễn Văn Thi - 2026-10-06 09:42:00
 
 Hoàn thiện hợp đồng API, exception handler và integration tests cho review PR #25 (Issue #23): (1) Cập nhật wire contracts — bổ sung các endpoints quản lý target BATCH (`GET/POST/DELETE /api/v1/sales/promotions/{id}/batches`) và trường `batchIds` vào `contracts/sales-promotions.openapi.yaml`; bổ sung 5 trường snapshot khuyến mãi (`appliedPromotionId`, `appliedPromotionCode`, `appliedPromotionName`, `promotionDiscountType`, `promotionDiscountValue`) vào schema `InvoiceLineResponse` trong `contracts/sales-invoices.openapi.yaml`. (2) Xử lý ngoại lệ — ánh xạ `InventorySaleException` trong `SaleExceptionHandler` sang HTTP 409, 404, 422. (3) Bổ sung integration tests — thêm 6 test cases trong `PromotionApiTest` (CRUD batch target, phân quyền ghi 403, cấm trộn target BATCH/PRODUCT trả 422, trùng batch 409) và 5 test cases trong `SaleApiTest` (quote preview giảm giá, checkout chiết khấu theo sản phẩm và theo lô FEFO, đơn 0 VND khi giảm 100%, snapshot bất biến trên `sales.invoice_lines`, chặn xóa khuyến mãi đã dùng trả 409); cấu hình `@TestMethodOrder` và cô lập dữ liệu giữa các test. (4) Cập nhật `contracts/SALES_PROMOTIONS_REVIEW.md` ghi nhận bằng chứng kiểm thử và phạm vi component PR.
