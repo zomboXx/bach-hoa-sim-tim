@@ -22,6 +22,123 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-06 09:42:00
+
+Hoàn thiện hợp đồng API, exception handler và integration tests cho review PR #25 (Issue #23): (1) Cập nhật wire contracts — bổ sung các endpoints quản lý target BATCH (`GET/POST/DELETE /api/v1/sales/promotions/{id}/batches`) và trường `batchIds` vào `contracts/sales-promotions.openapi.yaml`; bổ sung 5 trường snapshot khuyến mãi (`appliedPromotionId`, `appliedPromotionCode`, `appliedPromotionName`, `promotionDiscountType`, `promotionDiscountValue`) vào schema `InvoiceLineResponse` trong `contracts/sales-invoices.openapi.yaml`. (2) Xử lý ngoại lệ — ánh xạ `InventorySaleException` trong `SaleExceptionHandler` sang HTTP 409, 404, 422. (3) Bổ sung integration tests — thêm 6 test cases trong `PromotionApiTest` (CRUD batch target, phân quyền ghi 403, cấm trộn target BATCH/PRODUCT trả 422, trùng batch 409) và 5 test cases trong `SaleApiTest` (quote preview giảm giá, checkout chiết khấu theo sản phẩm và theo lô FEFO, đơn 0 VND khi giảm 100%, snapshot bất biến trên `sales.invoice_lines`, chặn xóa khuyến mãi đã dùng trả 409); cấu hình `@TestMethodOrder` và cô lập dữ liệu giữa các test. (4) Cập nhật `contracts/SALES_PROMOTIONS_REVIEW.md` ghi nhận bằng chứng kiểm thử và phạm vi component PR.
+
+- `.gitignore`: +1 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +17 -7
+- `contracts/sales-invoices.openapi.yaml`: +5 -0
+- `contracts/sales-promotions.openapi.yaml`: +86 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +12 -0
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +155 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +188 -0
+- `CONTRIBUTION_LOG.md`: +15 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-06 01:16:00
+
+Hoàn thiện bổ sung theo review Issue #23: (1) Target BATCH — tạo bảng `sales.promotion_batches`, domain record `PromotionBatch`, JPA entities, repository và 3 endpoints quản lý phạm vi lô (`/promotions/{id}/batches`). Thêm quy tắc ràng buộc không cho phép trộn lẫn phạm vi BATCH và PRODUCT. (2) Tích hợp bán hàng FEFO — trong `SaleService.quote` và `checkout`, sau khi giải thuật FEFO phân bổ lô hàng, gọi `bestPromotion` để chọn mức giảm tối ưu nhất cho từng dòng theo sản phẩm/lô và khung giờ hiệu lực. (3) Snapshot hóa đơn bất biến — bổ sung 4 cột `applied_promotion_code`, `applied_promotion_name`, `promotion_discount_type`, `promotion_discount_value` vào `sales.invoice_lines`, thêm DB CHECK constraint bảo toàn giá trị và hỗ trợ giao dịch giảm 100% (0 VND). (4) Cập nhật migration Flyway V11 và tài liệu ranh giới `contracts/SALES_PROMOTIONS_REVIEW.md`.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +13 -10
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +49 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionResponse.java`: +13 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +34 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionBatch.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +9 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchId.java`: +32 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchJpa.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionBatchJpaRepository.java`: +29 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +20 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +43 -13
+- `services/api/src/main/java/vn/simtim/api/sale/api/InvoiceResponse.java`: +9 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/QuoteResponse.java`: +12 -4
+- `services/api/src/main/java/vn/simtim/api/sale/application/QuoteResult.java`: +8 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +174 -160
+- `services/api/src/main/java/vn/simtim/api/sale/domain/InvoiceLine.java`: +5 -2
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceLineJpa.java`: +16 -4
+- `services/api/src/main/resources/db/migration/V11__promotion_batch_targets_and_invoice_snapshots.sql`: +31 -0
+- `CONTRIBUTION_LOG.md`: +27 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-05 17:03:00
+
+Khắc phục lỗi mã khuyến mãi trùng giữa hai cửa hàng cùng tổ chức theo review inline của Project Owner: (1) Thống nhất phạm vi kiểm tra trùng mã khuyến mãi (precheck) với DB constraint `UNIQUE (organization_id, code)` và unique index `(organization_id, lower(code))` trên bảng `sales.promotions`. (2) Bỏ tham số `storeId` khỏi `existsByCodeInsensitive` và `existsByCodeInsensitiveExcluding` trong `PromotionJpaRepository`, `PromotionRepository`, `PromotionRepositoryAdapter` và `PromotionService` để kiểm tra trùng mã trên toàn tổ chức thay vì chỉ trong cùng cửa hàng. MANAGER ở store B khi tạo hoặc cập nhật mã đã dùng ở store A sẽ nhận lỗi HTTP 409 có cấu trúc từ tầng nghiệp vụ, thay vì vượt qua precheck rồi vấp DB constraint văng lỗi 500. (3) Bổ sung 2 integration test cross-store `crossStore_sameOrg_duplicateCode_returns409` và `crossStore_sameOrg_duplicateCode_caseInsensitive_returns409`. Biên dịch thành công mã nguồn chính và test (`mvnw compile test-compile` đạt 0).
+
+- `CHANGELOG.md`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +3 -2
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +8 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +4 -4
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +34 -0
+- `CONTRIBUTION_LOG.md`: +14 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-05 00:43:12
+
+Khắc phục triệt để các phản hồi review của Project Owner trên PR #25 (Issue #23): (1) Đảm bảo tính nhất quán giữa OpenAPI contract, DTO và implementation — loại bỏ hoàn toàn query param `storeId` ở endpoint `/promotions/applicable` và trường `storeId` trong `PromotionRequest`, làm rõ cơ chế suy diễn store từ session. (2) Siết chặt phạm vi store-scope trên mọi route và layer (`PromotionRepository`, `PromotionJpaRepository`, `PromotionRepositoryAdapter`, `PromotionService`, `PromotionController`): thay thế `listByOrg` bằng `listByStore`, kiểm tra `(organizationId, storeId)` cho tất cả các thao tác `getById`, `update`, `delete`, `addProduct`, `removeProduct`, `listProducts`, ngăn hoàn toàn MANAGER ở store A truy cập/sửa/xóa khuyến mãi của store B cùng tổ chức. (3) Bổ sung 4 integration test cô lập cross-store cùng tổ chức (`crossStore_list`, `crossStore_get`, `crossStore_delete`, `crossStore_applicable`). Chạy toàn bộ test suite API đạt 101/101 tests và toàn bộ kiểm thử `scripts/verify.ps1` đều đạt.
+
+- `CHANGELOG.md`: +1 -1
+- `contracts/sales-promotions.openapi.yaml`: +15 -8
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +25 -20
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionRequest.java`: +4 -4
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +21 -18
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +11 -6
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +14 -8
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +17 -12
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +83 -14
+- `CONTRIBUTION_LOG.md`: +18 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-04 17:36:46
+
+Fix hai lỗi bảo mật PRO-01B theo review của Project Owner (Issue #23): (1) Ràng buộc phạm vi đọc/ghi theo `SessionPrincipal` — bỏ `storeId` khỏi query param `applicable` và khỏi body `create`/`update`; mọi endpoint lấy `organizationId`/`storeId` từ session; thêm `requireSameOrg()` trả 403 nếu `X-Organization-Id` header không khớp principal, chặn cross-store spoofing. (2) Kiểm tra `scale ≤ 2` cho `discountValue` kiểu PERCENT trước khi lưu — tránh `numeric(14,2)` làm tròn ngầm giá trị 3+ chữ số thập phân hoặc biến giá trị rất nhỏ thành 0 và gây lỗi DB. Bổ sung 6 integration test mới (cross-org 403, applicable từ principal không cần storeId, scale 3 bậc từ chối, scale 2 bậc hợp lệ). Tổng 4 file thay đổi, 147 dòng thêm / 25 dòng xóa.
+
+- `CHANGELOG.md`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +94 -5
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +13 -4
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +63 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+TV2 — Nguyễn Văn Trung - 2026-10-05 15:22:49
+
+Sửa INV-01: chuẩn hóa `findByClientOperationId` trả `List` thay vì `Optional` xuyên suốt domain port → JPA repository → infrastructure adapter → service → controller; đảm bảo filter `clientOperationId` được áp dụng TRƯỚC phân trang (`limit`/`offset` bị bỏ qua khi có filter), luôn trong phạm vi `organizationId`/`storeId` của session. Cập nhật truy vấn JPQL thêm `ORDER BY receivedAt DESC`. Bổ sung 2 provider integration test trên PostgreSQL 17 Testcontainers: `filterBeforePagination` (tạo 3 phiếu, limit=1, chứng minh phiếu khớp filter vẫn được trả dù bị cắt nếu pagination đến trước) và `exactMatchOnly` (hai phiếu cùng store, filter A không trả B). Root gate `pwsh -File scripts/verify.ps1` chưa chạy lại sau thay đổi này; cần chạy trước khi mở PR.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/ReceiptController.java`: +4 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/application/GoodsReceiptService.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/GoodsReceiptRepository.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptJpaRepository.java`: +2 -2
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/GoodsReceiptRepositoryAdapter.java`: +5 -3
+- `services/api/src/test/java/vn/simtim/api/inventory/InventoryReceiptApiTest.java`: +70 -0
+---
+
+---
+TV4 — Lê Văn Chiến - 2026-10-03 16:39:57
+
+Thực hiện issue [FE-02] Nhận hàng và tồn kho trên PWA (#20). Tách feature nhận/tồn theo ADR 0003 với domain, validation, presentation và demo/API adapter riêng; API mode dùng Bearer session do auth adapter quản lý, không lưu token bền và không fallback sang dữ liệu demo. Hoàn thiện form catalog ACTIVE, kiểm tra số lượng/giá/lô/hạn, field error server, khóa thao tác đang gửi, đọc lại tồn sau xác nhận, phân trang tồn/lô/biến động, phiếu nhiều dòng, quyền 401/403 và ẩn giá nhập với SALES.
+
+Bảo vệ xác nhận nhận hàng bằng `Idempotency-Key` và `clientOperationId` ổn định trong session tab: timeout, lỗi mạng hoặc 5xx giữ dấu thao tác để GET đối soát; kết quả rỗng không tự POST, retry chủ động dùng lại cùng key và không tạo offline queue. Root gate `pwsh -File scripts/verify.ps1` đạt repository policy/links, web lint/format/typecheck/build, demo E2E 6/6, API consumer/E2E 35/35 và backend integration 77/77 trên PostgreSQL 17 Testcontainers; Maven kết thúc `BUILD SUCCESS`. Reviewer được chỉ định: TV3 — Nguyễn Văn Thi.
+
+Sau review PR #31, bổ sung filter provider `GET receipts?clientOperationId` bắt buộc organization/store từ session, bỏ vòng quét tối đa 10.000 phiếu ở web và thêm provider test chống rò cửa hàng. Live Playwright test chạy qua Spring API cùng PostgreSQL 17 disposable đã chứng minh trường hợp POST commit nhưng response bị mất: reload tìm lại đúng phiếu bằng GET filter và tổng số POST vẫn là một. Root gate sau thay đổi đạt demo E2E 6/6, API consumer/E2E 35/35, backend integration 79/79 và Maven `BUILD SUCCESS`; live integration đạt 1/1.
+
+- `apps/web/src/modules/inventory/`: +1169 -0
+- `apps/web/src/App.vue`: +40 -203
+- `apps/web/src/adapter.ts`, `apps/web/src/api.ts`: +43 -3
+- `apps/web/src/style.css`: +323 -0
+- `apps/web/tests/api-inventory.spec.ts`: +501 -0
+- `apps/web/tests/api-auth.spec.ts`, `apps/web/tests/workflows.spec.ts`: +52 -5
+- `apps/web/playwright.api.config.ts`: +2 -1
+- `apps/web/README.md`: +18 -5
+- `CHANGELOG.md`: +4 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-03 16:39:57
 
 Thực hiện issue [FE-02] Nhận hàng và tồn kho trên PWA (#20). Tách feature nhận/tồn theo ADR 0003 với domain, validation, presentation và demo/API adapter riêng; API mode dùng Bearer session do auth adapter quản lý, không lưu token bền và không fallback sang dữ liệu demo. Hoàn thiện form catalog ACTIVE, kiểm tra số lượng/giá/lô/hạn, field error server, khóa thao tác đang gửi, đọc lại tồn sau xác nhận, phân trang tồn/lô/biến động, phiếu nhiều dòng, quyền 401/403 và ẩn giá nhập với SALES.
@@ -99,6 +216,23 @@ Bổ sung 3 ca kiểm thử mới (alias route checkout, chặn sai storeId, đ�
 - `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +86 -14
 - `CHANGELOG.md`: +1 -1
 - `CONTRIBUTION_LOG.md`: +29 -0
+---
+
+---
+Nguyễn Văn Thi - 2026-10-01 08:00:04
+
+Chuẩn hóa PRO-01B theo review Sprint 2: cấu hình wire API khuyến mãi sang `/api/v1/sales/promotions` (hỗ trợ alias `/api/v1/promotions` tương thích ngược), bổ sung Working Draft OpenAPI 3.1 wire contract và ma trận quyền review tại `contracts/`. Cập nhật V5 migration với `CREATE SCHEMA IF NOT EXISTS sales;`. Bổ sung integration test kiểm tra route prefix `/api/v1/sales/promotions`, toàn bộ 15/15 test khuyến mãi và 46/46 backend integration test pass trên PostgreSQL 17 (Testcontainers).
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 46 backend tests trên PostgreSQL 17.11 disposable sạch.
+
+- `contracts/sales-promotions.openapi.yaml`: +336 -0
+- `contracts/SALES_PROMOTIONS_REVIEW.md`: +48 -0
+- `contracts/README.md`: +2 -0
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +1 -1
+- `services/api/src/main/resources/db/migration/V5__sales_promotions.sql`: +1 -1
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +8 -0
 ---
 
 ---
@@ -189,6 +323,39 @@ Triển khai Issue #22 (REP-01): Báo cáo doanh thu và tồn từ dữ liệu 
 - `apps/web/tests/api-reports.spec.ts`: +61 -0
 - `apps/web/src/adapter.ts`: +8 -2
 - `apps/web/src/App.vue`: +75 -30
+---
+
+---
+Nguyễn Văn Thi - 2026-09-30 10:31:47
+
+Hoàn thành PRO-01B: API khuyến mãi cơ bản theo sản phẩm. Flyway V5 tạo schema `sales`, bảng `promotions` và `promotion_products`, quyền `promotions.read` (mọi vai trò) / `promotions.write` (MANAGER/ADMIN). Implement đầy đủ clean-architecture (domain → application → infrastructure → api) theo đúng pattern đã có: 9 REST endpoints (CRUD + phạm vi sản phẩm + tra cứu applicable tại điểm bán), validation business rule (time window, discount value, unique code), RFC 7807 exception handler scoped cho module. Cập nhật AuthSecurity và R__demo_seed. Viết 14 integration test trên PostgreSQL 17.11 (Testcontainers) bao phủ auth matrix, CRUD lifecycle, conflict, validation và applicable query; tổng 45/45 tests pass.
+
+Root verification đạt repository policy/links, web lint/format/typecheck/build, 6 demo E2E, 23 API consumer E2E và 45 backend tests trên PostgreSQL 17.11 disposable sạch.
+
+Defer có ghi chú: `promotion_batches` (chờ `inventory.product_batches` từ INV-01) và `applied_promotion_id` trong `invoice_lines` (thuộc SAL-01).
+
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +5 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionController.java`: +132 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionExceptionHandler.java`: +45 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionRequest.java`: +35 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/api/PromotionResponse.java`: +36 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/application/PromotionService.java`: +128 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/Promotion.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionConflictException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionNotFoundException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionProduct.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionRepository.java`: +26 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/domain/PromotionValidationException.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpa.java`: +62 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionJpaRepository.java`: +55 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductId.java`: +37 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductJpa.java`: +27 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionProductJpaRepository.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/promotion/infrastructure/PromotionRepositoryAdapter.java`: +94 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +29 -0
+- `services/api/src/main/resources/db/migration/V5__sales_promotions.sql`: +45 -0
+- `services/api/src/test/java/vn/simtim/api/promotion/PromotionApiTest.java`: +361 -0
 ---
 
 ---

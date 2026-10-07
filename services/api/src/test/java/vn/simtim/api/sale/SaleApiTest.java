@@ -25,6 +25,7 @@ import vn.simtim.api.auth.domain.PasswordHasher;
  */
 @ActiveProfiles("demo")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SaleApiTest {
 
@@ -82,10 +83,17 @@ class SaleApiTest {
         // Clean up invoices from any previous partial run
         jdbc.update("DELETE FROM inventory.stock_movements WHERE recorded_by IN " +
                 "(SELECT id FROM iam.users WHERE username LIKE '%-sale-test')");
+        cleanSalesData();
+    }
+
+    private void cleanSalesData() {
         jdbc.update("DELETE FROM sales.payments WHERE organization_id = ?::uuid", ORG_ID);
         jdbc.update("DELETE FROM sales.invoice_line_batches WHERE organization_id = ?::uuid", ORG_ID);
         jdbc.update("DELETE FROM sales.invoice_lines WHERE organization_id = ?::uuid", ORG_ID);
         jdbc.update("DELETE FROM sales.invoices WHERE organization_id = ?::uuid", ORG_ID);
+        jdbc.update("DELETE FROM sales.promotion_batches WHERE organization_id = ?::uuid", ORG_ID);
+        jdbc.update("DELETE FROM sales.promotion_products WHERE organization_id = ?::uuid", ORG_ID);
+        jdbc.update("DELETE FROM sales.promotions WHERE organization_id = ?::uuid", ORG_ID);
     }
 
     /** Insert demo goods_receipt chain if inventory_balances rows don't yet exist. */
@@ -173,6 +181,9 @@ class SaleApiTest {
             jdbc.update("DELETE FROM sales.invoice_line_batches WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoice_lines WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoices WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM sales.promotion_batches WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM sales.promotion_products WHERE organization_id = ?::uuid", ORG_ID);
+            jdbc.update("DELETE FROM sales.promotions WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM inventory.inventory_balances WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM inventory.product_batches WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM inventory.goods_receipt_lines WHERE organization_id = ?::uuid", ORG_ID);
@@ -504,8 +515,263 @@ class SaleApiTest {
     }
 
     // =========================================================================
+    // PRO-01B: Promotion, FEFO discount and invoice snapshot tests
+    // =========================================================================
+
+    @Test
+    @Order(30)
+    void checkout_withProductPromotion_appliesDiscountAndSavesImmutableSnapshot() {
+        UUID promoId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,discount_value,starts_at,ends_at,status)
+                VALUES(?::uuid,?::uuid,?::uuid,'PROMO-RICE-SNAP-10','Giảm 10% gạo','PERCENT',10,
+                       '2026-01-01T00:00:00Z','2026-12-31T23:59:59Z','ACTIVE')
+                """, promoId, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID));
+        jdbc.update("""
+                INSERT INTO sales.promotion_products(organization_id,promotion_id,product_id)
+                VALUES(?::uuid,?::uuid,?::uuid)
+                """, UUID.fromString(ORG_ID), promoId, UUID.fromString(RICE_ID));
+
+        long riceBefore = getBalance(RICE_BATCH_ID);
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 2)),
+                "cashAmount", 50000L);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        @SuppressWarnings("unchecked")
+        var inv = (Map<String, Object>) resp.getBody();
+        // Gross: 2 * 25000 = 50000, 10% discount = 5000, grandTotal = 45000, change = 5000
+        assertThat(inv.get("subtotal")).isEqualTo(50000);
+        assertThat(inv.get("discountTotal")).isEqualTo(5000);
+        assertThat(inv.get("grandTotal")).isEqualTo(45000);
+        assertThat(inv.get("paidTotal")).isEqualTo(45000);
+        assertThat(inv.get("changeAmount")).isEqualTo(5000);
+
+        @SuppressWarnings("unchecked")
+        var lines = (List<Map<String, Object>>) inv.get("lines");
+        assertThat(lines).hasSize(1);
+        var line = lines.get(0);
+        assertThat(line.get("unitPrice")).isEqualTo(25000);
+        assertThat(line.get("discountAmount")).isEqualTo(5000);
+        assertThat(line.get("lineTotal")).isEqualTo(45000);
+        assertThat(line.get("appliedPromotionId")).isEqualTo(promoId.toString());
+        assertThat(line.get("appliedPromotionCode")).isEqualTo("PROMO-RICE-SNAP-10");
+        assertThat(line.get("appliedPromotionName")).isEqualTo("Giảm 10% gạo");
+        assertThat(line.get("promotionDiscountType")).isEqualTo("PERCENT");
+        assertThat(((Number) line.get("promotionDiscountValue")).doubleValue()).isEqualTo(10.0);
+
+        // Verify database row
+        var dbRow = jdbc.queryForMap(
+                "SELECT * FROM sales.invoice_lines WHERE applied_promotion_id = ?::uuid", promoId);
+        assertThat(dbRow.get("applied_promotion_code")).isEqualTo("PROMO-RICE-SNAP-10");
+        assertThat(dbRow.get("promotion_discount_type")).isEqualTo("PERCENT");
+        assertThat(dbRow.get("line_total")).isEqualTo(45000L);
+        assertThat(getBalance(RICE_BATCH_ID)).isEqualTo(riceBefore - 2);
+
+        jdbc.update("""
+                UPDATE sales.promotions SET code='PROMO-RICE-UPDATED', name='Đã đổi', discount_value=30
+                WHERE id=?::uuid
+                """, promoId);
+        try {
+            var oldInvoice = rest.exchange("/api/v1/sales/invoices/" + inv.get("id"),
+                    HttpMethod.GET, headers(salesToken, null), Map.class);
+            assertThat(oldInvoice.getStatusCode()).isEqualTo(HttpStatus.OK);
+            @SuppressWarnings("unchecked")
+            var oldLines = (List<Map<String, Object>>) oldInvoice.getBody().get("lines");
+            assertThat(oldLines.get(0).get("appliedPromotionCode")).isEqualTo("PROMO-RICE-SNAP-10");
+            assertThat(((Number) oldLines.get(0).get("promotionDiscountValue")).doubleValue())
+                    .isEqualTo(10.0);
+            assertThat(oldInvoice.getBody().get("grandTotal")).isEqualTo(45000);
+        } finally {
+            jdbc.update("UPDATE sales.promotions SET status='INACTIVE' WHERE id=?::uuid", promoId);
+        }
+    }
+
+    @Test
+    @Order(31)
+    void checkout_withBatchPromotion_appliesDiscountOnlyToTargetBatch() {
+        UUID promoId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,discount_value,starts_at,ends_at,status)
+                VALUES(?::uuid,?::uuid,?::uuid,'PROMO-RICE-BATCH-20','Giảm 20% theo lô','PERCENT',20,
+                       '2026-01-01T00:00:00Z','2026-12-31T23:59:59Z','ACTIVE')
+                """, promoId, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID));
+        jdbc.update("""
+                INSERT INTO sales.promotion_batches(organization_id,promotion_id,product_batch_id)
+                VALUES(?::uuid,?::uuid,?::uuid)
+                """, UUID.fromString(ORG_ID), promoId, UUID.fromString(RICE_BATCH_ID));
+
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 25000L);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        @SuppressWarnings("unchecked")
+        var inv = (Map<String, Object>) resp.getBody();
+        // Gross: 1 * 25000 = 25000, 20% discount = 5000, grandTotal = 20000, change = 5000
+        assertThat(inv.get("subtotal")).isEqualTo(25000);
+        assertThat(inv.get("discountTotal")).isEqualTo(5000);
+        assertThat(inv.get("grandTotal")).isEqualTo(20000);
+
+        @SuppressWarnings("unchecked")
+        var lines = (List<Map<String, Object>>) inv.get("lines");
+        var line = lines.get(0);
+        assertThat(line.get("appliedPromotionCode")).isEqualTo("PROMO-RICE-BATCH-20");
+        assertThat(line.get("promotionDiscountType")).isEqualTo("PERCENT");
+    }
+
+    @Test
+    @Order(32)
+    void checkout_with100PercentPromotion_allowsZeroVndAndSavesSnapshot() {
+        UUID promoId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,discount_value,starts_at,ends_at,status)
+                VALUES(?::uuid,?::uuid,?::uuid,'PROMO-FREE-100','Miễn phí 100% táo','PERCENT',100,
+                       '2026-01-01T00:00:00Z','2026-12-31T23:59:59Z','ACTIVE')
+                """, promoId, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID));
+        jdbc.update("""
+                INSERT INTO sales.promotion_products(organization_id,promotion_id,product_id)
+                VALUES(?::uuid,?::uuid,?::uuid)
+                """, UUID.fromString(ORG_ID), promoId, UUID.fromString(APPLE_ID));
+
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", APPLE_ID, "quantity", 1)),
+                "cashAmount", 0L);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        @SuppressWarnings("unchecked")
+        var inv = (Map<String, Object>) resp.getBody();
+        assertThat(inv.get("grandTotal")).isEqualTo(0);
+        assertThat(inv.get("paidTotal")).isEqualTo(0);
+        assertThat(inv.get("changeAmount")).isEqualTo(0);
+        assertThat(inv.get("status")).isEqualTo("COMPLETED");
+
+        @SuppressWarnings("unchecked")
+        var lines = (List<Map<String, Object>>) inv.get("lines");
+        var line = lines.get(0);
+        assertThat(line.get("lineTotal")).isEqualTo(0);
+        assertThat(line.get("discountAmount")).isEqualTo(40000);
+        assertThat(line.get("appliedPromotionCode")).isEqualTo("PROMO-FREE-100");
+    }
+
+    @Test
+    @Order(33)
+    void deletePromotion_referencedByInvoiceLine_returns409() {
+        var promoId = jdbc.queryForObject(
+                "SELECT applied_promotion_id FROM sales.invoice_lines WHERE applied_promotion_id IS NOT NULL LIMIT 1",
+                UUID.class);
+        assertThat(promoId).isNotNull();
+
+        var delResp = rest.exchange("/api/v1/sales/promotions/" + promoId, HttpMethod.DELETE,
+                headers(managerToken, null), Map.class);
+        assertThat(delResp.getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
+    @Order(34)
+    void quote_withPromotion_returnsCorrectDiscount() {
+        cleanSalesData();
+        UUID promoId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,discount_value,starts_at,ends_at,status)
+                VALUES(?::uuid,?::uuid,?::uuid,'PROMO-QUOTE-TEST','Giảm 10% gạo quote','PERCENT',10,
+                       '2026-01-01T00:00:00Z','2026-12-31T23:59:59Z','ACTIVE')
+                """, promoId, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID));
+        jdbc.update("""
+                INSERT INTO sales.promotion_products(organization_id,promotion_id,product_id)
+                VALUES(?::uuid,?::uuid,?::uuid)
+                """, UUID.fromString(ORG_ID), promoId, UUID.fromString(RICE_ID));
+
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 2)));
+        var resp = post("/api/v1/sales/quote", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        @SuppressWarnings("unchecked")
+        var r = (Map<String, Object>) resp.getBody();
+        assertThat(r.get("subtotal")).isEqualTo(50000);
+        assertThat(r.get("discountTotal")).isEqualTo(5000);
+        assertThat(r.get("grandTotal")).isEqualTo(45000);
+
+        @SuppressWarnings("unchecked")
+        var lines = (List<Map<String, Object>>) r.get("lines");
+        var l = lines.get(0);
+        assertThat(l.get("grossAmount")).isEqualTo(50000);
+        assertThat(l.get("discountAmount")).isEqualTo(5000);
+        assertThat(l.get("lineTotal")).isEqualTo(45000);
+        assertThat(l.get("promotionCode")).isEqualTo("PROMO-QUOTE-TEST");
+    }
+
+    @Test
+    @Order(35)
+    void quoteAndCheckout_chooseLargestRealDiscountThenSmallestUuidOnTie() {
+        cleanSalesData();
+        UUID smaller = UUID.fromString("20000000-0000-0000-0000-000000000001");
+        UUID larger = UUID.fromString("20000000-0000-0000-0000-000000000002");
+        insertRicePromotion(UUID.randomUUID(), "LESS-DISCOUNT", "AMOUNT", "4000");
+        insertRicePromotion(larger, "TIE-LARGER", "AMOUNT", "5000");
+        insertRicePromotion(smaller, "TIE-SMALLER", "AMOUNT", "5000");
+
+        var items = List.of(Map.of("productId", RICE_ID, "quantity", 1));
+        var quote = postForOk("/api/v1/sales/quote", Map.of("storeId", STORE_ID, "items", items), salesToken);
+        @SuppressWarnings("unchecked")
+        var quoteLines = (List<Map<String, Object>>) quote.get("lines");
+        assertThat(quote.get("discountTotal")).isEqualTo(5000);
+        assertThat(quoteLines.get(0).get("appliedPromotionId")).isEqualTo(smaller.toString());
+
+        var checkout = postForOk("/api/v1/sales/invoices",
+                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 25000), salesToken);
+        @SuppressWarnings("unchecked")
+        var invoiceLines = (List<Map<String, Object>>) checkout.get("lines");
+        assertThat(checkout.get("discountTotal")).isEqualTo(5000);
+        assertThat(invoiceLines.get(0).get("appliedPromotionId")).isEqualTo(smaller.toString());
+    }
+
+    @Test
+    @Order(36)
+    void quoteAndCheckout_roundFractionalQuantityWithSameRule() {
+        cleanSalesData();
+        insertRicePromotion(UUID.randomUUID(), "FRACTION-ROUND", "PERCENT", "0.01");
+        var items = List.of(Map.of("productId", RICE_ID, "quantity", "0.5"));
+        var quote = postForOk("/api/v1/sales/quote", Map.of("storeId", STORE_ID, "items", items), salesToken);
+        @SuppressWarnings("unchecked")
+        var quoteLines = (List<Map<String, Object>>) quote.get("lines");
+        assertThat(quote.get("subtotal")).isEqualTo(12500);
+        assertThat(quote.get("discountTotal")).isEqualTo(1);
+        assertThat(quoteLines.get(0).get("lineTotal")).isEqualTo(12499);
+
+        var invoice = postForOk("/api/v1/sales/invoices",
+                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 12500), salesToken);
+        @SuppressWarnings("unchecked")
+        var invoiceLines = (List<Map<String, Object>>) invoice.get("lines");
+        assertThat(invoice.get("subtotal")).isEqualTo(quote.get("subtotal"));
+        assertThat(invoice.get("discountTotal")).isEqualTo(quote.get("discountTotal"));
+        assertThat(invoiceLines.get(0).get("lineTotal")).isEqualTo(quoteLines.get(0).get("lineTotal"));
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
+
+    private void insertRicePromotion(UUID id, String code, String type, String value) {
+        jdbc.update("""
+                INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,
+                                             discount_value,starts_at,ends_at,status)
+                VALUES(?::uuid,?::uuid,?::uuid,?,?,?,?::numeric,
+                       '2026-01-01T00:00:00Z','2026-12-31T23:59:59Z','ACTIVE')
+                """, id, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID), code, code, type, value);
+        jdbc.update("""
+                INSERT INTO sales.promotion_products(organization_id,promotion_id,product_id)
+                VALUES(?::uuid,?::uuid,?::uuid)
+                """, UUID.fromString(ORG_ID), id, UUID.fromString(RICE_ID));
+    }
 
     private String createUserAndLogin(String username, String roleCode) {
         UUID userId = UUID.randomUUID();

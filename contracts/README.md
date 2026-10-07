@@ -10,3 +10,5 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 - [INV-02 inventory read OpenAPI](inventory.openapi.yaml): Working Draft cho ba route tồn hiện tại; provider tests nằm trong API module, chờ TV4 review wire contract.
 - [SAL-01 sales/invoices](SALES_INVOICE_REVIEW.md): Working Draft cho Issue #21 / PR #26, wire `/api/v1/sales/...`, ma trận quyền `sales.*` và public `InventoryPort`.
 - [Sales/invoices OpenAPI 3.1](sales-invoices.openapi.yaml): Working Draft wire contract cho SAL-01.
+- [PRO-01B promotions](SALES_PROMOTIONS_REVIEW.md): Working Draft cho Issue #23 / PR #25, wire `/api/v1/sales/promotions` và ma trận quyền `promotions.*`.
+- [Promotions OpenAPI 3.1](sales-promotions.openapi.yaml): Working Draft wire contract cho PRO-01B.

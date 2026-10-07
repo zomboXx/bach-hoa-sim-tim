@@ -75,3 +75,31 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
        OR (p.code='sales.write' AND r.code IN ('SALES','MANAGER','ADMIN')))
 ON CONFLICT DO NOTHING;
 
+-- PRO-01B: quyền khuyến mãi cho tổ chức demo (V10 đã grant toàn bộ, seed bổ sung cho profile demo).
+INSERT INTO iam.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
+WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
+  AND (p.code='promotions.read'
+       OR (p.code='promotions.write' AND r.code IN ('MANAGER','ADMIN')))
+ON CONFLICT DO NOTHING;
+
+-- PRO-01B: khuyến mãi mẫu — giảm 10% trên gạo tại cửa hàng MAIN.
+INSERT INTO sales.promotions
+    (id, organization_id, store_id, code, name, discount_type, discount_value,
+     starts_at, ends_at, status)
+VALUES
+    ('10000000-0000-0000-0000-000000000081',
+     '10000000-0000-0000-0000-000000000001',
+     '10000000-0000-0000-0000-000000000002',
+     'PROMO-RICE-10PCT', 'Giảm 10% gạo tháng 10',
+     'PERCENT', 10,
+     '2026-10-01T00:00:00Z', '2026-10-31T23:59:59Z',
+     'ACTIVE')
+ON CONFLICT DO NOTHING;
+
+-- Phạm vi sản phẩm của khuyến mãi mẫu: chỉ áp dụng cho gạo gói 1kg.
+INSERT INTO sales.promotion_products (organization_id, promotion_id, product_id)
+VALUES ('10000000-0000-0000-0000-000000000001',
+        '10000000-0000-0000-0000-000000000081',
+        '10000000-0000-0000-0000-000000000041')
+ON CONFLICT DO NOTHING;
