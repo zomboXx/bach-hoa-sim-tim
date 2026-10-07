@@ -57,18 +57,10 @@ class Qa02E2eTest {
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
-        String externalUrl = System.getenv("SIMTIM_TEST_DB_URL");
-        if (externalUrl == null || externalUrl.isBlank()) {
-            POSTGRES.start();
-            registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-            registry.add("spring.datasource.username", POSTGRES::getUsername);
-            registry.add("spring.datasource.password", POSTGRES::getPassword);
-        } else {
-            registry.add("spring.datasource.url", () -> externalUrl);
-            registry.add("spring.datasource.username", () -> System.getenv("SIMTIM_TEST_DB_USER"));
-            registry.add("spring.datasource.password",
-                    () -> System.getenv().getOrDefault("SIMTIM_TEST_DB_PASSWORD", ""));
-        }
+        POSTGRES.start();
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 
     @Autowired TestRestTemplate http;
@@ -123,19 +115,24 @@ class Qa02E2eTest {
     @Test
     @SuppressWarnings("unchecked")
     void receiptToCashInvoiceAndReportsReconcileWithIndependentSqlOracle() {
-        UUID receiptId = receive(APPLE_ID, "2.500", "2.500", "0.000", null);
+        UUID appleReceiptId = receive(APPLE_ID, "2.500", "2.500", "0.000", null);
+        UUID riceReceiptId = receive(RICE_ID, "1.000", "1.000", "0.000", null);
+
+        List<Map<String, Object>> saleItems = List.of(
+                Map.of("productId", APPLE_ID, "quantity", "1.250"),
+                Map.of("productId", RICE_ID, "quantity", "1.000"));
 
         Map<String, Object> quote = body(post("/api/v1/sales/quote", Map.of(
-                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.250"))), salesToken));
-        assertThat(quote.get("grandTotal")).isEqualTo(50000);
+                "items", saleItems), salesToken));
+        assertThat(quote.get("grandTotal")).isEqualTo(75000);
 
         ResponseEntity<Object> checkout = post("/api/v1/sales/checkout", Map.of(
-                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.250")),
-                "cashAmount", 60000), salesToken);
+                "items", saleItems,
+                "cashAmount", 80000), salesToken);
         assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Map<String, Object> invoice = body(checkout);
         UUID invoiceId = UUID.fromString(invoice.get("id").toString());
-        assertThat(invoice).containsEntry("grandTotal", 50000).containsEntry("changeAmount", 10000);
+        assertThat(invoice).containsEntry("grandTotal", 75000).containsEntry("changeAmount", 5000);
 
         Map<String, Object> storedInvoice = jdbc.queryForMap("""
                 select status, subtotal, discount_total, grand_total, paid_total, change_amount
@@ -143,13 +140,14 @@ class Qa02E2eTest {
                 """, invoiceId);
         assertThat(storedInvoice)
                 .containsEntry("status", "COMPLETED")
-                .containsEntry("subtotal", 50000L)
+                .containsEntry("subtotal", 75000L)
                 .containsEntry("discount_total", 0L)
-                .containsEntry("grand_total", 50000L)
-                .containsEntry("paid_total", 50000L)
-                .containsEntry("change_amount", 10000L);
+                .containsEntry("grand_total", 75000L)
+                .containsEntry("paid_total", 75000L)
+                .containsEntry("change_amount", 5000L);
         assertThat(count("select count(*) from sales.payments where invoice_id=?", invoiceId)).isEqualTo(1);
-        assertThat(count("select count(*) from sales.invoice_line_batches ilb join sales.invoice_lines il on il.id=ilb.invoice_line_id where il.invoice_id=?", invoiceId)).isEqualTo(1);
+        assertThat(count("select count(*) from sales.invoice_lines where invoice_id=?", invoiceId)).isEqualTo(2);
+        assertThat(count("select count(*) from sales.invoice_line_batches ilb join sales.invoice_lines il on il.id=ilb.invoice_line_id where il.invoice_id=?", invoiceId)).isEqualTo(2);
 
         List<Map<String, Object>> batches = jdbc.queryForList("""
                 select ib.batch_id, ib.on_hand_quantity,
@@ -164,8 +162,9 @@ class Qa02E2eTest {
         assertThat(batches).hasSize(1);
         assertThat(decimal(batches.get(0).get("on_hand_quantity"))).isEqualByComparingTo("1.250");
         assertThat(decimal(batches.get(0).get("ledger_quantity"))).isEqualByComparingTo("1.250");
-        assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", receiptId)).isEqualTo(1);
-        assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE' and quantity_delta=-1.250", new Object[0])).isEqualTo(1);
+        assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", appleReceiptId)).isEqualTo(1);
+        assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", riceReceiptId)).isEqualTo(1);
+        assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'", new Object[0])).isEqualTo(2);
 
         LocalDate today = LocalDate.now();
         Map<String, Object> revenue = body(get("/api/v1/reports/revenue?from=" + today + "&to=" + today.plusDays(1), managerToken));
@@ -173,8 +172,12 @@ class Qa02E2eTest {
                 select coalesce(sum(grand_total),0) from sales.invoices
                 where organization_id=? and store_id=? and status='COMPLETED'
                 """, Long.class, ORG_ID, STORE_ID);
+        Integer sqlInvoiceCount = jdbc.queryForObject("""
+                select count(*) from sales.invoices
+                where organization_id=? and store_id=? and status='COMPLETED'
+                """, Integer.class, ORG_ID, STORE_ID);
         assertThat(decimal(revenue.get("revenue"))).isEqualByComparingTo(sqlRevenue.toString());
-        assertThat(decimal(revenue.get("invoiceCount"))).isEqualByComparingTo("1");
+        assertThat(decimal(revenue.get("invoiceCount"))).isEqualByComparingTo(sqlInvoiceCount.toString());
 
         Map<String, Object> inventoryReport = body(get("/api/v1/reports/inventory", managerToken));
         List<Map<String, Object>> items = (List<Map<String, Object>>) inventoryReport.get("items");
