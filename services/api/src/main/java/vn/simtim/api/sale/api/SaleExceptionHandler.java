@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.simtim.api.inventory.application.InventoryConflictException;
+import vn.simtim.api.inventory.application.InventorySaleException;
 import vn.simtim.api.sale.domain.SaleConflictException;
 import vn.simtim.api.sale.domain.SaleNotFoundException;
 import vn.simtim.api.sale.domain.SaleValidationException;
@@ -26,5 +27,16 @@ public class SaleExceptionHandler {
     @ExceptionHandler(SaleValidationException.class)
     public ResponseEntity<Map<String, String>> validation(SaleValidationException ex) {
         return ResponseEntity.status(422).body(Map.of("code", "VALIDATION_ERROR", "message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InventorySaleException.class)
+    public ResponseEntity<Map<String, String>> inventorySale(InventorySaleException ex) {
+        if ("NOT_FOUND".equals(ex.getCode())) {
+            return ResponseEntity.status(404).body(Map.of("code", "NOT_FOUND", "message", ex.getMessage()));
+        }
+        if ("INVALID_REQUEST".equals(ex.getCode())) {
+            return ResponseEntity.status(422).body(Map.of("code", "VALIDATION_ERROR", "message", ex.getMessage()));
+        }
+        return ResponseEntity.status(409).body(Map.of("code", "CONFLICT", "message", ex.getMessage()));
     }
 }

@@ -21,6 +21,7 @@ docs/**/*.docx
 *.log
 .DS_Store
 Thumbs.db
+.vscode/
 
 # Future module build output
 services/api/target/

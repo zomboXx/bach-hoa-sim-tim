@@ -9,12 +9,19 @@ public record QuoteResult(
         UUID storeId,
         List<QuoteLineResult> lines,
         long subtotal,
+        long discountTotal,
         long grandTotal) {
 
     public record QuoteLineResult(
             UUID productId,
             String productName,
+            UUID productBatchId,
             BigDecimal quantity,
             long unitPrice,
-            long lineTotal) {}
+            long grossAmount,
+            long discountAmount,
+            long lineTotal,
+            UUID appliedPromotionId,
+            String promotionCode,
+            String promotionName) {}
 }

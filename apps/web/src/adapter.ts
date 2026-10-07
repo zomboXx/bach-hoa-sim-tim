@@ -26,6 +26,7 @@ export function routesFor(user: AuthUser): string[] {
       ? ["receive"]
       : []),
     ...(user.session.permissions.includes("inventory.read") ? ["inventory"] : []),
+    ...(user.session.permissions.includes("promotions.read") ? ["promotions"] : []),
     ...(user.session.permissions.includes("reports.read") ? ["reports"] : []),
     ...(user.session.trainingEnabled ? ["training"] : []),
   ];
