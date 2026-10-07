@@ -3,7 +3,7 @@
 - Trạng thái: **17 Pass, 3 Fail, 3 Blocked**
 - Ngày cập nhật: 2026-10-07
 - Source test sau independent review: `840a82a1101cbef5351407d498542c74b8ae237d`
-- Evidence local: `E-QA02-API-2E6EB1B`, `E-QA02-ROOT-20261007`, `E-QA02-REVIEW-840A82A`; chi tiết runtime và từng gate nằm trong test report
+- Evidence local: `E-QA02-API-2E6EB1B`, `E-QA02-ROOT-20261007`, `E-QA02-REVIEW-840A82A`; CI sau review: [`baseline-quality` #37590444421](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/37590444421) `success`; chi tiết runtime và từng gate nằm trong test report
 
 Các PR provider/consumer đã có trong lịch sử `origin/main` của source được test: [INV-01 PR #29](https://github.com/zomboXx/bach-hoa-sim-tim/pull/29) + [fix #32](https://github.com/zomboXx/bach-hoa-sim-tim/pull/32), [INV-02 #30](https://github.com/zomboXx/bach-hoa-sim-tim/pull/30), [FE-02 #31](https://github.com/zomboXx/bach-hoa-sim-tim/pull/31), [SAL-01 #26](https://github.com/zomboXx/bach-hoa-sim-tim/pull/26), [REP-01 #27](https://github.com/zomboXx/bach-hoa-sim-tim/pull/27), [PRO-01B #25](https://github.com/zomboXx/bach-hoa-sim-tim/pull/25). Đây là bằng chứng Git local; trạng thái review/CI trên GitHub vẫn phải được TV1 xác nhận trước đóng Issue.
 

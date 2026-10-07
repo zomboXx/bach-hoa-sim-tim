@@ -80,11 +80,11 @@ Kết quả `E-QA02-ROOT-20261007`:
 
 Lần chạy root đầu tiên dừng ở ESLint vì merge head `4a665f7` chứa hai import `emptyOperationalState` liên tiếp trong `App.vue`. QA xóa đúng import trùng, chạy lại toàn bộ root gate và có kết quả xanh ở trên. Đây là sửa lỗi tích hợp, không thay đổi hành vi sản phẩm.
 
-TV1 đã cung cấp independent evidence trên head `d18b2b3`: `pwsh -File scripts/verify.ps1 -SkipInstall` đạt repository policy, Markdown, demo 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL Testcontainers. URL CI của bản sửa `840a82a` phải được bổ sung sau khi push và CI hoàn tất. Không commit output build hoặc token.
+TV1 đã cung cấp independent evidence trên head `d18b2b3`: `pwsh -File scripts/verify.ps1 -SkipInstall` đạt repository policy, Markdown, demo 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL Testcontainers. Không commit output build hoặc token.
 
 TV4 đã chạy lại cùng root gate trên bản sửa `840a82a`: repository policy/Markdown/web lint-format-typecheck-build đạt, demo 6/6, API consumer 36/36 và backend 129/129; Maven `BUILD SUCCESS` trong 2:52 trên PostgreSQL 17.11 Testcontainers.
 
-PR checkpoint: [#33](https://github.com/zomboXx/bach-hoa-sim-tim/pull/33). CI URL của head sau review sẽ được gắn vào report và Issue #24 khi workflow hoàn tất.
+PR checkpoint: [#33](https://github.com/zomboXx/bach-hoa-sim-tim/pull/33). GitHub Actions [`baseline-quality` run #37590444421](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/37590444421) đạt `success` trên head `a1430f0d20b75630df5852a532fa7614839f8168`, chứa bản sửa test `840a82a`.
 
 ## 6. Quyết định trước khi approve
 
