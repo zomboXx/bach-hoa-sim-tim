@@ -1,13 +1,14 @@
 # Tài liệu điều hành dự án
 
-**Mốc kiểm tra: 07/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công; [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) và Pull Request ghi tiến độ thực tế. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
+**Mốc điều hành: 08/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công; [kickoff Sprint 3](SPRINT_3_KICKOFF.md), [milestone không hạn kết thúc](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) và Pull Request ghi cách thực hiện, tiến độ. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
 
 ## Đọc tài liệu nào
 
 | Nhu cầu | Tài liệu có hiệu lực | Ghi chú |
 |---|---|---|
 | Công việc Sprint 2 | [Backlog](governance/BACKLOG.md), [kickoff](SPRINT_2_KICKOFF.md), [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) | Contract vẫn là Working Draft; đổi wire/schema cần review trong PR. |
-| Ai làm và ai review | [TEAM.md](governance/TEAM.md), từng [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) | Bảng TEAM ghi trách nhiệm dài hạn; phân công riêng Sprint 2 nằm trong backlog và Issue. |
+| Công việc Sprint 3 | [Backlog](governance/BACKLOG.md#sprint-3--hiện-trường-và-kiểm-kê), [kickoff](SPRINT_3_KICKOFF.md), [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Năm mã gốc P1; chi tiết kỹ thuật trong kickoff là gợi ý refinement, cần owner/reviewer chốt trước code. |
+| Ai làm và ai review | [TEAM.md](governance/TEAM.md), từng [Issue Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Bảng TEAM ghi trách nhiệm dài hạn; phân công Sprint 3 nằm trong backlog và Issue. |
 | Phạm vi yêu cầu | [Bản ghi REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) | Đã tích hợp qua PR #17; Issue #2 đã đóng. |
 | Quy trình và trạng thái | [SCRUM.md](governance/SCRUM.md), Issue/PR | Không dùng các bản nháp cũ để suy ra trạng thái hiện tại. |
 
@@ -16,6 +17,11 @@
 - [Sprint 1](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/1) đã đóng 7/7 Issue. [Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) có 7/7 Issue đóng và các PR triển khai/QA đã merge vào `main` tại commit `cc65009`. Milestone Sprint 2 vẫn mở tại thời điểm kiểm tra.
 - API nhận, tồn, checkout tiền mặt, khuyến mãi, báo cáo đã tích hợp; PWA API mode nối nhận/tồn, khuyến mãi và báo cáo. Màn hình bán hàng/hóa đơn PWA chưa nối API checkout. [README gốc](../../README.md) và [hướng dẫn Compose](../../infra/README.md) chỉ cách tự chạy và thử trên máy.
 - [QA-02](../testing/QA-02-test-report.md) xác nhận root gate đạt, nhưng traceability còn **3 Fail và 3 Blocked P0**. Project Owner đã [nghiệm thu Sprint 2 có ngoại lệ ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md); [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) theo dõi sáu điểm thiếu. Quyết định này không đổi trạng thái Fail/Blocked của QA và chưa tự xếp các điểm thiếu vào Sprint 3.
+
+## Khởi động Sprint 3 ngày 08/10/2026
+
+- Project Owner giữ năm mã MOB-01, SYN-01, SYN-02, INV-03, QA-03 đúng backlog; milestone không có ngày kết thúc. Owner/reviewer và thứ tự phụ thuộc nằm trong [kickoff](SPRINT_3_KICKOFF.md) cùng từng Issue.
+- Issue #34 vẫn theo dõi ngoại lệ Sprint 2 riêng; không thay thế năm mục kiểm kê. Chỉ đánh dấu Done sau khi code tích hợp và bằng chứng kiểm thử đạt DoD.
 
 ## Ảnh chụp tiến độ ngày 30/09/2026
 

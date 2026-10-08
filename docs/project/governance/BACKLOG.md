@@ -72,13 +72,15 @@ Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: vớ
 
 Mục tiêu: nhân viên kiểm kê trên điện thoại; quản lý duyệt trên máy tính.
 
+Project Owner khởi động Sprint 3 ngày 08/10/2026 theo đúng năm mục dưới đây, không đặt ngày kết thúc. [Kickoff](../SPRINT_3_KICKOFF.md) ghi thứ tự và điểm giao cần review; [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) cùng từng Issue ghi tiến độ. Các ngoại lệ QA-02 của Sprint 2 theo dõi riêng tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34), chưa được gán vào Sprint 3.
+
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| MOB-01 | Giao diện kiểm kê responsive | P1 | TV4 | TV3 | INV-02 | Không cuộn ngang ở viewport đã công bố; nhập theo lô |
-| SYN-01 | Hàng đợi kiểm kê offline | P1 | TV4 | TV2 | MOB-01 | Giữ thao tác qua reload; có `clientOperationId` |
-| SYN-02 | API đồng bộ và xử lý xung đột | P1 | TV2 | TV4 | SYN-01 | Retry không tạo bản ghi trùng; version lệch trả conflict |
-| INV-03 | Duyệt điều chỉnh tồn | P1 | TV2 | TV1 | SYN-02 | Chỉ quản lý duyệt; tạo biến động; không duyệt hai lần |
-| QA-03 | Test desktop/mobile/offline | P1 | TV4 | TV3 | INV-03 | Có kết quả test viewport, reload và reconnect |
+| [MOB-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/43) | Giao diện kiểm kê responsive | P1 | TV4 | TV3 | INV-02 | Không cuộn ngang ở viewport đã công bố; nhập theo lô |
+| [SYN-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/44) | Hàng đợi kiểm kê offline | P1 | TV4 | TV2 | MOB-01 | Giữ thao tác qua reload; có `clientOperationId` |
+| [SYN-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/45) | API đồng bộ và xử lý xung đột | P1 | TV2 | TV4 | SYN-01 | Retry không tạo bản ghi trùng; version lệch trả conflict |
+| [INV-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/46) | Duyệt điều chỉnh tồn | P1 | TV2 | TV1 | SYN-02 | Chỉ quản lý duyệt; tạo biến động; không duyệt hai lần |
+| [QA-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) | Test desktop/mobile/offline | P1 | TV4 | TV3 | INV-03 | Có kết quả test viewport, reload và reconnect |
 
 ## Sprint 4 — Đào tạo, ổn định và báo cáo
 

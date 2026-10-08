@@ -22,6 +22,20 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-08 18:41:02
+
+Điều phối khởi động Sprint 3 theo năm mã đã chốt trong backlog: MOB-01 #43, SYN-01 #44, SYN-02 #45, INV-03 #46 và QA-03 #47. Gán owner, reviewer, nhãn P1/Sprint 3, milestone không có ngày kết thúc; giữ sáu ngoại lệ QA-02 ở #34. Viết kickoff và đồng bộ điểm vào tài liệu, phân công, backlog; phương án sáu Issue sai trước đó được lưu là lịch sử và không đưa vào cam kết mới.
+
+- `CHANGELOG.md`: +1 -0
+- `docs/README.md`: +2 -1
+- `docs/project/README.md`: +8 -2
+- `docs/project/SPRINT_3_KICKOFF.md`: +63 -0
+- `docs/project/governance/BACKLOG.md`: +7 -5
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +14 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-07 23:13:01
 
 Đối chiếu kết quả Sprint 2 sau khi các PR đã tích hợp: ghi quyết định nghiệm thu có ngoại lệ và mở Issue #34 theo dõi 3 Fail, 3 Blocked của QA-02, chưa phân công Sprint 3. Cập nhật README bắt đầu nhanh và hướng dẫn chạy demo web/API/PostgreSQL bằng một lệnh Docker Compose, tài khoản server, kịch bản nhận/tồn/báo cáo và checkout API; CI kiểm tra Compose trên PR. Đồng bộ các điểm vào tài liệu còn ghi trạng thái Sprint 1/2 cũ.
