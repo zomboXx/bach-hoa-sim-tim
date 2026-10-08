@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Khởi động Sprint 3 theo năm mã kiểm kê MOB-01, SYN-01, SYN-02, INV-03, QA-03 trong backlog; thêm kickoff, phân công và điểm review, milestone không có hạn kết thúc. Sáu ngoại lệ QA-02 của Sprint 2 tiếp tục theo dõi riêng tại Issue #34.
 - Bổ sung Docker Compose demo ba dịch vụ web, API và PostgreSQL, Dockerfile riêng cho web/API, Nginx proxy cùng origin, healthcheck và tài khoản server demo chỉ khi người chạy cung cấp mật khẩu local. README hướng dẫn khởi động bằng một lệnh, thử luồng nhận/tồn/báo cáo và checkout tiền mặt qua API; CI build/khởi động demo và smoke test web/API trên mỗi PR.
 
 ### Changed

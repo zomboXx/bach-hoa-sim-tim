@@ -11,6 +11,8 @@ Danh sách được Project Owner xác nhận ngày 21/09/2026. Điều phối v
 
 Phân công riêng cho Sprint 2 ngày 30/09/2026 nằm trong [backlog](BACKLOG.md#sprint-2--luồng-nghiệp-vụ-cốt-lõi): TV4 làm FE-02 và QA-02, TV2 làm INV-01/02 rồi REP-01, TV3 làm SAL-01 và PRO-01B (P1), TV1 điều phối và review. Bảng trách nhiệm module dài hạn ở trên vẫn là quyết định ngày 21/09/2026.
 
+Sprint 3 khởi động ngày 08/10/2026 theo [kickoff kiểm kê](../SPRINT_3_KICKOFF.md): TV4 sở hữu MOB-01, SYN-01 và QA-03; TV2 sở hữu SYN-02 và INV-03; TV3 review MOB-01 và QA-03; TV1 điều phối và review INV-03. Mỗi owner xử lý theo phụ thuộc trong backlog, không đồng thời kéo nhiều Issue vào `In Progress`.
+
 ## Trách nhiệm chung của chủ module
 
 - Xác định pain point, yêu cầu và actor liên quan.

@@ -1,18 +1,18 @@
 # Sprint 3 kickoff — Kiểm kê hiện trường
 
-**Bản sửa để Project Owner rà soát, 08/10/2026; chưa công bố.** Nguồn phạm vi là [BACKLOG.md trên `main`](governance/BACKLOG.md#sprint-3--hiện-trường-và-kiểm-kê), [quyết định REQ-01](REQ-01_SCOPE_RECORD_2026-09-29.md) và [Scrum DoD](governance/SCRUM.md). Sprint 3 giữ đúng năm mã đã chốt: **MOB-01, SYN-01, SYN-02, INV-03, QA-03**. Mục tiêu: nhân viên kiểm kê theo lô trên điện thoại, lưu số đếm khi mất mạng, đồng bộ có phát hiện xung đột và để quản lý duyệt chênh lệch trên dữ liệu trung tâm.
+**Kickoff theo quyết định Project Owner ngày 08/10/2026.** Nguồn phạm vi là [backlog hiện hành](governance/BACKLOG.md#sprint-3--hiện-trường-và-kiểm-kê), [quyết định REQ-01](REQ-01_SCOPE_RECORD_2026-09-29.md) và [Scrum DoD](governance/SCRUM.md). Sprint 3 giữ đúng năm mã đã chốt: **MOB-01, SYN-01, SYN-02, INV-03, QA-03**. Mục tiêu: nhân viên kiểm kê theo lô trên điện thoại, lưu số đếm khi mất mạng, đồng bộ có phát hiện xung đột và để quản lý duyệt chênh lệch trên dữ liệu trung tâm. Milestone không đặt ngày kết thúc; nhóm thực hiện sớm nhất có thể theo phụ thuộc và DoD.
 
-Kế hoạch thay thế P1 bằng sáu Issue S3-* trong [PR #42](https://github.com/zomboXx/bach-hoa-sim-tim/pull/42) là sai. PR đó đã chuyển Draft; Issue #36–#41 đã đóng dưới lý do phạm vi chưa được duyệt. Sáu ngoại lệ QA-02 của Sprint 2 vẫn theo dõi tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) và [bản nghiệm thu ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md), **chưa tự trở thành đầu việc Sprint 3**. Ngày kết thúc Sprint 3 và cách ưu tiên các lỗi #34 cạnh năm mục đã chốt cần Project Owner xác nhận trước khi gắn milestone/assignee.
+Phương án sáu Issue S3-* ở [PR #42](https://github.com/zomboXx/bach-hoa-sim-tim/pull/42) đã được hủy vì thay sai phạm vi backlog; Issue #36–#41 được đóng để lưu lịch sử. Sáu ngoại lệ QA-02 của Sprint 2 vẫn theo dõi tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) và [bản nghiệm thu ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md), **không tự trở thành đầu việc Sprint 3**.
 
 ## Phân công và phụ thuộc đã có trong backlog
 
 | Mã | Kết quả | Ưu tiên | Owner | Reviewer | Phụ thuộc đã ghi |
 |---|---|---:|---|---|---|
-| MOB-01 | Giao diện kiểm kê responsive | P1 | TV4 — Chiến | TV3 — Thi | INV-02 |
-| SYN-01 | Hàng đợi kiểm kê offline | P1 | TV4 — Chiến | TV2 — Trung | MOB-01 |
-| SYN-02 | API đồng bộ và xử lý xung đột | P1 | TV2 — Trung | TV4 — Chiến | SYN-01 |
-| INV-03 | Duyệt điều chỉnh tồn | P1 | TV2 — Trung | TV1 — Phát | SYN-02 |
-| QA-03 | Test desktop/mobile/offline | P1 | TV4 — Chiến | TV3 — Thi | INV-03 |
+| [MOB-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/43) | Giao diện kiểm kê responsive | P1 | TV4 — Chiến | TV3 — Thi | INV-02 |
+| [SYN-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/44) | Hàng đợi kiểm kê offline | P1 | TV4 — Chiến | TV2 — Trung | MOB-01 |
+| [SYN-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/45) | API đồng bộ và xử lý xung đột | P1 | TV2 — Trung | TV4 — Chiến | SYN-01 |
+| [INV-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/46) | Duyệt điều chỉnh tồn | P1 | TV2 — Trung | TV1 — Phát | SYN-02 |
+| [QA-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) | Test desktop/mobile/offline | P1 | TV4 — Chiến | TV3 — Thi | INV-03 |
 
 TV1 điều phối và review, không nhận feature code. Một owner chỉ giữ một Issue `In Progress` tại một thời điểm theo [quy trình nhóm](governance/GITHUB_SETUP.md#5-quy-tắc-vận-hành). Bảng trên giữ quyết định backlog; việc chia PR hoặc thêm reviewer cho contract được thống nhất trong Issue, không tự đổi owner.
 
@@ -26,7 +26,7 @@ TV1 điều phối và review, không nhận feature code. Một owner chỉ gi�
 
 ## Tiêu chí bàn giao theo mã
 
-Các tiêu chí chi tiết dưới đây là phần refinement đề xuất để owner/reviewer kiểm tra trước khi mở Issue; chúng chưa thay tiêu chí đã chốt trong backlog.
+Các tiêu chí chi tiết dưới đây là gợi ý refinement để owner/reviewer chốt trong từng Issue và PR; chúng chưa thay tiêu chí đã chốt trong backlog hoặc trở thành wire contract được duyệt.
 
 ### MOB-01 — TV4, TV3 review
 
@@ -58,8 +58,6 @@ Các tiêu chí chi tiết dưới đây là phần refinement đề xuất đ�
 - Kiểm desktop/mobile không cuộn ngang, phạm vi quyền, retry không trùng, không gửi nghiệp vụ khác offline và dữ liệu đào tạo không thay đổi tồn vận hành.
 - Báo cáo nối requirement → contract → test → evidence, chỉ ghi Pass trên source đã tích hợp; QA-02 ngày 07/10 và #34 vẫn là hồ sơ riêng.
 
-## Cổng tích hợp và việc còn cần chốt
+## Cổng tích hợp
 
-Mỗi PR phải qua `pwsh -File scripts/verify.ps1`, CI policy/web/API/Compose và reviewer theo [DoD](governance/SCRUM.md). Provider migration/contract cần review trước khi consumer dựa vào; QA chạy trên code tích hợp sau cùng. [Milestone #3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) hiện tạm dừng vì được tạo theo kế hoạch sai; không coi hạn 14/10 hay Issue #36–#41 là cam kết của năm mã trên.
-
-Hai điểm cần Project Owner xác nhận trước khi công bố bản sửa: (1) giữ năm mã trên là toàn bộ cam kết Sprint 3 hay bổ sung một phần lỗi #34 theo ưu tiên; (2) hạn kết thúc Sprint 3. Nếu vẫn giữ nhịp một tuần sau Sprint 2, ngày 14/10 là **đề xuất**, chưa phải quyết định đã ghi nhận.
+Mỗi PR phải qua `pwsh -File scripts/verify.ps1`, CI policy/web/API/Compose và reviewer theo [DoD](governance/SCRUM.md). Provider migration/contract cần review trước khi consumer dựa vào; QA chạy trên code tích hợp sau cùng. [Milestone Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) chỉ chứa năm mã trong backlog và không có hạn kết thúc. Owner bắt đầu theo thứ tự phụ thuộc; việc phân công không chứng minh tính năng hoặc kiểm thử đã hoàn tất.
