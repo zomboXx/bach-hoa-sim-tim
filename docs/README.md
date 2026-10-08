@@ -4,7 +4,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Quy trình và phạm vi hiện hành
 
-- [`project/README.md`](project/README.md): điểm vào tài liệu dự án, tiến độ ngày 07/10/2026 và ảnh chụp lịch sử ngày 30/09.
+- [`project/README.md`](project/README.md): điểm vào tài liệu dự án, kế hoạch ngày 08/10/2026, tiến độ Sprint 2 và ảnh chụp lịch sử ngày 30/09.
 - [`project/governance/README.md`](project/governance/README.md): điểm vào quy trình nhóm.
 - [`project/governance/SCRUM.md`](project/governance/SCRUM.md): Ready, Done, nhánh và Pull Request.
 - [`project/governance/BACKLOG.md`](project/governance/BACKLOG.md): phạm vi, ưu tiên và phụ thuộc của các sprint.
@@ -13,6 +13,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
 - [`project/SPRINT_2_ACCEPTANCE_2026-10-07.md`](project/SPRINT_2_ACCEPTANCE_2026-10-07.md): quyết định nghiệm thu Sprint 2 có ngoại lệ và sáu điểm cần theo dõi.
+- [`project/SPRINT_3_PLAN.md`](project/SPRINT_3_PLAN.md): kế hoạch điều hành Sprint 3 cho sáu P0 còn lại; bản local chờ Project Owner review trước khi công bố GitHub.
 
 ## Phân tích và thiết kế
 

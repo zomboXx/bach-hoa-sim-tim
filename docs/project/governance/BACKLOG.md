@@ -68,11 +68,24 @@ Mục tiêu: hoàn thành luồng tạo sản phẩm → nhận lô → bán →
 
 Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: với hàng giao thiếu, thừa hoặc hư hỏng, MVP ghi số lượng và lý do trên phiếu nhận; chưa có quy trình điều chỉnh riêng. Tiêu chí INV-01 trước đây chỉ ghi tạo phiếu/lô, tăng tồn và biến động nguyên tử; xem [bản đối chiếu REQ-01](../REQ-01_DECISION_DRAFT.md).
 
-## Sprint 3 — Hiện trường và kiểm kê
+## Sprint 3 — Hoàn tất luồng bán hàng P0
 
-Mục tiêu: nhân viên kiểm kê trên điện thoại; quản lý duyệt trên máy tính.
+Mục tiêu dự kiến 08–14/10/2026: đóng sáu ngoại lệ [nghiệm thu Sprint 2](../SPRINT_2_ACCEPTANCE_2026-10-07.md) trên code tích hợp. [Kế hoạch Sprint 3](../SPRINT_3_PLAN.md) là bản điều hành đầy đủ ở nhánh local để Project Owner review trước khi công bố trên GitHub; bảng này là phạm vi dự kiến, chưa là bằng chứng Issue/PR đã tạo hoặc công việc đã Done.
 
-| ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
+| ID / GAP | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
+|---|---|---:|---|---|---|---|
+| S3-QTY-01 / 01 | Precision quantity theo unit | P0 | TV2 | TV3 | INV-01, SAL-01 | EA nguyên, KG tối đa 3 số lẻ ở receipt/quote/checkout; test DB không ghi khi sai |
+| S3-SAL-01 / 02 | `expectedTotal` và `PRICE_CHANGED` | P0 | TV3 | TV2 | SAL-01 | Giá đổi giữa quote/checkout trả 409; không ghi invoice/payment/stock |
+| S3-RBAC-01 / 03 | Quyền đọc hóa đơn theo người bán | P0 | TV3 | TV1 | BE-02, SAL-01 | SALES chỉ thấy hóa đơn mình, MANAGER/ADMIN theo store, STOCK không xem hóa đơn |
+| S3-SAL-02 / 04 | Idempotency checkout và recovery | P0 | TV2 | TV3 | S3-SAL-01 | Replay không ghi trùng, GET theo `clientOperationId`, 409 khi khác payload/actor |
+| S3-FE-01 / 05 | PWA API mode bán hàng/hóa đơn | P0 | TV4 | TV3 | S3-SAL-01/02, S3-RBAC-01 | Quote, checkout tiền mặt, hóa đơn, lỗi và retry qua API; demo regression |
+| S3-QA-01 / 06 | Live E2E nhận–bán–báo cáo | P0 | TV4 | TV1 | Năm việc trên | Browser với API/PostgreSQL thật; QA cập nhật 6 GAP theo bằng chứng CI |
+
+Quyết định lập kế hoạch ngày 08/10/2026: thay phạm vi Sprint 3 cũ “hiện trường và kiểm kê” bằng sáu điểm P0 sau Sprint 2. Lý do, thứ tự PR và tiêu chí kiểm thử nằm trong [kế hoạch](../SPRINT_3_PLAN.md). Mục P1 cũ được giữ nguyên nội dung dưới đây để nhóm lên lịch sau Sprint 3; việc phân công sprint và deadline mới chưa được xác nhận.
+
+### Hàng chờ P1 sau Sprint 3 — kiểm kê hiện trường
+
+| ID | Backlog item | Ưu tiên | Chủ module dự kiến | Reviewer dự kiến | Phụ thuộc | Tiêu chí chấp nhận gốc |
 |---|---|---:|---|---|---|---|
 | MOB-01 | Giao diện kiểm kê responsive | P1 | TV4 | TV3 | INV-02 | Không cuộn ngang ở viewport đã công bố; nhập theo lô |
 | SYN-01 | Hàng đợi kiểm kê offline | P1 | TV4 | TV2 | MOB-01 | Giữ thao tác qua reload; có `clientOperationId` |

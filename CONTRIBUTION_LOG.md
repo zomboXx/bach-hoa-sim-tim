@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-08 17:56:34
+
+Lập kế hoạch điều hành Sprint 3 ngày 08–14/10/2026 dựa trên sáu ngoại lệ P0 của QA-02: mục tiêu, owner/reviewer, phụ thuộc, contract cần review, test oracle và mốc tích hợp cho TV2–TV4. TV1 điều phối và review, không nhận feature code. Giữ chuỗi kiểm kê offline P1 trong backlog để lên lịch sau Sprint 3; đồng bộ điểm vào tài liệu và ghi lý do thay phạm vi cũ. Bản local chờ Project Owner review, chưa tạo milestone/Issue con, chưa push hoặc merge.
+
+Kiểm tra repository policy và Markdown links đạt; root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt lint, format, build, demo E2E 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL 17 Testcontainers. Lượt gate đầu dừng ở backend do Docker daemon tắt; đã mở Docker Desktop và chạy lại thành công.
+
+- `CHANGELOG.md`: +1 -0
+- `docs/README.md`: +2 -1
+- `docs/project/README.md`: +3 -2
+- `docs/project/SPRINT_3_PLAN.md`: +84 -0
+- `docs/project/governance/BACKLOG.md`: +16 -3
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-07 23:13:01
 
 Đối chiếu kết quả Sprint 2 sau khi các PR đã tích hợp: ghi quyết định nghiệm thu có ngoại lệ và mở Issue #34 theo dõi 3 Fail, 3 Blocked của QA-02, chưa phân công Sprint 3. Cập nhật README bắt đầu nhanh và hướng dẫn chạy demo web/API/PostgreSQL bằng một lệnh Docker Compose, tài khoản server, kịch bản nhận/tồn/báo cáo và checkout API; CI kiểm tra Compose trên PR. Đồng bộ các điểm vào tài liệu còn ghi trạng thái Sprint 1/2 cũ.

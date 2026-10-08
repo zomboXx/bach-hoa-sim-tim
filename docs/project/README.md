@@ -1,11 +1,12 @@
 # Tài liệu điều hành dự án
 
-**Mốc kiểm tra: 07/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công; [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) và Pull Request ghi tiến độ thực tế. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
+**Mốc kế hoạch: 08/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công. [Kế hoạch Sprint 3](SPRINT_3_PLAN.md) là bản điều hành ở nhánh local chờ Project Owner review trước khi công bố; GitHub Issue/PR vẫn là nguồn tiến độ thực tế. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
 
 ## Đọc tài liệu nào
 
 | Nhu cầu | Tài liệu có hiệu lực | Ghi chú |
 |---|---|---|
+| Kế hoạch Sprint 3 | [Kế hoạch Sprint 3](SPRINT_3_PLAN.md), [Backlog](governance/BACKLOG.md), [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) | Sáu P0 được xếp vào kế hoạch 08–14/10; milestone/Issue con và PR chưa công bố. Chuỗi offline P1 chờ lên lịch. |
 | Công việc Sprint 2 | [Backlog](governance/BACKLOG.md), [kickoff](SPRINT_2_KICKOFF.md), [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) | Contract vẫn là Working Draft; đổi wire/schema cần review trong PR. |
 | Ai làm và ai review | [TEAM.md](governance/TEAM.md), từng [Issue Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) | Bảng TEAM ghi trách nhiệm dài hạn; phân công riêng Sprint 2 nằm trong backlog và Issue. |
 | Phạm vi yêu cầu | [Bản ghi REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) | Đã tích hợp qua PR #17; Issue #2 đã đóng. |
@@ -15,7 +16,7 @@
 
 - [Sprint 1](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/1) đã đóng 7/7 Issue. [Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) có 7/7 Issue đóng và các PR triển khai/QA đã merge vào `main` tại commit `cc65009`. Milestone Sprint 2 vẫn mở tại thời điểm kiểm tra.
 - API nhận, tồn, checkout tiền mặt, khuyến mãi, báo cáo đã tích hợp; PWA API mode nối nhận/tồn, khuyến mãi và báo cáo. Màn hình bán hàng/hóa đơn PWA chưa nối API checkout. [README gốc](../../README.md) và [hướng dẫn Compose](../../infra/README.md) chỉ cách tự chạy và thử trên máy.
-- [QA-02](../testing/QA-02-test-report.md) xác nhận root gate đạt, nhưng traceability còn **3 Fail và 3 Blocked P0**. Project Owner đã [nghiệm thu Sprint 2 có ngoại lệ ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md); [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) theo dõi sáu điểm thiếu. Quyết định này không đổi trạng thái Fail/Blocked của QA và chưa tự xếp các điểm thiếu vào Sprint 3.
+- [QA-02](../testing/QA-02-test-report.md) xác nhận root gate đạt, nhưng traceability còn **3 Fail và 3 Blocked P0**. Project Owner đã [nghiệm thu Sprint 2 có ngoại lệ ngày 07/10](SPRINT_2_ACCEPTANCE_2026-10-07.md); [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) theo dõi sáu điểm thiếu. [Kế hoạch Sprint 3 ngày 08/10](SPRINT_3_PLAN.md) đề xuất xử lý đủ sáu điểm; chưa có bằng chứng chúng đã được sửa hoặc công bố thành Issue con.
 
 ## Ảnh chụp tiến độ ngày 30/09/2026
 
