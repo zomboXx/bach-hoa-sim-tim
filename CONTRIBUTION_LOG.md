@@ -22,6 +22,24 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-08 18:14:28
+
+Công bố Sprint 3 sau khi Project Owner duyệt: đổi tài liệu thành kickoff, đồng bộ backlog/điểm vào và giữ chuỗi kiểm kê offline P1 trong hàng chờ. Trên GitHub, đẩy Quickstart/Compose và mở PR #35, đẩy kickoff và mở PR #42 dựa trên #35; tạo milestone Sprint 3 hạn 14/10, nhãn `sprint:3`, sáu Issue #36–#41 với assignee/reviewer/phụ thuộc, liên kết #34; đóng milestone Sprint 2 với ghi chú nghiệm thu có ngoại lệ. Nâng ruleset `protect-main` để yêu cầu thêm `API bootstrap` và `Demo Compose` bên cạnh policy/web, vẫn giữ một approval từ người khác last pusher. Hai PR chờ reviewer, chưa merge.
+
+Kiểm tra GitHub API xác nhận milestone, nhãn, assignee và bốn required checks; CI PR #35 đạt 4/4 tại thời điểm ghi. Root gate local `pwsh -File scripts/verify.ps1 -SkipInstall` đạt policy/links, lint/format/build, demo E2E 6/6, API consumer 36/36 và backend 129/129 trên PostgreSQL 17 Testcontainers. PR #42 cần CI trên commit cập nhật cuối cùng và đổi base sang `main` sau khi #35 merge.
+
+- `CHANGELOG.md`: +1 -1
+- `docs/README.md`: +1 -1
+- `docs/project/README.md`: +5 -3
+- `docs/project/SPRINT_3_PLAN.md` → `docs/project/SPRINT_3_KICKOFF.md`: +13 -9
+- `docs/project/governance/BACKLOG.md`: +9 -9
+- `docs/project/governance/GITHUB_SETUP.md`: +6 -2
+- `docs/project/governance/TEAM.md`: +1 -1
+- `GitHub milestone #2/#3, label sprint:3, Issue #34/#36–#41, PR #35/#42, ruleset protect-main`: N/A
+- `CONTRIBUTION_LOG.md`: +18 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-08 17:56:34
 
 Lập kế hoạch điều hành Sprint 3 ngày 08–14/10/2026 dựa trên sáu ngoại lệ P0 của QA-02: mục tiêu, owner/reviewer, phụ thuộc, contract cần review, test oracle và mốc tích hợp cho TV2–TV4. TV1 điều phối và review, không nhận feature code. Giữ chuỗi kiểm kê offline P1 trong backlog để lên lịch sau Sprint 3; đồng bộ điểm vào tài liệu và ghi lý do thay phạm vi cũ. Bản local chờ Project Owner review, chưa tạo milestone/Issue con, chưa push hoặc merge.

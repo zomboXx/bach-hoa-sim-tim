@@ -2,6 +2,8 @@
 
 **Mốc kickoff: 08/10/2026.** [Backlog](governance/BACKLOG.md) ghi phạm vi, ưu tiên, phụ thuộc và phân công. [Kickoff Sprint 3](SPRINT_3_KICKOFF.md) được Project Owner duyệt công bố; GitHub Issue/PR là nguồn tiến độ thực tế. Trạng thái đóng Issue không tự thay thế kết quả nghiệm thu trong [báo cáo QA-02](../testing/QA-02-test-report.md).
 
+Tại mốc 08/10, [milestone Sprint 2](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/2) đã đóng với nghiệm thu có ngoại lệ; [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) vẫn mở để theo dõi sáu P0. [Milestone Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) có sáu Issue #36–#41 được phân công. [PR #35](https://github.com/zomboXx/bach-hoa-sim-tim/pull/35) đưa Quickstart/Compose và biên bản nghiệm thu lên review; [PR #42](https://github.com/zomboXx/bach-hoa-sim-tim/pull/42) đưa kickoff lên review, tạm đặt base trên #35. Hai PR chưa được coi là đã tích hợp vào `main`.
+
 ## Đọc tài liệu nào
 
 | Nhu cầu | Tài liệu có hiệu lực | Ghi chú |

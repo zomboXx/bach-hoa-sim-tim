@@ -12,12 +12,12 @@ Kế hoạch này thay thế lịch Sprint 3 “hiện trường và kiểm kê�
 
 | Việc / khoảng trống | Owner | Reviewer | Phụ thuộc để tích hợp | Đầu ra |
 |---|---|---|---|---|
-| S3-QTY-01 / GAP-01 | TV2 — Trung | TV3 — Thi | Nền INV-01, SAL-01 | EA nguyên, KG tối đa 3 số lẻ tại receipt và sale |
-| S3-SAL-01 / GAP-02 | TV3 — Thi | TV2 — Trung | Quote/checkout hiện hành | `expectedTotal`, `PRICE_CHANGED`, không ghi khi giá đổi |
-| S3-RBAC-01 / GAP-03 | TV3 — Thi | TV1 — Phát | Auth session hiện hành | SALES chỉ đọc hóa đơn tự bán; quyền khác rõ ràng |
-| S3-SAL-02 / GAP-04 | TV2 — Trung | TV3 — Thi | S3-SAL-01 review contract và tích hợp | Checkout idempotency, tìm lại theo `clientOperationId` |
-| S3-FE-01 / GAP-05 | TV4 — Chiến | TV3 — Thi | Contract S3-SAL-01/02, S3-RBAC-01 | PWA API mode quote, checkout, hóa đơn thật |
-| S3-QA-01 / GAP-06 | TV4 — Chiến | TV1 — Phát | Năm việc trên tích hợp | Live browser E2E và QA checkpoint có bằng chứng |
+| [S3-QTY-01 #36](https://github.com/zomboXx/bach-hoa-sim-tim/issues/36) / GAP-01 | TV2 — Trung | TV3 — Thi | Nền INV-01, SAL-01 | EA nguyên, KG tối đa 3 số lẻ tại receipt và sale |
+| [S3-SAL-01 #37](https://github.com/zomboXx/bach-hoa-sim-tim/issues/37) / GAP-02 | TV3 — Thi | TV2 — Trung | Quote/checkout hiện hành | `expectedTotal`, `PRICE_CHANGED`, không ghi khi giá đổi |
+| [S3-RBAC-01 #38](https://github.com/zomboXx/bach-hoa-sim-tim/issues/38) / GAP-03 | TV3 — Thi | TV1 — Phát | Auth session hiện hành | SALES chỉ đọc hóa đơn tự bán; quyền khác rõ ràng |
+| [S3-SAL-02 #39](https://github.com/zomboXx/bach-hoa-sim-tim/issues/39) / GAP-04 | TV2 — Trung | TV3 — Thi | S3-SAL-01 review contract và tích hợp | Checkout idempotency, tìm lại theo `clientOperationId` |
+| [S3-FE-01 #40](https://github.com/zomboXx/bach-hoa-sim-tim/issues/40) / GAP-05 | TV4 — Chiến | TV3 — Thi | Contract S3-SAL-01/02, S3-RBAC-01 | PWA API mode quote, checkout, hóa đơn thật |
+| [S3-QA-01 #41](https://github.com/zomboXx/bach-hoa-sim-tim/issues/41) / GAP-06 | TV4 — Chiến | TV1 — Phát | Năm việc trên tích hợp | Live browser E2E và QA checkpoint có bằng chứng |
 
 TV1 điều phối, review và chốt nghiệm thu; không nhận thêm feature code. TV2 làm S3-QTY-01 rồi S3-SAL-02; TV3 làm S3-SAL-01 rồi S3-RBAC-01. TV4 chuẩn bị consumer test/adapter khi contract đang review, tích hợp S3-FE-01 sau provider, rồi làm S3-QA-01. Một owner không đồng thời sửa cùng vùng `SaleService` ở hai PR. Reviewer khác owner và kiểm tra cả contract lẫn test; việc đổi wire/API/schema phải được reviewer của provider và consumer chấp thuận trong PR trước khi merge.
 
@@ -83,6 +83,6 @@ TV1 điều phối, review và chốt nghiệm thu; không nhận thêm feature 
 
 Mỗi PR chạy workflow `baseline-quality`: Repository policy, Web baseline, API bootstrap (Maven/Testcontainers PostgreSQL 17) và Demo Compose (build, healthcheck, login smoke test). Ruleset `main` yêu cầu đủ bốn job đạt, một approval từ người không phải người push cuối cùng và giải quyết review thread trước merge. Owner chạy `pwsh -File scripts/verify.ps1` ở máy trước khi xin review; nếu thay contract API/schema, provider và consumer review cùng thay đổi. Không có đích triển khai tự động được xác định cho sprint này; Compose là bản demo kiểm chứng qua CI.
 
-Tạo milestone **Sprint 3** hạn 14/10/2026 và sáu Issue con gắn nhãn sprint/P0 hiện hành, assignee theo bảng trên, liên kết [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Trong thân Issue, đặt Owner và Reviewer trên hai dòng riêng; tiêu đề và nhãn đã có mã/ưu tiên nên không lặp metadata đó trong phần mở đầu.
+[Milestone Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) hạn 14/10/2026 chứa sáu Issue con gắn nhãn sprint/P0, assignee theo bảng trên và liên kết [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Owner và Reviewer nằm trên hai dòng riêng trong mỗi Issue; tiêu đề và nhãn đã có mã/ưu tiên nên không lặp metadata đó trong phần mở đầu.
 
 Mỗi Issue con phải có owner, reviewer, phụ thuộc, vùng file/API, checklist test và liên kết S2-GAP tương ứng; Issue #34 giữ mở đến khi cả sáu GAP có bằng chứng Pass. `Done` cần PR merge, CI và reviewer theo [Scrum DoD](governance/SCRUM.md); riêng S3-QA-01 cần live evidence trên code tích hợp. Nếu provider contract không kịp review hoặc gate đỏ, hoãn consumer/live QA tương ứng và công bố rõ phần chưa nghiệm thu. Sau review Sprint 3 mới sắp lịch cho chuỗi kiểm kê offline P1 và các mục Sprint 4; không tự gán deadline cho chúng.

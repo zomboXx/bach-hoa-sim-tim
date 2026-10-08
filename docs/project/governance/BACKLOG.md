@@ -74,12 +74,12 @@ Mục tiêu 08–14/10/2026: đóng sáu ngoại lệ [nghiệm thu Sprint 2](..
 
 | ID / GAP | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| S3-QTY-01 / 01 | Precision quantity theo unit | P0 | TV2 | TV3 | INV-01, SAL-01 | EA nguyên, KG tối đa 3 số lẻ ở receipt/quote/checkout; test DB không ghi khi sai |
-| S3-SAL-01 / 02 | `expectedTotal` và `PRICE_CHANGED` | P0 | TV3 | TV2 | SAL-01 | Giá đổi giữa quote/checkout trả 409; không ghi invoice/payment/stock |
-| S3-RBAC-01 / 03 | Quyền đọc hóa đơn theo người bán | P0 | TV3 | TV1 | BE-02, SAL-01 | SALES chỉ thấy hóa đơn mình, MANAGER/ADMIN theo store, STOCK không xem hóa đơn |
-| S3-SAL-02 / 04 | Idempotency checkout và recovery | P0 | TV2 | TV3 | S3-SAL-01 | Replay không ghi trùng, GET theo `clientOperationId`, 409 khi khác payload/actor |
-| S3-FE-01 / 05 | PWA API mode bán hàng/hóa đơn | P0 | TV4 | TV3 | S3-SAL-01/02, S3-RBAC-01 | Quote, checkout tiền mặt, hóa đơn, lỗi và retry qua API; demo regression |
-| S3-QA-01 / 06 | Live E2E nhận–bán–báo cáo | P0 | TV4 | TV1 | Năm việc trên | Browser với API/PostgreSQL thật; QA cập nhật 6 GAP theo bằng chứng CI |
+| [S3-QTY-01 #36](https://github.com/zomboXx/bach-hoa-sim-tim/issues/36) / 01 | Precision quantity theo unit | P0 | TV2 | TV3 | INV-01, SAL-01 | EA nguyên, KG tối đa 3 số lẻ ở receipt/quote/checkout; test DB không ghi khi sai |
+| [S3-SAL-01 #37](https://github.com/zomboXx/bach-hoa-sim-tim/issues/37) / 02 | `expectedTotal` và `PRICE_CHANGED` | P0 | TV3 | TV2 | SAL-01 | Giá đổi giữa quote/checkout trả 409; không ghi invoice/payment/stock |
+| [S3-RBAC-01 #38](https://github.com/zomboXx/bach-hoa-sim-tim/issues/38) / 03 | Quyền đọc hóa đơn theo người bán | P0 | TV3 | TV1 | BE-02, SAL-01 | SALES chỉ thấy hóa đơn mình, MANAGER/ADMIN theo store, STOCK không xem hóa đơn |
+| [S3-SAL-02 #39](https://github.com/zomboXx/bach-hoa-sim-tim/issues/39) / 04 | Idempotency checkout và recovery | P0 | TV2 | TV3 | S3-SAL-01 | Replay không ghi trùng, GET theo `clientOperationId`, 409 khi khác payload/actor |
+| [S3-FE-01 #40](https://github.com/zomboXx/bach-hoa-sim-tim/issues/40) / 05 | PWA API mode bán hàng/hóa đơn | P0 | TV4 | TV3 | S3-SAL-01/02, S3-RBAC-01 | Quote, checkout tiền mặt, hóa đơn, lỗi và retry qua API; demo regression |
+| [S3-QA-01 #41](https://github.com/zomboXx/bach-hoa-sim-tim/issues/41) / 06 | Live E2E nhận–bán–báo cáo | P0 | TV4 | TV1 | Năm việc trên | Browser với API/PostgreSQL thật; QA cập nhật 6 GAP theo bằng chứng CI |
 
 Quyết định Project Owner ngày 08/10/2026: thay phạm vi Sprint 3 cũ “hiện trường và kiểm kê” bằng sáu điểm P0 sau Sprint 2. Lý do, thứ tự PR và tiêu chí kiểm thử nằm trong [kickoff](../SPRINT_3_KICKOFF.md). Mục P1 cũ được giữ nguyên nội dung dưới đây để nhóm lên lịch sau Sprint 3; việc phân công sprint và deadline mới chưa được xác nhận.
 

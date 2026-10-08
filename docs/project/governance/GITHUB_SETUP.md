@@ -2,6 +2,8 @@
 
 Tài liệu này mô tả thao tác quản trị ngoài Git. Các checkbox chỉ được đánh dấu khi Project Owner đã xác nhận trực tiếp trên GitHub; file trong repository không thể tự bật ruleset, cấp quyền hoặc tạo Project.
 
+**Trạng thái kiểm tra qua GitHub API ngày 08/10/2026:** ruleset `protect-main` đang Active, không có bypass, yêu cầu một approval từ người khác người push cuối, giải quyết review thread và bốn check `Repository policy`, `Web baseline`, `API bootstrap`, `Demo Compose`. Repo chỉ cho squash merge và tự xóa branch sau merge. Đây là cấu hình CI/merge; dự án chưa xác định đích triển khai tự động cho CD.
+
 ## 1. Thành viên và merge settings
 
 - [ ] Xác nhận bốn tài khoản trong `TEAM.md` và thêm ba thành viên còn lại làm collaborator; thành viên phát triển dùng quyền `Write`, không cấp `Admin` nếu không cần.
@@ -25,8 +27,10 @@ Sau khi có một PR chạy CI thành công, bật `Require status checks to pas
 
 - `Repository policy`
 - `Web baseline`
+- `API bootstrap`
+- `Demo Compose`
 
-Sau khi hai check hoạt động ổn định, có thể bật `Require branches to be up to date before merging`.
+Sau khi bốn check hoạt động ổn định, có thể bật `Require branches to be up to date before merging`; hiện ruleset chưa yêu cầu strict up-to-date.
 
 ## 3. Project và milestone
 
@@ -49,7 +53,7 @@ Nhãn tối thiểu, không dùng label để lặp lại Project status:
 
 1. Chọn một thay đổi governance/docs nhỏ có Issue và reviewer.
 2. Tạo branch từ `main`, mở Draft PR rồi chuyển Ready for review.
-3. Xác nhận CODEOWNERS yêu cầu đúng người và CI sinh hai check mong đợi.
+3. Xác nhận CODEOWNERS yêu cầu đúng người và CI sinh bốn check mong đợi.
 4. Reviewer approve, giải quyết toàn bộ conversation, squash merge và xác nhận branch được xóa.
 5. Chỉ sau lần thử này mới bật Code Owners và required status checks trong ruleset.
 
