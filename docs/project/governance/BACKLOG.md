@@ -70,7 +70,7 @@ Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: vớ
 
 ## Sprint 3 — Hoàn tất luồng bán hàng P0
 
-Mục tiêu dự kiến 08–14/10/2026: đóng sáu ngoại lệ [nghiệm thu Sprint 2](../SPRINT_2_ACCEPTANCE_2026-10-07.md) trên code tích hợp. [Kế hoạch Sprint 3](../SPRINT_3_PLAN.md) là bản điều hành đầy đủ ở nhánh local để Project Owner review trước khi công bố trên GitHub; bảng này là phạm vi dự kiến, chưa là bằng chứng Issue/PR đã tạo hoặc công việc đã Done.
+Mục tiêu 08–14/10/2026: đóng sáu ngoại lệ [nghiệm thu Sprint 2](../SPRINT_2_ACCEPTANCE_2026-10-07.md) trên code tích hợp. [Kickoff Sprint 3](../SPRINT_3_KICKOFF.md) ghi phạm vi được Project Owner duyệt công bố ngày 08/10; bảng này không phải bằng chứng công việc đã Done.
 
 | ID / GAP | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
@@ -81,7 +81,7 @@ Mục tiêu dự kiến 08–14/10/2026: đóng sáu ngoại lệ [nghiệm thu 
 | S3-FE-01 / 05 | PWA API mode bán hàng/hóa đơn | P0 | TV4 | TV3 | S3-SAL-01/02, S3-RBAC-01 | Quote, checkout tiền mặt, hóa đơn, lỗi và retry qua API; demo regression |
 | S3-QA-01 / 06 | Live E2E nhận–bán–báo cáo | P0 | TV4 | TV1 | Năm việc trên | Browser với API/PostgreSQL thật; QA cập nhật 6 GAP theo bằng chứng CI |
 
-Quyết định lập kế hoạch ngày 08/10/2026: thay phạm vi Sprint 3 cũ “hiện trường và kiểm kê” bằng sáu điểm P0 sau Sprint 2. Lý do, thứ tự PR và tiêu chí kiểm thử nằm trong [kế hoạch](../SPRINT_3_PLAN.md). Mục P1 cũ được giữ nguyên nội dung dưới đây để nhóm lên lịch sau Sprint 3; việc phân công sprint và deadline mới chưa được xác nhận.
+Quyết định Project Owner ngày 08/10/2026: thay phạm vi Sprint 3 cũ “hiện trường và kiểm kê” bằng sáu điểm P0 sau Sprint 2. Lý do, thứ tự PR và tiêu chí kiểm thử nằm trong [kickoff](../SPRINT_3_KICKOFF.md). Mục P1 cũ được giữ nguyên nội dung dưới đây để nhóm lên lịch sau Sprint 3; việc phân công sprint và deadline mới chưa được xác nhận.
 
 ### Hàng chờ P1 sau Sprint 3 — kiểm kê hiện trường
 

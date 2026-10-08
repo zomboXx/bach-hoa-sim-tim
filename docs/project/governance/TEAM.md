@@ -11,7 +11,7 @@ Danh sách được Project Owner xác nhận ngày 21/09/2026. Điều phối v
 
 Phân công riêng cho Sprint 2 ngày 30/09/2026 nằm trong [backlog](BACKLOG.md#sprint-2--luồng-nghiệp-vụ-cốt-lõi): TV4 làm FE-02 và QA-02, TV2 làm INV-01/02 rồi REP-01, TV3 làm SAL-01 và PRO-01B (P1), TV1 điều phối và review. Bảng trách nhiệm module dài hạn ở trên vẫn là quyết định ngày 21/09/2026.
 
-[Kế hoạch Sprint 3 ngày 08/10](../SPRINT_3_PLAN.md#phân-công-và-thứ-tự) phân sáu ngoại lệ P0: TV2 xử lý precision và checkout recovery; TV3 xử lý giá đổi và quyền hóa đơn; TV4 nối PWA sales API rồi kiểm thử live; TV1 điều phối/review, không nhận feature. Đây là phân công trong bản local chờ Project Owner review trước khi tạo Issue, không thay bảng trách nhiệm module dài hạn.
+[Kickoff Sprint 3 ngày 08/10](../SPRINT_3_KICKOFF.md#phân-công-và-thứ-tự) phân sáu ngoại lệ P0: TV2 xử lý precision và checkout recovery; TV3 xử lý giá đổi và quyền hóa đơn; TV4 nối PWA sales API rồi kiểm thử live; TV1 điều phối/review, không nhận feature. Phân công sprint này đã được Project Owner duyệt công bố, không thay bảng trách nhiệm module dài hạn.
 
 ## Trách nhiệm chung của chủ module
 

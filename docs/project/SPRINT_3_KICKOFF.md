@@ -1,6 +1,6 @@
-# Sprint 3 — Hoàn tất luồng bán hàng P0
+# Sprint 3 kickoff — Hoàn tất luồng bán hàng P0
 
-**Kế hoạch điều hành ngày 08/10/2026.** Bản chính thức ở nhánh local để Project Owner review trước khi công bố qua PR và tạo Issue. Thời gian dự kiến **08–14/10/2026** theo nhịp sprint một tuần; mốc và phân công có hiệu lực trên GitHub sau khi Project Owner duyệt. Tài liệu này quy định phạm vi và cách nghiệm thu, không khẳng định sáu lỗi đã được sửa.
+**Phạm vi được Project Owner duyệt công bố ngày 08/10/2026.** Sprint diễn ra **08–14/10/2026** theo nhịp một tuần. Tài liệu này quy định phạm vi và cách nghiệm thu; trạng thái thực thi, Issue và PR lấy từ GitHub. Sáu lỗi chưa được coi là đã sửa chỉ vì kế hoạch được công bố.
 
 ## Căn cứ và mục tiêu
 
@@ -79,6 +79,10 @@ TV1 điều phối, review và chốt nghiệm thu; không nhận thêm feature 
 | 13/10 | S3-QA-01 chạy live trên source đã tích hợp, ghi bằng chứng và sửa lỗi phát hiện. |
 | 14/10 | Demo/review, kiểm tra traceability, báo cáo tuần và retrospective; việc chưa đạt chuyển backlog kèm blocker, không tự đánh dấu Done. |
 
-Khi được duyệt để công bố, tạo milestone **Sprint 3** hạn 14/10/2026 và sáu Issue con gắn nhãn sprint/P0 hiện hành, assignee theo bảng trên, liên kết [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Trong thân Issue, đặt Owner và Reviewer trên hai dòng riêng; tiêu đề và nhãn đã có mã/ưu tiên nên không lặp metadata đó trong phần mở đầu.
+## Cổng CI và review
+
+Mỗi PR chạy workflow `baseline-quality`: Repository policy, Web baseline, API bootstrap (Maven/Testcontainers PostgreSQL 17) và Demo Compose (build, healthcheck, login smoke test). Ruleset `main` yêu cầu đủ bốn job đạt, một approval từ người không phải người push cuối cùng và giải quyết review thread trước merge. Owner chạy `pwsh -File scripts/verify.ps1` ở máy trước khi xin review; nếu thay contract API/schema, provider và consumer review cùng thay đổi. Không có đích triển khai tự động được xác định cho sprint này; Compose là bản demo kiểm chứng qua CI.
+
+Tạo milestone **Sprint 3** hạn 14/10/2026 và sáu Issue con gắn nhãn sprint/P0 hiện hành, assignee theo bảng trên, liên kết [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Trong thân Issue, đặt Owner và Reviewer trên hai dòng riêng; tiêu đề và nhãn đã có mã/ưu tiên nên không lặp metadata đó trong phần mở đầu.
 
 Mỗi Issue con phải có owner, reviewer, phụ thuộc, vùng file/API, checklist test và liên kết S2-GAP tương ứng; Issue #34 giữ mở đến khi cả sáu GAP có bằng chứng Pass. `Done` cần PR merge, CI và reviewer theo [Scrum DoD](governance/SCRUM.md); riêng S3-QA-01 cần live evidence trên code tích hợp. Nếu provider contract không kịp review hoặc gate đỏ, hoãn consumer/live QA tương ứng và công bố rõ phần chưa nghiệm thu. Sau review Sprint 3 mới sắp lịch cho chuỗi kiểm kê offline P1 và các mục Sprint 4; không tự gán deadline cho chúng.
