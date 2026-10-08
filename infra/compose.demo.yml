@@ -1,0 +1,49 @@
+name: simtim-demo
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-simtim}
+      POSTGRES_USER: ${POSTGRES_USER:-simtim}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env}
+    volumes:
+      - demo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile.demo
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-simtim}
+      DB_USER: ${POSTGRES_USER:-simtim}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env}
+      SPRING_PROFILES_ACTIVE: demo
+      SIMTIM_DEMO_PASSWORD: ${SIMTIM_DEMO_PASSWORD:?Set SIMTIM_DEMO_PASSWORD in infra/.env}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile.demo
+      args:
+        VITE_USE_API: "true"
+        VITE_ORGANIZATION_CODE: SIMTIM
+        VITE_STORE_CODE: MAIN
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5174}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  demo_postgres_data:

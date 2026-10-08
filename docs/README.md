@@ -4,14 +4,16 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Quy trình và phạm vi hiện hành
 
-- [`project/README.md`](project/README.md): điểm vào tài liệu dự án, tiến độ có ngày và phân biệt bản hiện hành với bản lưu.
+- [`project/README.md`](project/README.md): điểm vào tài liệu dự án, kickoff Sprint 3 ngày 08/10/2026 và ảnh chụp tiến độ các sprint trước.
 - [`project/governance/README.md`](project/governance/README.md): điểm vào quy trình nhóm.
 - [`project/governance/SCRUM.md`](project/governance/SCRUM.md): Ready, Done, nhánh và Pull Request.
 - [`project/governance/BACKLOG.md`](project/governance/BACKLOG.md): phạm vi, ưu tiên và phụ thuộc của các sprint.
 - [`project/governance/TEAM.md`](project/governance/TEAM.md): owner, GitHub và reviewer.
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
+- [`project/SPRINT_3_KICKOFF.md`](project/SPRINT_3_KICKOFF.md): năm mục kiểm kê đã có trong backlog, phân công, phụ thuộc và điểm review; milestone không có ngày kết thúc.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
+- [`project/SPRINT_2_ACCEPTANCE_2026-10-07.md`](project/SPRINT_2_ACCEPTANCE_2026-10-07.md): quyết định nghiệm thu Sprint 2 có ngoại lệ và sáu điểm cần theo dõi.
 
 ## Phân tích và thiết kế
 
@@ -26,7 +28,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Kiểm thử
 
-- [`testing/README.md`](testing/README.md): điểm vào test plan, ma trận quyền, ma trận truy vết và test report của QA-01.
+- [`testing/README.md`](testing/README.md): điểm vào hồ sơ QA-01/QA-02, gồm test plan, ma trận quyền, truy vết và test report; QA-02 chưa đạt đầy đủ P0.
 
 ## Tài liệu lịch sử
 

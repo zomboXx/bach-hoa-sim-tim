@@ -74,3 +74,29 @@ jobs:
           cache: maven
           cache-dependency-path: services/api/pom.xml
       - run: ./mvnw verify
+
+  demo-compose:
+    name: Demo Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      POSTGRES_PASSWORD: ci-db-${{ github.run_id }}-${{ github.run_attempt }}
+      SIMTIM_DEMO_PASSWORD: ci-user-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and start demo
+        run: docker compose -f infra/compose.demo.yml up --build -d --wait
+      - name: Smoke test web and API
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health
+          curl --fail --silent --show-error -o /dev/null http://127.0.0.1:5174/
+          printf '{"organizationCode":"SIMTIM","storeCode":"MAIN","username":"manager","password":"%s"}' "$SIMTIM_DEMO_PASSWORD" |
+            curl --fail --silent --show-error -o /dev/null \
+              -H 'Content-Type: application/json' --data-binary @- \
+              http://127.0.0.1:5174/api/v1/auth/login
+      - name: Show demo logs on failure
+        if: failure()
+        run: docker compose -f infra/compose.demo.yml logs --tail=100
+      - name: Stop demo
+        if: always()
+        run: docker compose -f infra/compose.demo.yml down

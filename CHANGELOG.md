@@ -4,6 +4,16 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+### Added
+
+- Khởi động Sprint 3 theo năm mã kiểm kê MOB-01, SYN-01, SYN-02, INV-03, QA-03 trong backlog; thêm kickoff, phân công và điểm review, milestone không có hạn kết thúc. Sáu ngoại lệ QA-02 của Sprint 2 tiếp tục theo dõi riêng tại Issue #34.
+- Bổ sung Docker Compose demo ba dịch vụ web, API và PostgreSQL, Dockerfile riêng cho web/API, Nginx proxy cùng origin, healthcheck và tài khoản server demo chỉ khi người chạy cung cấp mật khẩu local. README hướng dẫn khởi động bằng một lệnh, thử luồng nhận/tồn/báo cáo và checkout tiền mặt qua API; CI build/khởi động demo và smoke test web/API trên mỗi PR.
+
+### Changed
+
+- Cập nhật điểm vào tài liệu theo mã đã tích hợp đến 07/10/2026; giữ ảnh chụp tiến độ 30/09 để truy vết và phân biệt 7/7 Issue Sprint 2 đã đóng với QA-02 còn 3 Fail và 3 Blocked P0.
+- Ghi quyết định Project Owner nghiệm thu Sprint 2 có ngoại lệ ngày 07/10/2026 và danh sách sáu khoảng trống QA cần theo dõi trước khi xếp Sprint 3.
+
 ### Fixed
 
 - **QA-02 / REP-01**: Sửa query báo cáo tồn dùng sai tên cột/khóa/trạng thái so với migration (`on_hand_quantity`, `batch_id`, `EXHAUSTED`) và ràng buộc join theo organization/store/product. Bổ sung E2E PostgreSQL xuyên receipt → checkout → invoice → reports với oracle ledger độc lập, rollback và checkout cạnh tranh.

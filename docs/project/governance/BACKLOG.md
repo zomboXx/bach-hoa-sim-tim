@@ -2,7 +2,7 @@
 
 Tài liệu này chốt phạm vi, ưu tiên và phụ thuộc ở mức sprint. Sau khi GitHub Project được tạo, trạng thái thực thi từng ngày chỉ cập nhật trên Issue/Project; không sửa đồng thời một cột trạng thái trùng lặp tại đây.
 
-Ưu tiên: `P0` bắt buộc cho luồng quản lý; `P1` cần cho bản cuối kỳ; `P2` chỉ làm khi P0/P1 ổn định. Sprint 0 là baseline ngày 21/09/2026; Sprint 1 đã đóng 7/7 Issue ngày 30/09/2026; Sprint 2 là kế hoạch đang triển khai. [Điểm vào tài liệu và mốc tiến độ](../README.md) giúp phân biệt phần đã tích hợp với PR đang review. TV1–TV4 được ánh xạ trong [TEAM.md](TEAM.md).
+Ưu tiên: `P0` bắt buộc cho luồng quản lý; `P1` cần cho bản cuối kỳ; `P2` chỉ làm khi P0/P1 ổn định. Sprint 0 là baseline ngày 21/09/2026; Sprint 1 đã đóng 7/7 Issue ngày 30/09/2026. Tại mốc 07/10/2026, Sprint 2 có 7/7 Issue đóng và [được nghiệm thu có ngoại lệ](../SPRINT_2_ACCEPTANCE_2026-10-07.md); [QA-02](../../testing/QA-02-test-report.md) còn 3 Fail và 3 Blocked P0 cần theo dõi. [Điểm vào tài liệu và mốc tiến độ](../README.md) phân biệt trạng thái Issue với bằng chứng nghiệm thu. TV1–TV4 được ánh xạ trong [TEAM.md](TEAM.md).
 
 ## Sprint 0 — Baseline có thể merge
 
@@ -72,13 +72,15 @@ Quyết định của Project Owner Nguyễn Đức Phát ngày 26/09/2026: vớ
 
 Mục tiêu: nhân viên kiểm kê trên điện thoại; quản lý duyệt trên máy tính.
 
+Project Owner khởi động Sprint 3 ngày 08/10/2026 theo đúng năm mục dưới đây, không đặt ngày kết thúc. [Kickoff](../SPRINT_3_KICKOFF.md) ghi thứ tự và điểm giao cần review; [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) cùng từng Issue ghi tiến độ. Các ngoại lệ QA-02 của Sprint 2 theo dõi riêng tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34), chưa được gán vào Sprint 3.
+
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| MOB-01 | Giao diện kiểm kê responsive | P1 | TV4 | TV3 | INV-02 | Không cuộn ngang ở viewport đã công bố; nhập theo lô |
-| SYN-01 | Hàng đợi kiểm kê offline | P1 | TV4 | TV2 | MOB-01 | Giữ thao tác qua reload; có `clientOperationId` |
-| SYN-02 | API đồng bộ và xử lý xung đột | P1 | TV2 | TV4 | SYN-01 | Retry không tạo bản ghi trùng; version lệch trả conflict |
-| INV-03 | Duyệt điều chỉnh tồn | P1 | TV2 | TV1 | SYN-02 | Chỉ quản lý duyệt; tạo biến động; không duyệt hai lần |
-| QA-03 | Test desktop/mobile/offline | P1 | TV4 | TV3 | INV-03 | Có kết quả test viewport, reload và reconnect |
+| [MOB-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/43) | Giao diện kiểm kê responsive | P1 | TV4 | TV3 | INV-02 | Không cuộn ngang ở viewport đã công bố; nhập theo lô |
+| [SYN-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/44) | Hàng đợi kiểm kê offline | P1 | TV4 | TV2 | MOB-01 | Giữ thao tác qua reload; có `clientOperationId` |
+| [SYN-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/45) | API đồng bộ và xử lý xung đột | P1 | TV2 | TV4 | SYN-01 | Retry không tạo bản ghi trùng; version lệch trả conflict |
+| [INV-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/46) | Duyệt điều chỉnh tồn | P1 | TV2 | TV1 | SYN-02 | Chỉ quản lý duyệt; tạo biến động; không duyệt hai lần |
+| [QA-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) | Test desktop/mobile/offline | P1 | TV4 | TV3 | INV-03 | Có kết quả test viewport, reload và reconnect |
 
 ## Sprint 4 — Đào tạo, ổn định và báo cáo
 
