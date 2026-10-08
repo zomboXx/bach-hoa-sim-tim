@@ -10,7 +10,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
-- Công bố kickoff Sprint 3 ngày 08–14/10/2026 cho sáu ngoại lệ P0 của QA-02; phân công TV2/TV3/TV4 và reviewer theo phụ thuộc, đưa chuỗi kiểm kê offline P1 vào hàng chờ sau Sprint 3. CI của PR chạy policy, web, API và demo Compose; ruleset `main` yêu cầu đủ bốn job trước merge.
+- Công bố kickoff Sprint 3 ngày 08–14/10/2026 cho sáu ngoại lệ P0 của QA-02; phân công TV2/TV3/TV4 và reviewer theo phụ thuộc, đưa chuỗi kiểm kê offline P1 vào hàng chờ sau Sprint 3. CI của PR chạy policy, web, API và demo Compose; ruleset `main` yêu cầu đủ bốn job trước merge. Theo quyết định Project Owner ngày 08/10, chưa cần CD tự triển khai.
 - Cập nhật điểm vào tài liệu theo mã đã tích hợp đến 07/10/2026; giữ ảnh chụp tiến độ 30/09 để truy vết và phân biệt 7/7 Issue Sprint 2 đã đóng với QA-02 còn 3 Fail và 3 Blocked P0.
 - Ghi quyết định Project Owner nghiệm thu Sprint 2 có ngoại lệ ngày 07/10/2026 và danh sách sáu khoảng trống QA cần theo dõi trước khi xếp Sprint 3.
 

@@ -2,7 +2,7 @@
 
 Tài liệu này mô tả thao tác quản trị ngoài Git. Các checkbox chỉ được đánh dấu khi Project Owner đã xác nhận trực tiếp trên GitHub; file trong repository không thể tự bật ruleset, cấp quyền hoặc tạo Project.
 
-**Trạng thái kiểm tra qua GitHub API ngày 08/10/2026:** ruleset `protect-main` đang Active, không có bypass, yêu cầu một approval từ người khác người push cuối, giải quyết review thread và bốn check `Repository policy`, `Web baseline`, `API bootstrap`, `Demo Compose`. Repo chỉ cho squash merge và tự xóa branch sau merge. Đây là cấu hình CI/merge; dự án chưa xác định đích triển khai tự động cho CD.
+**Trạng thái kiểm tra qua GitHub API ngày 08/10/2026:** ruleset `protect-main` đang Active, không có bypass, yêu cầu một approval từ người khác người push cuối, giải quyết review thread và bốn check `Repository policy`, `Web baseline`, `API bootstrap`, `Demo Compose`. Repo chỉ cho squash merge và tự xóa branch sau merge. Project Owner quyết định cùng ngày **chưa cần CD tự triển khai**; giữ CI và Compose demo cục bộ.
 
 ## 1. Thành viên và merge settings
 

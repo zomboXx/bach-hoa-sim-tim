@@ -81,7 +81,7 @@ TV1 điều phối, review và chốt nghiệm thu; không nhận thêm feature 
 
 ## Cổng CI và review
 
-Mỗi PR chạy workflow `baseline-quality`: Repository policy, Web baseline, API bootstrap (Maven/Testcontainers PostgreSQL 17) và Demo Compose (build, healthcheck, login smoke test). Ruleset `main` yêu cầu đủ bốn job đạt, một approval từ người không phải người push cuối cùng và giải quyết review thread trước merge. Owner chạy `pwsh -File scripts/verify.ps1` ở máy trước khi xin review; nếu thay contract API/schema, provider và consumer review cùng thay đổi. Không có đích triển khai tự động được xác định cho sprint này; Compose là bản demo kiểm chứng qua CI.
+Mỗi PR chạy workflow `baseline-quality`: Repository policy, Web baseline, API bootstrap (Maven/Testcontainers PostgreSQL 17) và Demo Compose (build, healthcheck, login smoke test). Ruleset `main` yêu cầu đủ bốn job đạt, một approval từ người không phải người push cuối cùng và giải quyết review thread trước merge. Owner chạy `pwsh -File scripts/verify.ps1` ở máy trước khi xin review; nếu thay contract API/schema, provider và consumer review cùng thay đổi. **Project Owner quyết định ngày 08/10/2026 chưa cần CD tự triển khai**; Compose là bản demo kiểm chứng qua CI và chạy cục bộ.
 
 [Milestone Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) hạn 14/10/2026 chứa sáu Issue con gắn nhãn sprint/P0, assignee theo bảng trên và liên kết [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Owner và Reviewer nằm trên hai dòng riêng trong mỗi Issue; tiêu đề và nhãn đã có mã/ưu tiên nên không lặp metadata đó trong phần mở đầu.
 
