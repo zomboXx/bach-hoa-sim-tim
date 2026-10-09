@@ -14,13 +14,18 @@ import {
   uid,
   type State,
   type User,
-  type Count,
 } from "./api";
 import { authAdapter, routesFor, type AuthUser } from "./adapter";
 import InventoryWorkspace from "./modules/inventory/presentation/InventoryWorkspace.vue";
+import StocktakeWorkspace from "./modules/inventory/presentation/StocktakeWorkspace.vue";
 import { ApiInventoryAdapter } from "./modules/inventory/infrastructure/api-inventory-adapter";
 import { DemoInventoryAdapter } from "./modules/inventory/infrastructure/demo-inventory-adapter";
 import type { InventoryPort } from "./modules/inventory/domain/inventory";
+import {
+  validateStocktakeQuantity,
+  type StocktakeRecord,
+  type StocktakeSubmission,
+} from "./modules/inventory/domain/stocktake";
 import PromotionWorkspace from "./modules/promotion/PromotionWorkspace.vue";
 import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 const state = ref<State>();
@@ -80,6 +85,26 @@ const nav = [
 ];
 const canGo = (id: string) => !!user.value && routesFor(user.value).includes(id);
 const allowedNav = computed(() => nav.filter(([id]) => canGo(id)));
+const stocktakeStoreId = computed(() => user.value?.session?.storeId || "MAIN");
+const stocktakeRecords = computed<StocktakeRecord[]>(
+  () =>
+    state.value?.counts.map((record) => ({
+      id: record.id,
+      countedAt: record.at,
+      productId: record.productId,
+      batchId: record.batchId,
+      expectedQuantity: record.expected,
+      actualQuantity: record.actual,
+      note: record.note,
+      status: record.status,
+    })) || [],
+);
+const canWriteStocktake = computed(() => isDemoMode && canGo("count"));
+const stocktakeWriteUnavailableReason = computed(() =>
+  isDemoMode
+    ? "Bạn không có quyền ghi nhận kiểm kê tại cửa hàng này."
+    : "API ghi kiểm kê chưa được bật: route, DTO và quyền đang chờ contract Sprint 3 được reviewer chốt. Bạn vẫn có thể rà đúng cửa hàng và lô từ INV-02.",
+);
 const pageTitle = computed(() => nav.find(([id]) => id === route.value)?.[1]);
 const money = (n: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
@@ -420,42 +445,43 @@ async function submitDialog() {
   }, "Đã lưu thay đổi.");
   if (ok) closeDialog();
 }
-const count = reactive({ batch: "LO01", actual: 0, note: "" });
-const countBatch = computed(() => state.value?.batches.find((b) => b.id === count.batch));
-async function saveCount() {
-  if (
-    await change(
-      (s) => {
-        if (!canGo("count")) throw Error("Không có quyền kiểm kê.");
-        if (!Number.isInteger(count.actual) || count.actual < 0)
-          throw Error("Số thực tế phải là số nguyên không âm.");
-        const b = s.batches.find((b) => b.id === count.batch)!;
-        s.counts.unshift({
-          id: uid("KK"),
-          at: new Date().toISOString(),
-          batchId: b.id,
-          productId: b.productId,
-          expected: b.quantity,
-          actual: count.actual,
-          note: count.note,
-          status: connected.value ? "REVIEW" : "PENDING",
-        });
-      },
-      connected.value
-        ? "Đã gửi phiếu chờ quản lý duyệt."
-        : "Đã lưu offline trên thiết bị. Phiếu sẽ đồng bộ khi có kết nối.",
-      true,
-    )
-  )
-    count.note = "";
+async function saveCount(submission: StocktakeSubmission) {
+  const saved = await change(
+    (s) => {
+      if (!canGo("count")) throw Error("Không có quyền kiểm kê.");
+      const batch = s.batches.find((candidate) => candidate.id === submission.batchId);
+      if (!batch) throw Error("Lô hàng không còn trong cửa hàng. Hãy tải lại dữ liệu.");
+      const unit = s.products.find((product) => product.id === batch.productId)?.unit;
+      const checked = validateStocktakeQuantity(String(submission.actualQuantity), unit);
+      if (checked.error || checked.value === undefined) throw Error(checked.error);
+      s.counts.unshift({
+        id: uid("KK"),
+        at: new Date().toISOString(),
+        batchId: batch.id,
+        productId: batch.productId,
+        expected: batch.quantity,
+        actual: checked.value,
+        note: submission.note,
+        status: connected.value ? "REVIEW" : "PENDING",
+      });
+    },
+    connected.value
+      ? "Đã gửi phiếu chờ quản lý duyệt."
+      : "Đã lưu offline trên thiết bị. Phiếu sẽ đồng bộ khi có kết nối.",
+    true,
+  );
+  if (!saved) throw Error(error.value || "Không lưu được phiếu kiểm kê.");
 }
-async function approve(c: Count) {
-  await change((s) => {
+
+async function approveCount(record: StocktakeRecord) {
+  const approved = await change((s) => {
     if (user.value?.role !== "manager") throw Error("Chỉ quản lý được duyệt.");
-    const row = s.counts.find((x) => x.id === c.id)!;
+    const row = s.counts.find((candidate) => candidate.id === record.id);
+    if (!row) throw Error("Không tìm thấy phiếu kiểm kê.");
     if (row.status !== "REVIEW") throw Error("Phiếu không ở trạng thái chờ duyệt.");
-    const b = s.batches.find((b) => b.id === row.batchId)!;
-    if (b.quantity !== row.expected) {
+    const batch = s.batches.find((candidate) => candidate.id === row.batchId);
+    if (!batch) throw Error("Lô hàng không còn trong cửa hàng.");
+    if (batch.quantity !== row.expected) {
       row.status = "CONFLICT";
       return;
     }
@@ -463,20 +489,15 @@ async function approve(c: Count) {
       id: uid("BD"),
       at: new Date().toISOString(),
       productId: row.productId,
-      quantity: row.actual - b.quantity,
+      quantity: row.actual - batch.quantity,
       kind: "Kiểm kê",
       reference: row.id,
     });
-    b.quantity = row.actual;
+    batch.quantity = row.actual;
     row.status = "APPROVED";
   }, "Đã kiểm tra phiếu. Xem trạng thái duyệt bên dưới.");
+  if (!approved) throw Error(error.value || "Không duyệt được phiếu kiểm kê.");
 }
-const statuses = {
-  PENDING: "Chờ kết nối",
-  REVIEW: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  CONFLICT: "Tồn đã đổi · cần kiểm lại",
-};
 </script>
 
 <template>
@@ -970,91 +991,18 @@ const statuses = {
           :can-receive="canConfirmReceipt"
         />
 
-        <template v-else-if="route === 'count'"
-          ><div class="page-head">
-            <div>
-              <p class="eyebrow">KIỂM HÀNG NGAY TẠI KỆ</p>
-              <h1>Đếm thực tế. Ghi chính xác.</h1>
-              <p>
-                Lưu trên thiết bị khi offline, gửi lại khi có mạng. Tồn chỉ thay đổi sau khi quản lý
-                duyệt.
-              </p>
-            </div>
-            <button class="secondary" :disabled="!connected || !pending || busy" @click="sync">
-              ↻ Đồng bộ {{ pending }} phiếu
-            </button>
-          </div>
-          <div class="two-columns">
-            <form class="card form-card" @submit.prevent="saveCount">
-              <h2>Ghi nhận kiểm kê</h2>
-              <label
-                >Chọn lô hàng<select v-model="count.batch">
-                  <option v-for="b in state.batches" :key="b.id" :value="b.id">
-                    {{ name(b.productId) }} · {{ b.id }}
-                  </option>
-                </select></label
-              >
-              <div class="count-summary">
-                <span
-                  >Tồn hệ thống<b>{{ countBatch?.quantity }}</b></span
-                ><span
-                  >Chênh lệch<b
-                    :class="count.actual === (countBatch?.quantity || 0) ? '' : 'negative'"
-                    >{{ count.actual - (countBatch?.quantity || 0) }}</b
-                  ></span
-                >
-              </div>
-              <label
-                >Số lượng thực tế<input
-                  v-model.number="count.actual"
-                  class="large-input"
-                  type="number"
-                  inputmode="numeric"
-                  min="0"
-                  required /></label
-              ><label
-                >Ghi chú<textarea
-                  v-model="count.note"
-                  placeholder="Ghi chú tình trạng hàng hoặc chênh lệch…"
-                ></textarea></label
-              ><button class="primary wide" :disabled="busy">
-                {{ connected ? "Gửi phiếu kiểm kê" : "Lưu phiếu offline" }} →
-              </button>
-            </form>
-            <section class="card form-card">
-              <h2>Phiếu trên thiết bị</h2>
-              <p v-if="!state.counts.length" class="empty">Chưa có phiếu kiểm kê.</p>
-              <article v-for="c in state.counts" :key="c.id" class="count-row">
-                <div>
-                  <b>{{ name(c.productId) }}</b
-                  ><span
-                    :class="[
-                      'status',
-                      c.status === 'CONFLICT' ? 'danger' : c.status === 'APPROVED' ? '' : 'amber',
-                    ]"
-                    >{{ statuses[c.status] }}</span
-                  >
-                </div>
-                <small>{{ c.batchId }} · {{ time(c.at) }}</small>
-                <p>
-                  Hệ thống {{ c.expected }} → Thực tế <b>{{ c.actual }}</b>
-                </p>
-                <small>{{ c.note }}</small
-                ><button
-                  v-if="user.role === 'manager' && c.status === 'REVIEW'"
-                  class="secondary"
-                  :disabled="!connected || busy"
-                  @click="approve(c)"
-                >
-                  Duyệt điều chỉnh tồn
-                </button>
-                <p v-if="c.status === 'CONFLICT'" class="error">
-                  Tồn lô đã thay đổi sau lúc đếm. Tạo phiếu kiểm lại lô này; không ghi đè tự động.
-                </p>
-              </article>
-            </section>
-          </div></template
-        >
+        <StocktakeWorkspace
+          v-else-if="route === 'count'"
+          :adapter="inventoryAdapter"
+          :store-id="stocktakeStoreId"
+          :records="stocktakeRecords"
+          :connected="connected"
+          :can-write="canWriteStocktake"
+          :write-unavailable-reason="stocktakeWriteUnavailableReason"
+          :save="isDemoMode ? saveCount : undefined"
+          :approve="isDemoMode && user.role === 'manager' ? approveCount : undefined"
+          :sync="isDemoMode ? sync : undefined"
+        />
 
         <template v-else-if="route === 'invoices'"
           ><div class="page-head">

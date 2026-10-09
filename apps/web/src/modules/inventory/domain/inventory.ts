@@ -48,6 +48,7 @@ export interface InventoryProduct {
   productId: string;
   sku: string;
   productName: string;
+  unitCode?: string;
   productStatus: "ACTIVE" | "INACTIVE";
   onHandQuantity: string;
   availableQuantity: string;

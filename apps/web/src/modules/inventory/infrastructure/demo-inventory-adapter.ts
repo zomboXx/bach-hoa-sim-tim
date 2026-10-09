@@ -104,6 +104,7 @@ export class DemoInventoryAdapter implements InventoryPort {
         productId: product.id,
         sku: product.id,
         productName: product.name,
+        unitCode: product.unit,
         productStatus: "ACTIVE",
         onHandQuantity: quantity(batches.reduce((sum, batch) => sum + batch.quantity, 0)),
         availableQuantity: quantity(

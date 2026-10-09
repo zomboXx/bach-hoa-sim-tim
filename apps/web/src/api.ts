@@ -140,6 +140,15 @@ const seed = (): State => ({
       price: 28000,
       emoji: "🥚",
     },
+    {
+      id: "SP007",
+      name: "Gạo thơm",
+      barcode: "8934673120072",
+      category: "Thực phẩm khô",
+      unit: "KG",
+      price: 22000,
+      emoji: "🌾",
+    },
   ],
   batches: [
     ["SP001", 48, 3],
@@ -149,6 +158,7 @@ const seed = (): State => ({
     ["SP005", 7, 200],
     ["SP006", 12, 6],
     ["SP001", 6, -2],
+    ["SP007", 12.5, 180],
   ].map((x, i) => ({
     id: `LO0${i + 1}`,
     productId: String(x[0]),
