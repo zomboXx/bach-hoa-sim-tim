@@ -1185,7 +1185,7 @@ async function approveCount(record: StocktakeRecord) {
       </footer>
     </main>
     <button
-      v-if="route !== 'training' && canGo('training')"
+      v-if="route !== 'training' && route !== 'count' && canGo('training')"
       class="mentor-fab"
       aria-label="Mở đào tạo cùng Mentor Mai"
       @click="go('training')"
