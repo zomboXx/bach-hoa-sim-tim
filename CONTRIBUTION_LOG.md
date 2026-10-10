@@ -22,6 +22,46 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV2 — Nguyễn Văn Trung - 2026-10-10 09:57:44
+
+Hoàn thành phạm vi Issue #45 (SYN-02): Triển khai API đồng bộ kiểm kê và xử lý xung đột.
+- Migration V12: Tạo bảng `stocktakes`, `stocktake_lines`, `processed_operations` và mở rộng CHECK `stock_movements`.
+- Migration V13: Thêm quyền `stocktakes.read/write` cho STOCK/MANAGER/ADMIN.
+- Domain: Bổ sung `Stocktake`, `StocktakeLine`, `StocktakeRepository`, `StocktakeException`.
+- Application: `StocktakeService` hỗ trợ open/get session, `submitCount`, `InventoryBalanceReader` port, `StocktakeConflictException`.
+- Infrastructure: JPA entities và `StocktakeRepositoryAdapter` implement `StocktakeRepository` và `InventoryBalanceReader`.
+- API: Cung cấp 3 route `POST /stocktakes`, `GET /stocktakes/{id}`, `POST /stocktakes/{id}/counts`; cấu hình `StocktakeExceptionHandler` trả về 409 CONFLICT kèm thông tin chi tiết. Đảm bảo idempotency theo `clientOperationId` trong phạm vi org/store và conflict detection bằng `inventory_balances.version`.
+- Contract: Bổ sung và đánh dấu Accepted cho `contracts/SYN-02_SYNC_API_CONTRACT.md`.
+- Tests: Đạt 10 cases trong `StocktakeSyncApiTest` (compile ok).
+
+- `.idea/workspace.xml`: +9 -7
+- `CHANGELOG.md`: +1 -0
+- `contracts/SYN-02_SYNC_API_CONTRACT.md`: +191 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeController.java`: +110 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeCountRequest.java`: +27 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeExceptionHandler.java`: +64 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeForbiddenException.java`: +6 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeResponse.java`: +56 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryBalanceReader.java`: +14 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/StocktakeConflictException.java`: +20 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/StocktakeService.java`: +177 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/SubmitCountCommand.java`: +18 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/Stocktake.java`: +29 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/StocktakeException.java`: +14 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/StocktakeLine.java`: +25 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/StocktakeRepository.java`: +33 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/InventoryBalanceJpaRepository.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeJpa.java`: +20 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeJpaRepository.java`: +25 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeLineJpa.java`: +30 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeLineJpaRepository.java`: +20 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeRepositoryAdapter.java`: +137 -0
+- `services/api/src/main/resources/db/migration/V12__stocktake_sync.sql`: +81 -0
+- `services/api/src/main/resources/db/migration/V13__stocktake_permissions.sql`: +22 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/StocktakeSyncApiTest.java`: +324 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-10 09:07:19
 
 Hoàn thành phạm vi Issue #44 (SYN-01): bổ sung hàng đợi IndexedDB chỉ dành cho thao tác kiểm kê offline, giữ nguyên `clientOperationId` qua reload và retry, hiển thị trạng thái chờ/xung đột, đồng thời chặn gửi lại khi session, actor, tổ chức, cửa hàng hoặc quyền không còn khớp. Không áp dụng queue cho bán hàng/nhận hàng; API write vẫn được khóa chờ contract provider SYN-02 và đã ghi rõ điểm giao review.
