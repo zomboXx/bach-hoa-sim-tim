@@ -102,10 +102,12 @@ class StocktakeSyncApiTest {
         balanceId = UUID.randomUUID();
         batchVersion = 1L;
 
+        UUID confirmedBy = fixtureUsers.getFirst();
+
         jdbc.update("""
                 INSERT INTO inventory.goods_receipts(id, organization_id, store_id, supplier_id, status, received_at, confirmed_by, client_operation_id, idempotency_key, payload_hash)
-                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000061', 'CONFIRMED', now(), '10000000-0000-0000-0000-000000000014', ?, ?, '\\x00')
-                """, receiptId, ORG_ID, STORE_ID, UUID.randomUUID(), UUID.randomUUID());
+                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000061', 'CONFIRMED', now(), ?, ?, ?, '\\x00')
+                """, receiptId, ORG_ID, STORE_ID, confirmedBy, UUID.randomUUID(), UUID.randomUUID());
 
         jdbc.update("""
                 INSERT INTO inventory.goods_receipt_lines(id, receipt_id, organization_id, product_id, expected_quantity, delivered_quantity, accepted_quantity, rejected_quantity, unit_cost)
