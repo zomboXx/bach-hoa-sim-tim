@@ -357,6 +357,9 @@ const statusLabels: Record<StocktakeStatus, string> = {
             <div>
               <b>{{ productName(record.productId) }}</b>
               <small>{{ record.batchId }} · {{ formatTime(record.countedAt) }}</small>
+              <small v-if="record.clientOperationId" class="operation-id">
+                Mã thao tác {{ record.clientOperationId }}
+              </small>
             </div>
             <span :class="['record-status', `is-${record.status.toLowerCase()}`]">
               {{ statusLabels[record.status] }}
@@ -377,6 +380,13 @@ const statusLabels: Record<StocktakeStatus, string> = {
             </div>
           </dl>
           <p v-if="record.note" class="record-note">{{ record.note }}</p>
+          <p
+            v-if="record.status === 'PENDING' && record.syncBlockedReason"
+            class="stocktake-notice"
+            role="status"
+          >
+            {{ record.syncBlockedReason }}
+          </p>
           <button
             v-if="approve && record.status === 'REVIEW'"
             class="stocktake-secondary"
@@ -387,7 +397,10 @@ const statusLabels: Record<StocktakeStatus, string> = {
             {{ approvingId === record.id ? "Đang duyệt…" : "Duyệt điều chỉnh tồn" }}
           </button>
           <p v-if="record.status === 'CONFLICT'" class="stocktake-error">
-            Tồn lô đã thay đổi sau lúc đếm. Tạo phiếu kiểm lại; hệ thống không ghi đè tự động.
+            {{
+              record.syncBlockedReason ||
+              "Tồn lô đã thay đổi sau lúc đếm. Tạo phiếu kiểm lại; hệ thống không ghi đè tự động."
+            }}
           </p>
         </article>
       </section>
@@ -749,6 +762,11 @@ const statusLabels: Record<StocktakeStatus, string> = {
 .record-heading small {
   color: #756b79;
   font-size: 0.75rem;
+}
+
+.record-heading .operation-id {
+  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.7rem;
 }
 
 .record-status.is-approved {

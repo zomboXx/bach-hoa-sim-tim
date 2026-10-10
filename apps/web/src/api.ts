@@ -44,6 +44,7 @@ export interface Movement {
 }
 export interface Count {
   id: string;
+  clientOperationId?: string;
   at: string;
   productId: string;
   batchId: string;
