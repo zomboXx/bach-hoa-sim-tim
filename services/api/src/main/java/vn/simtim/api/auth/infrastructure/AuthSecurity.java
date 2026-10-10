@@ -21,6 +21,7 @@ public class AuthSecurity {
         String[] catalog = {"/api/v1/categories", "/api/v1/categories/**", "/api/v1/units", "/api/v1/units/**",
                 "/api/v1/products", "/api/v1/products/**", "/api/v1/suppliers", "/api/v1/suppliers/**"};
         String[] receipts = {"/api/v1/inventory/receipts", "/api/v1/inventory/receipts/**"};
+        String[] stocktakes = {"/api/v1/inventory/stocktakes", "/api/v1/inventory/stocktakes/**"};
         String[] inventory = {"/api/v1/inventory/products", "/api/v1/inventory/products/**",
                 "/api/v1/inventory/batches", "/api/v1/inventory/batches/**",
                 "/api/v1/inventory/movements", "/api/v1/inventory/movements/**"};
@@ -46,6 +47,8 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.GET, "/api/v1/reports/revenue", "/api/v1/reports/inventory").hasAuthority("reports.read")
                     .requestMatchers(HttpMethod.GET, receipts).hasAuthority("receipts.read")
                     .requestMatchers(HttpMethod.POST, receipts).hasAuthority("receipts.write")
+                    .requestMatchers(HttpMethod.GET, stocktakes).hasAuthority("stocktakes.read")
+                    .requestMatchers(HttpMethod.POST, stocktakes).hasAuthority("stocktakes.write")
                     .requestMatchers(HttpMethod.GET, inventory).hasAuthority("inventory.read")
                     .requestMatchers(HttpMethod.GET, promotions).hasAuthority("promotions.read")
                     .requestMatchers(HttpMethod.POST, promotions).hasAuthority("promotions.write")

@@ -40,4 +40,11 @@ public interface InventoryBalanceJpaRepository extends JpaRepository<InventoryBa
     List<Object[]> findAvailableBatchesFEFO(@Param("orgId") UUID orgId,
                                            @Param("storeId") UUID storeId,
                                            @Param("productId") UUID productId);
+
+    /** Đọc balance theo (org, store, batch) — không lock, dùng cho snapshot kiểm kê. */
+    @Query("SELECT b FROM InventoryBalanceJpa b "
+            + "WHERE b.organizationId = :orgId AND b.storeId = :storeId AND b.batchId = :batchId")
+    Optional<InventoryBalanceJpa> findByScope(@Param("orgId") UUID orgId,
+                                              @Param("storeId") UUID storeId,
+                                              @Param("batchId") UUID batchId);
 }

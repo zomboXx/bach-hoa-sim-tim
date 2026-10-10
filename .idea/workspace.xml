@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="8b89865c-4cba-4cb4-a2fb-ceb1eaf0d65d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTION_LOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/CONTRIBUTION_LOG.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/App.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/adapter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/adapter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java" afterDir="false" />
-    </list>
+    <list default="true" id="8b89865c-4cba-4cb4-a2fb-ceb1eaf0d65d" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,7 +25,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "feature/REP-01-reports",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "D:/HCMUTE/Software engineering/bach-hoa-sim-tim",
