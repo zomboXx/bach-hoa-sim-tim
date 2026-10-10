@@ -92,18 +92,19 @@ class StocktakeSyncApiTest {
         stockToken = createSession("STOCK", hash, UUID.fromString(STORE_ID), "MAIN");
         salesToken = createSession("SALES", hash, UUID.fromString(STORE_ID), "MAIN");
 
-        // Lấy một lô có balance trong store demo
-        var row = jdbc.queryForMap("""
-                SELECT b.id as batch_id, ib.version as v
-                FROM inventory.inventory_balances ib
-                JOIN inventory.product_batches b ON b.id = ib.batch_id
-                WHERE ib.organization_id = ?::uuid
-                  AND ib.store_id = ?::uuid
-                  AND ib.on_hand_quantity > 0
-                LIMIT 1
-                """, ORG_ID, STORE_ID);
-        batchId      = (UUID) row.get("batch_id");
-        batchVersion = ((Number) row.get("v")).longValue();
+        // Demo seed chỉ có product, không có batch/balance; ta tự tạo để test
+        batchId = UUID.randomUUID();
+        batchVersion = 1L;
+
+        jdbc.update("""
+                INSERT INTO inventory.product_batches(id, organization_id, product_id, supplier_id, status, received_date)
+                VALUES (?, ?::uuid, '10000000-0000-0000-0000-000000000041', '10000000-0000-0000-0000-000000000061', 'AVAILABLE', CURRENT_DATE)
+                """, batchId, ORG_ID);
+
+        jdbc.update("""
+                INSERT INTO inventory.inventory_balances(organization_id, store_id, product_id, batch_id, on_hand_quantity, version)
+                VALUES (?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, 100, ?)
+                """, ORG_ID, STORE_ID, batchId, batchVersion);
     }
 
     @AfterAll
@@ -112,6 +113,8 @@ class StocktakeSyncApiTest {
             UUID orgId = UUID.fromString(ORG_ID);
             jdbc.update("DELETE FROM inventory.stocktake_lines WHERE organization_id = ?", orgId);
             jdbc.update("DELETE FROM inventory.stocktakes WHERE organization_id = ?", orgId);
+            jdbc.update("DELETE FROM inventory.inventory_balances WHERE batch_id = ?", batchId);
+            jdbc.update("DELETE FROM inventory.product_batches WHERE id = ?", batchId);
             for (UUID id : fixtureUsers) {
                 jdbc.update("DELETE FROM iam.auth_sessions WHERE user_id = ?", id);
                 jdbc.update("DELETE FROM iam.user_roles WHERE user_id = ?", id);
