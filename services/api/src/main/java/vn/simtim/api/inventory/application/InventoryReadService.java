@@ -18,7 +18,7 @@ public class InventoryReadService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> PRODUCT_STATUSES = Set.of("ACTIVE", "INACTIVE");
     private static final Set<String> BATCH_STATUSES = Set.of("AVAILABLE", "BLOCKED", "EXHAUSTED");
-    private static final Set<String> MOVEMENT_TYPES = Set.of("RECEIPT", "SALE", "ADJUSTMENT");
+    private static final Set<String> MOVEMENT_TYPES = Set.of("RECEIPT", "SALE", "ADJUSTMENT", "STOCKTAKE_ADJUSTMENT");
 
     private final InventoryReadRepository repository;
     private final Clock clock;

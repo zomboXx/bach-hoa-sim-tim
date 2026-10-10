@@ -22,4 +22,16 @@ public record StocktakeLine(
         String status,          // PENDING | CONFLICT | APPROVED
         String conflictReason,
         Instant countedAt
-) {}
+) {
+    public StocktakeLine approve() {
+        return new StocktakeLine(id, stocktakeId, organizationId, storeId, productId,
+                batchId, clientOperationId, expectedQuantity, actualQuantity,
+                baseVersion, note, "APPROVED", null, countedAt);
+    }
+
+    public StocktakeLine conflict(String reason) {
+        return new StocktakeLine(id, stocktakeId, organizationId, storeId, productId,
+                batchId, clientOperationId, expectedQuantity, actualQuantity,
+                baseVersion, note, "CONFLICT", reason, countedAt);
+    }
+}

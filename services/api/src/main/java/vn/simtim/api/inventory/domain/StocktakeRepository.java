@@ -1,5 +1,6 @@
 package vn.simtim.api.inventory.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +29,9 @@ public interface StocktakeRepository {
     Optional<StocktakeLine> findLineByClientOperationId(
             UUID organizationId, UUID storeId, UUID clientOperationId);
 
-    /** Cập nhật trạng thái một dòng (CONFLICT). */
+    /** Cập nhật trạng thái một dòng (CONFLICT, APPROVED). */
     void updateLineStatus(UUID lineId, String status, String conflictReason);
+
+    /** Cập nhật trạng thái phiên (APPROVED, CANCELLED) và thời gian submittedAt. */
+    void updateSessionStatus(UUID sessionId, String status, Instant submittedAt);
 }

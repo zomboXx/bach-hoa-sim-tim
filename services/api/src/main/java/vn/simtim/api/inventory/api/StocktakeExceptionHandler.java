@@ -34,11 +34,13 @@ public class StocktakeExceptionHandler {
     @ExceptionHandler(StocktakeException.class)
     public ResponseEntity<Map<String, Object>> domain(StocktakeException ex) {
         HttpStatus status = switch (ex.getCode()) {
-            case "NOT_FOUND"              -> HttpStatus.NOT_FOUND;
-            case "IDEMPOTENCY_KEY_REUSED" -> HttpStatus.CONFLICT;
-            case "SCOPE_MISMATCH"         -> HttpStatus.FORBIDDEN;
-            case "SESSION_CLOSED"         -> HttpStatus.UNPROCESSABLE_ENTITY;
-            default                       -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case "NOT_FOUND"                                          -> HttpStatus.NOT_FOUND;
+            case "IDEMPOTENCY_KEY_REUSED", "ALREADY_APPROVED",
+                 "BALANCE_VERSION_MISMATCH", "UNRESOLVED_CONFLICT"    -> HttpStatus.CONFLICT;
+            case "SCOPE_MISMATCH"                                     -> HttpStatus.FORBIDDEN;
+            case "SESSION_CLOSED", "SESSION_CANCELLED",
+                 "EMPTY_STOCKTAKE", "NEGATIVE_BALANCE"                -> HttpStatus.UNPROCESSABLE_ENTITY;
+            default                                                   -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
         return ResponseEntity.status(status)
                 .body(Map.of("code", ex.getCode(), "message", ex.getMessage()));

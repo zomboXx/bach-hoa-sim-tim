@@ -14,7 +14,7 @@ class StockMovementJpa {
     @Column(name = "store_id", nullable = false) UUID storeId;
     @Column(name = "product_id", nullable = false) UUID productId;
     @Column(name = "batch_id", nullable = false) UUID batchId;
-    @Column(name = "movement_type", nullable = false, length = 16) String movementType;
+    @Column(name = "movement_type", nullable = false, length = 32) String movementType;
     @Column(name = "quantity_delta", nullable = false, precision = 14, scale = 3) BigDecimal quantityDelta;
     @Column(name = "reference_id", nullable = false) UUID referenceId;
     @Column(name = "reference_type", nullable = false, length = 32) String referenceType;
