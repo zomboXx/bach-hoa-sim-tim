@@ -82,7 +82,10 @@ class StocktakeSyncApiTest {
     private String salesToken;
 
     /** UUID của lô hàng tồn tại trong demo seed (rice batch). */
+    private UUID receiptId;
+    private UUID receiptLineId;
     private UUID batchId;
+    private UUID balanceId;
     /** Version hiện tại của balance lô đó. */
     private long batchVersion;
 
@@ -93,18 +96,31 @@ class StocktakeSyncApiTest {
         salesToken = createSession("SALES", hash, UUID.fromString(STORE_ID), "MAIN");
 
         // Demo seed chỉ có product, không có batch/balance; ta tự tạo để test
+        receiptId = UUID.randomUUID();
+        receiptLineId = UUID.randomUUID();
         batchId = UUID.randomUUID();
+        balanceId = UUID.randomUUID();
         batchVersion = 1L;
 
         jdbc.update("""
-                INSERT INTO inventory.product_batches(id, organization_id, product_id, supplier_id, status, received_date)
-                VALUES (?, ?::uuid, '10000000-0000-0000-0000-000000000041', '10000000-0000-0000-0000-000000000061', 'AVAILABLE', CURRENT_DATE)
-                """, batchId, ORG_ID);
+                INSERT INTO inventory.goods_receipts(id, organization_id, store_id, supplier_id, status, received_at, confirmed_by, client_operation_id, idempotency_key, payload_hash)
+                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000061', 'CONFIRMED', now(), '10000000-0000-0000-0000-000000000014', ?, ?, '\\x00')
+                """, receiptId, ORG_ID, STORE_ID, UUID.randomUUID(), UUID.randomUUID());
 
         jdbc.update("""
-                INSERT INTO inventory.inventory_balances(organization_id, store_id, product_id, batch_id, on_hand_quantity, version)
-                VALUES (?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, 100, ?)
-                """, ORG_ID, STORE_ID, batchId, batchVersion);
+                INSERT INTO inventory.goods_receipt_lines(id, receipt_id, organization_id, product_id, expected_quantity, delivered_quantity, accepted_quantity, rejected_quantity, unit_cost)
+                VALUES (?, ?, ?::uuid, '10000000-0000-0000-0000-000000000041', 100, 100, 100, 0, 10000)
+                """, receiptLineId, receiptId, ORG_ID);
+
+        jdbc.update("""
+                INSERT INTO inventory.product_batches(id, organization_id, store_id, product_id, receipt_line_id, batch_number, status, received_date)
+                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, 'B123', 'AVAILABLE', CURRENT_DATE)
+                """, batchId, ORG_ID, STORE_ID, receiptLineId);
+
+        jdbc.update("""
+                INSERT INTO inventory.inventory_balances(id, organization_id, store_id, product_id, batch_id, on_hand_quantity, version)
+                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, 100, ?)
+                """, balanceId, ORG_ID, STORE_ID, batchId, batchVersion);
     }
 
     @AfterAll
@@ -113,8 +129,10 @@ class StocktakeSyncApiTest {
             UUID orgId = UUID.fromString(ORG_ID);
             jdbc.update("DELETE FROM inventory.stocktake_lines WHERE organization_id = ?", orgId);
             jdbc.update("DELETE FROM inventory.stocktakes WHERE organization_id = ?", orgId);
-            jdbc.update("DELETE FROM inventory.inventory_balances WHERE batch_id = ?", batchId);
+            jdbc.update("DELETE FROM inventory.inventory_balances WHERE id = ?", balanceId);
             jdbc.update("DELETE FROM inventory.product_batches WHERE id = ?", batchId);
+            jdbc.update("DELETE FROM inventory.goods_receipt_lines WHERE id = ?", receiptLineId);
+            jdbc.update("DELETE FROM inventory.goods_receipts WHERE id = ?", receiptId);
             for (UUID id : fixtureUsers) {
                 jdbc.update("DELETE FROM iam.auth_sessions WHERE user_id = ?", id);
                 jdbc.update("DELETE FROM iam.user_roles WHERE user_id = ?", id);
