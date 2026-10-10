@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- **SYN-01** (#44): Thêm IndexedDB queue chỉ dành cho kiểm kê với `clientOperationId` ổn định, giữ thao tác qua reload, guard actor/organization/store/quyền trước retry và trạng thái chờ/conflict không ghi đè. Bổ sung browser tests cho offline → reload → reconnect, lưu lặp, đổi tài khoản/cửa hàng và tồn thay đổi; API write vẫn chờ contract SYN-02 được review.
 - **MOB-01** (#43): Tách giao diện kiểm kê theo store/lô thành workspace responsive; hiển thị tồn hệ thống, số thực tế, chênh lệch, trạng thái lưu/lỗi và giữ regression demo offline/duyệt. KG nhận tối đa ba chữ số thập phân, đơn vị đếm nhận số nguyên; browser tests công bố 360×800, 768×1024 và 1366×768 không cuộn ngang.
 - Bổ sung consumer tests MOB-01 cho loading, dữ liệu store/lô INV-02, HTTP 403/thiếu quyền và boundary provider. API mode chỉ đọc dữ liệu INV-02, khóa gửi kiểm kê đến khi SYN-02 chốt contract; ghi rõ gap unit/precision, baseVersion, permission, idempotency và lỗi trong contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md.
 - Khởi động Sprint 3 theo năm mã kiểm kê MOB-01, SYN-01, SYN-02, INV-03, QA-03 trong backlog; thêm kickoff, phân công và điểm review, milestone không có hạn kết thúc. Sáu ngoại lệ QA-02 của Sprint 2 tiếp tục theo dõi riêng tại Issue #34.

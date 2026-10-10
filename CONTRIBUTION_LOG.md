@@ -22,6 +22,26 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-10 09:07:19
+
+Hoàn thành phạm vi Issue #44 (SYN-01): bổ sung hàng đợi IndexedDB chỉ dành cho thao tác kiểm kê offline, giữ nguyên `clientOperationId` qua reload và retry, hiển thị trạng thái chờ/xung đột, đồng thời chặn gửi lại khi session, actor, tổ chức, cửa hàng hoặc quyền không còn khớp. Không áp dụng queue cho bán hàng/nhận hàng; API write vẫn được khóa chờ contract provider SYN-02 và đã ghi rõ điểm giao review.
+
+Kiểm tra lint, format, typecheck, build và toàn bộ root gate đạt; Playwright demo đạt 14/14, API consumer đạt 39/39 và backend đạt 129/129. Kịch bản browser đã bao phủ mất mạng → nhập → reload → reconnect, retry, đổi tài khoản/cửa hàng, chống gửi trùng và không ghi đè conflict.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/README.md`: +8 -0
+- `apps/web/src/App.vue`: +172 -42
+- `apps/web/src/api.ts`: +1 -0
+- `apps/web/src/modules/inventory/domain/stocktake.ts`: +79 -0
+- `apps/web/src/modules/inventory/infrastructure/stocktake-operation-queue.ts`: +93 -0
+- `apps/web/src/modules/inventory/presentation/StocktakeWorkspace.vue`: +19 -1
+- `apps/web/tests/stocktake-offline-queue.spec.ts`: +170 -0
+- `contracts/README.md`: +1 -0
+- `contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md`: +54 -0
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-09 17:36:11
 
 Hoàn thành phạm vi Issue #43 (MOB-01): bổ sung workspace kiểm kê responsive theo cửa hàng và lô, hiển thị số đếm, trạng thái lưu, lỗi theo dòng; hỗ trợ nhập theo lô, kiểm tra precision theo đơn vị (KG tối đa 3 chữ số thập phân), trạng thái loading/lỗi quyền và khóa thao tác ghi trong API mode cho tới khi contract provider SYN-02 được chốt. Tách domain stocktake, nối dữ liệu đọc INV-02, bổ sung tài liệu consumer review và cập nhật hướng dẫn/changelog.

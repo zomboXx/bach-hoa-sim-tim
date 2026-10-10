@@ -64,6 +64,14 @@ Ba viewport công bố cho MOB-01 là **360×800 (mobile), 768×1024 (tablet) v�
 
 API mode hiện dùng contract đọc INV-02 để review giao diện bằng dữ liệu theo store nhưng cố ý khóa thao tác gửi. Response INV-02 chưa có unit/precision hoặc balance version; route, DTO, permission và lỗi ghi kiểm kê chưa được Accepted. Boundary cần TV3/TV4/TV2 review nằm tại [MOB-01 stocktake consumer review](../../contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md). Sau khi SYN-02 có provider, phải thêm live API/PostgreSQL test và ảnh API mode; consumer mock không được dùng thay bằng chứng provider.
 
+## SYN-01 · Hàng đợi kiểm kê offline
+
+Thao tác kiểm kê offline được lưu trong IndexedDB riêng `simtim-stocktake-queue-v1`; queue không chứa token và không được dùng cho nhận hàng, bán hàng hoặc thanh toán. Mỗi thao tác có một `clientOperationId` UUID ổn định. Lưu lại cùng payload đang chờ trong đúng actor/organization/store trả về thao tác cũ thay vì tạo lần gửi mới.
+
+Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chiếu phiên hiện tại với actor, organization, store và quyền gửi; sai scope giữ nguyên queue và giải thích tài khoản/cửa hàng cần dùng. Tồn thay đổi chuyển thao tác sang `CONFLICT`, yêu cầu kiểm lại và không ghi đè tự động. Demo adapter mô phỏng bước nhận để browser test lifecycle; API mode vẫn khóa ghi cho tới khi SYN-02 chốt route, DTO, baseVersion, permission và lỗi. Chi tiết review nằm tại [SYN-01 offline stocktake queue review](../../contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md).
+
+`tests/stocktake-offline-queue.spec.ts` kiểm offline → nhập → lưu lặp → reload → reconnect, đổi actor/store, retry đúng scope và conflict không ghi đè.
+
 ## Kịch bản trình diễn
 
 1. Đăng nhập `QL001`. Dashboard bắt đầu với doanh thu 0 để không trộn số liệu giả vào giao dịch vừa tạo.

@@ -22,10 +22,14 @@ import { ApiInventoryAdapter } from "./modules/inventory/infrastructure/api-inve
 import { DemoInventoryAdapter } from "./modules/inventory/infrastructure/demo-inventory-adapter";
 import type { InventoryPort } from "./modules/inventory/domain/inventory";
 import {
+  evaluateStocktakeRetry,
   validateStocktakeQuantity,
+  type StocktakeQueueItem,
   type StocktakeRecord,
+  type StocktakeRetryContext,
   type StocktakeSubmission,
 } from "./modules/inventory/domain/stocktake";
+import { IndexedDbStocktakeOperationQueue } from "./modules/inventory/infrastructure/stocktake-operation-queue";
 import PromotionWorkspace from "./modules/promotion/PromotionWorkspace.vue";
 import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 const state = ref<State>();
@@ -52,6 +56,8 @@ const inventoryAdapter: InventoryPort = isDemoMode
     )
   : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
 const promotionAdapter = new ApiPromotionAdapter((path, init) => authAdapter.fetchApi(path, init));
+const stocktakeQueue = new IndexedDbStocktakeOperationQueue();
+const queuedStocktakes = ref<StocktakeQueueItem[]>([]);
 const canManagePromotions = computed(
   () => !!user.value?.session?.permissions.includes("promotions.write"),
 );
@@ -86,10 +92,22 @@ const nav = [
 const canGo = (id: string) => !!user.value && routesFor(user.value).includes(id);
 const allowedNav = computed(() => nav.filter(([id]) => canGo(id)));
 const stocktakeStoreId = computed(() => user.value?.session?.storeId || "MAIN");
-const stocktakeRecords = computed<StocktakeRecord[]>(
-  () =>
+const canWriteStocktake = computed(() => isDemoMode && canGo("count"));
+function stocktakeRetryContext(): StocktakeRetryContext | undefined {
+  if (!user.value) return undefined;
+  return {
+    actorId: user.value.session?.userId || user.value.id,
+    organizationId: user.value.session?.organizationId || "DEMO",
+    storeId: stocktakeStoreId.value,
+    canSync: canWriteStocktake.value,
+  };
+}
+const stocktakeRecords = computed<StocktakeRecord[]>(() => {
+  const context = stocktakeRetryContext();
+  const savedRecords =
     state.value?.counts.map((record) => ({
       id: record.id,
+      clientOperationId: record.clientOperationId,
       countedAt: record.at,
       productId: record.productId,
       batchId: record.batchId,
@@ -97,9 +115,31 @@ const stocktakeRecords = computed<StocktakeRecord[]>(
       actualQuantity: record.actual,
       note: record.note,
       status: record.status,
-    })) || [],
-);
-const canWriteStocktake = computed(() => isDemoMode && canGo("count"));
+    })) || [];
+  const savedOperationIds = new Set(
+    savedRecords.flatMap((record) => (record.clientOperationId ? [record.clientOperationId] : [])),
+  );
+  const queuedRecords = queuedStocktakes.value
+    .filter((operation) => !savedOperationIds.has(operation.clientOperationId))
+    .map((operation) => {
+      const decision = context
+        ? evaluateStocktakeRetry(operation, context)
+        : { allowed: false, reason: "Cần đăng nhập để đồng bộ thao tác này." };
+      return {
+        id: operation.clientOperationId,
+        clientOperationId: operation.clientOperationId,
+        countedAt: operation.countedAt,
+        productId: operation.productId,
+        batchId: operation.batchId,
+        expectedQuantity: operation.expectedQuantity,
+        actualQuantity: operation.actualQuantity,
+        note: operation.note,
+        status: operation.status,
+        syncBlockedReason: decision.allowed ? undefined : decision.reason,
+      } satisfies StocktakeRecord;
+    });
+  return [...queuedRecords, ...savedRecords];
+});
 const stocktakeWriteUnavailableReason = computed(() =>
   isDemoMode
     ? "Bạn không có quyền ghi nhận kiểm kê tại cửa hàng này."
@@ -133,9 +173,17 @@ const alerts = computed(
         b.quantity > 0 && Math.ceil((Date.parse(b.expiry) - Date.parse(today())) / 86400000) <= 7,
     ) || [],
 );
-const pending = computed(
-  () => state.value?.counts.filter((c) => c.status === "PENDING").length || 0,
-);
+const pending = computed(() => {
+  const context = stocktakeRetryContext();
+  if (!context) return 0;
+  return queuedStocktakes.value.filter(
+    (operation) =>
+      operation.status === "PENDING" &&
+      operation.actorId === context.actorId &&
+      operation.organizationId === context.organizationId &&
+      operation.storeId === context.storeId,
+  ).length;
+});
 function notify(message: string) {
   toast.value = message;
   clearTimeout(timer);
@@ -214,6 +262,14 @@ async function signIn() {
       authPending.value = undefined;
     }
   }
+  if (revision === authRevision && user.value) {
+    try {
+      await refreshStocktakeQueue();
+      if (connected.value) await sync();
+    } catch (e) {
+      error.value = (e as Error).message;
+    }
+  }
 }
 function clearSessionMarkers() {
   sessionStorage.removeItem("simtim-v2-user");
@@ -263,18 +319,82 @@ async function change(action: (s: State) => void, message: string, allowOffline 
     busy.value = false;
   }
 }
+async function refreshStocktakeQueue() {
+  queuedStocktakes.value = await stocktakeQueue.list();
+}
 async function sync() {
-  if (!isDemoMode || !connected.value || !pending.value || busy.value) return;
-  await change((s) => {
-    for (const c of s.counts.filter((c) => c.status === "PENDING")) {
-      const b = s.batches.find((b) => b.id === c.batchId);
-      c.status = b?.quantity === c.expected ? "REVIEW" : "CONFLICT";
+  const context = stocktakeRetryContext();
+  if (!isDemoMode || !connected.value || !context || busy.value || !state.value) return;
+  const operations = queuedStocktakes.value.filter(
+    (operation) => evaluateStocktakeRetry(operation, context).allowed,
+  );
+  if (!operations.length) return;
+
+  busy.value = true;
+  error.value = "";
+  try {
+    const next = JSON.parse(JSON.stringify(state.value)) as State;
+    const completed: string[] = [];
+    const conflicts: { clientOperationId: string; reason: string }[] = [];
+    let changed = false;
+
+    for (const operation of operations) {
+      if (next.counts.some((count) => count.clientOperationId === operation.clientOperationId)) {
+        completed.push(operation.clientOperationId);
+        continue;
+      }
+      const batch = next.batches.find((candidate) => candidate.id === operation.batchId);
+      if (!batch || batch.quantity !== operation.expectedQuantity) {
+        conflicts.push({
+          clientOperationId: operation.clientOperationId,
+          reason:
+            "Tồn lô đã thay đổi sau lúc đếm. Hãy kiểm lại; thao tác cũ không được ghi đè tự động.",
+        });
+        continue;
+      }
+      next.counts.unshift({
+        id: uid("KK"),
+        clientOperationId: operation.clientOperationId,
+        at: operation.countedAt,
+        batchId: operation.batchId,
+        productId: operation.productId,
+        expected: operation.expectedQuantity,
+        actual: operation.actualQuantity,
+        note: operation.note,
+        status: "REVIEW",
+      });
+      changed = true;
+      completed.push(operation.clientOperationId);
     }
-  }, "Đã đồng bộ phiếu vào dữ liệu demo trên thiết bị.");
+
+    if (changed) {
+      await persist(next);
+      state.value = next;
+    }
+    await Promise.all([
+      ...completed.map((clientOperationId) => stocktakeQueue.remove(clientOperationId)),
+      ...conflicts.map((conflict) =>
+        stocktakeQueue.markConflict(conflict.clientOperationId, conflict.reason),
+      ),
+    ]);
+    await refreshStocktakeQueue();
+
+    if (conflicts.length) {
+      notify(conflicts.length + " thao tác bị xung đột tồn; không có dữ liệu nào bị ghi đè.");
+    } else {
+      notify("Đã đồng bộ " + completed.length + " thao tác kiểm kê.");
+    }
+  } catch (e) {
+    error.value = (e as Error).message || "Không đồng bộ được thao tác kiểm kê.";
+    notify("Chưa đồng bộ được. Thao tác vẫn được giữ trên thiết bị để thử lại.");
+    throw e;
+  } finally {
+    busy.value = false;
+  }
 }
 function connectionChanged() {
   online.value = navigator.onLine;
-  if (connected.value) void sync();
+  if (connected.value && user.value) void sync().catch(() => undefined);
 }
 function requireLogin() {
   authRevision++;
@@ -287,13 +407,12 @@ function requireLogin() {
 }
 function toggleNetwork() {
   simulateOffline.value = !simulateOffline.value;
-  if (connected.value) void sync();
+  if (connected.value && user.value) void sync().catch(() => undefined);
 }
 onMounted(async () => {
   const revision = authRevision;
   try {
     state.value = isDemoMode ? await readState() : emptyOperationalState();
-    if (connected.value) void sync();
   } catch {
     error.value =
       "Không mở được dữ liệu cục bộ. Hãy cho phép lưu trữ trong trình duyệt và tải lại.";
@@ -313,6 +432,14 @@ onMounted(async () => {
     }
   } else clearSessionMarkers();
   if (revision === authRevision) authPending.value = undefined;
+  try {
+    await refreshStocktakeQueue();
+    if (connected.value && user.value) await sync();
+  } catch (e) {
+    error.value =
+      (e as Error).message ||
+      "Không mở được hàng đợi kiểm kê. Hãy cho phép lưu trữ trong trình duyệt.";
+  }
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
   window.addEventListener("simtim:auth-required", requireLogin);
@@ -446,31 +573,34 @@ async function submitDialog() {
   if (ok) closeDialog();
 }
 async function saveCount(submission: StocktakeSubmission) {
-  const saved = await change(
-    (s) => {
-      if (!canGo("count")) throw Error("Không có quyền kiểm kê.");
-      const batch = s.batches.find((candidate) => candidate.id === submission.batchId);
-      if (!batch) throw Error("Lô hàng không còn trong cửa hàng. Hãy tải lại dữ liệu.");
-      const unit = s.products.find((product) => product.id === batch.productId)?.unit;
-      const checked = validateStocktakeQuantity(String(submission.actualQuantity), unit);
-      if (checked.error || checked.value === undefined) throw Error(checked.error);
-      s.counts.unshift({
-        id: uid("KK"),
-        at: new Date().toISOString(),
-        batchId: batch.id,
-        productId: batch.productId,
-        expected: batch.quantity,
-        actual: checked.value,
-        note: submission.note,
-        status: connected.value ? "REVIEW" : "PENDING",
-      });
-    },
-    connected.value
-      ? "Đã gửi phiếu chờ quản lý duyệt."
-      : "Đã lưu offline trên thiết bị. Phiếu sẽ đồng bộ khi có kết nối.",
-    true,
-  );
-  if (!saved) throw Error(error.value || "Không lưu được phiếu kiểm kê.");
+  const context = stocktakeRetryContext();
+  if (!context?.canSync || !state.value) throw Error("Không có quyền kiểm kê.");
+  const batch = state.value.batches.find((candidate) => candidate.id === submission.batchId);
+  if (!batch) throw Error("Lô hàng không còn trong cửa hàng. Hãy tải lại dữ liệu.");
+  const unit = state.value.products.find((product) => product.id === batch.productId)?.unit;
+  const checked = validateStocktakeQuantity(String(submission.actualQuantity), unit);
+  if (checked.error || checked.value === undefined) throw Error(checked.error);
+
+  const operation = await stocktakeQueue.enqueue({
+    actorId: context.actorId,
+    organizationId: context.organizationId,
+    storeId: context.storeId,
+    batchId: batch.id,
+    productId: batch.productId,
+    expectedQuantity: batch.quantity,
+    actualQuantity: checked.value,
+    note: submission.note,
+  });
+  await refreshStocktakeQueue();
+  if (connected.value) {
+    await sync();
+  } else {
+    notify(
+      "Đã lưu offline thao tác " +
+        operation.clientOperationId +
+        ". Mã này sẽ được giữ nguyên khi thử lại.",
+    );
+  }
 }
 
 async function approveCount(record: StocktakeRecord) {
