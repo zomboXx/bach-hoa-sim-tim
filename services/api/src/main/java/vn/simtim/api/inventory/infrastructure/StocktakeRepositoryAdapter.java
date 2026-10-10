@@ -1,5 +1,6 @@
 package vn.simtim.api.inventory.infrastructure;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,6 +110,18 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
             jpa.status = status;
             jpa.conflictReason = conflictReason;
             lineJpa.save(jpa);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void updateSessionStatus(UUID sessionId, String status, Instant submittedAt) {
+        sessionJpa.findById(sessionId).ifPresent(jpa -> {
+            jpa.status = status;
+            if (submittedAt != null) {
+                jpa.submittedAt = submittedAt;
+            }
+            sessionJpa.save(jpa);
         });
     }
 

@@ -83,15 +83,17 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
        OR (p.code='promotions.write' AND r.code IN ('MANAGER','ADMIN')))
 ON CONFLICT DO NOTHING;
 
--- SYN-02: quyền kiểm kê cho tổ chức demo (V13 đã grant toàn bộ, seed bổ sung cho profile demo).
+-- SYN-02 / INV-03: quyền kiểm kê cho tổ chức demo.
 INSERT INTO iam.role_permissions(role_id,permission_id)
 SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
 WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
   AND (
     (p.code = 'stocktakes.read'  AND r.code IN ('STOCK', 'MANAGER', 'ADMIN'))
     OR (p.code = 'stocktakes.write' AND r.code IN ('STOCK', 'MANAGER'))
+    OR (p.code = 'stocktakes.approve' AND r.code IN ('MANAGER', 'ADMIN'))
   )
 ON CONFLICT DO NOTHING;
+
 
 -- PRO-01B: khuyến mãi mẫu — giảm 10% trên gạo tại cửa hàng MAIN.
 INSERT INTO sales.promotions

@@ -26,4 +26,10 @@ public record Stocktake(
     }
 
     public boolean isOpen() { return "OPEN".equals(status); }
+    public boolean isApproved() { return "APPROVED".equals(status); }
+
+    public Stocktake approve(Instant submittedAt, List<StocktakeLine> approvedLines) {
+        return new Stocktake(id, organizationId, storeId, actorId,
+                "APPROVED", openedAt, submittedAt != null ? submittedAt : Instant.now(), approvedLines);
+    }
 }
