@@ -91,6 +91,18 @@ class StocktakeSyncApiTest {
 
     @BeforeAll
     void setup() {
+        // Đảm bảo quyền kiểm kê tồn tại cho demo org (phòng trường hợp seed chưa nạp lại)
+        jdbc.update("""
+                INSERT INTO iam.role_permissions(role_id, permission_id)
+                SELECT r.id, p.id FROM iam.roles r CROSS JOIN iam.permissions p
+                WHERE r.organization_id = ?::uuid
+                  AND (
+                    (p.code = 'stocktakes.read'  AND r.code IN ('STOCK', 'MANAGER', 'ADMIN'))
+                    OR (p.code = 'stocktakes.write' AND r.code IN ('STOCK', 'MANAGER'))
+                  )
+                ON CONFLICT DO NOTHING
+                """, ORG_ID);
+
         String hash = passwords.hash(PASSWORD);
         stockToken = createSession("STOCK", hash, UUID.fromString(STORE_ID), "MAIN");
         salesToken = createSession("SALES", hash, UUID.fromString(STORE_ID), "MAIN");
@@ -331,11 +343,14 @@ class StocktakeSyncApiTest {
                 VALUES(?,?,?,?,?,'ACTIVE')
                 """, id, UUID.fromString(ORG_ID), username, hash, "SYN02 fixture " + role);
         fixtureUsers.add(id);
-        assertThat(jdbc.update("""
+        int assigned = jdbc.update("""
                 INSERT INTO iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
                 SELECT organization_id,?,id,?,now(),? FROM iam.roles
                 WHERE organization_id=? AND code=?
-                """, id, storeId, id, UUID.fromString(ORG_ID), role)).isEqualTo(1);
+                """, id, storeId, id, UUID.fromString(ORG_ID), role);
+        assertThat(assigned)
+                .as("Role '%s' not found in organization %s", role, ORG_ID)
+                .isEqualTo(1);
         var resp = rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(Map.of(
                 "organizationCode", "SIMTIM",
                 "storeCode",        storeCode,
