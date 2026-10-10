@@ -56,6 +56,14 @@ FE-02 tách trong `src/modules/inventory/` theo ADR 0003: domain/validation thu�
 
 Recovery gọi đúng một `GET /api/v1/inventory/receipts?clientOperationId=...`. Backend lọc theo organization/store của Bearer session và trả danh sách rỗng hoặc đúng một phiếu; client không quét danh sách phân trang và không thể thấy phiếu của cửa hàng khác.
 
+## MOB-01 · Giao diện kiểm kê responsive
+
+Màn kiểm kê được tách thành StocktakeWorkspace.vue, đọc snapshot lô qua InventoryPort và luôn hiển thị cửa hàng hiện tại, lô, tồn hệ thống, số thực tế, chênh lệch cùng trạng thái phiếu. Demo mode giữ regression IndexedDB/offline/duyệt cũ. Validation theo đơn vị: KG nhận tối đa ba chữ số thập phân; đơn vị đếm chỉ nhận số nguyên không âm.
+
+Ba viewport công bố cho MOB-01 là **360×800 (mobile), 768×1024 (tablet) và 1366×768 (desktop)**. File tests/stocktake-responsive.spec.ts kiểm không cuộn ngang, nhập KG đúng/sai, đơn vị đếm và quyền demo. File tests/api-stocktake.spec.ts kiểm loading, store/lô từ INV-02, HTTP 403 và session thiếu inventory.read.
+
+API mode hiện dùng contract đọc INV-02 để review giao diện bằng dữ liệu theo store nhưng cố ý khóa thao tác gửi. Response INV-02 chưa có unit/precision hoặc balance version; route, DTO, permission và lỗi ghi kiểm kê chưa được Accepted. Boundary cần TV3/TV4/TV2 review nằm tại [MOB-01 stocktake consumer review](../../contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md). Sau khi SYN-02 có provider, phải thêm live API/PostgreSQL test và ảnh API mode; consumer mock không được dùng thay bằng chứng provider.
+
 ## Kịch bản trình diễn
 
 1. Đăng nhập `QL001`. Dashboard bắt đầu với doanh thu 0 để không trộn số liệu giả vào giao dịch vừa tạo.

@@ -22,6 +22,30 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-09 17:36:11
+
+Hoàn thành phạm vi Issue #43 (MOB-01): bổ sung workspace kiểm kê responsive theo cửa hàng và lô, hiển thị số đếm, trạng thái lưu, lỗi theo dòng; hỗ trợ nhập theo lô, kiểm tra precision theo đơn vị (KG tối đa 3 chữ số thập phân), trạng thái loading/lỗi quyền và khóa thao tác ghi trong API mode cho tới khi contract provider SYN-02 được chốt. Tách domain stocktake, nối dữ liệu đọc INV-02, bổ sung tài liệu consumer review và cập nhật hướng dẫn/changelog.
+
+Kiểm tra policy, liên kết Markdown, lint, format, typecheck và build đạt; Playwright demo đạt 10/10, API consumer đạt 39/39 trên các viewport đã công bố, gồm dữ liệu đúng/sai, loading và lỗi quyền. Root gate đã chạy tới backend nhưng Testcontainers không thể khởi tạo vì Docker Desktop daemon chưa hoạt động; chưa ghi nhận bằng chứng provider/live write API và giữ trạng thái chờ SYN-02 đúng ranh giới contract.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/README.md`: +8 -0
+- `apps/web/src/App.vue`: +76 -128
+- `apps/web/src/adapter.ts`: +1 -1
+- `apps/web/src/api.ts`: +10 -0
+- `apps/web/src/modules/inventory/domain/inventory.ts`: +1 -0
+- `apps/web/src/modules/inventory/domain/stocktake.ts`: +53 -0
+- `apps/web/src/modules/inventory/infrastructure/demo-inventory-adapter.ts`: +1 -0
+- `apps/web/src/modules/inventory/presentation/StocktakeWorkspace.vue`: +887 -0
+- `apps/web/src/style.css`: +0 -55
+- `apps/web/tests/api-stocktake.spec.ts`: +151 -0
+- `apps/web/tests/stocktake-responsive.spec.ts`: +83 -0
+- `contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md`: +40 -0
+- `contracts/README.md`: +1 -0
+- `CONTRIBUTION_LOG.md`: +24 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-08 18:41:02
 
 Điều phối khởi động Sprint 3 theo năm mã đã chốt trong backlog: MOB-01 #43, SYN-01 #44, SYN-02 #45, INV-03 #46 và QA-03 #47. Gán owner, reviewer, nhãn P1/Sprint 3, milestone không có ngày kết thúc; giữ sáu ngoại lệ QA-02 ở #34. Viết kickoff và đồng bộ điểm vào tài liệu, phân công, backlog; phương án sáu Issue sai trước đó được lưu là lịch sử và không đưa vào cam kết mới.
