@@ -11,6 +11,8 @@ interface StocktakeLineJpaRepository extends JpaRepository<StocktakeLineJpa, UUI
 
     List<StocktakeLineJpa> findByStocktakeId(UUID stocktakeId);
 
+    Optional<StocktakeLineJpa> findByStocktakeIdAndBatchId(UUID stocktakeId, UUID batchId);
+
     @Query("SELECT l FROM StocktakeLineJpa l WHERE l.organizationId = :org "
             + "AND l.storeId = :store AND l.clientOperationId = :coid")
     Optional<StocktakeLineJpa> findByClientOperationId(

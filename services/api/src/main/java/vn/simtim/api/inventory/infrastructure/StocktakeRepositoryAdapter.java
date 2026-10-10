@@ -65,13 +65,16 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
     @Override
     @Transactional
     public StocktakeLine saveLine(StocktakeLine l) {
-        var jpa = new StocktakeLineJpa();
-        jpa.id                 = l.id();
-        jpa.stocktakeId        = l.stocktakeId();
-        jpa.organizationId     = l.organizationId();
-        jpa.storeId            = l.storeId();
-        jpa.productId          = l.productId();
-        jpa.batchId            = l.batchId();
+        var existing = lineJpa.findByStocktakeIdAndBatchId(l.stocktakeId(), l.batchId());
+        var jpa = existing.orElseGet(StocktakeLineJpa::new);
+        if (existing.isEmpty()) {
+            jpa.id                 = l.id();
+            jpa.stocktakeId        = l.stocktakeId();
+            jpa.organizationId     = l.organizationId();
+            jpa.storeId            = l.storeId();
+            jpa.productId          = l.productId();
+            jpa.batchId            = l.batchId();
+        }
         jpa.clientOperationId  = l.clientOperationId();
         jpa.expectedQuantity   = l.expectedQuantity();
         jpa.actualQuantity     = l.actualQuantity();
@@ -81,7 +84,7 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
         jpa.conflictReason     = l.conflictReason();
         jpa.countedAt          = l.countedAt();
         lineJpa.save(jpa);
-        return l;
+        return toLine(jpa);
     }
 
     @Override
