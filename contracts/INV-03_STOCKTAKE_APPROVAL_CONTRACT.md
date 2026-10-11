@@ -90,6 +90,7 @@ Tất cả các bước sau được thực thi trong **một database transacti
 3. **Cập nhật Balance & Ledger (Biến động kho):**
    - `inventory_balances.on_hand_quantity = line.actualQuantity`.
    - Tồn kho không được âm: `actualQuantity >= 0` (nếu âm trả **422 NEGATIVE_BALANCE**).
+   - Kiểm tra precision của `actualQuantity` theo `catalog.units.precision_scale` của sản phẩm (EA = 0 chữ số thập phân, KG = tối đa 3 chữ số thập phân). Nếu vi phạm trả **422 QUANTITY_PRECISION**.
    - Tính chênh lệch: `delta = line.actualQuantity - balance.onHandQuantity`.
    - Nếu `delta != 0`:
      - Tạo 1 bản ghi vào `inventory.stock_movements`:
@@ -121,3 +122,4 @@ Tất cả các bước sau được thực thi trong **một database transacti
 | 422 | `EMPTY_STOCKTAKE` | Phiên kiểm kê không có dòng kiểm nào |
 | 422 | `SESSION_CANCELLED` | Phiên kiểm kê đã bị hủy |
 | 422 | `NEGATIVE_BALANCE` | Số lượng kiểm kê thực tế âm |
+| 422 | `QUANTITY_PRECISION` | Số lượng kiểm kê không đúng độ chính xác của đơn vị sản phẩm |

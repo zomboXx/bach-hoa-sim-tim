@@ -19,6 +19,9 @@ public interface StocktakeRepository {
     /** Tìm phiên bất kỳ theo id trong phạm vi store. */
     Optional<Stocktake> findById(UUID organizationId, UUID storeId, UUID id);
 
+    /** Khóa và đọc phiên theo id trong phạm vi store (PESSIMISTIC_WRITE). */
+    Optional<Stocktake> findAndLockSession(UUID organizationId, UUID storeId, UUID id);
+
     /** Lưu một dòng kiểm kê mới (idempotent: dựa trên clientOperationId). */
     StocktakeLine saveLine(StocktakeLine line);
 

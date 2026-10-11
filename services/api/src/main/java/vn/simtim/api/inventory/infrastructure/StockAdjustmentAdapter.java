@@ -37,6 +37,20 @@ class StockAdjustmentAdapter implements StockAdjustmentPort {
     }
 
     @Override
+    public int getProductPrecisionScale(UUID orgId, UUID productId) {
+        var list = jdbc.queryForList("""
+                SELECT u.precision_scale
+                FROM catalog.products p
+                JOIN catalog.units u ON p.organization_id = u.organization_id AND p.base_unit_id = u.id
+                WHERE p.organization_id = ? AND p.id = ?
+                """, Integer.class, orgId, productId);
+        if (list.isEmpty() || list.getFirst() == null) {
+            return 3;
+        }
+        return list.getFirst();
+    }
+
+    @Override
     public void updateBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal newOnHandQuantity) {
         var jpa = balanceRepo.findAndLockByBatchId(orgId, storeId, batchId)
                 .orElseThrow(() -> new IllegalStateException("Balance không tồn tại khi cập nhật: " + batchId));

@@ -65,6 +65,17 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
 
     @Override
     @Transactional
+    public Optional<Stocktake> findAndLockSession(UUID organizationId, UUID storeId, UUID id) {
+        return sessionJpa.findByScopeForUpdate(organizationId, storeId, id)
+                .map(j -> {
+                    var lines = lineJpa.findByStocktakeId(j.id)
+                            .stream().map(this::toLine).toList();
+                    return toSession(j, lines);
+                });
+    }
+
+    @Override
+    @Transactional
     public StocktakeLine saveLine(StocktakeLine l) {
         var existing = lineJpa.findByStocktakeIdAndBatchId(l.stocktakeId(), l.batchId());
         var jpa = existing.orElseGet(StocktakeLineJpa::new);
@@ -121,7 +132,7 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
             if (submittedAt != null) {
                 jpa.submittedAt = submittedAt;
             }
-            sessionJpa.save(jpa);
+            sessionJpa.saveAndFlush(jpa);
         });
     }
 

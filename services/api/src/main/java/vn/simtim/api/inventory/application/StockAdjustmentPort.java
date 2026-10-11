@@ -15,6 +15,9 @@ public interface StockAdjustmentPort {
     /** Khóa và đọc balance hiện hành của một lô trong cửa hàng. */
     Optional<InventoryBalance> findAndLockBalance(UUID organizationId, UUID storeId, UUID batchId);
 
+    /** Lấy precision_scale của đơn vị cơ sở của sản phẩm (EA = 0, KG = 3). */
+    int getProductPrecisionScale(UUID organizationId, UUID productId);
+
     /** Cập nhật số lượng tồn kho mới cho lô (tự động tăng version). */
     void updateBalance(UUID organizationId, UUID storeId, UUID batchId, BigDecimal newOnHandQuantity);
 

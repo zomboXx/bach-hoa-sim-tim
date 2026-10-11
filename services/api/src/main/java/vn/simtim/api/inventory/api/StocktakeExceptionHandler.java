@@ -39,7 +39,8 @@ public class StocktakeExceptionHandler {
                  "BALANCE_VERSION_MISMATCH", "UNRESOLVED_CONFLICT"    -> HttpStatus.CONFLICT;
             case "SCOPE_MISMATCH"                                     -> HttpStatus.FORBIDDEN;
             case "SESSION_CLOSED", "SESSION_CANCELLED",
-                 "EMPTY_STOCKTAKE", "NEGATIVE_BALANCE"                -> HttpStatus.UNPROCESSABLE_ENTITY;
+                 "EMPTY_STOCKTAKE", "NEGATIVE_BALANCE",
+                 "QUANTITY_PRECISION"                                 -> HttpStatus.UNPROCESSABLE_ENTITY;
             default                                                   -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
         return ResponseEntity.status(status)

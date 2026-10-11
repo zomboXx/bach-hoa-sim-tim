@@ -461,11 +461,174 @@ class StocktakeApprovalApiTest {
         assertThat(resp.getBody()).containsEntry("code", "EMPTY_STOCKTAKE");
     }
 
+    /**
+     * Duyệt đồng thời (Concurrency regression): Gửi hai request duyệt đồng thời cho cùng một phiên
+     * có actualQuantity == onHandQuantity.
+     * Khóa phiên nguyên tử bảo đảm đúng 1 request thành công 200, request còn lại nhận 409 ALREADY_APPROVED
+     * và chỉ đúng 1 bản ghi audit log được tạo.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void approve_concurrentRequestsOnSameSession_oneSucceedsOtherFailsAlreadyApproved() throws Exception {
+        var fixture = createBatchWithBalance("B_CONCUR", new BigDecimal("100.000"), 1L);
+        String sessionId = openSession(stockToken);
+
+        // Đếm thực tế = tồn kho hệ thống (delta == 0, không đổi balance version)
+        var countResp = submitCount(stockToken, sessionId, UUID.randomUUID(), fixture.batchId(),
+                new BigDecimal("100.000"), 1L);
+        assertThat(countResp.getStatusCode().value()).isEqualTo(200);
+
+        int nThreads = 2;
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(nThreads);
+        var startLatch = new java.util.concurrent.CountDownLatch(1);
+
+        var futures = new java.util.ArrayList<java.util.concurrent.Future<ResponseEntity<Map>>>();
+        for (int i = 0; i < nThreads; i++) {
+            futures.add(executor.submit(() -> {
+                startLatch.await();
+                return rest.exchange(
+                        "/api/v1/inventory/stocktakes/" + sessionId + "/approve",
+                        HttpMethod.POST,
+                        new HttpEntity<>(null, authJson(managerToken)),
+                        Map.class);
+            }));
+        }
+
+        startLatch.countDown(); // Phát lệnh đồng thời
+        var responses = new java.util.ArrayList<ResponseEntity<Map>>();
+        for (var f : futures) {
+            responses.add(f.get(10, java.util.concurrent.TimeUnit.SECONDS));
+        }
+        executor.shutdown();
+
+        var statuses = responses.stream().map(r -> r.getStatusCode().value()).toList();
+        assertThat(statuses).containsExactlyInAnyOrder(200, 409);
+
+        var conflictResp = responses.stream().filter(r -> r.getStatusCode().value() == 409).findFirst().orElseThrow();
+        assertThat(conflictResp.getBody()).containsEntry("code", "ALREADY_APPROVED");
+
+        // Duyệt nguyên tử: Chỉ ghi nhận đúng 1 audit log
+        Integer auditCount = jdbc.queryForObject(
+                "SELECT count(*) FROM audit.audit_logs WHERE entity_id = ?::uuid AND action = 'APPROVE_STOCKTAKE'",
+                Integer.class, sessionId);
+        assertThat(auditCount).isEqualTo(1);
+    }
+
+    /**
+     * Đồng bộ submitCount với trạng thái phiên: Gửi số đếm sau khi phiên đã duyệt
+     * bị từ chối 422 SESSION_CLOSED.
+     */
+    @Test
+    void submitCount_afterSessionApproved_returns422SessionClosed() {
+        var fixture = createBatchWithBalance("B_SUB_AFT", new BigDecimal("100.000"), 1L);
+        String sessionId = openSession(stockToken);
+        submitCount(stockToken, sessionId, UUID.randomUUID(), fixture.batchId(), new BigDecimal("100.000"), 1L);
+
+        // Manager duyệt phiên
+        var approveResp = rest.exchange(
+                "/api/v1/inventory/stocktakes/" + sessionId + "/approve",
+                HttpMethod.POST,
+                new HttpEntity<>(null, authJson(managerToken)),
+                Map.class);
+        assertThat(approveResp.getStatusCode().value()).isEqualTo(200);
+
+        // Gửi số đếm mới vào phiên đã đóng/duyệt
+        var lateResp = submitCount(stockToken, sessionId, UUID.randomUUID(), fixture.batchId(),
+                new BigDecimal("102.000"), 1L);
+        assertThat(lateResp.getStatusCode().value()).isEqualTo(422);
+        assertThat(lateResp.getBody()).containsEntry("code", "SESSION_CLOSED");
+    }
+
+    /**
+     * Precision regression test (Đơn vị EA, scale = 0):
+     * Sản phẩm ST-RICE-01 (EA) có số đếm lẻ 100.500.
+     * Khi gọi approve bị từ chối 422 QUANTITY_PRECISION, balance giữ nguyên 100.000, phiên không được duyệt.
+     */
+    @Test
+    void approve_invalidPrecisionEa_returns422QuantityPrecisionAndRollsBack() {
+        UUID riceProductId = UUID.fromString("10000000-0000-0000-0000-000000000041");
+        var fixture = createBatchWithBalance(riceProductId, "B_RICE_EA", new BigDecimal("100.000"), 1L);
+        String sessionId = openSession(stockToken);
+
+        // Gửi số đếm lẻ 100.500 cho sản phẩm EA
+        var countResp = submitCount(stockToken, sessionId, UUID.randomUUID(), fixture.batchId(),
+                new BigDecimal("100.500"), 1L);
+        assertThat(countResp.getStatusCode().value()).isEqualTo(200);
+
+        // Manager duyệt -> Từ chối 422 QUANTITY_PRECISION
+        var approveResp = rest.exchange(
+                "/api/v1/inventory/stocktakes/" + sessionId + "/approve",
+                HttpMethod.POST,
+                new HttpEntity<>(null, authJson(managerToken)),
+                Map.class);
+
+        assertThat(approveResp.getStatusCode().value()).isEqualTo(422);
+        assertThat(approveResp.getBody()).containsEntry("code", "QUANTITY_PRECISION");
+
+        // Tồn kho balance KHÔNG bị cập nhật thành 100.500
+        BigDecimal currentBal = queryBalance(fixture.batchId());
+        assertThat(currentBal).isEqualByComparingTo("100.000");
+
+        // Phiên vẫn là OPEN
+        String status = jdbc.queryForObject(
+                "SELECT status FROM inventory.stocktakes WHERE id = ?::uuid",
+                String.class, sessionId);
+        assertThat(status).isEqualTo("OPEN");
+    }
+
+    /**
+     * Precision regression test (Đơn vị KG, scale = 3):
+     * Sản phẩm ST-APPLE-01 (KG) có số đếm 50.125 (3 chữ số thập phân).
+     * Khi gọi approve duyệt thành công 200, balance cập nhật 50.125, tạo movement delta +0.125.
+     */
+    @Test
+    void approve_validPrecisionKg_updatesBalanceSuccessfully() {
+        UUID appleProductId = UUID.fromString("10000000-0000-0000-0000-000000000042");
+        var fixture = createBatchWithBalance(appleProductId, "B_APPLE_KG", new BigDecimal("50.000"), 1L);
+        String sessionId = openSession(stockToken);
+
+        // Đếm thực tế 50.125 kg (hợp lệ với scale=3)
+        var countResp = submitCount(stockToken, sessionId, UUID.randomUUID(), fixture.batchId(),
+                new BigDecimal("50.125"), 1L);
+        assertThat(countResp.getStatusCode().value()).isEqualTo(200);
+
+        // Manager duyệt -> 200 APPROVED
+        var approveResp = rest.exchange(
+                "/api/v1/inventory/stocktakes/" + sessionId + "/approve",
+                HttpMethod.POST,
+                new HttpEntity<>(null, authJson(managerToken)),
+                Map.class);
+
+        assertThat(approveResp.getStatusCode().value()).isEqualTo(200);
+        assertThat(approveResp.getBody()).containsEntry("status", "APPROVED");
+
+        // Balance cập nhật đúng 50.125
+        BigDecimal newBal = queryBalance(fixture.batchId());
+        assertThat(newBal).isEqualByComparingTo("50.125");
+
+        // Movement STOCKTAKE_ADJUSTMENT delta = +0.125
+        var movements = jdbc.queryForList("""
+                SELECT movement_type, quantity_delta
+                FROM inventory.stock_movements
+                WHERE reference_id = ?::uuid AND reference_type = 'STOCKTAKE'
+                """, sessionId);
+        assertThat(movements).hasSize(1);
+        assertThat((BigDecimal) movements.getFirst().get("quantity_delta")).isEqualByComparingTo("0.125");
+
+        // Đối soát ledger khớp balance
+        BigDecimal ledgerSum = queryLedgerSum(fixture.batchId());
+        assertThat(ledgerSum).isEqualByComparingTo(newBal);
+    }
+
     // ── Fixture & Helper methods ──────────────────────────────────────────────
 
     private record BatchFixture(UUID batchId, UUID balanceId) {}
 
     private BatchFixture createBatchWithBalance(String batchNumber, BigDecimal initialQty, long version) {
+        return createBatchWithBalance(UUID.fromString("10000000-0000-0000-0000-000000000041"), batchNumber, initialQty, version);
+    }
+
+    private BatchFixture createBatchWithBalance(UUID productId, String batchNumber, BigDecimal initialQty, long version) {
         UUID receiptId = UUID.randomUUID();
         UUID receiptLineId = UUID.randomUUID();
         UUID batchId = UUID.randomUUID();
@@ -483,24 +646,24 @@ class StocktakeApprovalApiTest {
 
         jdbc.update("""
                 INSERT INTO inventory.goods_receipt_lines(id, receipt_id, organization_id, product_id, expected_quantity, delivered_quantity, accepted_quantity, rejected_quantity, unit_cost)
-                VALUES (?, ?, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, ?, ?, 0, 10000)
-                """, receiptLineId, receiptId, ORG_ID, initialQty, initialQty, initialQty);
+                VALUES (?, ?, ?::uuid, ?, ?, ?, ?, 0, 10000)
+                """, receiptLineId, receiptId, ORG_ID, productId, initialQty, initialQty, initialQty);
 
         jdbc.update("""
                 INSERT INTO inventory.product_batches(id, organization_id, store_id, product_id, receipt_line_id, batch_number, status, received_date)
-                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, ?, 'AVAILABLE', CURRENT_DATE)
-                """, batchId, ORG_ID, STORE_ID, receiptLineId, batchNumber);
+                VALUES (?, ?::uuid, ?::uuid, ?, ?, ?, 'AVAILABLE', CURRENT_DATE)
+                """, batchId, ORG_ID, STORE_ID, productId, receiptLineId, batchNumber);
 
         jdbc.update("""
                 INSERT INTO inventory.inventory_balances(id, organization_id, store_id, product_id, batch_id, on_hand_quantity, version)
-                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, ?, ?)
-                """, balanceId, ORG_ID, STORE_ID, batchId, initialQty, version);
+                VALUES (?, ?::uuid, ?::uuid, ?, ?, ?, ?)
+                """, balanceId, ORG_ID, STORE_ID, productId, batchId, initialQty, version);
 
         // Ghi nhận ban đầu RECEIPT movement để đối soát ledger
         jdbc.update("""
                 INSERT INTO inventory.stock_movements(id, organization_id, store_id, product_id, batch_id, movement_type, quantity_delta, reference_id, reference_type, occurred_at, recorded_by)
-                VALUES (?, ?::uuid, ?::uuid, '10000000-0000-0000-0000-000000000041', ?, 'RECEIPT', ?, ?, 'GOODS_RECEIPT', now(), ?)
-                """, UUID.randomUUID(), ORG_ID, STORE_ID, batchId, initialQty, receiptId, confirmedBy);
+                VALUES (?, ?::uuid, ?::uuid, ?, ?, 'RECEIPT', ?, ?, 'GOODS_RECEIPT', now(), ?)
+                """, UUID.randomUUID(), ORG_ID, STORE_ID, productId, batchId, initialQty, receiptId, confirmedBy);
 
         return new BatchFixture(batchId, balanceId);
     }

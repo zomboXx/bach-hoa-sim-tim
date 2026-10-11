@@ -103,8 +103,8 @@ public class StocktakeService {
                                      UUID actorId, UUID sessionId,
                                      SubmitCountCommand cmd) {
 
-        // 1. Validate phiên tồn tại và OPEN trong đúng scope
-        Stocktake session = stocktakeRepo.findById(organizationId, storeId, sessionId)
+        // 1. Validate phiên tồn tại và OPEN trong đúng scope (đồng bộ khóa phiên)
+        Stocktake session = stocktakeRepo.findAndLockSession(organizationId, storeId, sessionId)
                 .orElseThrow(() -> new StocktakeException("NOT_FOUND",
                         "Phiên kiểm kê không tồn tại: " + sessionId));
 
@@ -189,15 +189,16 @@ public class StocktakeService {
      * <p>Quy tắc nghiệp vụ:
      * <ul>
      *   <li>Chỉ MANAGER / ADMIN duyệt trong đúng store; không duyệt hai lần.</li>
-     *   <li>Trong 1 transaction: kiểm tra version của balance khớp với baseVersion
-     *       của số đếm; cập nhật balance = actualQuantity, ghi STOCKTAKE_ADJUSTMENT movement.</li>
+     *   <li>Trong 1 transaction: khóa phiên nguyên tử; kiểm tra version của balance khớp với baseVersion
+     *       của số đếm; kiểm tra precision theo đơn vị sản phẩm; cập nhật balance = actualQuantity,
+     *       ghi STOCKTAKE_ADJUSTMENT movement.</li>
      *   <li>Nếu version balance lệch hoặc có dòng CONFLICT: từ chối duyệt, không ghi một phần.</li>
      *   <li>Không âm tồn kho.</li>
      * </ul>
      */
     @Transactional
     public Stocktake approveStocktake(UUID organizationId, UUID storeId, UUID actorId, UUID sessionId) {
-        Stocktake session = stocktakeRepo.findById(organizationId, storeId, sessionId)
+        Stocktake session = stocktakeRepo.findAndLockSession(organizationId, storeId, sessionId)
                 .orElseThrow(() -> new StocktakeException("NOT_FOUND",
                         "Phiên kiểm kê không tồn tại: " + sessionId));
 
@@ -209,6 +210,11 @@ public class StocktakeService {
         if ("CANCELLED".equals(session.status())) {
             throw new StocktakeException("SESSION_CANCELLED",
                     "Phiên kiểm kê đã bị hủy; không thể duyệt.");
+        }
+
+        if (!session.isOpen()) {
+            throw new StocktakeException("ALREADY_APPROVED",
+                    "Phiên kiểm kê không ở trạng thái mở; không thể duyệt.");
         }
 
         List<StocktakeLine> lines = stocktakeRepo.findLines(sessionId);
@@ -243,6 +249,13 @@ public class StocktakeService {
                         "Số lượng thực tế không được âm: " + actualQty);
             }
 
+            int precisionScale = adjustmentPort.getProductPrecisionScale(organizationId, line.productId());
+            if (!isValidPrecision(actualQty, precisionScale)) {
+                throw new StocktakeException("QUANTITY_PRECISION", String.format(
+                        "Số lượng kiểm kê %s của sản phẩm %s không hợp lệ với độ chính xác đơn vị (tối đa %d chữ số thập phân).",
+                        actualQty, line.productId(), precisionScale));
+            }
+
             BigDecimal currentQty = balance.onHandQuantity();
             BigDecimal delta = actualQty.subtract(currentQty);
 
@@ -269,5 +282,16 @@ public class StocktakeService {
                 String.format("{\"linesCount\":%d}", lines.size()));
 
         return session.approve(submittedAt, approvedLines);
+    }
+
+    private static boolean isValidPrecision(BigDecimal quantity, int precisionScale) {
+        if (quantity == null) {
+            return false;
+        }
+        if (quantity.signum() == 0) {
+            return true;
+        }
+        int normalizedScale = Math.max(0, quantity.stripTrailingZeros().scale());
+        return normalizedScale <= precisionScale;
     }
 }
