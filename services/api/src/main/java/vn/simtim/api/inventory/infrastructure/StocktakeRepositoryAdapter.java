@@ -1,5 +1,6 @@
 package vn.simtim.api.inventory.infrastructure;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,6 +65,17 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
 
     @Override
     @Transactional
+    public Optional<Stocktake> findAndLockSession(UUID organizationId, UUID storeId, UUID id) {
+        return sessionJpa.findByScopeForUpdate(organizationId, storeId, id)
+                .map(j -> {
+                    var lines = lineJpa.findByStocktakeId(j.id)
+                            .stream().map(this::toLine).toList();
+                    return toSession(j, lines);
+                });
+    }
+
+    @Override
+    @Transactional
     public StocktakeLine saveLine(StocktakeLine l) {
         var existing = lineJpa.findByStocktakeIdAndBatchId(l.stocktakeId(), l.batchId());
         var jpa = existing.orElseGet(StocktakeLineJpa::new);
@@ -109,6 +121,18 @@ class StocktakeRepositoryAdapter implements StocktakeRepository, InventoryBalanc
             jpa.status = status;
             jpa.conflictReason = conflictReason;
             lineJpa.save(jpa);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void updateSessionStatus(UUID sessionId, String status, Instant submittedAt) {
+        sessionJpa.findById(sessionId).ifPresent(jpa -> {
+            jpa.status = status;
+            if (submittedAt != null) {
+                jpa.submittedAt = submittedAt;
+            }
+            sessionJpa.saveAndFlush(jpa);
         });
     }
 

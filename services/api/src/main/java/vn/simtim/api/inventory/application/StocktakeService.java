@@ -1,5 +1,8 @@
 package vn.simtim.api.inventory.application;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,11 +36,14 @@ public class StocktakeService {
 
     private final StocktakeRepository stocktakeRepo;
     private final InventoryBalanceReader balanceReader;
+    private final StockAdjustmentPort adjustmentPort;
 
     public StocktakeService(StocktakeRepository stocktakeRepo,
-                            InventoryBalanceReader balanceReader) {
-        this.stocktakeRepo = stocktakeRepo;
-        this.balanceReader  = balanceReader;
+                            InventoryBalanceReader balanceReader,
+                            StockAdjustmentPort adjustmentPort) {
+        this.stocktakeRepo  = stocktakeRepo;
+        this.balanceReader   = balanceReader;
+        this.adjustmentPort = adjustmentPort;
     }
 
     // ── Open / get session ────────────────────────────────────────────────────
@@ -97,8 +103,8 @@ public class StocktakeService {
                                      UUID actorId, UUID sessionId,
                                      SubmitCountCommand cmd) {
 
-        // 1. Validate phiên tồn tại và OPEN trong đúng scope
-        Stocktake session = stocktakeRepo.findById(organizationId, storeId, sessionId)
+        // 1. Validate phiên tồn tại và OPEN trong đúng scope (đồng bộ khóa phiên)
+        Stocktake session = stocktakeRepo.findAndLockSession(organizationId, storeId, sessionId)
                 .orElseThrow(() -> new StocktakeException("NOT_FOUND",
                         "Phiên kiểm kê không tồn tại: " + sessionId));
 
@@ -173,5 +179,119 @@ public class StocktakeService {
         }
 
         return saved;
+    }
+
+    // ── Approve stocktake (INV-03) ───────────────────────────────────────────
+
+    /**
+     * Quản lý duyệt điều chỉnh tồn kho cho phiên kiểm kê.
+     *
+     * <p>Quy tắc nghiệp vụ:
+     * <ul>
+     *   <li>Chỉ MANAGER / ADMIN duyệt trong đúng store; không duyệt hai lần.</li>
+     *   <li>Trong 1 transaction: khóa phiên nguyên tử; kiểm tra version của balance khớp với baseVersion
+     *       của số đếm; kiểm tra precision theo đơn vị sản phẩm; cập nhật balance = actualQuantity,
+     *       ghi STOCKTAKE_ADJUSTMENT movement.</li>
+     *   <li>Nếu version balance lệch hoặc có dòng CONFLICT: từ chối duyệt, không ghi một phần.</li>
+     *   <li>Không âm tồn kho.</li>
+     * </ul>
+     */
+    @Transactional
+    public Stocktake approveStocktake(UUID organizationId, UUID storeId, UUID actorId, UUID sessionId) {
+        Stocktake session = stocktakeRepo.findAndLockSession(organizationId, storeId, sessionId)
+                .orElseThrow(() -> new StocktakeException("NOT_FOUND",
+                        "Phiên kiểm kê không tồn tại: " + sessionId));
+
+        if (session.isApproved()) {
+            throw new StocktakeException("ALREADY_APPROVED",
+                    "Phiên kiểm kê đã được duyệt trước đó; không thể duyệt lại.");
+        }
+
+        if ("CANCELLED".equals(session.status())) {
+            throw new StocktakeException("SESSION_CANCELLED",
+                    "Phiên kiểm kê đã bị hủy; không thể duyệt.");
+        }
+
+        if (!session.isOpen()) {
+            throw new StocktakeException("ALREADY_APPROVED",
+                    "Phiên kiểm kê không ở trạng thái mở; không thể duyệt.");
+        }
+
+        List<StocktakeLine> lines = stocktakeRepo.findLines(sessionId);
+        if (lines.isEmpty()) {
+            throw new StocktakeException("EMPTY_STOCKTAKE",
+                    "Phiên kiểm kê không có dòng kiểm nào.");
+        }
+
+        boolean hasConflict = lines.stream().anyMatch(l -> "CONFLICT".equals(l.status()));
+        if (hasConflict) {
+            throw new StocktakeException("UNRESOLVED_CONFLICT",
+                    "Phiên có dòng đang ở trạng thái CONFLICT; cần xử lý xung đột trước khi duyệt.");
+        }
+
+        Instant now = Instant.now();
+        List<StocktakeLine> approvedLines = new ArrayList<>();
+
+        for (StocktakeLine line : lines) {
+            InventoryBalance balance = adjustmentPort.findAndLockBalance(organizationId, storeId, line.batchId())
+                    .orElseThrow(() -> new StocktakeException("NOT_FOUND",
+                            "Không tìm thấy số dư tồn kho cho lô: " + line.batchId()));
+
+            if (balance.version() != line.baseVersion()) {
+                throw new StocktakeException("BALANCE_VERSION_MISMATCH", String.format(
+                        "Tồn kho lô %s đã thay đổi trước khi duyệt (baseVersion=%d, currentVersion=%d).",
+                        line.batchId(), line.baseVersion(), balance.version()));
+            }
+
+            BigDecimal actualQty = line.actualQuantity();
+            if (actualQty.compareTo(BigDecimal.ZERO) < 0) {
+                throw new StocktakeException("NEGATIVE_BALANCE",
+                        "Số lượng thực tế không được âm: " + actualQty);
+            }
+
+            int precisionScale = adjustmentPort.getProductPrecisionScale(organizationId, line.productId());
+            if (!isValidPrecision(actualQty, precisionScale)) {
+                throw new StocktakeException("QUANTITY_PRECISION", String.format(
+                        "Số lượng kiểm kê %s của sản phẩm %s không hợp lệ với độ chính xác đơn vị (tối đa %d chữ số thập phân).",
+                        actualQty, line.productId(), precisionScale));
+            }
+
+            BigDecimal currentQty = balance.onHandQuantity();
+            BigDecimal delta = actualQty.subtract(currentQty);
+
+            // Cập nhật tồn kho mới
+            adjustmentPort.updateBalance(organizationId, storeId, line.batchId(), actualQty);
+
+            // Ghi biến động điều chỉnh kho nếu có chênh lệch
+            if (delta.compareTo(BigDecimal.ZERO) != 0) {
+                adjustmentPort.recordAdjustmentMovement(
+                        organizationId, storeId, line.productId(), line.batchId(),
+                        delta, sessionId, actorId, now);
+            }
+
+            // Đổi trạng thái dòng sang APPROVED
+            stocktakeRepo.updateLineStatus(line.id(), "APPROVED", null);
+            approvedLines.add(line.approve());
+        }
+
+        Instant submittedAt = session.submittedAt() != null ? session.submittedAt() : now;
+        stocktakeRepo.updateSessionStatus(sessionId, "APPROVED", submittedAt);
+
+        adjustmentPort.recordAuditLog(
+                organizationId, actorId, "APPROVE_STOCKTAKE", "STOCKTAKE", sessionId,
+                String.format("{\"linesCount\":%d}", lines.size()));
+
+        return session.approve(submittedAt, approvedLines);
+    }
+
+    private static boolean isValidPrecision(BigDecimal quantity, int precisionScale) {
+        if (quantity == null) {
+            return false;
+        }
+        if (quantity.signum() == 0) {
+            return true;
+        }
+        int normalizedScale = Math.max(0, quantity.stripTrailingZeros().scale());
+        return normalizedScale <= precisionScale;
     }
 }

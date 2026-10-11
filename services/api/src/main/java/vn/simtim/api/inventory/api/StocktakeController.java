@@ -96,6 +96,24 @@ public class StocktakeController {
         return ResponseEntity.ok(StocktakeResponse.LineDto.from(line));
     }
 
+    /**
+     * POST /api/v1/inventory/stocktakes/{id}/approve
+     * Quản lý duyệt điều chỉnh tồn kho cho phiên kiểm kê.
+     */
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<StocktakeResponse> approveSession(
+            @PathVariable UUID id,
+            Authentication auth) {
+
+        SessionPrincipal p = principal(auth);
+        requirePermission(p, "stocktakes.approve");
+
+        var session = service.approveStocktake(
+                p.organizationId(), p.storeId(), p.userId(), id);
+
+        return ResponseEntity.ok(StocktakeResponse.from(session));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private static SessionPrincipal principal(Authentication auth) {

@@ -22,6 +22,37 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV2 — Nguyễn Văn Trung - 2026-10-10 21:40:00
+
+Hoàn thành phạm vi Issue #46 (INV-03): Duyệt điều chỉnh tồn kiểm kê.
+- Migration V14: Mở rộng độ dài cột `inventory.stock_movements.movement_type` lên varchar(32) để chứa kiểu `STOCKTAKE_ADJUSTMENT` và cấp quyền `stocktakes.approve` cho vai trò MANAGER, ADMIN. Cập nhật `R__demo_seed.sql` cấp quyền cho demo org.
+- Security: Cấu hình `AuthSecurity` bảo vệ route `POST /api/v1/inventory/stocktakes/*/approve` yêu cầu quyền `stocktakes.approve`.
+- Entity & Port: Sửa `StockMovementJpa` (length=32), bổ sung port `StockAdjustmentPort` và adapter `StockAdjustmentAdapter` xử lý khóa bi quan `PESSIMISTIC_WRITE` balance, cập nhật số dư tồn, ghi nhận biến động `STOCKTAKE_ADJUSTMENT` và ghi `audit.audit_logs`.
+- Domain & Service: Mở rộng `Stocktake` và `StocktakeLine` với helper approve/conflict, `StocktakeRepository` bổ sung `updateSessionStatus`. Triển khai `StocktakeService.approveStocktake` thực thi giao dịch nguyên tử: kiểm tra trạng thái phiên, kiểm tra phiên bản tồn kho so với `baseVersion`, tính chênh lệch delta, cập nhật balance, ghi movement và audit log; từ chối duyệt lặp (409), từ chối tồn đã đổi (409) kèm rollback không ghi một phần.
+- Controller & Exception: Bổ sung endpoint `POST /api/v1/inventory/stocktakes/{id}/approve` trong `StocktakeController` và ánh xạ mã lỗi trong `StocktakeExceptionHandler`.
+- Contract: Tạo hợp đồng chính thức `contracts/INV-03_STOCKTAKE_APPROVAL_CONTRACT.md`.
+- Testing: Bổ sung bộ 9 provider integration tests trong `StocktakeApprovalApiTest` chạy trên PostgreSQL 17 thật qua Testcontainers, kiểm tra tăng tồn, giảm tồn, count bằng tồn, thiếu quyền, duyệt lặp, tồn đổi, cross-store isolation, rollback nguyên tử và đối soát balance với ledger độc lập `SUM(quantity_delta)`. Toàn bộ 148 tests của module API pass 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/INV-03_STOCKTAKE_APPROVAL_CONTRACT.md`: +123 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeController.java`: +18 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/StocktakeExceptionHandler.java`: +7 -5
+- `services/api/src/main/java/vn/simtim/api/inventory/application/InventoryReadService.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/application/StockAdjustmentPort.java`: +28 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/StocktakeService.java`: +99 -3
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/Stocktake.java`: +6 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/StocktakeLine.java`: +13 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/domain/StocktakeRepository.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StockAdjustmentAdapter.java`: +73 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StockMovementJpa.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/StocktakeRepositoryAdapter.java`: +13 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +3 -1
+- `services/api/src/main/resources/db/migration/V14__stocktake_approval.sql`: +18 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/StocktakeApprovalApiTest.java`: +585 -0
+---
+
+---
 TV2 — Nguyễn Văn Trung - 2026-10-10 09:57:44
 
 Hoàn thành phạm vi Issue #45 (SYN-02): Triển khai API đồng bộ kiểm kê và xử lý xung đột.
