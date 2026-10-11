@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-11 15:10:14
+
+Bắt đầu follow-up QA-02 theo quyết định của TV1 tại Issue #34: giữ sáu GAP trong một issue, không tự tạo lại issue con hoặc nhận sửa toàn bộ mã FE/BE. Bổ sung checkpoint ngày 11/10, cập nhật traceability nhưng giữ nguyên báo cáo lịch sử 17 Pass, 3 Fail, 3 Blocked; tạo bốn expected-red API specs với oracle PostgreSQL độc lập và hai live PWA specs cho sales/report.
+
+Đã chạy expected-red backend trên PostgreSQL 17.11 Testcontainers: 9 tests gồm 5 core Pass và 4 GAP Fail đúng hành vi cần sửa, 0 error/skipped. Root gate đạt repository policy, Markdown, web lint/format/typecheck/build, demo 14/14, API consumer 39/39 và backend 152/152. Live PWA mới compile đạt nhưng chưa chạy vì cần API local cùng tài khoản/password demo do người chạy cung cấp; chưa đổi GAP nào sang Pass và PR sau khi mở phải dùng `Refs #34`.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +66 -0
+- `docs/testing/QA-02-gap-checkpoint-2026-10-11.md`: +58 -0
+- `docs/testing/QA-02-test-plan.md`: +6 -0
+- `docs/testing/QA-02-test-report.md`: +4 -0
+- `docs/testing/QA-02-traceability.md`: +13 -6
+- `docs/testing/README.md`: +1 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +21 -21
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +177 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 TV2 — Nguyễn Văn Trung - 2026-10-10 21:40:00
 
 Hoàn thành phạm vi Issue #46 (INV-03): Duyệt điều chỉnh tồn kiểm kê.

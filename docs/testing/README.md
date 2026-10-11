@@ -23,5 +23,6 @@ Checkpoint hiện tại ngày 29/09/2026: TV4 đã chạy source `5f0b14c` có c
 2. [Ma trận quyền](QA-02-authorize.md): bốn role, store scope và invoice privacy.
 3. [Ma trận truy vết](QA-02-traceability.md): backlog → contract → automated test → evidence → Pass/Fail/Blocked.
 4. [Test report](QA-02-test-report.md): lệnh, SHA, runtime, kết quả và khoảng trống chưa được phép ghi Pass.
+5. [Checkpoint sáu GAP ngày 11/10](QA-02-gap-checkpoint-2026-10-11.md): quyết định phạm vi Issue #34, test tái hiện expected-red, oracle và điều kiện chạy lại.
 
 Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 17.11 disposable và đã bắt lỗi query tồn REP-01 mà mock test bỏ sót. Bản sửa `840a82a` buộc dùng Testcontainers và tăng oracle revenue thành hóa đơn hai dòng; PR #33 đã merge vào `main`. Toàn QA-02 vẫn chưa có bằng chứng nghiệm thu P0 đầy đủ: ma trận còn 3 Fail và 3 Blocked về checkout price/replay, unit precision, invoice privacy và live PWA sales E2E.
