@@ -32,7 +32,7 @@ Validation: `test-compile` exit 0; `verify -DskipTests` exit 0. Test E2E cần D
 
 - `CHANGELOG.md`: +1 -0
 - `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +2 -1
-- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +41 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +67 -3
 - `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +13 -1
 - `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +3 -0
 - `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +4 -1

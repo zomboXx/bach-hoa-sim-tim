@@ -90,7 +90,7 @@ public class SaleService {
                 Invoice cached = withDetails(orgId, existing.get());
                 // Payload fingerprint: item list must match exactly (same product+quantity set)
                 List<CheckoutItem> normalised = mergeItems(items);
-                boolean samePayload = payloadMatches(cached, normalised, cashAmount);
+                boolean samePayload = payloadMatches(cached, normalised, expectedTotal, cashAmount);
                 if (!samePayload) {
                     throw new SaleConflictException("IDEMPOTENCY_KEY_REUSED",
                             "Idempotency key đã được dùng với payload khác; không thể tái sử dụng key: "
@@ -210,7 +210,8 @@ public class SaleService {
                 invoice.status(), invoice.soldBy(), invoice.soldAt(), invoice.subtotal(),
                 invoice.discountTotal(), invoice.grandTotal(), invoice.paidTotal(), invoice.changeAmount(),
                 repo.findLinesByInvoiceId(orgId, invoice.id()),
-                repo.findPaymentsByInvoiceId(orgId, invoice.id()), invoice.version());
+                repo.findPaymentsByInvoiceId(orgId, invoice.id()), invoice.version(),
+                invoice.idempotencyKey());
     }
 
     private QuoteResult quoteResult(UUID storeId, List<QuoteResult.QuoteLineResult> lines) {
@@ -253,16 +254,40 @@ public class SaleService {
 
     /**
      * Payload-match check for idempotency replay.
-     * Compares cached invoice grand_total and change_amount against the new request.
-     * Line-level product/quantity match is proxied through the invoice's grand_total: if the
-     * same items at the current price yield a different total the guard above would have already
-     * caught a PRICE_CHANGED, so we only need the cash amount here as a payload fingerprint.
+     * Validates that cashAmount, expectedTotal (if provided), and normalized items (products and quantities)
+     * match the recorded invoice.
      */
-    private boolean payloadMatches(Invoice cached, List<CheckoutItem> normalisedItems, long cashAmount) {
-        // Fingerprint: grand_total (implicitly verified by the line items) and cashAmount.
-        // If the caller sends different items the total will differ; same items same total.
-        long expectedChange = cashAmount - cached.grandTotal();
-        return expectedChange == cached.changeAmount();
+    private boolean payloadMatches(
+            Invoice cached, List<CheckoutItem> normalisedItems, Long expectedTotal, long cashAmount) {
+        if (expectedTotal != null && cached.grandTotal() != expectedTotal.longValue()) {
+            return false;
+        }
+        long originalCashAmount = cached.grandTotal() + cached.changeAmount();
+        if (cashAmount != originalCashAmount) {
+            return false;
+        }
+        Map<UUID, BigDecimal> cachedQuantities = new LinkedHashMap<>();
+        if (cached.lines() != null) {
+            for (InvoiceLine line : cached.lines()) {
+                cachedQuantities.merge(line.productId(), line.quantity(), BigDecimal::add);
+            }
+        }
+        Map<UUID, BigDecimal> requestedQuantities = new LinkedHashMap<>();
+        if (normalisedItems != null) {
+            for (CheckoutItem item : normalisedItems) {
+                requestedQuantities.merge(item.productId(), item.quantity(), BigDecimal::add);
+            }
+        }
+        if (cachedQuantities.size() != requestedQuantities.size()) {
+            return false;
+        }
+        for (Map.Entry<UUID, BigDecimal> entry : requestedQuantities.entrySet()) {
+            BigDecimal cachedQty = cachedQuantities.get(entry.getKey());
+            if (cachedQty == null || cachedQty.compareTo(entry.getValue()) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void validateItems(UUID orgId, List<CheckoutItem> items) {
