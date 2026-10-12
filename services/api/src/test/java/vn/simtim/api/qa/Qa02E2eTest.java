@@ -466,6 +466,35 @@ class Qa02E2eTest {
                 () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo("3.000"));
     }
 
+    @Test
+    void checkoutReplayByAnotherSellerRejectsWithoutLeakingInvoice() {
+        receive(APPLE_ID, "2.000", "2.000", "0.000", null);
+        UUID idempotencyKey = UUID.randomUUID();
+        Map<String, Object> request = Map.of(
+                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.000")),
+                "cashAmount", 100000);
+        ResponseEntity<Object> first = checkoutWithKey(request, idempotencyKey);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID invoiceId = UUID.fromString(body(first).get("id").toString());
+
+        String otherSalesToken = createActor("SALES");
+        HttpHeaders otherHeaders = headers(otherSalesToken);
+        otherHeaders.set("Idempotency-Key", idempotencyKey.toString());
+        ResponseEntity<Object> replay = http.exchange(
+                "/api/v1/sales/checkout", HttpMethod.POST,
+                new HttpEntity<>(request, otherHeaders), Object.class);
+
+        assertAll(
+                () -> assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                () -> assertThat(body(replay)).containsEntry("code", "IDEMPOTENCY_KEY_REUSED"),
+                () -> assertThat(replay.getBody().toString()).doesNotContain(invoiceId.toString()),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(count(
+                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo("1.000"));
+    }
+
     private ResponseEntity<Object> checkoutWithKey(Map<String, Object> request, UUID idempotencyKey) {
         var requestHeaders = headers(salesToken);
         requestHeaders.set("Idempotency-Key", idempotencyKey.toString());

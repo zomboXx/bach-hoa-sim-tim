@@ -87,7 +87,12 @@ public class SaleService {
         if (idempotencyKey != null) {
             var existing = repo.findInvoiceByIdempotencyKey(orgId, storeId, idempotencyKey);
             if (existing.isPresent()) {
-                Invoice cached = withDetails(orgId, existing.get());
+                Invoice previous = existing.get();
+                if (!previous.soldBy().equals(soldByUserId)) {
+                    throw new SaleConflictException("IDEMPOTENCY_KEY_REUSED",
+                            "Idempotency key đã được dùng trong phiên khác");
+                }
+                Invoice cached = withDetails(orgId, previous);
                 // Payload fingerprint: item list must match exactly (same product+quantity set)
                 List<CheckoutItem> normalised = mergeItems(items);
                 boolean samePayload = payloadMatches(cached, normalised, expectedTotal, cashAmount);
