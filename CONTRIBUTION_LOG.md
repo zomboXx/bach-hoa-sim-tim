@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-12 17:15:00
+
+S2-GAP-01: Ràng buộc precision số lượng EA/KG trong quote và checkout bán hàng (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa xác thực precision theo đơn vị tính của sản phẩm (`catalog.units.precision_scale`) trong luồng bán hàng, dẫn đến request quote và checkout với số lượng lẻ cho đơn vị nguyên EA (precision = 0) vẫn được xử lý. Bổ sung `precisionScale` vào `ProductSnapshot`, truy vấn `catalog.units.precision_scale` trong `SaleRepositoryAdapter.findProductSnapshot`, xác thực `isValidPrecision` trong `SaleService.validateItems()` cho cả `quote` và `checkout`, trả về HTTP 422 `QUANTITY_PRECISION` khi vi phạm. `SaleValidationException` hỗ trợ mang error code và được `SaleExceptionHandler` ánh xạ đúng wire code. Bổ sung 3 integration test trong `SaleApiTest` (từ chối EA lẻ ở quote và checkout kèm rollback, chấp nhận KG hợp lệ) và đưa kịch bản `fractionalEaSaleIsRejectedWithoutAnyWrite` vào root gate `Qa02E2eTest`.
+
+Validation: `git diff --check` đạt; `powershell -File scripts/verify.ps1 -SkipInstall` đạt toàn bộ (web lint/format/build/e2e và backend Maven verify 159/159 tests Pass trên PostgreSQL 17 Testcontainers).
+
+- `CHANGELOG.md`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +20 -3
+- `services/api/src/main/java/vn/simtim/api/sale/domain/ProductSnapshot.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleValidationException.java`: +15 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +7 -3
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +28 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +58 -6
+- `CONTRIBUTION_LOG.md`: +19 -0
+
+---
 TV2 — nguyentrung01ute-ui - 2026-10-12 16:32:00
 
 S2-GAP-01: Xác thực precision số lượng EA/KG trong phiếu nhận hàng (PR #53, Refs #34).

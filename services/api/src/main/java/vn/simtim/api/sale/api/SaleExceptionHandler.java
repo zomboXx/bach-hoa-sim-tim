@@ -26,7 +26,8 @@ public class SaleExceptionHandler {
 
     @ExceptionHandler(SaleValidationException.class)
     public ResponseEntity<Map<String, String>> validation(SaleValidationException ex) {
-        return ResponseEntity.status(422).body(Map.of("code", "VALIDATION_ERROR", "message", ex.getMessage()));
+        String code = ex.getCode() != null ? ex.getCode() : "VALIDATION_ERROR";
+        return ResponseEntity.status(422).body(Map.of("code", code, "message", ex.getMessage()));
     }
 
     @ExceptionHandler(InventorySaleException.class)

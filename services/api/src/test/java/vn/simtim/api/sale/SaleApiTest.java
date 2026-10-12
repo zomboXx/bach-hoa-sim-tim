@@ -738,17 +738,17 @@ class SaleApiTest {
     @Order(36)
     void quoteAndCheckout_roundFractionalQuantityWithSameRule() {
         cleanSalesData();
-        insertRicePromotion(UUID.randomUUID(), "FRACTION-ROUND", "PERCENT", "0.01");
-        var items = List.of(Map.of("productId", RICE_ID, "quantity", "0.5"));
+        insertPromotion(UUID.randomUUID(), "FRACTION-ROUND", "PERCENT", "0.01", UUID.fromString(APPLE_ID));
+        var items = List.of(Map.of("productId", APPLE_ID, "quantity", "0.125"));
         var quote = postForOk("/api/v1/sales/quote", Map.of("storeId", STORE_ID, "items", items), salesToken);
         @SuppressWarnings("unchecked")
         var quoteLines = (List<Map<String, Object>>) quote.get("lines");
-        assertThat(quote.get("subtotal")).isEqualTo(12500);
+        assertThat(quote.get("subtotal")).isEqualTo(5000);
         assertThat(quote.get("discountTotal")).isEqualTo(1);
-        assertThat(quoteLines.get(0).get("lineTotal")).isEqualTo(12499);
+        assertThat(quoteLines.get(0).get("lineTotal")).isEqualTo(4999);
 
         var invoice = postForOk("/api/v1/sales/invoices",
-                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 12500), salesToken);
+                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 5000), salesToken);
         @SuppressWarnings("unchecked")
         var invoiceLines = (List<Map<String, Object>>) invoice.get("lines");
         assertThat(invoice.get("subtotal")).isEqualTo(quote.get("subtotal"));
@@ -756,11 +756,63 @@ class SaleApiTest {
         assertThat(invoiceLines.get(0).get("lineTotal")).isEqualTo(quoteLines.get(0).get("lineTotal"));
     }
 
+    @Test
+    @Order(37)
+    void quote_fractionalEaQuantity_returns422QuantityPrecision() {
+        var items = List.of(Map.of("productId", RICE_ID, "quantity", "0.5"));
+        var resp = post("/api/v1/sales/quote", Map.of("storeId", STORE_ID, "items", items), salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) resp.getBody();
+        assertThat(body).containsEntry("code", "QUANTITY_PRECISION");
+    }
+
+    @Test
+    @Order(38)
+    void checkout_fractionalEaQuantity_returns422QuantityPrecisionAndRollsBack() {
+        long riceBefore = getBalance(RICE_BATCH_ID);
+        Integer invoicesBefore = jdbc.queryForObject(
+                "SELECT count(*) FROM sales.invoices WHERE organization_id = ?::uuid",
+                Integer.class, ORG_ID);
+
+        var items = List.of(Map.of("productId", RICE_ID, "quantity", "0.5"));
+        var resp = post("/api/v1/sales/invoices",
+                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 20000), salesToken);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) resp.getBody();
+        assertThat(body).containsEntry("code", "QUANTITY_PRECISION");
+
+        Integer invoiceCount = jdbc.queryForObject(
+                "SELECT count(*) FROM sales.invoices WHERE organization_id = ?::uuid",
+                Integer.class, ORG_ID);
+        assertThat(invoiceCount).isEqualTo(invoicesBefore);
+        assertThat(getBalance(RICE_BATCH_ID)).isEqualTo(riceBefore);
+    }
+
+    @Test
+    @Order(39)
+    void quoteAndCheckout_validFractionalKgQuantity_succeeds() {
+        cleanSalesData();
+        var items = List.of(Map.of("productId", APPLE_ID, "quantity", "0.500"));
+        var quote = postForOk("/api/v1/sales/quote", Map.of("storeId", STORE_ID, "items", items), salesToken);
+        assertThat(quote.get("subtotal")).isEqualTo(20000);
+
+        var invoice = postForOk("/api/v1/sales/invoices",
+                Map.of("storeId", STORE_ID, "items", items, "cashAmount", 20000), salesToken);
+        assertThat(invoice.get("grandTotal")).isEqualTo(20000);
+    }
+
     // =========================================================================
     // Helpers
     // =========================================================================
 
     private void insertRicePromotion(UUID id, String code, String type, String value) {
+        insertPromotion(id, code, type, value, UUID.fromString(RICE_ID));
+    }
+
+    private void insertPromotion(UUID id, String code, String type, String value, UUID productId) {
         jdbc.update("""
                 INSERT INTO sales.promotions(id,organization_id,store_id,code,name,discount_type,
                                              discount_value,starts_at,ends_at,status)
@@ -770,7 +822,7 @@ class SaleApiTest {
         jdbc.update("""
                 INSERT INTO sales.promotion_products(organization_id,promotion_id,product_id)
                 VALUES(?::uuid,?::uuid,?::uuid)
-                """, UUID.fromString(ORG_ID), id, UUID.fromString(RICE_ID));
+                """, UUID.fromString(ORG_ID), id, productId);
     }
 
     private String createUserAndLogin(String username, String roleCode) {

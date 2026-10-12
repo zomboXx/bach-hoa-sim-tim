@@ -53,7 +53,7 @@ public class SaleService {
 
     @Transactional(readOnly = true)
     public QuoteResult quote(UUID orgId, UUID storeId, List<CheckoutItem> items) {
-        validateItems(items);
+        validateItems(orgId, items);
         Instant capturedAt = Instant.now();
         List<QuoteResult.QuoteLineResult> lines = new ArrayList<>();
         for (CheckoutItem item : mergeItems(items)) {
@@ -81,7 +81,7 @@ public class SaleService {
 
     public Invoice checkout(
             UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items, long cashAmount) {
-        validateItems(items);
+        validateItems(orgId, items);
         StoreScope scope = new StoreScope(orgId, storeId);
         FefoPlan plan = checkoutInventory.planForCheckout(scope, toDemands(items));
         Map<UUID, ProductSnapshot> snapshots = new LinkedHashMap<>();
@@ -204,13 +204,30 @@ public class SaleService {
         return quantities.entrySet().stream().map(entry -> new CheckoutItem(entry.getKey(), entry.getValue())).toList();
     }
 
-    private void validateItems(List<CheckoutItem> items) {
+    private void validateItems(UUID orgId, List<CheckoutItem> items) {
         if (items == null || items.isEmpty()) throw new SaleValidationException("Đơn hàng không có sản phẩm");
         for (CheckoutItem item : items) {
             if (item.quantity() == null || item.quantity().signum() <= 0 || item.quantity().scale() > 3) {
                 throw new SaleValidationException("Số lượng không hợp lệ cho sản phẩm: " + item.productId());
             }
+            ProductSnapshot snapshot = resolveSnapshot(orgId, item.productId());
+            if (!isValidPrecision(item.quantity(), snapshot.precisionScale())) {
+                throw new SaleValidationException("QUANTITY_PRECISION", String.format(
+                        "Số lượng %s không hợp lệ với độ chính xác đơn vị của sản phẩm %s (tối đa %d chữ số thập phân)",
+                        item.quantity(), snapshot.sku(), snapshot.precisionScale()));
+            }
         }
+    }
+
+    private static boolean isValidPrecision(BigDecimal quantity, int precisionScale) {
+        if (quantity == null) {
+            return false;
+        }
+        if (quantity.signum() == 0) {
+            return true;
+        }
+        int normalizedScale = Math.max(0, quantity.stripTrailingZeros().scale());
+        return normalizedScale <= precisionScale;
     }
 
     private long resolvePrice(UUID orgId, UUID storeId, UUID productId, Instant at) {

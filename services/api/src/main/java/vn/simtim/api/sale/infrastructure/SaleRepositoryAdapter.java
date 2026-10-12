@@ -60,12 +60,16 @@ class SaleRepositoryAdapter implements SaleRepository {
     @Override
     public Optional<ProductSnapshot> findProductSnapshot(UUID orgId, UUID productId) {
         var rows = jdbc.queryForList("""
-                SELECT sku, name FROM catalog.products
-                WHERE organization_id = ? AND id = ? AND status = 'ACTIVE'
+                SELECT p.sku, p.name, coalesce(u.precision_scale, 3) as precision_scale
+                FROM catalog.products p
+                LEFT JOIN catalog.units u ON p.organization_id = u.organization_id AND p.base_unit_id = u.id
+                WHERE p.organization_id = ? AND p.id = ? AND p.status = 'ACTIVE'
                 """, orgId, productId);
         if (rows.isEmpty()) return Optional.empty();
         var row = rows.get(0);
-        return Optional.of(new ProductSnapshot(productId, (String) row.get("sku"), (String) row.get("name")));
+        int precisionScale = ((Number) row.get("precision_scale")).intValue();
+        return Optional.of(new ProductSnapshot(
+                productId, (String) row.get("sku"), (String) row.get("name"), precisionScale));
     }
 
     // -------------------------------------------------------------------------

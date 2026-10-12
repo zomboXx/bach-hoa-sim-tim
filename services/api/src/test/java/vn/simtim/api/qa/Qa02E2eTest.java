@@ -337,6 +337,34 @@ class Qa02E2eTest {
                         ORG_ID, RICE_ID)).isZero());
     }
 
+    @Test
+    void fractionalEaSaleIsRejectedWithoutAnyWrite() {
+        receive(RICE_ID, "2.000", "2.000", "0.000", null);
+        var balanceBefore = productBalance(RICE_ID);
+
+        List<Map<String, Object>> items = List.of(
+                Map.of("productId", RICE_ID, "quantity", "0.500"));
+
+        ResponseEntity<Object> quoteResp = post(
+                "/api/v1/sales/quote", Map.of("items", items), salesToken);
+        assertThat(quoteResp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(body(quoteResp)).containsEntry("code", "QUANTITY_PRECISION");
+
+        ResponseEntity<Object> checkoutResp = post(
+                "/api/v1/sales/checkout", Map.of("items", items, "cashAmount", 50000), salesToken);
+        assertAll(
+                () -> assertThat(checkoutResp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY),
+                () -> assertThat(body(checkoutResp)).containsEntry("code", "QUANTITY_PRECISION"),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.stock_movements where movement_type='SALE' and organization_id=?",
+                        ORG_ID)).isZero(),
+                () -> assertThat(productBalance(RICE_ID)).isEqualByComparingTo(balanceBefore));
+    }
+
     protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
         UUID clientOperationId = UUID.randomUUID();
         var line = new java.util.LinkedHashMap<String, Object>();
