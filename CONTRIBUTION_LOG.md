@@ -22,7 +22,7 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
-Nguyễn Trung - 2026-10-12 23:07:00
+TV2 — nguyentrung01ute-ui - 2026-10-12 23:07:00
 
 S2-GAP-04: Checkout idempotency — header `Idempotency-Key` trên `POST /api/v1/sales/checkout` (commit `deb94a1`, refs #53, #34).
 
@@ -31,17 +31,17 @@ Vấn đề: hệ thống chưa chống replay khi client gửi lại request ch
 Validation: `test-compile` exit 0; `verify -DskipTests` exit 0. Test E2E cần Docker Desktop (Testcontainers); môi trường hiện tại không có Docker nên chưa chạy được `Qa02E2eTest` trực tiếp — kết quả CI sẽ là bằng chứng Pass chính thức theo điều kiện tại #34.
 
 - `CHANGELOG.md`: +1 -0
-- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +3 -1
-- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +43 -1
-- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +14 -1
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +41 -2
+- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +13 -1
 - `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +3 -0
-- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +4 -1
 - `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpaRepository.java`: +7 -0
 - `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +6 -0
 - `services/api/src/main/resources/db/migration/V15__sales_checkout_idempotency.sql`: +14 -0
 - `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +39 -0
-- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +4 -53
-- `CONTRIBUTION_LOG.md`: +37 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +3 -52
+- `CONTRIBUTION_LOG.md`: +22 -0
 
 ---
 Nguyễn Văn Thi - 2026-10-12 17:45:00

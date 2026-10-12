@@ -51,4 +51,3 @@ class InvoiceJpa {
                 java.util.List.of(), java.util.List.of(), version, idempotencyKey);
     }
 }
-
