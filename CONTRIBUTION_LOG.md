@@ -22,6 +22,24 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV2 — nguyentrung01ute-ui - 2026-10-12 16:32:00
+
+S2-GAP-01: Xác thực precision số lượng EA/KG trong phiếu nhận hàng (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa kiểm tra `catalog.units.precision_scale` khi xác nhận phiếu nhận hàng, dẫn đến số lượng lẻ của đơn vị EA (precision = 0) vẫn được ghi vào DB. Thêm port `getPrecisionScale()` vào `ProductExistenceChecker`, triển khai bằng JDBC truy vấn `catalog.units`, gọi kiểm tra trước khi ghi trong `GoodsReceiptService.validateLines()`, trả 422 `QUANTITY_PRECISION` khi vi phạm và rollback toàn bộ. Đưa kịch bản `fractionalEaReceiptIsRejectedWithoutAnyWrite` vào root gate `Qa02E2eTest`; thêm 2 provider regression test (EA reject + KG accept) vào `InventoryReceiptApiTest`; chuẩn hóa `Qa02GapReproduction.gap01` thành wrapper của helper root gate.
+
+Validation: `git diff --check` đạt; compile không lỗi; 2 provider test mới và 1 E2E root-gate test xác nhận đúng hành vi 422 rollback và 201 KG hợp lệ.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/InventoryExceptionHandler.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/GoodsReceiptService.java`: +21 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/ProductExistenceChecker.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/JdbcProductExistenceChecker.java`: +14 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/InventoryReceiptApiTest.java`: +60 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +41 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +0 -37
+
+---
 TV4 — Lê Văn Chiến - 2026-10-12 14:06:43
 
 Xử lý review của TV1 trên PR #53: tách ca live sales expected-red S2-GAP-05 khỏi lệnh live FE-02 mặc định bằng tag Playwright, đồng thời thêm runner riêng tạo API/PostgreSQL disposable để tái hiện có chủ đích. Cập nhật checkpoint #34 theo owner/reviewer và thứ tự triển khai đã chốt; không đổi kết quả QA-02 lịch sử và không đánh dấu GAP nào Pass.
