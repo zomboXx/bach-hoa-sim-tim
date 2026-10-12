@@ -22,6 +22,26 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-12 17:45:00
+
+S2-GAP-03: Phân quyền xem hóa đơn bán hàng — SALES chỉ xem hóa đơn của chính mình (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa phân quyền truy cập hóa đơn (`sales.invoices`) theo người bán, dẫn đến nhân viên bán hàng (`SALES`) có thể đọc danh sách và chi tiết hóa đơn do người bán khác tạo trong cùng cửa hàng. Cập nhật `SaleController` để tự động gán bộ lọc người bán `filterSellerId = principal.userId()` đối với các vai trò không có quyền xem toàn cửa hàng (như `SALES`), trong khi `MANAGER` và `ADMIN` (hoặc có `sales.read.store`) được xem toàn bộ. Trong `SaleService`, hỗ trợ lọc theo `sellerId` ở `listInvoices` và `getInvoice`; ném `SaleNotFoundException` (HTTP 404) khi truy cập hóa đơn của người bán khác hoặc hóa đơn ngoài phạm vi cửa hàng. Bổ sung method và query `findByOrganizationIdAndStoreIdAndSoldBy` trong `InvoiceJpaRepository` và `SaleRepositoryAdapter`. Tốt nghiệp kịch bản `salesCannotReadAnotherSellerInvoiceInTheSameStore` vào root gate `Qa02E2eTest`; bổ sung 2 integration tests trong `SaleApiTest` xác nhận cách ly danh sách/chi tiết giữa hai nhân viên bán hàng cùng cửa hàng và chặn truy cập xuyên cửa hàng.
+
+Validation: compile đạt; `Qa02E2eTest` (9/9 tests Pass) và `SaleApiTest` (31/31 tests Pass) trên PostgreSQL 17 Testcontainers; `Qa02GapReproduction#gap03` Pass.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +10 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +19 -3
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpaRepository.java`: +6 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +6 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +30 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +3 -28
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +120 -1
+- `CONTRIBUTION_LOG.md`: +20 -0
+
+---
 Nguyễn Văn Thi - 2026-10-12 17:25:00
 
 S2-GAP-02: Thống nhất expectedTotal và lỗi PRICE_CHANGED giữa provider/consumer khi giá thay đổi sau quote (PR #53, Refs #34).

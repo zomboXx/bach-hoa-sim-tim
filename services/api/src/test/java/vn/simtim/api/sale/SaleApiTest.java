@@ -195,6 +195,7 @@ class SaleApiTest {
                 jdbc.update("DELETE FROM iam.user_roles WHERE user_id = ?", id);
                 jdbc.update("DELETE FROM iam.users WHERE id = ?", id);
             }
+            jdbc.update("DELETE FROM core.stores WHERE id = '10000000-0000-0000-0000-000000000003'::uuid");
         } finally {
             if (postgres.isRunning()) postgres.stop();
         }
@@ -494,6 +495,106 @@ class SaleApiTest {
                 "/api/v1/sales/invoices?storeId=" + STORE_ID,
                 HttpMethod.GET, headers(null, null), Object.class);
         assertThat(resp.getStatusCode().value()).isEqualTo(401);
+    }
+
+    @Test
+    @Order(25)
+    void invoices_twoSalesUsersInSameStore_eachCanOnlySeeOwnInvoices() {
+        String salesTokenB = createUserAndLogin("sales-b-sale-test", "SALES");
+
+        // User A checkouts invoice A
+        var bodyA = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 30000L);
+        var respA = post("/api/v1/sales/invoices", bodyA, salesToken);
+        assertThat(respA.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        @SuppressWarnings("unchecked")
+        String idA = ((Map<String, Object>) respA.getBody()).get("id").toString();
+
+        // User B checkouts invoice B
+        var bodyB = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 30000L);
+        var respB = post("/api/v1/sales/invoices", bodyB, salesTokenB);
+        assertThat(respB.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        @SuppressWarnings("unchecked")
+        String idB = ((Map<String, Object>) respB.getBody()).get("id").toString();
+
+        // User A list: sees idA, does NOT see idB
+        var listA = rest.exchange("/api/v1/sales/invoices", HttpMethod.GET, headers(salesToken, null), List.class);
+        assertThat(listA.getStatusCode()).isEqualTo(HttpStatus.OK);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> invoicesA = (List<Map<String, Object>>) listA.getBody();
+        assertThat(invoicesA).anyMatch(inv -> idA.equals(inv.get("id")));
+        assertThat(invoicesA).noneMatch(inv -> idB.equals(inv.get("id")));
+
+        // User A detail: idA -> 200, idB -> 404
+        assertThat(get("/api/v1/sales/invoices/" + idA, salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(get("/api/v1/sales/invoices/" + idB, salesToken).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // User B list: sees idB, does NOT see idA
+        var listB = rest.exchange("/api/v1/sales/invoices", HttpMethod.GET, headers(salesTokenB, null), List.class);
+        assertThat(listB.getStatusCode()).isEqualTo(HttpStatus.OK);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> invoicesB = (List<Map<String, Object>>) listB.getBody();
+        assertThat(invoicesB).anyMatch(inv -> idB.equals(inv.get("id")));
+        assertThat(invoicesB).noneMatch(inv -> idA.equals(inv.get("id")));
+
+        // User B detail: idB -> 200, idA -> 404
+        assertThat(get("/api/v1/sales/invoices/" + idB, salesTokenB).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(get("/api/v1/sales/invoices/" + idA, salesTokenB).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Manager list: sees BOTH idA and idB
+        var listMgr = rest.exchange("/api/v1/sales/invoices", HttpMethod.GET, headers(managerToken, null), List.class);
+        assertThat(listMgr.getStatusCode()).isEqualTo(HttpStatus.OK);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> invoicesMgr = (List<Map<String, Object>>) listMgr.getBody();
+        assertThat(invoicesMgr).anyMatch(inv -> idA.equals(inv.get("id")));
+        assertThat(invoicesMgr).anyMatch(inv -> idB.equals(inv.get("id")));
+
+        // Manager detail: both -> 200
+        assertThat(get("/api/v1/sales/invoices/" + idA, managerToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(get("/api/v1/sales/invoices/" + idB, managerToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    @Order(26)
+    void invoices_salesUserInDifferentStore_cannotAccessOtherStoreInvoices() {
+        String store2Id = "10000000-0000-0000-0000-000000000003";
+        jdbc.update("INSERT INTO core.stores (id, organization_id, code, name, status) " +
+                "VALUES (?::uuid, ?::uuid, 'STORE2', 'Cửa hàng 2', 'ACTIVE') ON CONFLICT DO NOTHING",
+                store2Id, ORG_ID);
+
+        String salesStore2Token = createUserAndLoginInStore("sales-store2-test", "SALES", store2Id, "STORE2");
+
+        // salesToken creates invoice in STORE_ID
+        var body = Map.of(
+                "storeId", STORE_ID,
+                "items", List.of(Map.of("productId", RICE_ID, "quantity", 1)),
+                "cashAmount", 30000L);
+        var resp = post("/api/v1/sales/invoices", body, salesToken);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        @SuppressWarnings("unchecked")
+        String invoiceId = ((Map<String, Object>) resp.getBody()).get("id").toString();
+
+        // salesStore2 tries to read invoice from STORE_ID: detail returns 404
+        var detailResp = get("/api/v1/sales/invoices/" + invoiceId, salesStore2Token);
+        assertThat(detailResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // salesStore2 list invoices: does not contain invoiceId
+        var listResp = rest.exchange("/api/v1/sales/invoices", HttpMethod.GET, headers(salesStore2Token, null), List.class);
+        assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> store2Invoices = (List<Map<String, Object>>) listResp.getBody();
+        assertThat(store2Invoices).noneMatch(inv -> invoiceId.equals(inv.get("id")));
+
+        // salesStore2 tries to query storeId outside of their session: returns 422
+        var crossStoreQuery = rest.exchange(
+                "/api/v1/sales/invoices?storeId=" + STORE_ID,
+                HttpMethod.GET, headers(salesStore2Token, null), Object.class);
+        assertThat(crossStoreQuery.getStatusCode().value()).isEqualTo(422);
     }
 
     // =========================================================================
@@ -839,10 +940,28 @@ class SaleApiTest {
         return login(username);
     }
 
+    private String createUserAndLoginInStore(String username, String roleCode, String targetStoreId, String targetStoreCode) {
+        UUID userId = UUID.randomUUID();
+        fixtureUsers.add(userId);
+        String hash = passwords.hash("test-sal01-pass");
+        jdbc.update("INSERT INTO iam.users(id,organization_id,username,password_hash,full_name,status) " +
+                "VALUES(?,?::uuid,?,?,'SAL-01 Store2 Test','ACTIVE')",
+                userId, ORG_ID, username, hash);
+        jdbc.update("INSERT INTO iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by) " +
+                "SELECT ?::uuid,?,r.id,?::uuid,now(),? FROM iam.roles r " +
+                "WHERE r.organization_id=?::uuid AND r.code=?",
+                ORG_ID, userId, targetStoreId, userId, ORG_ID, roleCode);
+        return login(username, targetStoreCode);
+    }
+
     private String login(String username) {
+        return login(username, "MAIN");
+    }
+
+    private String login(String username, String storeCode) {
         var resp = rest.postForEntity("/api/v1/auth/login",
                 Map.of("username", username, "password", "test-sal01-pass",
-                        "organizationCode", "SIMTIM", "storeCode", "MAIN"),
+                        "organizationCode", "SIMTIM", "storeCode", storeCode),
                 Map.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         @SuppressWarnings("unchecked")

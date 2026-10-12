@@ -145,23 +145,39 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
-    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id) {
+    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id, UUID sellerId) {
         var invoice = repo.findInvoiceById(orgId, id)
                 .orElseThrow(() -> new SaleNotFoundException("Hóa đơn không tồn tại: " + id));
         if (storeId != null && !invoice.storeId().equals(storeId)) {
+            throw new SaleNotFoundException("Hóa đơn không tồn tại: " + id);
+        }
+        if (sellerId != null && !invoice.soldBy().equals(sellerId)) {
             throw new SaleNotFoundException("Hóa đơn không tồn tại: " + id);
         }
         return withDetails(orgId, invoice);
     }
 
     @Transactional(readOnly = true)
+    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id) {
+        return getInvoice(orgId, storeId, id, null);
+    }
+
+    @Transactional(readOnly = true)
     public Invoice getInvoice(UUID orgId, UUID id) {
-        return getInvoice(orgId, null, id);
+        return getInvoice(orgId, null, id, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Invoice> listInvoices(UUID orgId, UUID storeId, UUID sellerId) {
+        List<Invoice> invoices = sellerId == null
+                ? repo.listInvoices(orgId, storeId)
+                : repo.listInvoicesBySeller(orgId, storeId, sellerId);
+        return invoices.stream().map(invoice -> withDetails(orgId, invoice)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<Invoice> listInvoices(UUID orgId, UUID storeId) {
-        return repo.listInvoices(orgId, storeId).stream().map(invoice -> withDetails(orgId, invoice)).toList();
+        return listInvoices(orgId, storeId, null);
     }
 
     private Invoice withDetails(UUID orgId, Invoice invoice) {

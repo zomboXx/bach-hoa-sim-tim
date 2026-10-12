@@ -22,8 +22,8 @@ import org.springframework.http.ResponseEntity;
  * scenario must move into the default provider/QA gate before the traceability row can become
  * Pass.
  *
- * <p>Graduated to default gate: GAP-01 (quantity precision), GAP-02 (price changed).
- * Remaining: GAP-03 (invoice isolation), GAP-04 (idempotency replay).
+ * <p>Graduated to default gate: GAP-01 (quantity precision), GAP-02 (price changed), GAP-03 (invoice isolation).
+ * Remaining: GAP-04 (idempotency replay).
  */
 class Qa02GapReproduction extends Qa02E2eTest {
 
@@ -33,33 +33,8 @@ class Qa02GapReproduction extends Qa02E2eTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void gap03_salesCannotReadAnotherSellerInvoiceInTheSameStore() {
-        receive(RICE_ID, "2.000", "2.000", "0.000", null);
-        ResponseEntity<Object> checkout = post(
-                "/api/v1/sales/checkout", Map.of(
-                        "items", List.of(Map.of("productId", RICE_ID, "quantity", "1.000")),
-                        "cashAmount", 50000), salesToken);
-        assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        UUID invoiceId = UUID.fromString(body(checkout).get("id").toString());
-        String otherSalesToken = createActor("SALES");
-        UUID otherSellerId = UUID.fromString(
-                body(get("/api/v1/auth/session", otherSalesToken)).get("userId").toString());
-
-        ResponseEntity<Object> listResponse = get("/api/v1/sales/invoices", otherSalesToken);
-        ResponseEntity<Object> detailResponse = get(
-                "/api/v1/sales/invoices/" + invoiceId, otherSalesToken);
-        List<Map<String, Object>> visibleInvoices =
-                (List<Map<String, Object>>) listResponse.getBody();
-
-        assertAll(
-                () -> assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK),
-                () -> assertThat(visibleInvoices)
-                        .noneMatch(invoice -> invoiceId.toString().equals(invoice.get("id"))),
-                () -> assertThat(detailResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND),
-                () -> assertThat(count(
-                        "select count(*) from sales.invoices where id=? and sold_by<>?",
-                        invoiceId, otherSellerId)).isEqualTo(1));
+        salesCannotReadAnotherSellerInvoiceInTheSameStore();
     }
 
     @Test

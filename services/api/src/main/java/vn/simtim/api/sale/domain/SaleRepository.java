@@ -34,6 +34,7 @@ public interface SaleRepository {
     Optional<Invoice> findInvoiceById(UUID orgId, UUID id);
 
     List<Invoice> listInvoices(UUID orgId, UUID storeId);
+    List<Invoice> listInvoicesBySeller(UUID orgId, UUID storeId, UUID soldBy);
 
     List<InvoiceLine> findLinesByInvoiceId(UUID orgId, UUID invoiceId);
 

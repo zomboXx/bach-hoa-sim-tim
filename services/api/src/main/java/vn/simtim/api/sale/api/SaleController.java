@@ -77,7 +77,8 @@ public class SaleController {
         if (!effectiveStoreId.equals(principal.storeId())) {
             throw new vn.simtim.api.sale.domain.SaleValidationException("Cửa hàng không thuộc phiên làm việc");
         }
-        return service.listInvoices(orgId, effectiveStoreId).stream().map(InvoiceResponse::from).toList();
+        UUID filterSellerId = canReadAllStoreInvoices(principal) ? null : principal.userId();
+        return service.listInvoices(orgId, effectiveStoreId, filterSellerId).stream().map(InvoiceResponse::from).toList();
     }
 
     /** Chi tiết hóa đơn. Yêu cầu quyền sales.read trong phạm vi store. */
@@ -86,6 +87,13 @@ public class SaleController {
                                @PathVariable UUID id,
                                Authentication auth) {
         SessionPrincipal principal = (SessionPrincipal) auth.getPrincipal();
-        return InvoiceResponse.from(service.getInvoice(orgId, principal.storeId(), id));
+        UUID filterSellerId = canReadAllStoreInvoices(principal) ? null : principal.userId();
+        return InvoiceResponse.from(service.getInvoice(orgId, principal.storeId(), id, filterSellerId));
+    }
+
+    private static boolean canReadAllStoreInvoices(SessionPrincipal principal) {
+        return principal.roles().contains("MANAGER")
+                || principal.roles().contains("ADMIN")
+                || principal.permissions().contains("sales.read.store");
     }
 }

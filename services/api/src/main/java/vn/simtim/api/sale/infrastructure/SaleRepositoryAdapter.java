@@ -115,6 +115,12 @@ class SaleRepositoryAdapter implements SaleRepository {
     }
 
     @Override
+    public List<Invoice> listInvoicesBySeller(UUID orgId, UUID storeId, UUID soldBy) {
+        return invoiceRepo.findByOrganizationIdAndStoreIdAndSoldBy(orgId, storeId, soldBy)
+                .stream().map(InvoiceJpa::toDomain).toList();
+    }
+
+    @Override
     public List<InvoiceLine> findLinesByInvoiceId(UUID orgId, UUID invoiceId) {
         return lineRepo.findByOrganizationIdAndInvoiceId(orgId, invoiceId)
                 .stream().map(InvoiceLineJpa::toDomain).toList();
