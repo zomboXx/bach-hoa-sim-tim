@@ -12,6 +12,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
 - [`project/SPRINT_3_KICKOFF.md`](project/SPRINT_3_KICKOFF.md): năm mục kiểm kê đã có trong backlog, phân công, phụ thuộc và điểm review; milestone không có ngày kết thúc.
+- [`project/TRAINING_PLATFORM_DECISION_2026-10-13.md`](project/TRAINING_PLATFORM_DECISION_2026-10-13.md): quyết định giữ đào tạo 2D trong PWA và bỏ kế hoạch dùng Godot cho Sprint 4.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
 - [`project/SPRINT_2_ACCEPTANCE_2026-10-07.md`](project/SPRINT_2_ACCEPTANCE_2026-10-07.md): quyết định nghiệm thu Sprint 2 có ngoại lệ và sáu điểm cần theo dõi.
 

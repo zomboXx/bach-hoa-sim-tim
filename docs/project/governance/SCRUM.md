@@ -1,6 +1,6 @@
 # Scrum rút gọn cho đồ án
 
-Nhóm làm sprint một tuần. Product Owner và Scrum Master do trưởng nhóm kiêm nhiệm trong phạm vi môn học; giảng viên/người dùng khảo sát là nguồn phản hồi, không bị gán vai trò nội bộ của nhóm.
+Nhóm đồng bộ, review và cập nhật báo cáo theo nhịp tuần. Ngày kết thúc của từng milestone do Project Owner chốt riêng; [Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) không có ngày kết thúc theo quyết định ngày 08/10/2026. Nhịp báo cáo không tự làm Issue hoặc sprint đạt Done khi chưa có bằng chứng theo tiêu chí dưới đây. Product Owner và Scrum Master do trưởng nhóm kiêm nhiệm trong phạm vi môn học; giảng viên/người dùng khảo sát là nguồn phản hồi, không bị gán vai trò nội bộ của nhóm.
 
 ## Nhịp làm việc mỗi tuần
 

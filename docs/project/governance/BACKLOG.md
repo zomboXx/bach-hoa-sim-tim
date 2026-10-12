@@ -86,10 +86,12 @@ Project Owner khởi động Sprint 3 ngày 08/10/2026 theo đúng năm mục d�
 
 Mục tiêu: một kịch bản đào tạo hoàn chỉnh, bản release candidate và hồ sơ kiểm thử.
 
+Theo [quyết định nền tảng đào tạo ghi ngày 13/10/2026](../TRAINING_PLATFORM_DECISION_2026-10-13.md), Sprint 4 dùng khu đào tạo 2D Vue/SVG trong PWA, không khởi tạo Godot. Mã việc, ưu tiên và phân công dưới đây giữ nguyên; mô tả TRN-01/02 được căn theo nền hiện có. Đây là backlog chuẩn bị, chưa phải bằng chứng Sprint 3 đã nghiệm thu hoặc Sprint 4 đã kickoff. [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) và sáu GAP P0 tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) cần được tính vào năng lực nhóm khi chốt thứ tự thực hiện, không tự đổi thành các mã Sprint 4.
+
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| TRN-01 | Khởi tạo Godot và scene cửa hàng | P1 | TV4 | TV1 | Sprint 0 | Chạy trên máy yếu nhất; có di chuyển, va chạm, tương tác |
-| TRN-02 | Một kịch bản đào tạo | P1 | TV4, TV1 | TV3 | TRN-01 | Có mục tiêu, hướng dẫn, phản hồi sai và kết quả |
+| TRN-01 | Hoàn thiện khu đào tạo 2D trong PWA | P1 | TV4 | TV1 | PRO-04 | Scene cửa hàng hiện có chạy trên máy yếu nhất và viewport desktop/mobile đã công bố; có di chuyển, va chạm, tương tác; dữ liệu phiên riêng không làm thay đổi tồn/hóa đơn vận hành |
+| TRN-02 | Hoàn thiện một kịch bản đào tạo | P1 | TV4, TV1 | TV3 | TRN-01 | Ca đào tạo hiện có nối mục tiêu, hướng dẫn, phản hồi sai và kết quả; kiểm thử được luồng hoàn thành/chơi lại |
 | TRN-03 | Lưu phiên/kết quả cách ly | P1 | TV1 | TV2 | BE-02, TRN-02 | Kết quả được lưu; không thay đổi dữ liệu vận hành |
 | QA-04 | Regression, bảo mật quyền và backup/restore | P0 | TV4 | Cả nhóm | Các sprint trước | Test report đạt; khôi phục CSDL demo trên môi trường sạch |
 | DOC-01 | Hoàn thiện báo cáo và traceability | P0 | TV1 điều phối | Cả nhóm | QA-04 | Yêu cầu–thiết kế–code–test có liên kết và minh chứng |

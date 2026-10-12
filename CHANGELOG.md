@@ -16,6 +16,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Căn lại backlog đào tạo Sprint 4 theo quyết định của Project Owner: hoàn thiện game 2D Vue/SVG trong PWA thay kế hoạch Godot; giữ mã TRN-01/02/03, ưu tiên và phân công, ghi rõ Sprint 4 chưa kickoff và QA-03/#34 còn mở. Làm rõ nhịp review tuần trong Scrum không tự đặt hạn cho milestone hoặc thay tiêu chí Done.
 - Cập nhật điểm vào tài liệu theo mã đã tích hợp đến 07/10/2026; giữ ảnh chụp tiến độ 30/09 để truy vết và phân biệt 7/7 Issue Sprint 2 đã đóng với QA-02 còn 3 Fail và 3 Blocked P0.
 - Ghi quyết định Project Owner nghiệm thu Sprint 2 có ngoại lệ ngày 07/10/2026 và danh sách sáu khoảng trống QA cần theo dõi trước khi xếp Sprint 3.
 

@@ -86,8 +86,8 @@ Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chi
 
 - **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động và báo cáo theo quyền server.
 - **Đang mô phỏng:** demo mode vẫn mô phỏng đăng nhập, phân quyền, thanh toán, đồng bộ và lưu dữ liệu vận hành trên thiết bị. API mode không dùng các dữ liệu mô phỏng này làm fallback; các feature chưa có adapter server sẽ hiển thị trạng thái rỗng hoặc bị ẩn theo quyền.
-- **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt, dùng Vue/SVG để thử trải nghiệm trước khi tích hợp Godot. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch bao gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả chỉ tồn tại trong phiên chơi; chưa lưu qua backend, chưa phải runtime Godot.
-- **Chưa triển khai:** Godot thực tế, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
+- **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt bằng Vue/SVG là nền được chọn cho Sprint 4. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả hiện chỉ tồn tại trong phiên chơi; TRN-03 sẽ thiết kế phần lưu qua backend với dữ liệu cách ly.
+- **Chưa triển khai:** lưu kết quả đào tạo qua backend, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
 
 Quyền ở frontend chỉ giúp trình diễn; backend thật phải xác thực và kiểm tra quyền độc lập. Các tài khoản demo là công khai, không dùng dữ liệu cửa hàng thật ở đây. Giới hạn offline dành cho kiểm kê; các thao tác ghi khác bị chặn khi mất kết nối được phát hiện.
 
@@ -114,7 +114,7 @@ Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 1
 - `src/training/PixelPerson.vue`, `src/training/training.css`: nhân vật pixel, chuyển động và giao diện game desktop/mobile.
 - `src/api.ts`: kiểu dữ liệu, adapter demo, đăng nhập mẫu, giao dịch bán hàng và lưu trữ.
 - `public/sw.js`: chỉ cache tài nguyên giao diện công khai cùng origin; không cache API nghiệp vụ.
-- `ARCHITECTURE.md`: ranh giới client/backend/Godot và API contract dự kiến.
+- `ARCHITECTURE.md`: ranh giới vận hành/đào tạo PWA, backend và API contract dự kiến.
 - `../../CHANGELOG.md`: lịch sử thay đổi của toàn repository.
 
 Hình mentor trong `public/mentor.png` được kế thừa từ prototype đầu; nguồn lịch sử nằm tại `../../archive/prototype-v1/assets/mentor-mai.png`.

@@ -22,6 +22,26 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-13 04:58:30
+
+Chuẩn bị phạm vi Sprint 4 theo quyết định bỏ Godot: ghi bản quyết định, căn lại TRN-01/02 theo game 2D Vue/SVG hiện có trong PWA, giữ mã/ưu tiên/phân công của backlog và tách rõ việc chuẩn bị với kickoff/nghiệm thu. Đồng bộ mô tả kiến trúc, CSDL, hướng dẫn web và dòng giới thiệu trong game; làm rõ nhịp review tuần trong Scrum không tự đặt hạn cho milestone. Giữ QA-03 #47 và sáu GAP P0 ở #34 là việc còn mở.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/ARCHITECTURE.md`: +8 -10
+- `apps/web/README.md`: +3 -3
+- `apps/web/src/training/TrainingGame.vue`: +2 -2
+- `docs/README.md`: +1 -0
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +6 -0
+- `docs/project/TRAINING_PLATFORM_DECISION_2026-10-13.md`: +15 -0
+- `docs/project/governance/BACKLOG.md`: +4 -2
+- `docs/project/governance/SCRUM.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
 TV2 — Nguyễn Văn Trung - 2026-10-10 21:40:00
 
 Hoàn thành phạm vi Issue #46 (INV-03): Duyệt điều chỉnh tồn kiểm kê.

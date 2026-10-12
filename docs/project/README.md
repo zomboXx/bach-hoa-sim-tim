@@ -8,6 +8,7 @@
 |---|---|---|
 | Công việc Sprint 2 | [Backlog](governance/BACKLOG.md), [kickoff](SPRINT_2_KICKOFF.md), [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) | Contract vẫn là Working Draft; đổi wire/schema cần review trong PR. |
 | Công việc Sprint 3 | [Backlog](governance/BACKLOG.md#sprint-3--hiện-trường-và-kiểm-kê), [kickoff](SPRINT_3_KICKOFF.md), [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Năm mã gốc P1; chi tiết kỹ thuật trong kickoff là gợi ý refinement, cần owner/reviewer chốt trước code. |
+| Chuẩn bị Sprint 4 | [Backlog](governance/BACKLOG.md#sprint-4--đào-tạo-ổn-định-và-báo-cáo), [quyết định nền tảng đào tạo](TRAINING_PLATFORM_DECISION_2026-10-13.md) | Giữ sáu mã backlog; khu đào tạo 2D trong PWA thay kế hoạch Godot, chưa kickoff hay nghiệm thu. |
 | Ai làm và ai review | [TEAM.md](governance/TEAM.md), từng [Issue Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Bảng TEAM ghi trách nhiệm dài hạn; phân công Sprint 3 nằm trong backlog và Issue. |
 | Phạm vi yêu cầu | [Bản ghi REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) | Đã tích hợp qua PR #17; Issue #2 đã đóng. |
 | Quy trình và trạng thái | [SCRUM.md](governance/SCRUM.md), Issue/PR | Không dùng các bản nháp cũ để suy ra trạng thái hiện tại. |
@@ -22,6 +23,11 @@
 
 - Project Owner giữ năm mã MOB-01, SYN-01, SYN-02, INV-03, QA-03 đúng backlog; milestone không có ngày kết thúc. Owner/reviewer và thứ tự phụ thuộc nằm trong [kickoff](SPRINT_3_KICKOFF.md) cùng từng Issue.
 - Issue #34 vẫn theo dõi ngoại lệ Sprint 2 riêng; không thay thế năm mục kiểm kê. Chỉ đánh dấu Done sau khi code tích hợp và bằng chứng kiểm thử đạt DoD.
+
+## Điểm kiểm tra ngày 13/10/2026
+
+- Bốn mục triển khai của Sprint 3 đã merge/đóng; [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) còn mở, nên chưa ghi Sprint 3 hoàn tất. [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) vẫn có sáu GAP P0 của Sprint 2, gồm phần sửa sản phẩm FE/BE; [PR #53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53) là checkpoint QA tái hiện, chưa sửa toàn bộ GAP.
+- Có thể chuẩn bị Sprint 4 song song. Trước khi mở Issue/milestone và xác nhận năng lực, dùng [bản ghi quyết định đào tạo](TRAINING_PLATFORM_DECISION_2026-10-13.md) cùng kết quả QA-03/#34 để review thứ tự; không lấy số Issue đã đóng làm bằng chứng nghiệm thu.
 
 ## Ảnh chụp tiến độ ngày 30/09/2026
 
