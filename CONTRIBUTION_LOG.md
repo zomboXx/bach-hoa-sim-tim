@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-12 17:25:00
+
+S2-GAP-02: Thống nhất expectedTotal và lỗi PRICE_CHANGED giữa provider/consumer khi giá thay đổi sau quote (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa kiểm tra biến động giá giữa thời điểm tạo quote và lúc checkout, dẫn đến nguy cơ khách hàng checkout với giá cũ hoặc hóa đơn bị tính sai so với tổng tiền đã quote. Bổ sung trường tùy chọn `expectedTotal` vào `CheckoutRequest`. Trong `SaleService.checkout`, tính toán lại tổng tiền `grandTotal` từ giá hiện hành (`catalog.product_prices`); nếu `expectedTotal` được cung cấp và khác `grandTotal`, ném `SaleConflictException` với mã lỗi `PRICE_CHANGED` trước khi thực hiện bất kỳ thao tác ghi nào (không tạo hóa đơn, thanh toán hay biến động tồn). Nâng cấp `SaleConflictException` hỗ trợ mã lỗi cụ thể để `SaleExceptionHandler` trả về HTTP 409 `PRICE_CHANGED`. Bổ sung test E2E `priceChangedAfterQuoteRejectsCheckoutAndRollsBack` vào root gate `Qa02E2eTest` xác thực rollback toàn bộ và dọn dẹp kịch bản gap02 đã tốt nghiệp trong `Qa02GapReproduction`.
+
+Validation: compile đạt; `Qa02E2eTest` (8/8 tests Pass) và `SaleApiTest` (29/29 tests Pass) trên PostgreSQL 17 Testcontainers.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +3 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +7 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleConflictException.java`: +16 -1
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +40 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +5 -44
+- `CONTRIBUTION_LOG.md`: +19 -0
+
+---
 Nguyễn Văn Thi - 2026-10-12 17:15:00
 
 S2-GAP-01: Ràng buộc precision số lượng EA/KG trong quote và checkout bán hàng (PR #53, Refs #34).
