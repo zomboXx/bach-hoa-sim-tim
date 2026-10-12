@@ -365,6 +365,46 @@ class Qa02E2eTest {
                 () -> assertThat(productBalance(RICE_ID)).isEqualByComparingTo(balanceBefore));
     }
 
+    @Test
+    void priceChangedAfterQuoteRejectsCheckoutAndRollsBack() {
+        receive(APPLE_ID, "2.000", "2.000", "0.000", null);
+        List<Map<String, Object>> items = List.of(
+                Map.of("productId", APPLE_ID, "quantity", "1.000"));
+        Map<String, Object> quote = body(post("/api/v1/sales/quote", Map.of("items", items), salesToken));
+        long expectedTotal = ((Number) quote.get("grandTotal")).longValue();
+        var balanceBefore = productBalance(APPLE_ID);
+
+        try {
+            jdbc.update("""
+                    update catalog.product_prices set sale_price=41000
+                    where organization_id=? and store_id=? and product_id=? and effective_to is null
+                    """, ORG_ID, STORE_ID, APPLE_ID);
+            ResponseEntity<Object> response = post(
+                    "/api/v1/sales/checkout", Map.of(
+                            "items", items,
+                            "expectedTotal", expectedTotal,
+                            "cashAmount", 100000), salesToken);
+
+            assertAll(
+                    () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                    () -> assertThat(body(response)).containsEntry("code", "PRICE_CHANGED"),
+                    () -> assertThat(count(
+                            "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isZero(),
+                    () -> assertThat(count(
+                            "select count(*) from sales.payments where organization_id=?", ORG_ID)).isZero(),
+                    () -> assertThat(count("""
+                            select count(*) from inventory.stock_movements
+                            where organization_id=? and movement_type='SALE'
+                            """, ORG_ID)).isZero(),
+                    () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo(balanceBefore));
+        } finally {
+            jdbc.update("""
+                    update catalog.product_prices set sale_price=40000
+                    where organization_id=? and store_id=? and product_id=? and effective_to is null
+                    """, ORG_ID, STORE_ID, APPLE_ID);
+        }
+    }
+
     protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
         UUID clientOperationId = UUID.randomUUID();
         var line = new java.util.LinkedHashMap<String, Object>();

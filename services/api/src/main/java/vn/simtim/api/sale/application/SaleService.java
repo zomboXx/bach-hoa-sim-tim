@@ -80,7 +80,8 @@ public class SaleService {
     }
 
     public Invoice checkout(
-            UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items, long cashAmount) {
+            UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items,
+            Long expectedTotal, long cashAmount) {
         validateItems(orgId, items);
         StoreScope scope = new StoreScope(orgId, storeId);
         FefoPlan plan = checkoutInventory.planForCheckout(scope, toDemands(items));
@@ -105,6 +106,11 @@ public class SaleService {
             lineData.add(new LineData(allocation, snapshots.get(allocation.productId()), unitPrice, gross, promotion));
         }
         long grandTotal = Math.subtractExact(subtotal, discountTotal);
+        if (expectedTotal != null && grandTotal != expectedTotal) {
+            throw new SaleConflictException("PRICE_CHANGED",
+                    "Giá sản phẩm đã thay đổi kể từ khi báo giá. Tổng mới: " + grandTotal
+                    + ", tổng kỳ vọng: " + expectedTotal);
+        }
         if (cashAmount < grandTotal) {
             throw new SaleValidationException(
                     "Số tiền nhận (" + cashAmount + ") nhỏ hơn tổng hoá đơn (" + grandTotal + ")");

@@ -3,7 +3,6 @@ package vn.simtim.api.qa;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,60 +14,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 /**
- * Executable expected-red specifications for the four backend gaps tracked by Issue #34.
+ * Executable expected-red specifications for the backend gaps tracked by Issue #34.
  *
  * <p>The class deliberately has no {@code Test} suffix, so Maven's default root gate compiles it
  * but does not execute unresolved product gaps. Run it explicitly with
  * {@code -Dtest=vn.simtim.api.qa.Qa02GapReproduction}. Once a provider fix is merged, its matching
  * scenario must move into the default provider/QA gate before the traceability row can become
- * Pass.</p>
+ * Pass.
+ *
+ * <p>Graduated to default gate: GAP-01 (quantity precision), GAP-02 (price changed).
+ * Remaining: GAP-03 (invoice isolation), GAP-04 (idempotency replay).
  */
 class Qa02GapReproduction extends Qa02E2eTest {
 
     @Test
     void gap01_fractionalEaReceiptIsRejectedWithoutAnyWrite() {
         fractionalEaReceiptIsRejectedWithoutAnyWrite();
-    }
-
-    @Test
-    void gap02_priceChangedAfterQuoteRejectsCheckoutAndRollsBack() {
-        receive(APPLE_ID, "2.000", "2.000", "0.000", null);
-        List<Map<String, Object>> items = List.of(
-                Map.of("productId", APPLE_ID, "quantity", "1.000"));
-        Map<String, Object> quote = body(post(
-                "/api/v1/sales/quote", Map.of("items", items), salesToken));
-        long expectedTotal = ((Number) quote.get("grandTotal")).longValue();
-        var balanceBefore = productBalance(APPLE_ID);
-
-        try {
-            jdbc.update("""
-                    update catalog.product_prices set sale_price=41000
-                    where organization_id=? and store_id=? and product_id=? and effective_to is null
-                    """, ORG_ID, STORE_ID, APPLE_ID);
-            ResponseEntity<Object> response = post(
-                    "/api/v1/sales/checkout", Map.of(
-                            "items", items,
-                            "expectedTotal", expectedTotal,
-                            "cashAmount", 100000), salesToken);
-
-            assertAll(
-                    () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
-                    () -> assertThat(body(response)).containsEntry("code", "PRICE_CHANGED"),
-                    () -> assertThat(count(
-                            "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isZero(),
-                    () -> assertThat(count(
-                            "select count(*) from sales.payments where organization_id=?", ORG_ID)).isZero(),
-                    () -> assertThat(count("""
-                            select count(*) from inventory.stock_movements
-                            where organization_id=? and movement_type='SALE'
-                            """, ORG_ID)).isZero(),
-                    () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo(balanceBefore));
-        } finally {
-            jdbc.update("""
-                    update catalog.product_prices set sale_price=40000
-                    where organization_id=? and store_id=? and product_id=? and effective_to is null
-                    """, ORG_ID, STORE_ID, APPLE_ID);
-        }
     }
 
     @Test

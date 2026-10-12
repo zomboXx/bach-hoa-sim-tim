@@ -21,7 +21,9 @@ public class SaleExceptionHandler {
 
     @ExceptionHandler({SaleConflictException.class, InventoryConflictException.class})
     public ResponseEntity<Map<String, String>> conflict(RuntimeException ex) {
-        return ResponseEntity.status(409).body(Map.of("code", "CONFLICT", "message", ex.getMessage()));
+        String code = (ex instanceof SaleConflictException sce && sce.getCode() != null)
+                ? sce.getCode() : "CONFLICT";
+        return ResponseEntity.status(409).body(Map.of("code", code, "message", ex.getMessage()));
     }
 
     @ExceptionHandler(SaleValidationException.class)

@@ -61,7 +61,7 @@ public class SaleController {
         var items = req.items().stream()
                 .map(i -> new CheckoutItem(i.productId(), i.quantity()))
                 .toList();
-        var invoice = service.checkout(orgId, storeId, soldBy, items, req.cashAmount());
+        var invoice = service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount());
         return ResponseEntity
                 .created(URI.create("/api/v1/sales/invoices/" + invoice.id()))
                 .body(InvoiceResponse.from(invoice));

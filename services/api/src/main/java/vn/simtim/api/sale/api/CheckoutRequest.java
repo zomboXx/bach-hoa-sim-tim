@@ -11,6 +11,7 @@ import java.util.UUID;
 public record CheckoutRequest(
         UUID storeId,
         @NotEmpty List<ItemRequest> items,
+        Long expectedTotal,
         @NotNull @Min(0) Long cashAmount) {
 
     public record ItemRequest(
