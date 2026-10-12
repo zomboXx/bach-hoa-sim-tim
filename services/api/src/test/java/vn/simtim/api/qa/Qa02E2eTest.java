@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +52,7 @@ class Qa02E2eTest {
     protected static final UUID SUPPLIER_ID = UUID.fromString("10000000-0000-0000-0000-000000000061");
     protected static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
     protected static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String PASSWORD = "qa02-disposable-password";
 
     private static final PostgreSQLContainer<?> POSTGRES =
@@ -167,8 +169,12 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", riceReceiptId)).isEqualTo(1);
         assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'", new Object[0])).isEqualTo(2);
 
-        LocalDate today = LocalDate.now();
-        Map<String, Object> revenue = body(get("/api/v1/reports/revenue?from=" + today + "&to=" + today.plusDays(1), managerToken));
+        LocalDate saleDay = jdbc.queryForObject("""
+                select (sold_at at time zone 'Asia/Ho_Chi_Minh')::date
+                from sales.invoices where id=?
+                """, LocalDate.class, invoiceId);
+        Map<String, Object> revenue = body(get(
+                "/api/v1/reports/revenue?from=" + saleDay + "&to=" + saleDay.plusDays(1), managerToken));
         Long sqlRevenue = jdbc.queryForObject("""
                 select coalesce(sum(grand_total),0) from sales.invoices
                 where organization_id=? and store_id=? and status='COMPLETED'
@@ -275,7 +281,7 @@ class Qa02E2eTest {
                         "acceptedQuantity", "0.000",
                         "rejectedQuantity", "2.000",
                         "unitCost", 10000,
-                        "expiryDate", LocalDate.now().plusDays(8).toString(),
+                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(8).toString(),
                         "discrepancyReason", "Hàng dập hỏng")));
         HttpHeaders requestHeaders = headers(stockToken);
         requestHeaders.set("Idempotency-Key", idempotencyKey.toString());
@@ -310,7 +316,7 @@ class Qa02E2eTest {
                         "acceptedQuantity", "0.500",
                         "rejectedQuantity", "0.000",
                         "unitCost", 10000,
-                        "expiryDate", LocalDate.now().plusDays(8).toString())));
+                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(8).toString())));
         var requestHeaders = headers(stockToken);
         requestHeaders.set("Idempotency-Key", UUID.randomUUID().toString());
 
@@ -512,7 +518,7 @@ class Qa02E2eTest {
         line.put("acceptedQuantity", accepted);
         line.put("rejectedQuantity", rejected);
         line.put("unitCost", 10000);
-        line.put("expiryDate", LocalDate.now().plusDays(8).toString());
+        line.put("expiryDate", LocalDate.now(VN_ZONE).plusDays(30).toString());
         if (reason != null) {
             line.put("discrepancyReason", reason);
         }
