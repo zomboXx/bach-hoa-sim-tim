@@ -43,6 +43,8 @@ Validation: `test-compile` exit 0; `verify -DskipTests` exit 0. Test E2E cần D
 - `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +4 -53
 - `CONTRIBUTION_LOG.md`: +37 -0
 
+---
+Nguyễn Văn Thi - 2026-10-12 17:45:00
 
 S2-GAP-03: Phân quyền xem hóa đơn bán hàng — SALES chỉ xem hóa đơn của chính mình (PR #53, Refs #34).
 
