@@ -1,6 +1,7 @@
 package vn.simtim.api.qa;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -294,6 +295,46 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.product_batches", new Object[0])).isZero();
         assertThat(count("select count(*) from inventory.inventory_balances", new Object[0])).isZero();
         assertThat(count("select count(*) from inventory.stock_movements", new Object[0])).isZero();
+    }
+
+    @Test
+    void fractionalEaReceiptIsRejectedWithoutAnyWrite() {
+        UUID operationId = UUID.randomUUID();
+        Map<String, Object> request = Map.of(
+                "supplierId", SUPPLIER_ID,
+                "clientOperationId", operationId,
+                "lines", List.of(Map.of(
+                        "productId", RICE_ID,
+                        "expectedQuantity", "0.500",
+                        "deliveredQuantity", "0.500",
+                        "acceptedQuantity", "0.500",
+                        "rejectedQuantity", "0.000",
+                        "unitCost", 10000,
+                        "expiryDate", LocalDate.now().plusDays(8).toString())));
+        var requestHeaders = headers(stockToken);
+        requestHeaders.set("Idempotency-Key", UUID.randomUUID().toString());
+
+        ResponseEntity<Object> response = http.exchange(
+                "/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(request, requestHeaders), Object.class);
+
+        assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY),
+                () -> assertThat(count(
+                        "select count(*) from inventory.goods_receipts where client_operation_id=?",
+                        operationId)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.goods_receipt_lines where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.product_batches where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.inventory_balances where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.stock_movements where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero());
     }
 
     protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
