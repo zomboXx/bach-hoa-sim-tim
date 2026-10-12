@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-13 05:18:00
+
+Đối chiếu quyết định nền tảng đào tạo với ADR 0002/0003: hai ADR cũ không chốt engine, nên chuyển bản quyết định ngày 13/10 thành ADR 0004 để chỉ có một nơi ghi quyết định kiến trúc. Chuẩn bị kickoff Sprint 4 theo đúng sáu mã backlog, nêu đầu ra, thứ tự, điểm giao API/schema và quyết định còn mở; chưa mở Issue/milestone hay tự ghi Sprint 3 hoàn tất.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/ARCHITECTURE.md`: +1 -1
+- `docs/README.md`: +2 -1
+- `docs/architecture/adr/0004-training-experience.md`: +20 -0
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +2 -2
+- `docs/project/SPRINT_4_KICKOFF.md`: +40 -0
+- `docs/project/TRAINING_PLATFORM_DECISION_2026-10-13.md`: +0 -15
+- `docs/project/governance/BACKLOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-13 04:58:30
 
 Chuẩn bị phạm vi Sprint 4 theo quyết định bỏ Godot: ghi bản quyết định, căn lại TRN-01/02 theo game 2D Vue/SVG hiện có trong PWA, giữ mã/ưu tiên/phân công của backlog và tách rõ việc chuẩn bị với kickoff/nghiệm thu. Đồng bộ mô tả kiến trúc, CSDL, hướng dẫn web và dòng giới thiệu trong game; làm rõ nhịp review tuần trong Scrum không tự đặt hạn cho milestone. Giữ QA-03 #47 và sáu GAP P0 ở #34 là việc còn mở.

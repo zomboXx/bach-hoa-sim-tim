@@ -86,7 +86,7 @@ Project Owner khởi động Sprint 3 ngày 08/10/2026 theo đúng năm mục d�
 
 Mục tiêu: một kịch bản đào tạo hoàn chỉnh, bản release candidate và hồ sơ kiểm thử.
 
-Theo [quyết định nền tảng đào tạo ghi ngày 13/10/2026](../TRAINING_PLATFORM_DECISION_2026-10-13.md), Sprint 4 dùng khu đào tạo 2D Vue/SVG trong PWA, không khởi tạo Godot. Mã việc, ưu tiên và phân công dưới đây giữ nguyên; mô tả TRN-01/02 được căn theo nền hiện có. Đây là backlog chuẩn bị, chưa phải bằng chứng Sprint 3 đã nghiệm thu hoặc Sprint 4 đã kickoff. [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) và sáu GAP P0 tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) cần được tính vào năng lực nhóm khi chốt thứ tự thực hiện, không tự đổi thành các mã Sprint 4.
+Theo [ADR 0004 ghi ngày 13/10/2026](../../architecture/adr/0004-training-experience.md), Sprint 4 dùng khu đào tạo 2D Vue/SVG trong PWA, không khởi tạo Godot. Mã việc, ưu tiên và phân công dưới đây giữ nguyên; mô tả TRN-01/02 được căn theo nền hiện có. Đây là backlog chuẩn bị, chưa phải bằng chứng Sprint 3 đã nghiệm thu hoặc Sprint 4 đã kickoff. [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) và sáu GAP P0 tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) cần được tính vào năng lực nhóm khi chốt thứ tự thực hiện, không tự đổi thành các mã Sprint 4.
 
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
