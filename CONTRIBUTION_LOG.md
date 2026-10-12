@@ -22,6 +22,25 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-12 14:06:43
+
+Xử lý review của TV1 trên PR #53: tách ca live sales expected-red S2-GAP-05 khỏi lệnh live FE-02 mặc định bằng tag Playwright, đồng thời thêm runner riêng tạo API/PostgreSQL disposable để tái hiện có chủ đích. Cập nhật checkpoint #34 theo owner/reviewer và thứ tự triển khai đã chốt; không đổi kết quả QA-02 lịch sử và không đánh dấu GAP nào Pass.
+
+Validation: ESLint, Prettier và TypeScript đạt; hai PowerShell runner parse hợp lệ; Playwright `--list` xác nhận lệnh FE-02 mặc định không chọn GAP-05 và lệnh riêng chỉ chọn đúng một ca sales; live FE-02 mặc định chạy lại 2/2 Pass trên API/PostgreSQL disposable; repository policy, Markdown links và `git diff --check` đạt.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/README.md`: +2 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +3 -1
+- `apps/web/package.json`: +2 -1
+- `docs/testing/QA-02-gap-checkpoint-2026-10-11.md`: +11 -8
+- `docs/testing/QA-02-test-report.md`: +5 -0
+- `docs/testing/QA-02-traceability.md`: +1 -1
+- `scripts/test-fe02-live.ps1`: +8 -2
+- `scripts/test-qa02-gap05-live.ps1`: +4 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-11 15:10:14
 
 Bắt đầu follow-up QA-02 theo quyết định của TV1 tại Issue #34: giữ sáu GAP trong một issue, không tự tạo lại issue con hoặc nhận sửa toàn bộ mã FE/BE. Bổ sung checkpoint ngày 11/10, cập nhật traceability nhưng giữ nguyên báo cáo lịch sử 17 Pass, 3 Fail, 3 Blocked; tạo bốn expected-red API specs với oracle PostgreSQL độc lập và hai live PWA specs cho sales/report.

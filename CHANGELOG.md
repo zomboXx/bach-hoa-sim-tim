@@ -17,6 +17,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Tách expected-red live sales S2-GAP-05 khỏi lệnh live FE-02 mặc định và thêm runner riêng dùng API/PostgreSQL disposable; cập nhật checkpoint #34 theo owner/reviewer cùng thứ tự triển khai TV1 đã chốt mà không đổi kết quả QA lịch sử.
 - Cập nhật điểm vào tài liệu theo mã đã tích hợp đến 07/10/2026; giữ ảnh chụp tiến độ 30/09 để truy vết và phân biệt 7/7 Issue Sprint 2 đã đóng với QA-02 còn 3 Fail và 3 Blocked P0.
 - Ghi quyết định Project Owner nghiệm thu Sprint 2 có ngoại lệ ngày 07/10/2026 và danh sách sáu khoảng trống QA cần theo dõi trước khi xếp Sprint 3.
 

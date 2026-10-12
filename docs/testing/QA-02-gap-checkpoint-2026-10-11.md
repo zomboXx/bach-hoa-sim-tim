@@ -11,7 +11,9 @@
 
 Theo phản hồi của TV1 tại Issue #34, cả sáu GAP tiếp tục nằm tại #34; không tạo lại #36–#41, không tạo Issue con mới và không đưa các GAP này vào năm đầu việc Sprint 3 đã chốt. TV4 chịu trách nhiệm tái hiện, oracle QA, traceability, consumer/live E2E và chạy lại sau khi code sửa lỗi được tích hợp. Việc này không mặc nhiên giao cho TV4 sửa toàn bộ mã sản phẩm FE/BE.
 
-Owner, reviewer và thứ tự triển khai phần sửa sản phẩm vẫn chờ TV1 ghi tại #34. Vì chưa có PR sửa lỗi đã merge và chưa có CI của bản sửa, sáu GAP dưới đây đều giữ trạng thái chưa hoàn thành; checkpoint này không thay thế kết luận lịch sử **17 Pass, 3 Fail, 3 Blocked** ngày 07/10/2026.
+Ngày 12/10/2026, TV1 chốt phân công ngay tại #34: GAP-01 và GAP-04 do TV2 chủ trì; GAP-02, GAP-03 và GAP-05 do TV3 chủ trì; GAP-06 do TV4 chủ trì. TV4 kiểm consumer/live test cho GAP-02, kiểm thử GAP-03, review consumer/live test GAP-05 và thực hiện hồ sơ QA GAP-06; TV1 review các điểm đã ghi trong quyết định. Thứ tự là GAP-01; GAP-02 rồi GAP-03; GAP-04 sau contract GAP-02; GAP-05 sau các provider fix; cuối cùng GAP-06. Mỗi người chỉ giữ một phần In Progress tại một thời điểm.
+
+Việc phân công không làm thay đổi kết quả QA. Vì chưa có PR sửa lỗi đã merge và chưa có CI của bản sửa, sáu GAP dưới đây đều giữ trạng thái chưa hoàn thành; checkpoint này không thay thế kết luận lịch sử **17 Pass, 3 Fail, 3 Blocked** ngày 07/10/2026.
 
 ## 2. Test tái hiện và oracle
 
@@ -33,11 +35,11 @@ Push-Location services/api
 .\mvnw.cmd "-Dtest=vn.simtim.api.qa.Qa02GapReproduction" test
 Pop-Location
 
-Push-Location apps/web
-$env:API_PROXY_TARGET = "http://127.0.0.1:8080"
-$env:SIMTIM_LIVE_PASSWORD = "<local-demo-password>"
-npm run test:e2e:live -- qa02-sales-report.live.spec.ts
-Pop-Location
+# Tạo PostgreSQL/API disposable và chỉ chạy expected-red S2-GAP-05.
+pwsh -File scripts/test-qa02-gap05-live.ps1
+
+# Lệnh live FE-02 mặc định loại ca expected-red S2-GAP-05.
+pwsh -File scripts/test-fe02-live.ps1
 
 pwsh -File scripts/verify.ps1 -SkipInstall
 ```
@@ -49,10 +51,11 @@ Không ghi mật khẩu thật, token, DB dump, `target/` hoặc Playwright outp
 - `testCompile`: **Pass** — 13 test source files compile bằng Java release 21 trên JDK 24.
 - Lần chạy `Qa02E2eTest` đầu: **Error trước assertion** — một phần tử `PATH` local ghép hai đường dẫn bằng dấu phẩy; đã xác nhận có thể lọc riêng trong tiến trình, không sửa cấu hình máy.
 - Sau khi khởi động Docker Desktop 29.4.0 và lọc `PATH` trong riêng tiến trình test, `Qa02GapReproduction` chạy trên PostgreSQL 17.11 disposable, Flyway V1–V14 + demo seed: **9 tests, 4 failure, 0 error, 0 skipped** trong 1:53. Năm ca kế thừa từ `Qa02E2eTest` đạt; cả bốn expected-red GAP backend đều Fail đúng khoảng trống đã ghi, không phải lỗi khởi tạo.
-- Live PWA specs: đã compile/lint/typecheck nhưng chưa chạy vì cần API local cùng tài khoản demo/password do người chạy cung cấp. Hai GAP PWA vẫn Blocked và chưa được phép ghi Pass.
+- Expected-red live sales đã compile/lint/typecheck nhưng chưa chạy. Ca này có tag `@qa02-gap05`, bị loại khỏi lệnh live FE-02 mặc định và có runner riêng tự tạo API/PostgreSQL disposable cùng mật khẩu demo tạm. Hai GAP PWA vẫn Blocked và chưa được phép ghi Pass.
+- Sau chỉnh sửa review PR #53 ngày 12/10, lệnh mặc định `scripts/test-fe02-live.ps1` chạy **2/2 Pass** trên API/PostgreSQL disposable: recovery receipt và manager report; output xác nhận Playwright dùng `--grep-invert @qa02-gap05`. Runner GAP-05 riêng chưa được dùng làm bằng chứng Pass vì ca sales vẫn là expected-red chờ provider/consumer fix.
 - Root gate `pwsh -File scripts/verify.ps1 -SkipInstall`: **Pass** — repository policy và Markdown links đạt; web lint/format/typecheck/build đạt; demo Playwright 14/14; API consumer Playwright 39/39; backend Maven 152/152, 0 failure/error/skipped trên PostgreSQL 17.11 Testcontainers; `BUILD SUCCESS` trong 6:18. Kết quả này xác nhận checkpoint không làm đỏ gate hiện hành nhưng không được dùng để đổi bốn expected-red thành Pass.
 - PR/CI URL: chưa có vì checkpoint mới chỉ ở local; sau khi push/mở PR phải dùng `Refs #34`, gắn CI URL vào PR và Issue #34, không dùng `Closes #34`.
 
 ## 5. Điều kiện cập nhật từng ô tại #34
 
-Chỉ tích một GAP khi đồng thời có: owner/reviewer được TV1 ghi rõ, PR sửa lỗi đã merge, test provider/consumer tương ứng vào root gate và đạt, QA chạy lại trên PostgreSQL sạch với query hậu điều kiện, và URL PR/CI được ghi tại #34. Issue #34 chỉ đóng khi cả sáu điều kiện đều hoàn tất; trạng thái Issue/PR đơn lẻ không đủ để suy ra Pass.
+Chỉ tích một GAP khi đồng thời có: thực hiện đúng owner/reviewer TV1 đã chốt, PR sửa lỗi đã merge, test provider/consumer tương ứng vào root gate và đạt, QA chạy lại trên PostgreSQL sạch với query hậu điều kiện, và URL PR/CI được ghi tại #34. Issue #34 chỉ đóng khi cả sáu điều kiện đều hoàn tất; trạng thái Issue/PR đơn lẻ không đủ để suy ra Pass.

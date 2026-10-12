@@ -10,7 +10,9 @@ async function signIn(page: Page, username: "sales" | "manager") {
   await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
 }
 
-test("QA02-WEB-002: sales uses live quote, CASH checkout and invoice APIs", async ({ page }) => {
+test("@qa02-gap05 QA02-WEB-002: sales uses live quote, CASH checkout and invoice APIs", async ({
+  page,
+}) => {
   const salesWrites: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;

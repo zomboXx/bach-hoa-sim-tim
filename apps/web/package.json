@@ -17,7 +17,8 @@
     "test:e2e": "npm run test:e2e:demo && npm run test:e2e:api",
     "test:e2e:demo": "playwright test --config=playwright.config.ts",
     "test:e2e:api": "playwright test --config=playwright.api.config.ts",
-    "test:e2e:live": "playwright test --config=playwright.live.config.ts",
+    "test:e2e:live": "playwright test --config=playwright.live.config.ts --grep-invert @qa02-gap05",
+    "test:e2e:live:qa02-gap05": "playwright test --config=playwright.live.config.ts --grep @qa02-gap05",
     "verify": "npm run lint && npm run format:check && npm run build && npm run test:e2e"
   },
   "dependencies": {

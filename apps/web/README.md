@@ -105,6 +105,8 @@ Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), k
 
 Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 17 disposable, chạy Spring API với mật khẩu demo sinh ngẫu nhiên và thực thi Playwright qua proxy thật. Test cho POST commit vào database nhưng response bị cắt ở trình duyệt, rồi reload/đăng nhập lại và xác nhận UI chỉ GET theo `clientOperationId`, tìm được phiếu và không POST lần hai. Script luôn dừng API, xóa container cùng credential tạm sau khi chạy.
 
+Lệnh live FE-02 mặc định loại test sales có tag `@qa02-gap05` vì đây là ca expected-red theo dõi tại Issue #34, không phải regression FE-02. Dùng `pwsh -File scripts/test-qa02-gap05-live.ps1` để chủ động tái hiện riêng GAP-05 trên API/PostgreSQL disposable; failure của lệnh này không được ghi là regression mới hoặc Pass trước khi provider/consumer fix liên quan đã tích hợp.
+
 ## Tài liệu và cấu trúc
 
 - `src/App.vue`: các màn hình quản lý và cổng chuyển sang khu đào tạo.

@@ -12,6 +12,11 @@
 > 17 Pass, 3 Fail, 3 Blocked. Việc tái hiện theo quyết định mới tại Issue #34 được
 > ghi riêng trong [checkpoint ngày 11/10/2026](QA-02-gap-checkpoint-2026-10-11.md).
 
+> Cập nhật điều phối ngày 12/10/2026: TV1 đã chốt owner/reviewer và thứ tự xử lý
+> sáu GAP tại #34. Ca live sales expected-red của GAP-05 có runner riêng và không
+> còn chạy trong lệnh live FE-02 mặc định; lệnh mặc định đã chạy lại đạt 2/2 trên
+> API/PostgreSQL disposable. Cập nhật này không đổi kết quả báo cáo.
+
 ## 1. Kết quả hiện hành
 
 Suite QA xuyên module mới chạy 5/5 Pass trên HTTP thật và PostgreSQL sạch. Nó chứng minh receipt accepted/rejected và replay, CASH checkout/invoice/report, rollback đa sản phẩm, cạnh tranh lô cuối, quyền report và oracle ledger độc lập.

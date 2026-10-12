@@ -37,7 +37,7 @@ Các PR provider/consumer đã có trong lịch sử `origin/main` của source 
 | QA02-REP-001 | Revenue SUM invoice completed, COUNT một lần | `Qa02E2eTest#receiptToCashInvoiceAndReportsReconcileWithIndependentSqlOracle`; hóa đơn hai dòng; SQL oracle đọc thẳng `sales.invoices` | API = SUM 75.000, COUNT 1; không thể pass nhầm nếu report join nhân bản theo hai invoice lines | Pass |
 | QA02-REP-002 | Tồn báo cáo truy từ balance/batch và khớp ledger | cùng test; `balance = SUM(quantity_delta)` theo batch | API 1.250 KG; DB balance và ledger đều 1.250 | Pass |
 | QA02-WEB-001 | PWA API mode nhận/tồn + report consumer; demo regression | `api-inventory.spec.ts`, `api-reports.spec.ts`, `workflows.spec.ts`; expected-red `qa02-sales-report.live.spec.ts` manager report | Có consumer mock và live spec; chưa chạy chuỗi nhận–bán–report cùng API/DB sạch | Blocked |
-| QA02-WEB-002 | PWA API mode bán/checkout/hóa đơn | Expected-red `qa02-sales-report.live.spec.ts`; inspection `routesFor`/`pay()` | API mode chưa cấp route sales/invoices; `pay()` chỉ chạy demo, chưa có sales adapter | Blocked |
+| QA02-WEB-002 | PWA API mode bán/checkout/hóa đơn | Expected-red `qa02-sales-report.live.spec.ts` tag `@qa02-gap05`, runner riêng `scripts/test-qa02-gap05-live.ps1`; inspection `routesFor`/`pay()` | API mode chưa cấp route sales/invoices; `pay()` chỉ chạy demo, chưa có sales adapter; ca cố ý đỏ không chạy trong live FE-02 mặc định | Blocked |
 | QA02-PRO-001 | PRO-01B regression riêng, không chặn P0 | `SaleApiTest` promotion methods; `api-promotions.spec.ts` | Product/batch, tie-break, rounding, snapshot, 0 VND có regression | Pass |
 
 ## Khoảng trống phải xử lý trước nghiệm thu P0

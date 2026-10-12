@@ -1,3 +1,8 @@
+param(
+  [ValidateSet('Fe02', 'Qa02Gap05')]
+  [string]$Suite = 'Fe02'
+)
+
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $apiDir = Join-Path $root 'services/api'
@@ -8,6 +13,7 @@ $demoPassword = "Live-$([Guid]::NewGuid().ToString('N'))"
 $apiProcess = $null
 $apiOut = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.out.log"
 $apiErr = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.err.log"
+$webTestScript = if ($Suite -eq 'Qa02Gap05') { 'test:e2e:live:qa02-gap05' } else { 'test:e2e:live' }
 
 function Get-FreeTcpPort {
   $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
@@ -73,8 +79,8 @@ try {
   try {
     $env:API_PROXY_TARGET = "http://127.0.0.1:$apiPort"
     $env:SIMTIM_LIVE_PASSWORD = $demoPassword
-    & npm run test:e2e:live
-    if ($LASTEXITCODE -ne 0) { throw 'FE-02 live backend test failed.' }
+    & npm run $webTestScript
+    if ($LASTEXITCODE -ne 0) { throw "$Suite live backend test failed." }
   } finally {
     Remove-Item Env:API_PROXY_TARGET -ErrorAction SilentlyContinue
     Remove-Item Env:SIMTIM_LIVE_PASSWORD -ErrorAction SilentlyContinue
