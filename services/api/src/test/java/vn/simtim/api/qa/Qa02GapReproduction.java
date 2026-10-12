@@ -1,17 +1,6 @@
 package vn.simtim.api.qa;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 /**
  * Executable expected-red specifications for the backend gaps tracked by Issue #34.
@@ -22,8 +11,9 @@ import org.springframework.http.ResponseEntity;
  * scenario must move into the default provider/QA gate before the traceability row can become
  * Pass.
  *
- * <p>Graduated to default gate: GAP-01 (quantity precision), GAP-02 (price changed), GAP-03 (invoice isolation).
- * Remaining: GAP-04 (idempotency replay).
+ * <p>Graduated to default gate: GAP-01 (quantity precision), GAP-02 (price changed),
+ * GAP-03 (invoice isolation), GAP-04 (idempotency replay).
+ * Remaining backend gaps: none — all four have been resolved and promoted to {@link Qa02E2eTest}.
  */
 class Qa02GapReproduction extends Qa02E2eTest {
 
@@ -35,44 +25,5 @@ class Qa02GapReproduction extends Qa02E2eTest {
     @Test
     void gap03_salesCannotReadAnotherSellerInvoiceInTheSameStore() {
         salesCannotReadAnotherSellerInvoiceInTheSameStore();
-    }
-
-    @Test
-    void gap04_checkoutReplayWritesOneInvoiceAndRejectsKeyReuseWithAnotherPayload() {
-        receive(APPLE_ID, "4.000", "4.000", "0.000", null);
-        UUID idempotencyKey = UUID.randomUUID();
-        Map<String, Object> request = Map.of(
-                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.000")),
-                "cashAmount", 100000);
-        ResponseEntity<Object> first = checkout(request, idempotencyKey);
-        ResponseEntity<Object> replay = checkout(request, idempotencyKey);
-        Map<String, Object> changedRequest = new LinkedHashMap<>(request);
-        changedRequest.put("items", List.of(
-                Map.of("productId", APPLE_ID, "quantity", "2.000")));
-        ResponseEntity<Object> changed = checkout(changedRequest, idempotencyKey);
-
-        assertAll(
-                () -> assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED),
-                () -> assertThat(replay.getStatusCode().value()).isIn(200, 201),
-                () -> assertThat(body(replay).get("id")).isEqualTo(body(first).get("id")),
-                () -> assertThat(changed.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
-                () -> assertThat(body(changed)).containsEntry("code", "IDEMPOTENCY_KEY_REUSED"),
-                () -> assertThat(count(
-                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isEqualTo(1),
-                () -> assertThat(count(
-                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isEqualTo(1),
-                () -> assertThat(count("""
-                        select count(*) from inventory.stock_movements
-                        where organization_id=? and movement_type='SALE'
-                        """, ORG_ID)).isEqualTo(1),
-                () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo("3.000"));
-    }
-
-    private ResponseEntity<Object> checkout(Map<String, Object> request, UUID idempotencyKey) {
-        var requestHeaders = headers(salesToken);
-        requestHeaders.set("Idempotency-Key", idempotencyKey.toString());
-        return http.exchange(
-                "/api/v1/sales/checkout", HttpMethod.POST,
-                new HttpEntity<>(request, requestHeaders), Object.class);
     }
 }

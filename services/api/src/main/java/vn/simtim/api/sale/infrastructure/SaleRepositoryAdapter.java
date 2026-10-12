@@ -109,6 +109,12 @@ class SaleRepositoryAdapter implements SaleRepository {
     }
 
     @Override
+    public Optional<Invoice> findInvoiceByIdempotencyKey(UUID orgId, UUID storeId, UUID idempotencyKey) {
+        return invoiceRepo.findByOrganizationIdAndStoreIdAndIdempotencyKey(orgId, storeId, idempotencyKey)
+                .map(InvoiceJpa::toDomain);
+    }
+
+    @Override
     public List<Invoice> listInvoices(UUID orgId, UUID storeId) {
         return invoiceRepo.findByOrganizationIdAndStoreId(orgId, storeId)
                 .stream().map(InvoiceJpa::toDomain).toList();

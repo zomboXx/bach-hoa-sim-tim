@@ -50,6 +50,7 @@ public class SaleController {
     @PostMapping({"/checkout", "/invoices"})
     public ResponseEntity<InvoiceResponse> checkout(
             @RequestHeader("X-Organization-Id") UUID orgId,
+            @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey,
             @Valid @RequestBody CheckoutRequest req,
             Authentication auth) {
         SessionPrincipal principal = (SessionPrincipal) auth.getPrincipal();
@@ -61,7 +62,7 @@ public class SaleController {
         var items = req.items().stream()
                 .map(i -> new CheckoutItem(i.productId(), i.quantity()))
                 .toList();
-        var invoice = service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount());
+        var invoice = service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount(), idempotencyKey);
         return ResponseEntity
                 .created(URI.create("/api/v1/sales/invoices/" + invoice.id()))
                 .body(InvoiceResponse.from(invoice));

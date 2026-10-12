@@ -20,4 +20,11 @@ interface InvoiceJpaRepository extends JpaRepository<InvoiceJpa, UUID> {
             @Param("orgId") UUID orgId,
             @Param("storeId") UUID storeId,
             @Param("soldBy") UUID soldBy);
+
+    @Query("SELECT i FROM InvoiceJpa i WHERE i.organizationId = :orgId AND i.storeId = :storeId AND i.idempotencyKey = :key")
+    Optional<InvoiceJpa> findByOrganizationIdAndStoreIdAndIdempotencyKey(
+            @Param("orgId") UUID orgId,
+            @Param("storeId") UUID storeId,
+            @Param("key") UUID key);
 }
+
