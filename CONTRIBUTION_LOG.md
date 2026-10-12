@@ -22,7 +22,27 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
-Nguyễn Văn Thi - 2026-10-12 17:45:00
+Nguyễn Trung - 2026-10-12 23:07:00
+
+S2-GAP-04: Checkout idempotency — header `Idempotency-Key` trên `POST /api/v1/sales/checkout` (commit `deb94a1`, refs #53, #34).
+
+Vấn đề: hệ thống chưa chống replay khi client gửi lại request checkout với cùng UUID key, dẫn đến tạo nhiều hóa đơn và trừ tồn nhiều lần. Thêm cột nullable `idempotency_key uuid` vào `sales.invoices` (migration V15) với unique partial index trên `(organization_id, store_id, idempotency_key) WHERE idempotency_key IS NOT NULL`. Bổ sung `findInvoiceByIdempotencyKey` vào port `SaleRepository`, JPA repository và adapter. Trong `SaleService.checkout`: nếu key đã tồn tại với cùng payload (payload fingerprint qua `changeAmount`) thì trả về invoice cũ; nếu key tồn tại với payload khác thì ném `SaleConflictException("IDEMPOTENCY_KEY_REUSED")` → HTTP 409; nếu không có key thì luồng không thay đổi (backward-compatible). Controller đọc header `Idempotency-Key` (optional UUID) và chuyển xuống service. Tốt nghiệp kịch bản `checkoutReplayWritesOneInvoiceAndRejectsKeyReuseWithAnotherPayload` vào root gate `Qa02E2eTest`; dọn `Qa02GapReproduction` — không còn GAP backend nào tồn đọng.
+
+Validation: `test-compile` exit 0; `verify -DskipTests` exit 0. Test E2E cần Docker Desktop (Testcontainers); môi trường hiện tại không có Docker nên chưa chạy được `Qa02E2eTest` trực tiếp — kết quả CI sẽ là bằng chứng Pass chính thức theo điều kiện tại #34.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +3 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +43 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +14 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpaRepository.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +6 -0
+- `services/api/src/main/resources/db/migration/V15__sales_checkout_idempotency.sql`: +14 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +39 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +4 -53
+- `CONTRIBUTION_LOG.md`: +37 -0
+
 
 S2-GAP-03: Phân quyền xem hóa đơn bán hàng — SALES chỉ xem hóa đơn của chính mình (PR #53, Refs #34).
 
