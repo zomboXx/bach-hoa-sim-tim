@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -166,7 +168,10 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", riceReceiptId)).isEqualTo(1);
         assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'", new Object[0])).isEqualTo(2);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = jdbc.queryForObject(
+                        "select sold_at from sales.invoices where id=?",
+                        OffsetDateTime.class, invoiceId)
+                .atZoneSameInstant(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
         Map<String, Object> revenue = body(get("/api/v1/reports/revenue?from=" + today + "&to=" + today.plusDays(1), managerToken));
         Long sqlRevenue = jdbc.queryForObject("""
                 select coalesce(sum(grand_total),0) from sales.invoices
