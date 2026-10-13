@@ -14,6 +14,12 @@ Các PR provider/consumer đã có trong lịch sử `origin/main` của source 
 > Tất cả tiếp tục theo dõi tại [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34),
 > chưa có dòng nào được chuyển sang Pass.
 
+> Follow-up ngày 13/10/2026 trên head PR #53: GAP-05 live 2/2, GAP-06 live 1/1,
+> root gate 14 demo + 49 consumer + 165 backend đều đạt; DB oracle ghi receipt/invoice/payment
+> cùng tăng một, revenue tăng 40.000 và balance khớp ledger. Xem
+> [evidence GAP-06](QA-02-gap06-evidence-2026-10-13.md). Các trạng thái bên dưới
+> vẫn là ảnh chụp 07/10 cho đến khi PR merge, QA chạy lại `main` và TV1 duyệt evidence.
+
 | ID | Backlog/contract | Automated test / oracle | Actual | Status |
 |---|---|---|---|---|
 | QA02-REC-001 | INV-01 nhận đủ tạo receipt/lô/balance/movement nguyên tử | `Qa02E2eTest#receiptToCashInvoiceAndReportsReconcileWithIndependentSqlOracle`; query receipt/ledger | Một receipt, một lô và RECEIPT movement; ledger khớp balance | Pass |

@@ -17,6 +17,11 @@
 > còn chạy trong lệnh live FE-02 mặc định; lệnh mặc định đã chạy lại đạt 2/2 trên
 > API/PostgreSQL disposable. Cập nhật này không đổi kết quả báo cáo.
 
+> Follow-up QA ngày 13/10/2026 trên head PR #53: GAP-05 live 2/2, GAP-06
+> nhận–bán–báo cáo 1/1 với DB oracle và root gate 14/14 demo, 49/49 consumer,
+> 165/165 backend đều đạt. Xem [evidence GAP-06](QA-02-gap06-evidence-2026-10-13.md).
+> Chưa viết lại kết luận lịch sử hoặc tích #34 trước khi PR merge và CI được review.
+
 ## 1. Kết quả hiện hành
 
 Suite QA xuyên module mới chạy 5/5 Pass trên HTTP thật và PostgreSQL sạch. Nó chứng minh receipt accepted/rejected và replay, CASH checkout/invoice/report, rollback đa sản phẩm, cạnh tranh lô cuối, quyền report và oracle ledger độc lập.

@@ -107,6 +107,8 @@ Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 1
 
 Lệnh live FE-02 mặc định loại test sales có tag `@qa02-gap05` vì đây là ca expected-red theo dõi tại Issue #34, không phải regression FE-02. Dùng `pwsh -File scripts/test-qa02-gap05-live.ps1` để chủ động tái hiện riêng GAP-05 trên API/PostgreSQL disposable; failure của lệnh này không được ghi là regression mới hoặc Pass trước khi provider/consumer fix liên quan đã tích hợp.
 
+Sau khi provider/consumer GAP-01…05 có trên nhánh kiểm thử, dùng `pwsh -File scripts/test-qa02-gap06-live.ps1` để chạy một luồng browser nhận hàng → checkout CASH → hóa đơn → báo cáo trên cùng API/PostgreSQL disposable. Runner đối chiếu delta receipt/invoice/payment/revenue và balance với movement ledger bằng SQL độc lập; CI chạy cùng test và oracle trong job `QA-02 live receive-sale-report`.
+
 ## Tài liệu và cấu trúc
 
 - `src/App.vue`: các màn hình quản lý và cổng chuyển sang khu đào tạo.

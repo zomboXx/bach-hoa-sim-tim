@@ -70,10 +70,78 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: maven
           cache-dependency-path: services/api/pom.xml
       - run: ./mvnw verify
+
+  qa02-live:
+    name: QA-02 live receive-sale-report
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      POSTGRES_PASSWORD: qa02-db-${{ github.run_id }}-${{ github.run_attempt }}
+      SIMTIM_DEMO_PASSWORD: qa02-user-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install web and browser dependencies
+        working-directory: apps/web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Start clean API and PostgreSQL
+        run: docker compose -f infra/compose.demo.yml up --build -d --wait postgres api
+      - name: Capture database baseline
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            seeded_receipts=$(docker compose -f infra/compose.demo.yml exec -T postgres \
+              psql -U simtim -d simtim -Atc \
+              "select count(*) from inventory.goods_receipts where organization_id = '10000000-0000-0000-0000-000000000001' and store_id = '10000000-0000-0000-0000-000000000002'")
+            if [ "$seeded_receipts" -ge 1 ]; then
+              break
+            fi
+            sleep 1
+          done
+          test "$seeded_receipts" -ge 1
+          baseline=$(docker compose -f infra/compose.demo.yml exec -T postgres \
+            psql -U simtim -d simtim -At -F '|' \
+            < scripts/qa02-gap06-db-summary.sql)
+          echo "QA02_DB_BASELINE=$baseline" >> "$GITHUB_ENV"
+      - name: Run live receive-sale-report flow
+        working-directory: apps/web
+        env:
+          API_PROXY_TARGET: http://127.0.0.1:8080
+          SIMTIM_LIVE_PASSWORD: ${{ env.SIMTIM_DEMO_PASSWORD }}
+        run: npm run test:e2e:live:qa02-gap06
+      - name: Verify independent database oracle
+        shell: bash
+        run: |
+          after=$(docker compose -f infra/compose.demo.yml exec -T postgres \
+            psql -U simtim -d simtim -At -F '|' \
+            < scripts/qa02-gap06-db-summary.sql)
+          IFS='|' read -r before_receipts before_invoices before_payments _ before_revenue \
+            <<< "$QA02_DB_BASELINE"
+          IFS='|' read -r after_receipts after_invoices after_payments mismatches after_revenue \
+            <<< "$after"
+          test $((after_receipts - before_receipts)) -eq 1
+          test $((after_invoices - before_invoices)) -eq 1
+          test $((after_payments - before_payments)) -eq 1
+          test $((after_revenue - before_revenue)) -gt 0
+          test "$mismatches" -eq 0
+          printf 'QA-02 GAP-06 DB oracle: receipt_delta=1; invoice_delta=1; payment_delta=1; revenue_delta=%s; balance_mismatches=0\n' \
+            "$((after_revenue - before_revenue))"
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f infra/compose.demo.yml logs --tail=120 postgres api
+      - name: Stop clean stack
+        if: always()
+        run: docker compose -f infra/compose.demo.yml down -v
 
   demo-compose:
     name: Demo Compose

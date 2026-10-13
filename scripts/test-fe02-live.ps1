@@ -1,5 +1,5 @@
 param(
-  [ValidateSet('Fe02', 'Qa02Gap05')]
+  [ValidateSet('Fe02', 'Qa02Gap05', 'Qa02Gap06')]
   [string]$Suite = 'Fe02'
 )
 
@@ -13,13 +13,37 @@ $demoPassword = "Live-$([Guid]::NewGuid().ToString('N'))"
 $apiProcess = $null
 $apiOut = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.out.log"
 $apiErr = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.err.log"
-$webTestScript = if ($Suite -eq 'Qa02Gap05') { 'test:e2e:live:qa02-gap05' } else { 'test:e2e:live' }
+$webTestScript = switch ($Suite) {
+  'Qa02Gap05' { 'test:e2e:live:qa02-gap05' }
+  'Qa02Gap06' { 'test:e2e:live:qa02-gap06' }
+  default { 'test:e2e:live' }
+}
 
 function Get-FreeTcpPort {
   $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
   $listener.Start()
   try { return ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port }
   finally { $listener.Stop() }
+}
+
+function Get-QaDatabaseSummary {
+  param([string]$ContainerName)
+
+  $summarySql = Get-Content -LiteralPath (Join-Path $root 'scripts/qa02-gap06-db-summary.sql') -Raw
+  $output = @(& docker exec $ContainerName psql `
+      --set ON_ERROR_STOP=1 --tuples-only --no-align --field-separator '|' `
+      --username simtim --dbname simtim --command $summarySql)
+  if ($LASTEXITCODE -ne 0) { throw 'Could not query the QA-02 GAP-06 database oracle.' }
+  $line = @($output | Where-Object { $_ -match '^\d+\|\d+\|\d+\|\d+\|\d+$' })[-1]
+  if (-not $line) { throw 'QA-02 GAP-06 database oracle returned no summary row.' }
+  $values = $line.Split('|')
+  return [pscustomobject]@{
+    Receipts = [int]$values[0]
+    Invoices = [int]$values[1]
+    Payments = [int]$values[2]
+    BalanceMismatches = [int]$values[3]
+    Revenue = [long]$values[4]
+  }
 }
 
 $dbPort = Get-FreeTcpPort
@@ -75,12 +99,37 @@ try {
     throw 'Spring API did not become ready.'
   }
 
+  $qaBaseline = $null
+  if ($Suite -eq 'Qa02Gap06') {
+    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+      $qaBaseline = Get-QaDatabaseSummary -ContainerName $containerName
+      if ($qaBaseline.Receipts -ge 1) { break }
+      Start-Sleep -Seconds 1
+    }
+    if ($qaBaseline.Receipts -lt 1) { throw 'Demo inventory seed did not become ready.' }
+  }
+
   Push-Location $webDir
   try {
     $env:API_PROXY_TARGET = "http://127.0.0.1:$apiPort"
     $env:SIMTIM_LIVE_PASSWORD = $demoPassword
     & npm run $webTestScript
     if ($LASTEXITCODE -ne 0) { throw "$Suite live backend test failed." }
+    if ($Suite -eq 'Qa02Gap06') {
+      $qaAfter = Get-QaDatabaseSummary -ContainerName $containerName
+      $receiptDelta = $qaAfter.Receipts - $qaBaseline.Receipts
+      $invoiceDelta = $qaAfter.Invoices - $qaBaseline.Invoices
+      $paymentDelta = $qaAfter.Payments - $qaBaseline.Payments
+      $revenueDelta = $qaAfter.Revenue - $qaBaseline.Revenue
+      if ($receiptDelta -ne 1) { throw "Expected receipt delta 1, found $receiptDelta." }
+      if ($invoiceDelta -ne 1) { throw "Expected invoice delta 1, found $invoiceDelta." }
+      if ($paymentDelta -ne 1) { throw "Expected payment delta 1, found $paymentDelta." }
+      if ($revenueDelta -le 0) { throw "Expected positive revenue delta, found $revenueDelta." }
+      if ($qaAfter.BalanceMismatches -ne 0) {
+        throw "Inventory balance differs from movement ledger for $($qaAfter.BalanceMismatches) batch(es)."
+      }
+      Write-Output "QA-02 GAP-06 DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
+    }
   } finally {
     Remove-Item Env:API_PROXY_TARGET -ErrorAction SilentlyContinue
     Remove-Item Env:SIMTIM_LIVE_PASSWORD -ErrorAction SilentlyContinue

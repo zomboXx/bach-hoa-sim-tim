@@ -35,10 +35,13 @@ Push-Location services/api
 .\mvnw.cmd "-Dtest=vn.simtim.api.qa.Qa02GapReproduction" test
 Pop-Location
 
-# Tạo PostgreSQL/API disposable và chỉ chạy expected-red S2-GAP-05.
+# Tạo PostgreSQL/API disposable và chạy riêng S2-GAP-05.
 pwsh -File scripts/test-qa02-gap05-live.ps1
 
-# Lệnh live FE-02 mặc định loại ca expected-red S2-GAP-05.
+# Chạy chuỗi nhận–bán–báo cáo cùng oracle DB độc lập cho S2-GAP-06.
+pwsh -File scripts/test-qa02-gap06-live.ps1
+
+# Lệnh live FE-02 mặc định vẫn tách riêng các ca QA-02.
 pwsh -File scripts/test-fe02-live.ps1
 
 pwsh -File scripts/verify.ps1 -SkipInstall
@@ -54,8 +57,14 @@ Không ghi mật khẩu thật, token, DB dump, `target/` hoặc Playwright outp
 - Expected-red live sales đã compile/lint/typecheck nhưng chưa chạy. Ca này có tag `@qa02-gap05`, bị loại khỏi lệnh live FE-02 mặc định và có runner riêng tự tạo API/PostgreSQL disposable cùng mật khẩu demo tạm. Hai GAP PWA vẫn Blocked và chưa được phép ghi Pass.
 - Sau chỉnh sửa review PR #53 ngày 12/10, lệnh mặc định `scripts/test-fe02-live.ps1` chạy **2/2 Pass** trên API/PostgreSQL disposable: recovery receipt và manager report; output xác nhận Playwright dùng `--grep-invert @qa02-gap05`. Runner GAP-05 riêng chưa được dùng làm bằng chứng Pass vì ca sales vẫn là expected-red chờ provider/consumer fix.
 - Root gate `pwsh -File scripts/verify.ps1 -SkipInstall`: **Pass** — repository policy và Markdown links đạt; web lint/format/typecheck/build đạt; demo Playwright 14/14; API consumer Playwright 39/39; backend Maven 152/152, 0 failure/error/skipped trên PostgreSQL 17.11 Testcontainers; `BUILD SUCCESS` trong 6:18. Kết quả này xác nhận checkpoint không làm đỏ gate hiện hành nhưng không được dùng để đổi bốn expected-red thành Pass.
-- PR/CI URL: chưa có vì checkpoint mới chỉ ở local; sau khi push/mở PR phải dùng `Refs #34`, gắn CI URL vào PR và Issue #34, không dùng `Closes #34`.
+- PR hiện hành: [#53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53), dùng `Refs #34`; chưa dùng `Closes #34`. CI URL của head có GAP-06 phải được gắn vào PR và Issue #34 sau khi workflow hoàn tất.
 
-## 5. Điều kiện cập nhật từng ô tại #34
+## 5. Follow-up S2-GAP-06 ngày 13/10
+
+Provider/consumer head `7406e2c` đã chứa phần triển khai GAP-01…05. TV4 chạy lại độc lập: GAP-05 live 2/2, GAP-06 live 1/1, root gate demo 14/14 + API consumer 49/49 + backend 165/165; oracle DB GAP-06 ghi `receipt +1`, `invoice +1`, `payment +1`, revenue `+40.000` và không có balance lệch ledger. Chi tiết nằm tại [bằng chứng GAP-06 ngày 13/10](QA-02-gap06-evidence-2026-10-13.md).
+
+Đây là kết quả trên head PR #53 trước merge. Các trạng thái Fail/Blocked lịch sử ở bảng phía trên không bị viết lại; checkbox #34 chỉ được TV1 tích sau khi PR merge, CI có URL và QA chạy lại trên `main`.
+
+## 6. Điều kiện cập nhật từng ô tại #34
 
 Chỉ tích một GAP khi đồng thời có: thực hiện đúng owner/reviewer TV1 đã chốt, PR sửa lỗi đã merge, test provider/consumer tương ứng vào root gate và đạt, QA chạy lại trên PostgreSQL sạch với query hậu điều kiện, và URL PR/CI được ghi tại #34. Issue #34 chỉ đóng khi cả sáu điều kiện đều hoàn tất; trạng thái Issue/PR đơn lẻ không đủ để suy ra Pass.
