@@ -14,7 +14,7 @@ Nhóm đồng bộ, review và cập nhật báo cáo theo nhịp tuần. Ngày 
 
 Mỗi ngày thành viên cập nhật Issue đang làm bằng một dòng: kết quả mới, bước tiếp theo và blocker. GitHub Project giữ trạng thái `Backlog`, `Ready`, `In Progress`, `In Review`, `Blocked`, `Done`; không nhân đôi trạng thái này trong tài liệu. Không mở cuộc họp riêng nếu Issue đã đủ thông tin.
 
-Trong Sprint 4, owner chỉ kéo Issue sang `In Progress` khi phụ thuộc và điểm giao cần thiết đã được review; mỗi người tối đa một Issue ở trạng thái này. Ưu tiên hoàn tất bằng chứng QA-03 và phần việc #34 đang nhận trước khi TV4 nhận thêm TRN-01/02 hoặc QA-04. Mở Issue và gắn milestone không thay cho nghiệm thu Sprint 3 hoặc bằng chứng Done của Sprint 4.
+Trong Sprint 4, owner chỉ kéo Issue sang `In Progress` khi phụ thuộc và điểm giao cần thiết đã được review; mỗi người tối đa một Issue ở trạng thái này. Theo điều chỉnh ngày 14/10/2026, TV4 ưu tiên hoàn tất bằng chứng QA-03 và phần việc #34 đang nhận; TV3 làm TRN-01/02 theo thứ tự phụ thuộc, TV2 chủ trì QA-04 sau khi có bản tích hợp để kiểm. Mở Issue và gắn milestone không thay cho nghiệm thu Sprint 3 hoặc bằng chứng Done của Sprint 4.
 
 ## Definition of Ready
 
