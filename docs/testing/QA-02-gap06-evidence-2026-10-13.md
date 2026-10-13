@@ -2,7 +2,7 @@
 
 - QA owner: TV4 — Lê Văn Chiến (`@VanChien11-02`)
 - Reviewer: TV1 — Nguyễn Đức Phát (`@zomboXx`)
-- Provider/consumer head đã kiểm: `7406e2c` trên PR [#53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53)
+- Provider/consumer base đã kiểm: `7406e2c`; QA GAP-06: `2be6603` trên PR [#53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53)
 - Theo dõi: [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34), `Refs #34 — S2-GAP-06`
 - Runtime: Windows, JDK 24 chạy Java release 21, Docker Desktop 29.4.0, PostgreSQL 17.11 disposable
 
@@ -36,6 +36,6 @@ Lần chạy oracle đầu tiên dừng sau khi browser Pass vì giả định d
 
 ## CI và điều kiện đóng
 
-Workflow `baseline-quality` có job `QA-02 live receive-sale-report`: dựng Compose sạch, chạy test `@qa02-gap06`, query cùng file `qa02-gap06-db-summary.sql` trước/sau và luôn xóa volume khi kết thúc. URL run phải được bổ sung vào PR #53 và Issue #34 sau khi GitHub Actions hoàn tất.
+Workflow [`baseline-quality` run 38370638776](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/38370638776) trên commit `2be6603` đạt **5/5 job**; riêng job `QA-02 live receive-sale-report` đạt trong 1:40. Job dựng Compose sạch, chạy test `@qa02-gap06`, query cùng file `qa02-gap06-db-summary.sql` trước/sau và luôn xóa volume khi kết thúc. URL này cần được gắn vào comment evidence tại Issue #34.
 
 Đây là bằng chứng QA trên head PR, chưa phải bằng chứng sau merge. Theo quy tắc #34, chưa đổi các dòng lịch sử ngày 07/10 hoặc tích checkbox chỉ từ kết quả local này. Sau khi PR #53 merge vào `main`, TV4 phải chạy lại GAP-06/root gate trên `main`, gắn URL CI/PR và TV1 review trước khi chuyển GAP sang Pass hoặc đóng #34.

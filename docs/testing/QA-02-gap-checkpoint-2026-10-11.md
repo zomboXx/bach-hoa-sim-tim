@@ -61,7 +61,7 @@ Không ghi mật khẩu thật, token, DB dump, `target/` hoặc Playwright outp
 
 ## 5. Follow-up S2-GAP-06 ngày 13/10
 
-Provider/consumer head `7406e2c` đã chứa phần triển khai GAP-01…05. TV4 chạy lại độc lập: GAP-05 live 2/2, GAP-06 live 1/1, root gate demo 14/14 + API consumer 49/49 + backend 165/165; oracle DB GAP-06 ghi `receipt +1`, `invoice +1`, `payment +1`, revenue `+40.000` và không có balance lệch ledger. Chi tiết nằm tại [bằng chứng GAP-06 ngày 13/10](QA-02-gap06-evidence-2026-10-13.md).
+Provider/consumer base `7406e2c` đã chứa phần triển khai GAP-01…05; commit QA GAP-06 là `2be6603`. TV4 chạy lại độc lập: GAP-05 live 2/2, GAP-06 live 1/1, root gate demo 14/14 + API consumer 49/49 + backend 165/165; oracle DB GAP-06 ghi `receipt +1`, `invoice +1`, `payment +1`, revenue `+40.000` và không có balance lệch ledger. GitHub Actions [`38370638776`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/38370638776) đạt 5/5 job, gồm `QA-02 live receive-sale-report`. Chi tiết nằm tại [bằng chứng GAP-06 ngày 13/10](QA-02-gap06-evidence-2026-10-13.md).
 
 Đây là kết quả trên head PR #53 trước merge. Các trạng thái Fail/Blocked lịch sử ở bảng phía trên không bị viết lại; checkbox #34 chỉ được TV1 tích sau khi PR merge, CI có URL và QA chạy lại trên `main`.
 
