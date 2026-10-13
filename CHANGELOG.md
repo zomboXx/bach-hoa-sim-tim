@@ -17,6 +17,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Project Owner điều chỉnh tiếp TRN-02 ngày 14/10/2026: TV3 Thi và TV4 Chiến đồng sở hữu, TV1 review luật chấm, TV2 review contract; giữ nguyên tiêu chí và phụ thuộc.
 - Điều chỉnh phân công Sprint 4 ngày 14/10/2026 sau khi TV2 và TV3 nhận chia tải TV4: TV3 chủ trì TRN-01 và phần PWA TRN-02, TV2 chủ trì QA-04; TV4 tập trung QA-03/#34 và kiểm thử các điểm giao, giữ nguyên phạm vi, ưu tiên và phụ thuộc.
 - Tích hợp ADR 0004 `0004-training-2d-web.md` đã có từ 30/09/2026, bỏ bản ADR 0004 trùng được tạo cục bộ và cập nhật liên kết tài liệu hiện hành.
 - Căn lại backlog đào tạo Sprint 4 theo quyết định của Project Owner: hoàn thiện game 2D Vue/SVG trong PWA thay kế hoạch Godot; giữ mã TRN-01/02/03, ưu tiên và phân công. Scrum ghi rõ nhịp review tuần không tự đặt hạn cho milestone hoặc thay tiêu chí Done; QA-03/#34 còn mở.

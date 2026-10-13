@@ -8,16 +8,18 @@ Mục tiêu là hoàn thiện **một ca đào tạo nghiệp vụ 2D trong PWA*
 
 - PWA đã có scene `TrainingGame.vue` với di chuyển, tương tác, mục tiêu và phản hồi trong bộ nhớ trình duyệt. Auth đã trả `trainingEnabled`; chưa có migration/API `training` hoặc kết quả lưu trong PostgreSQL. [DB-01 target](../architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) mô tả năm bảng đào tạo nhưng là thiết kế đích, không phải schema đã chạy.
 - Đến ngày 14/10, [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) và [sáu GAP P0 tại #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) còn mở. [PR #53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53) có bằng chứng QA trên head trước merge; CI đạt không thay cho nghiệm thu trên `main`. Giữ các việc này ở mã gốc và tính tải TV4 trước khi kéo việc Sprint 4 vào `In Progress`.
-- TV1 là owner TRN-03 và đồng owner TRN-02; TV1 điều phối và review các điểm giao. Đổi người thực hiện code phải được ghi trong Issue/backlog, không ngầm chuyển trách nhiệm.
+- TV1 là owner TRN-03, điều phối và review các điểm giao; TRN-02 hiện do TV3 và TV4 đồng sở hữu. Đổi người thực hiện code phải được ghi trong Issue/backlog, không ngầm chuyển trách nhiệm.
 
 **Điều chỉnh phân công ngày 14/10/2026:** Sau khi TV4 báo tải việc Sprint 4 vượt khả năng hoàn thành, Project Owner xác nhận TV2 và TV3 đã đồng ý chia việc. Phân công khởi động ngày 13/10 vẫn được giữ trong lịch sử Git; bảng dưới đây thay thế phần owner/reviewer của TRN-01, TRN-02 và QA-04 từ ngày 14/10. Mã, ưu tiên, phạm vi và phụ thuộc của sáu Issue không đổi. [TRN-01 #54](https://github.com/zomboXx/bach-hoa-sim-tim/issues/54), [TRN-02 #55](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55) và [QA-04 #57](https://github.com/zomboXx/bach-hoa-sim-tim/issues/57) là nơi ghi phân công thực thi tương ứng.
+
+**Điều chỉnh tiếp ngày 14/10/2026:** Project Owner giao TRN-02 cho TV3 Thi và TV4 Chiến đồng sở hữu; TV1 chuyển sang review luật chấm, TV2 review contract. Quyết định này thay phần phân công TRN-02 ở đoạn trên; tiêu chí và phụ thuộc TRN-01 giữ nguyên.
 
 ## Sáu đầu việc hiện hành
 
 | Mã | Chủ trì; review | Đầu ra và bằng chứng cần có | Phụ thuộc backlog |
 |---|---|---|---|
 | [**TRN-01**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/54) (P1) | TV3; TV1 review, TV4 kiểm mobile/QA | Hoàn thiện scene Vue/SVG hiện có cho bàn phím, chuột, cảm ứng, va chạm/tương tác, viewport desktop/mobile; đo trên máy yếu nhất nhóm có. Test browser xác nhận không ghi dữ liệu bán/tồn. | PRO-04 |
-| [**TRN-02**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55) (P1) | TV3 làm PWA + TV1 chốt luật chấm; TV4 kiểm kịch bản, TV2 review contract | Một ca gồm mục tiêu, hướng dẫn, thứ tự hành động, phản hồi sai, hoàn thành và chơi lại. Ghi rõ luật đánh giá có thể kiểm thử; test đúng/sai và reset phiên. | TRN-01 |
+| [**TRN-02**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55) (P1) | TV3 làm PWA + TV4 phụ trách kịch bản/kiểm thử; TV1 review luật chấm, TV2 review contract | Một ca gồm mục tiêu, hướng dẫn, thứ tự hành động, phản hồi sai, hoàn thành và chơi lại. Ghi rõ luật đánh giá có thể kiểm thử; test đúng/sai và reset phiên. | TRN-01 |
 | [**TRN-03**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/56) (P1) | TV1; TV2 | Module/API và migration tiến lên cho kịch bản, phiên, hành động, kết quả; PWA lưu và xem lại kết quả của chính người học. Provider/consumer tests chứng minh kiểm quyền, retry, cách ly dữ liệu và không thay đổi số dư/hóa đơn. | BE-02, TRN-02 |
 | [**QA-04**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/57) (P0) | TV2; TV3 kiểm web, TV4 kiểm bằng chứng, TV1 xác nhận | Regression trên bản tích hợp, ma trận quyền, thử backup/restore PostgreSQL trên Compose sạch, test report với evidence và trạng thái thật của #34/QA-03. Không ghi Pass khi còn trường hợp Fail/Blocked. | Các sprint trước |
 | [**DOC-01**](https://github.com/zomboXx/bach-hoa-sim-tim/issues/58) (P0) | TV1 điều phối; cả nhóm | Báo cáo và traceability nối FR-TRN-01..08/NFR-TRN-01 với quyết định, code, test và ảnh/demo; ghi ngoại lệ thực tế và đóng góp theo bằng chứng. | QA-04 |
@@ -35,7 +37,7 @@ Issue giữ mã, ưu tiên, owner/reviewer và tiêu chí chấp nhận trong ba
 ## Thứ tự làm và cổng review
 
 1. TV4 hoàn tất/ghi rõ phần QA-03 còn thiếu; các owner tiếp tục xử lý #34 theo Issue gốc. TV3 xử lý phần FE còn cần review ở PR #53 trước khi bắt đầu TRN-01; TV1/TV2 có thể phác thảo contract TRN-03. Mỗi người chỉ giữ một Issue `In Progress` tại một thời điểm.
-2. TV3 thực hiện TRN-01 rồi phần PWA của TRN-02; TV1 chốt luật chấm và cùng TV2 review contract, TV4 kiểm thử kịch bản/mobile. TRN-03 chốt contract/schema với reviewer rồi mới triển khai API và nối PWA; có thể chuẩn bị migration/contract sớm nhưng không coi dependency TRN-02 đã đạt.
+2. TV3 thực hiện TRN-01 rồi phần PWA của TRN-02; TV4 đồng sở hữu phần kịch bản/kiểm thử TRN-02 sau khi xử lý phần QA-03/#34 đang nhận. TV1 review luật chấm, TV2 review contract. TRN-03 chốt contract/schema với reviewer rồi mới triển khai API và nối PWA; có thể chuẩn bị migration/contract sớm nhưng không coi dependency TRN-02 đã đạt.
 3. TV2 chủ trì QA-04 trên commit tích hợp sau các đầu việc đào tạo và các bản sửa P0 liên quan; TV3 kiểm web, TV4 đối chiếu hồ sơ QA và TV1 xác nhận. Nếu #34 còn ngoại lệ, report ghi đúng Fail/Blocked và Project Owner quyết định phạm vi release; QA-04 không tự đóng #34.
 4. DOC-01 lấy kết quả QA-04 để cập nhật báo cáo; REL-01 lấy tài liệu và bản tích hợp đã kiểm thử để dựng release candidate. Mỗi PR qua `pwsh -File scripts/verify.ps1`, CI và reviewer; Done theo Scrum chỉ sau merge và evidence.
 
