@@ -26,6 +26,16 @@ export function routesFor(user: AuthUser): string[] {
       ? ["receive"]
       : []),
     ...(user.session.permissions.includes("inventory.read") ? ["inventory", "count"] : []),
+    ...(user.session.permissions.includes("sales.write") ||
+    user.session.permissions.includes("sales.create")
+      ? ["sale"]
+      : []),
+    ...(user.session.permissions.includes("sales.read.own") ||
+    user.session.permissions.includes("sales.read.store") ||
+    user.session.permissions.includes("sales.write") ||
+    user.session.permissions.includes("sales.create")
+      ? ["invoices"]
+      : []),
     ...(user.session.permissions.includes("promotions.read") ? ["promotions"] : []),
     ...(user.session.permissions.includes("reports.read") ? ["reports"] : []),
     ...(user.session.trainingEnabled ? ["training"] : []),

@@ -22,6 +22,31 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+Nguyễn Văn Thi - 2026-10-13 09:42:00
+
+S2-GAP-05: Bán hàng trên PWA API mode (FE + contract) — nối quote, checkout CASH và xem hóa đơn qua API thật (Refs #34).
+
+Vấn đề: PWA trước đây chỉ chạy bán hàng trên mock/demo state cục bộ, chưa tích hợp với API backend bán hàng (`/api/v1/sales/*`), chưa xử lý quote giá động, phân bổ FEFO, biến động giá `PRICE_CHANGED`, hết hàng `INSUFFICIENT_STOCK`, mất kết nối timeout và không áp dụng header `Idempotency-Key` theo S2-GAP-04.
+Giải pháp:
+1. Tạo module bán hàng `apps/web/src/modules/sale/` theo port/adapter: `SalePort` (domain interface), `ApiSaleAdapter` (gọi `POST /sales/quote`, `POST /sales/checkout`, `GET /sales/invoices`) và `DemoSaleAdapter` (đóng gói logic demo hiện tại trong `api.ts`, giữ cô lập và không ảnh hưởng demo mode).
+2. Tích hợp `App.vue`: khi ở API mode, nạp danh mục sản phẩm từ `GET /api/v1/products`, hỗ trợ tìm kiếm/lọc danh mục. Luồng thanh toán `pay()` nguyên tử: gọi `quote()` lấy tổng tiền server tính, gọi `checkout()` với UUID `Idempotency-Key` mới và `expectedTotal`. Bắt và hiển thị thông báo thân thiện bằng tiếng Việt cho `PRICE_CHANGED`, `INSUFFICIENT_STOCK`, `IDEMPOTENCY_KEY_REUSED` và cảnh báo mất mạng (hướng dẫn kiểm tra hóa đơn trước khi thử lại).
+3. Hóa đơn API mode: sau checkout tự động nạp lại hóa đơn qua `loadInvoices()` và chuyển trang; trang hóa đơn có trạng thái loading, error (nút Thử lại), empty state và dialog xem chi tiết hóa đơn `api-invoice`.
+4. Phân quyền: cập nhật `routesFor()` trong `adapter.ts` cho phép truy cập route `sale` và `invoices` theo các quyền `sales.create`, `sales.write`, `sales.read.*`.
+5. Kiểm thử: bổ sung 10 consumer tests trong `tests/api-sale.spec.ts` (10/10 Pass) và 2 live tests trong `live-tests/qa02-sales-report.live.spec.ts` (QA02-WEB-002, QA02-WEB-003).
+
+Validation: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run build` đạt; `npm run test:e2e:api` (49/49 Pass); `npm run test:e2e:demo` (14/14 Pass); repository policy và markdown links OK.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +67 -11
+- `apps/web/src/App.vue`: +259 -40
+- `apps/web/src/adapter.ts`: +10 -0
+- `apps/web/src/modules/sale/domain/sale.ts`: +134 -0
+- `apps/web/src/modules/sale/infrastructure/api-sale-adapter.ts`: +98 -0
+- `apps/web/src/modules/sale/infrastructure/demo-sale-adapter.ts`: +137 -0
+- `apps/web/tests/api-sale.spec.ts`: +385 -0
+- `CONTRIBUTION_LOG.md`: +25 -0
+
+---
 TV2 — nguyentrung01ute-ui - 2026-10-12 23:07:00
 
 S2-GAP-04: Checkout idempotency — header `Idempotency-Key` trên `POST /api/v1/sales/checkout` (commit `deb94a1`, refs #53, #34).

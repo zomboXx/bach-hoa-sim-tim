@@ -4,7 +4,6 @@ import TrainingGame from "./training/TrainingGame.vue";
 import {
   accounts,
   available,
-  checkout,
   emptyOperationalState,
   persist,
   price,
@@ -32,6 +31,14 @@ import {
 import { IndexedDbStocktakeOperationQueue } from "./modules/inventory/infrastructure/stocktake-operation-queue";
 import PromotionWorkspace from "./modules/promotion/PromotionWorkspace.vue";
 import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
+import { ApiSaleAdapter } from "./modules/sale/infrastructure/api-sale-adapter";
+import { DemoSaleAdapter } from "./modules/sale/infrastructure/demo-sale-adapter";
+import {
+  SaleApiError,
+  SaleNetworkError,
+  type ApiInvoice,
+  type SalePort,
+} from "./modules/sale/domain/sale";
 const state = ref<State>();
 const user = ref<AuthUser>();
 const route = ref("dashboard");
@@ -56,6 +63,58 @@ const inventoryAdapter: InventoryPort = isDemoMode
     )
   : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
 const promotionAdapter = new ApiPromotionAdapter((path, init) => authAdapter.fetchApi(path, init));
+const saleAdapter: SalePort = isDemoMode
+  ? new DemoSaleAdapter(
+      () => state.value!,
+      async (next) => {
+        await persist(next);
+        state.value = next;
+      },
+      () => ({ ...user.value!, role: user.value!.role }) as User,
+    )
+  : new ApiSaleAdapter((path, init) => authAdapter.fetchApi(path, init));
+// API-mode invoice list (populated on navigate to 'invoices' and after checkout)
+const apiInvoices = ref<ApiInvoice[]>([]);
+const invoicesStatus = ref<"idle" | "loading" | "error">("idle");
+async function loadInvoices() {
+  if (isDemoMode) return;
+  invoicesStatus.value = "loading";
+  try {
+    apiInvoices.value = await saleAdapter.listInvoices();
+    invoicesStatus.value = "idle";
+  } catch {
+    invoicesStatus.value = "error";
+  }
+}
+// API-mode product catalog for the sale page (loaded from /api/v1/products)
+const apiSaleProducts = ref<
+  Array<{ id: string; name: string; sku: string; category: string; unit: string; emoji: string }>
+>([]);
+async function loadSaleProducts() {
+  if (isDemoMode) return;
+  try {
+    const res = await authAdapter.fetchApi("/api/v1/products");
+    if (!res.ok) return;
+    const raw = (await res.json()) as Array<{
+      id: string;
+      name: string;
+      sku?: string;
+      status?: string;
+    }>;
+    apiSaleProducts.value = raw
+      .filter((p) => !p.status || p.status === "ACTIVE")
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku ?? p.id,
+        category: "Sản phẩm",
+        unit: "Cái",
+        emoji: "὎6",
+      }));
+  } catch {
+    // silently ignore — sale page will show empty grid
+  }
+}
 const stocktakeQueue = new IndexedDbStocktakeOperationQueue();
 const queuedStocktakes = ref<StocktakeQueueItem[]>([]);
 const canManagePromotions = computed(
@@ -236,6 +295,12 @@ function go(id: string) {
     reportPeriod.to = today();
     loadReports();
   }
+  if (id === "invoices") {
+    void loadInvoices();
+  }
+  if (id === "sale") {
+    void loadSaleProducts();
+  }
 }
 async function signIn() {
   if (busy.value || authPending.value) return;
@@ -312,8 +377,7 @@ async function change(action: (s: State) => void, message: string, allowOffline 
     notify(message);
     return true;
   } catch (e) {
-    error.value = (e as Error).message;
-    notify(error.value);
+    notify((e as Error).message);
     return false;
   } finally {
     busy.value = false;
@@ -455,23 +519,32 @@ const query = ref("");
 const category = ref("Tất cả");
 const categories = computed(() => [
   "Tất cả",
-  ...new Set(state.value?.products.map((p) => p.category)),
+  ...new Set(
+    isDemoMode
+      ? state.value?.products.map((p) => p.category)
+      : apiSaleProducts.value.map((p) => p.category),
+  ),
 ]);
-const filtered = computed(
-  () =>
-    state.value?.products.filter(
-      (p) =>
-        (category.value === "Tất cả" || p.category === category.value) &&
-        `${p.name} ${p.id} ${p.barcode}`
-          .toLocaleLowerCase("vi")
-          .includes(query.value.toLocaleLowerCase("vi")),
-    ) || [],
-);
+const filtered = computed(() => {
+  const products = isDemoMode
+    ? (state.value?.products ?? []).map((p) => ({ ...p }))
+    : apiSaleProducts.value.map((p) => ({ ...p, price: 0, barcode: "" }));
+  return products.filter(
+    (p) =>
+      (category.value === "Tất cả" || p.category === category.value) &&
+      `${p.name} ${p.id}`.toLocaleLowerCase("vi").includes(query.value.toLocaleLowerCase("vi")),
+  );
+});
 const cart = ref<{ id: string; quantity: number }[]>([]);
 const method = ref("Tiền mặt");
 const cash = ref(0);
-const total = computed(() =>
-  cart.value.reduce(
+const total = computed(() => {
+  if (!isDemoMode) {
+    // In API mode the real total comes from the server quote called inside pay().
+    // Show 0 here so the cash-amount guard (cash >= total) still lets pay() proceed.
+    return 0;
+  }
+  return cart.value.reduce(
     (n, l) =>
       n +
       price(
@@ -480,13 +553,16 @@ const total = computed(() =>
       ) *
         l.quantity,
     0,
-  ),
-);
+  );
+});
 function add(id: string) {
   if (!connected.value) return notify("Bán hàng cần kết nối.");
+  if (isDemoMode) {
+    const row = cart.value.find((l) => l.id === id);
+    if (available(state.value!, id) < (row?.quantity || 0) + 1)
+      return notify("Không đủ tồn còn hạn để bán.");
+  }
   const row = cart.value.find((l) => l.id === id);
-  if (available(state.value!, id) < (row?.quantity || 0) + 1)
-    return notify("Không đủ tồn còn hạn để bán.");
   if (row) row.quantity++;
   else cart.value.push({ id, quantity: 1 });
 }
@@ -497,23 +573,108 @@ function quantity(id: string, delta: number) {
   else cart.value = cart.value.filter((l) => l.id !== id);
 }
 async function pay() {
-  if (!isDemoMode || !user.value || user.value.role === "admin") return;
-  const actingUser: User = { ...user.value, role: user.value.role };
+  if (!user.value || user.value.role === "admin") return;
   if (method.value === "Tiền mặt" && cash.value < total.value)
     return notify("Số tiền khách đưa chưa đủ.");
-  if (
-    await change((s) => {
-      checkout(s, actingUser, cart.value, method.value);
-    }, "Đã lưu hóa đơn và trừ tồn kho.")
-  ) {
+  if (busy.value) return;
+
+  if (isDemoMode) {
+    // Demo mode: quote then checkout through SalePort (wraps existing logic)
+    busy.value = true;
+    error.value = "";
+    try {
+      const items = cart.value.map((l) => ({
+        productId: l.id,
+        quantity: String(l.quantity),
+      }));
+      const quoteResult = await saleAdapter.quote(items);
+      const invoice = await saleAdapter.checkout({
+        items,
+        expectedTotal: quoteResult.grandTotal,
+        cashAmount: cash.value,
+      });
+      notify(`Đã lưu hóa đơn ${invoice.invoiceNo} và trừ tồn kho.`);
+      cart.value = [];
+      cash.value = 0;
+      go("invoices");
+    } catch (e) {
+      notify((e as Error).message);
+    } finally {
+      busy.value = false;
+    }
+    return;
+  }
+
+  // API mode: quote → confirm price → checkout with idempotency key
+  busy.value = true;
+  const idempotencyKey = crypto.randomUUID();
+  try {
+    const items = cart.value.map((l) => ({
+      productId: l.id,
+      quantity: String(l.quantity),
+    }));
+    // 1. Quote to get server-calculated total
+    let quoteResult;
+    try {
+      quoteResult = await saleAdapter.quote(items);
+    } catch (e) {
+      if (e instanceof SaleNetworkError) {
+        throw new Error("Lỗi mạng khi lấy báo giá. Kiểm tra kết nối và thử lại.", { cause: e });
+      }
+      throw e;
+    }
+    // 2. Checkout with server total as expectedTotal (guards against price change between quote and checkout)
+    let invoice;
+    try {
+      invoice = await saleAdapter.checkout({
+        items,
+        expectedTotal: quoteResult.grandTotal,
+        cashAmount: cash.value,
+        idempotencyKey,
+      });
+    } catch (e) {
+      if (e instanceof SaleApiError) {
+        if (e.code === "PRICE_CHANGED") {
+          throw new Error(
+            `Giá sản phẩm vừa thay đổi. Tổng mới: ${e.message}. Vui lòng kiểm tra lại giỏ hàng.`,
+            { cause: e },
+          );
+        }
+        if (e.code === "INSUFFICIENT_STOCK") {
+          throw new Error(
+            "Không đủ tồn kho cho một hoặc nhiều sản phẩm. Vui lòng điều chỉnh giỏ hàng.",
+            { cause: e },
+          );
+        }
+        if (e.code === "IDEMPOTENCY_KEY_REUSED") {
+          // Shouldn't happen with a fresh UUID, but handle gracefully
+          throw new Error("Mã giao dịch bị trùng. Vui lòng thử lại.", { cause: e });
+        }
+      }
+      if (e instanceof SaleNetworkError) {
+        throw new Error(
+          "Mất kết nối khi thanh toán. Hệ thống đã ghi lại mã giao dịch — kiểm tra danh sách hóa đơn trước khi thử lại.",
+          { cause: e },
+        );
+      }
+      throw e;
+    }
+    notify(`Đã tạo hóa đơn ${invoice.invoiceNo} · Tiền thừa ${money(invoice.changeAmount)}`);
     cart.value = [];
     cash.value = 0;
+    // Refresh invoice list then navigate
+    await loadInvoices();
     go("invoices");
+  } catch (e) {
+    notify((e as Error).message);
+  } finally {
+    busy.value = false;
   }
 }
 const modal = ref<HTMLDialogElement>();
 const dialogType = ref("");
 const selectedInvoice = ref<State["invoices"][number]>();
+const selectedApiInvoice = ref<ApiInvoice>();
 const form = reactive({
   name: "",
   barcode: "",
@@ -949,19 +1110,20 @@ async function approveCount(record: StocktakeRecord) {
                   v-for="p in filtered"
                   :key="p.id"
                   class="product-card"
-                  :disabled="!connected || available(state!, p.id) === 0"
+                  :disabled="!connected || (isDemoMode && available(state!, p.id) === 0)"
                   @click="add(p.id)"
                 >
                   <div class="product-picture">
                     <span>{{ p.emoji }}</span
-                    ><i v-if="price(state, p) < p.price">Ưu đãi</i>
+                    ><i v-if="isDemoMode && price(state, p) < p.price">Ưu đãi</i>
                   </div>
                   <small>{{ p.category }}</small>
                   <h3>{{ p.name }}</h3>
-                  <p>
-                    {{ money(price(state, p)) }}
-                    <del v-if="price(state, p) < p.price">{{ money(p.price) }}</del>
+                  <p v-if="isDemoMode">
+                    {{ money(price(state, p))
+                    }}<del v-if="price(state, p) < p.price">{{ money(p.price) }}</del>
                   </p>
+                  <p v-else>Xem giá khi thanh toán</p>
                   <footer>
                     <span>Còn {{ available(state!, p.id) }} {{ p.unit.toLowerCase() }}</span
                     ><b>＋</b>
@@ -983,12 +1145,14 @@ async function approveCount(record: StocktakeRecord) {
                 <div>
                   <b>{{ name(l.id) }}</b
                   ><small>{{
-                    money(
-                      price(
-                        state,
-                        state.products.find((p) => p.id === l.id)!,
-                      ),
-                    )
+                    isDemoMode
+                      ? money(
+                          price(
+                            state,
+                            state.products.find((p) => p.id === l.id)!,
+                          ),
+                        )
+                      : ""
                   }}</small>
                 </div>
                 <div class="stepper">
@@ -1143,7 +1307,8 @@ async function approveCount(record: StocktakeRecord) {
             </div>
             <button class="primary" @click="go('sale')">＋ Đơn bán hàng mới</button>
           </div>
-          <section class="card">
+          <!-- Demo mode: use local state -->
+          <section v-if="isDemoMode" class="card">
             <div v-if="!state.invoices.length" class="empty">
               <h3>Chưa có hóa đơn nào.</h3>
               <p>Tạo một giao dịch tại quầy bán hàng để bắt đầu.</p>
@@ -1165,7 +1330,42 @@ async function approveCount(record: StocktakeRecord) {
               <strong>{{ money(i.total) }}</strong
               ><span class="status">Hoàn tất</span><span>→</span>
             </button>
-          </section></template
+          </section>
+          <!-- API mode: load from server -->
+          <template v-else>
+            <div v-if="invoicesStatus === 'loading'" class="empty-state">
+              <span class="icon">⌛</span>
+              <p>Đang tải danh sách hóa đơn...</p>
+            </div>
+            <div v-else-if="invoicesStatus === 'error'" class="empty-state">
+              <span class="icon">❌</span>
+              <p>Không tải được danh sách hóa đơn.</p>
+              <button class="primary" @click="loadInvoices">Thử lại</button>
+            </div>
+            <section v-else class="card">
+              <div v-if="!apiInvoices.length" class="empty">
+                <h3>Chưa có hóa đơn nào.</h3>
+                <p>Tạo một giao dịch tại quầy bán hàng để bắt đầu.</p>
+              </div>
+              <button
+                v-for="i in apiInvoices"
+                :key="i.id"
+                class="invoice-row"
+                @click="
+                  selectedApiInvoice = i;
+                  openDialog('api-invoice');
+                "
+              >
+                <span class="activity-icon">▤</span>
+                <div>
+                  <b>{{ i.invoiceNo }}</b
+                  ><small>{{ time(i.soldAt) }} · {{ i.status }}</small>
+                </div>
+                <strong>{{ money(i.grandTotal) }}</strong
+                ><span class="status">Hoàn tất</span><span>→</span>
+              </button>
+            </section>
+          </template></template
         >
 
         <PromotionWorkspace
@@ -1344,6 +1544,25 @@ async function approveCount(record: StocktakeRecord) {
         <p>{{ selectedInvoice.method }}</p>
         <button class="primary wide" @click="closeDialog">Đóng hóa đơn</button></template
       >
+      <template v-else-if="dialogType === 'api-invoice' && selectedApiInvoice">
+        <p class="eyebrow">HÓA ĐƠN BÁN HÀNG</p>
+        <h2>{{ selectedApiInvoice.invoiceNo }}</h2>
+        <p>{{ time(selectedApiInvoice.soldAt) }} · COMPLETED</p>
+        <div v-for="(l, idx) in selectedApiInvoice.lines" :key="idx" class="receipt-line">
+          <span>{{ l.productName }} × {{ l.quantity }}</span
+          ><b>{{ money(l.lineTotal) }}</b>
+        </div>
+        <div v-if="selectedApiInvoice.discountTotal" class="receipt-line">
+          <span>Giảm giá</span><b>−{{ money(selectedApiInvoice.discountTotal) }}</b>
+        </div>
+        <div class="total">
+          <span>Tổng thanh toán</span><b>{{ money(selectedApiInvoice.grandTotal) }}</b>
+        </div>
+        <div class="total">
+          <span>Tiền thừa</span><b>{{ money(selectedApiInvoice.changeAmount) }}</b>
+        </div>
+        <button class="primary wide" @click="closeDialog">Đóng hóa đơn</button>
+      </template>
       <form v-else @submit.prevent="submitDialog">
         <p class="eyebrow">QUẢN LÝ DANH MỤC</p>
         <h2>
