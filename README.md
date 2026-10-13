@@ -1,6 +1,6 @@
 # Bách Hóa Sim Tím
 
-Hệ thống bán hàng và quản lý tồn kho với trải nghiệm đào tạo tách khỏi dữ liệu vận hành. `main` đã tích hợp API nhận hàng, tồn kho, bán hàng tiền mặt, khuyến mãi, báo cáo và PWA. Sprint 2 đã được [nghiệm thu có ngoại lệ](docs/project/SPRINT_2_ACCEPTANCE_2026-10-07.md): gate tự động đạt nhưng [QA-02](docs/testing/QA-02-test-report.md) vẫn còn 3 Fail và 3 Blocked P0.
+Hệ thống bán hàng và quản lý tồn kho với trải nghiệm đào tạo tách khỏi dữ liệu vận hành. `main` đã tích hợp API nhận hàng, tồn kho, bán hàng tiền mặt, khuyến mãi, báo cáo và PWA. Sprint 2 đã được [nghiệm thu có ngoại lệ](docs/project/SPRINT_2_ACCEPTANCE_2026-10-07.md): gate tự động đạt nhưng [QA-02](docs/testing/QA-02-test-report.md) vẫn còn 3 Fail và 3 Blocked P0. [Sprint 4](docs/project/SPRINT_4_KICKOFF.md) đã mở việc theo [ADR 0004](docs/architecture/adr/0004-training-2d-web.md); các Issue mới chưa phải tính năng đã hoàn tất.
 
 ## Bắt đầu nhanh: demo với Docker Compose
 
@@ -52,7 +52,8 @@ Gate kiểm tra policy, link, ESLint, Prettier, TypeScript, web build, Playwrigh
 | `archive/` | Prototype lịch sử, chỉ dùng để truy vết |
 
 - [Bản đồ tài liệu và tiến độ](docs/README.md)
-- [Backlog Sprint 2](docs/project/governance/BACKLOG.md)
+- [Backlog hiện hành](docs/project/governance/BACKLOG.md)
+- [Milestone Sprint 4](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4)
 - [Hướng dẫn đóng góp](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
 - [Nhật ký đóng góp](CONTRIBUTION_LOG.md)

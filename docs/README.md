@@ -12,8 +12,8 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/governance/GITHUB_SETUP.md`](project/governance/GITHUB_SETUP.md): runbook thiết lập repository, ruleset và Project.
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
 - [`project/SPRINT_3_KICKOFF.md`](project/SPRINT_3_KICKOFF.md): năm mục kiểm kê đã có trong backlog, phân công, phụ thuộc và điểm review; milestone không có ngày kết thúc.
-- [`project/SPRINT_4_KICKOFF.md`](project/SPRINT_4_KICKOFF.md): bản chuẩn bị Sprint 4 theo sáu mã backlog; cần review năng lực, contract và ngoại lệ trước khi mở Issue/milestone.
-- [`architecture/adr/0004-training-experience.md`](architecture/adr/0004-training-experience.md): quyết định giữ đào tạo 2D trong PWA và bỏ kế hoạch dùng Godot cho Sprint 4; ADR 0002/0003 vẫn giữ phạm vi ban đầu.
+- [`project/SPRINT_4_KICKOFF.md`](project/SPRINT_4_KICKOFF.md): kickoff Sprint 4 ngày 13/10/2026 theo sáu Issue trong backlog; ghi phụ thuộc, contract cần review và ngoại lệ còn mở.
+- [`architecture/adr/0004-training-2d-web.md`](architecture/adr/0004-training-2d-web.md): quyết định giữ đào tạo 2D trong PWA và bỏ kế hoạch dùng Godot cho Sprint 4; ADR 0002/0003 vẫn giữ phạm vi ban đầu.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
 - [`project/SPRINT_2_ACCEPTANCE_2026-10-07.md`](project/SPRINT_2_ACCEPTANCE_2026-10-07.md): quyết định nghiệm thu Sprint 2 có ngoại lệ và sáu điểm cần theo dõi.
 

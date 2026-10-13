@@ -22,6 +22,30 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
+
+Sửa bản chuẩn bị Sprint 4 sau khi phát hiện ADR 0004 đã tồn tại ở nhánh cục bộ trước đó: dùng `0004-training-2d-web.md` làm bản quyết định duy nhất, bỏ bản ADR 0004 tạo trùng và giữ các mục nhật ký cũ để truy vết. Khởi động Sprint 4 theo sáu mã backlog, đồng bộ kickoff, Scrum, phân công và điểm vào tài liệu; giữ QA-03/#34 là việc riêng chưa nghiệm thu.
+
+Tạo milestone Sprint 4 không hạn kết thúc, nhãn `sprint:4`, Issue #54–#59 với owner/reviewer, mức ưu tiên và tiêu chí kiểm tra; GitHub tự thêm sáu Issue vào Project `Bách Hóa Sim Tím` ở Backlog.
+
+Root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt sau khi khởi động Docker Desktop: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`. Lần chạy trước đó dừng ở Testcontainers do Docker Engine chưa chạy.
+
+- `CHANGELOG.md`: +3 -3
+- `README.md`: +3 -2
+- `apps/web/ARCHITECTURE.md`: +1 -1
+- `docs/README.md`: +2 -2
+- `docs/architecture/adr/0004-training-2d-web.md`: +31 -0
+- `docs/architecture/adr/0004-training-experience.md`: +0 -20
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +3 -3
+- `docs/project/SPRINT_4_KICKOFF.md`: +12 -12
+- `docs/project/governance/BACKLOG.md`: +7 -7
+- `docs/project/governance/SCRUM.md`: +3 -1
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +24 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-13 05:18:00
 
 Đối chiếu quyết định nền tảng đào tạo với ADR 0002/0003: hai ADR cũ không chốt engine, nên chuyển bản quyết định ngày 13/10 thành ADR 0004 để chỉ có một nơi ghi quyết định kiến trúc. Chuẩn bị kickoff Sprint 4 theo đúng sáu mã backlog, nêu đầu ra, thứ tự, điểm giao API/schema và quyết định còn mở; chưa mở Issue/milestone hay tự ghi Sprint 3 hoàn tất.

@@ -13,6 +13,8 @@ Phân công riêng cho Sprint 2 ngày 30/09/2026 nằm trong [backlog](BACKLOG.m
 
 Sprint 3 khởi động ngày 08/10/2026 theo [kickoff kiểm kê](../SPRINT_3_KICKOFF.md): TV4 sở hữu MOB-01, SYN-01 và QA-03; TV2 sở hữu SYN-02 và INV-03; TV3 review MOB-01 và QA-03; TV1 điều phối và review INV-03. Mỗi owner xử lý theo phụ thuộc trong backlog, không đồng thời kéo nhiều Issue vào `In Progress`.
 
+Sprint 4 khởi động ngày 13/10/2026 theo [kickoff đào tạo](../SPRINT_4_KICKOFF.md) và [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4): TV4 sở hữu TRN-01, đồng sở hữu TRN-02 với TV1 và sở hữu QA-04; TV1 sở hữu TRN-03, điều phối DOC-01 và REL-01; TV2 review TRN-03, TV3 review TRN-02. Giữ QA-03 và #34 ở Issue gốc; các owner chỉ nhận việc mới theo phụ thuộc và năng lực thực tế.
+
 ## Trách nhiệm chung của chủ module
 
 - Xác định pain point, yêu cầu và actor liên quan.

@@ -1,6 +1,6 @@
 # Kiến trúc và hợp đồng tích hợp dự kiến
 
-Phần định hướng đào tạo cập nhật ngày 13/10/2026 theo [ADR 0004](../../docs/architecture/adr/0004-training-experience.md). Các mục mô tả prototype và contract ban đầu bên dưới là ảnh chụp lịch sử từ 21/09/2026; contract đã tích hợp trong từng module có hiệu lực hơn các route đề xuất tại đây.
+Phần định hướng đào tạo cập nhật ngày 13/10/2026 theo [ADR 0004](../../docs/architecture/adr/0004-training-2d-web.md). Các mục mô tả prototype và contract ban đầu bên dưới là ảnh chụp lịch sử từ 21/09/2026; contract đã tích hợp trong từng module có hiệu lực hơn các route đề xuất tại đây.
 
 ## Kiến trúc mục tiêu
 

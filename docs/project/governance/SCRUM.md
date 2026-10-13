@@ -1,6 +1,6 @@
 # Scrum rút gọn cho đồ án
 
-Nhóm đồng bộ, review và cập nhật báo cáo theo nhịp tuần. Ngày kết thúc của từng milestone do Project Owner chốt riêng; [Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) không có ngày kết thúc theo quyết định ngày 08/10/2026. Nhịp báo cáo không tự làm Issue hoặc sprint đạt Done khi chưa có bằng chứng theo tiêu chí dưới đây. Product Owner và Scrum Master do trưởng nhóm kiêm nhiệm trong phạm vi môn học; giảng viên/người dùng khảo sát là nguồn phản hồi, không bị gán vai trò nội bộ của nhóm.
+Nhóm đồng bộ, review và cập nhật báo cáo theo nhịp tuần. Ngày kết thúc của từng milestone do Project Owner chốt riêng; [Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) và [Sprint 4](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4) hiện không có ngày kết thúc. Sprint 4 theo [kickoff ngày 13/10/2026](../SPRINT_4_KICKOFF.md) giữ sáu mã backlog; QA-03 #47 và các ngoại lệ #34 vẫn theo dõi riêng. Nhịp báo cáo không tự làm Issue hoặc sprint đạt Done khi chưa có bằng chứng theo tiêu chí dưới đây. Product Owner và Scrum Master do trưởng nhóm kiêm nhiệm trong phạm vi môn học; giảng viên/người dùng khảo sát là nguồn phản hồi, không bị gán vai trò nội bộ của nhóm.
 
 ## Nhịp làm việc mỗi tuần
 
@@ -13,6 +13,8 @@ Nhóm đồng bộ, review và cập nhật báo cáo theo nhịp tuần. Ngày 
 | Sau retrospective | Chốt báo cáo tuần | 20–30 phút | Báo cáo và kế hoạch tuần kế tiếp |
 
 Mỗi ngày thành viên cập nhật Issue đang làm bằng một dòng: kết quả mới, bước tiếp theo và blocker. GitHub Project giữ trạng thái `Backlog`, `Ready`, `In Progress`, `In Review`, `Blocked`, `Done`; không nhân đôi trạng thái này trong tài liệu. Không mở cuộc họp riêng nếu Issue đã đủ thông tin.
+
+Trong Sprint 4, owner chỉ kéo Issue sang `In Progress` khi phụ thuộc và điểm giao cần thiết đã được review; mỗi người tối đa một Issue ở trạng thái này. Ưu tiên hoàn tất bằng chứng QA-03 và phần việc #34 đang nhận trước khi TV4 nhận thêm TRN-01/02 hoặc QA-04. Mở Issue và gắn milestone không thay cho nghiệm thu Sprint 3 hoặc bằng chứng Done của Sprint 4.
 
 ## Definition of Ready
 
