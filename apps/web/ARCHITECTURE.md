@@ -1,20 +1,18 @@
 # Kiến trúc và hợp đồng tích hợp dự kiến
 
-Ngày cập nhật: 2026-09-21. Kiến trúc Sprint 1 đã được chốt tại [ADR 0002](../../docs/architecture/adr/0002-sprint-1-platform.md); năng lực và thời lượng từng thành viên vẫn cần xác nhận trong sprint planning.
+Phần định hướng đào tạo cập nhật ngày 13/10/2026 theo [ADR 0004](../../docs/architecture/adr/0004-training-2d-web.md). Các mục mô tả prototype và contract ban đầu bên dưới là ảnh chụp lịch sử từ 21/09/2026; contract đã tích hợp trong từng module có hiệu lực hơn các route đề xuất tại đây.
 
 ## Kiến trúc mục tiêu
 
 ```text
-PWA responsive ────────┐
-                      ├── REST + JSON ── Backend nghiệp vụ ── CSDL quan hệ tập trung
-Godot đào tạo 2D ──────┘                  ├─ xác thực / phân quyền
-                                         ├─ dịch vụ bán hàng, kho, kiểm kê
-                                         └─ phiên và dữ liệu đào tạo cách ly
+PWA vận hành ───────── REST + JSON ── Backend nghiệp vụ ── schema vận hành
+PWA đào tạo 2D ─────── phiên riêng ── API đào tạo (TRN-03) ── schema training
+                         └── xác thực/phạm vi từ server; không ghi tồn/hóa đơn vận hành
 ```
 
-Một doanh nghiệp mẫu, một cửa hàng. Không suy diễn thành nhiều tenant hoặc nhiều chi nhánh đồng thời. Gọi chung backend API có nghĩa là dùng chung quy tắc nghiệp vụ, không có nghĩa là đào tạo được ghi vào bảng tồn/hóa đơn vận hành. Trên server, phiên đào tạo phải có quyền và phạm vi dữ liệu riêng; không chỉ tin cờ `training` từ client.
+Một doanh nghiệp mẫu, một cửa hàng. Không suy diễn thành nhiều tenant hoặc nhiều chi nhánh đồng thời. Khu đào tạo hiện chạy cục bộ trong PWA; API và schema `training` ở sơ đồ là mục tiêu TRN-03, chưa triển khai. Việc dùng cùng tài khoản không cho phép đào tạo ghi vào bảng tồn/hóa đơn vận hành. Trên server, phiên đào tạo phải có quyền và phạm vi dữ liệu riêng; không chỉ tin cờ `training` từ client.
 
-## Hiện thực của prototype
+## Hiện thực của prototype Sprint 0 (lịch sử)
 
 PWA → adapter TypeScript → IndexedDB trên một thiết bị. Các thao tác cập nhật sao chép trạng thái, kiểm tra điều kiện, sau đó ghi trong một transaction IndexedDB; giao diện chỉ nhận trạng thái mới khi ghi thành công. Không có Java server, PostgreSQL, quản lý tenant hoặc Godot đã tích hợp trong repo này.
 
@@ -70,7 +68,7 @@ Prototype dùng expected quantity để phát hiện thay đổi, không có ver
 
 Service Worker chỉ lưu giao diện/tài nguyên công khai; không biến các API bán hàng thành cache offline. Cần lần tải thành công khi có mạng; môi trường triển khai PWA thật cần HTTPS. Tài khoản mới không đăng nhập offline; phiên demo còn lưu trên cùng tab có thể mở lại giao diện để kiểm kê.
 
-## Godot và một kịch bản bắt buộc
+## Khu đào tạo 2D và một kịch bản bắt buộc
 
 Đã điều chỉnh theo phản hồi người dùng: đào tạo phải là nhập vai trong cửa hàng 2D, không phải biểu mẫu nghiệp vụ đặt cạnh hình minh họa. Prototype hiện có ca “Ca đầu tiên ở Sim Tím” với ba nhóm kỹ năng:
 
@@ -80,7 +78,7 @@ Service Worker chỉ lưu giao diện/tài nguyên công khai; không biến cá
 
 `TrainingGame.vue` quản lý trạng thái phiên riêng gồm vị trí, bước nhiệm vụ, hội thoại, đồ vật đang cầm và kết quả; `world.ts` phụ trách va chạm và tìm đường trên lưới. Chỉ nhân vật ở ô kề mới tương tác được; nhấp mục tiêu khiến nhân vật đi qua các ô trống trước khi mở hội thoại. Dùng WASD/phím mũi tên + E, hoặc thao tác chạm. Module không import adapter nghiệp vụ hay ghi IndexedDB của cửa hàng, vì vậy thao tác luyện tập không làm thay đổi dữ liệu vận hành.
 
-Đây là game 2D chơi được trong trình duyệt để kiểm chứng trải nghiệm, triển khai bằng Vue/SVG. Khi tích hợp Godot, chuyển các scene/nhân vật/điều khiển sang engine; backend đánh giá hành động theo service nghiệp vụ trong phạm vi phiên riêng. Chưa có Godot runtime hoặc lưu kết quả qua backend trong bản này; không coi đó là đã hoàn thành phần Godot cuối kỳ.
+Đây là game 2D chơi được trong trình duyệt, triển khai bằng Vue/SVG và được giữ làm nền cho Sprint 4. TRN-01/02 hoàn thiện trải nghiệm và kịch bản hiện có; TRN-03 mới xử lý lưu phiên/kết quả qua backend trong phạm vi đào tạo riêng. Bản hiện tại chỉ giữ kết quả trong phiên chơi, chưa có lưu kết quả qua backend.
 
 Không tự thêm chapter thứ hai hoặc tuyến cốt truyện. Camera, lưu kết quả và offline production còn thuộc phần mở rộng cần ưu tiên sau.
 

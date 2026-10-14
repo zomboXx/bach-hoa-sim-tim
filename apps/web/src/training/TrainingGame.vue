@@ -999,8 +999,8 @@ onUnmounted(() => {
         </div>
       </div>
       <p class="game-footnote">
-        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Tích hợp Godot và lưu kết quả qua
-        backend ở giai đoạn sau.
+        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Lưu kết quả qua backend ở giai đoạn
+        sau.
       </p>
     </div>
     <div v-if="intro" class="game-overlay">

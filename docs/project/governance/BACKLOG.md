@@ -86,14 +86,16 @@ Project Owner khởi động Sprint 3 ngày 08/10/2026 theo đúng năm mục d�
 
 Mục tiêu: một kịch bản đào tạo hoàn chỉnh, bản release candidate và hồ sơ kiểm thử.
 
+Theo [ADR 0004 đã quyết định từ 30/09/2026](../../architecture/adr/0004-training-2d-web.md), Sprint 4 dùng khu đào tạo 2D Vue/SVG trong PWA, không khởi tạo Godot. Project Owner khởi động Sprint 4 ngày 13/10/2026 với sáu mã dưới đây; ngày 14/10/2026 nhóm chốt điều chỉnh owner/reviewer của TRN-01, TRN-02 và QA-04 để chia tải TV4. Cùng ngày, Project Owner giao TRN-02 cho TV3 và TV4 đồng sở hữu, TV1 chuyển sang review. Các quyết định này không đổi phạm vi hay ưu tiên. [Kickoff](../SPRINT_4_KICKOFF.md) ghi quyết định thay thế và thứ tự thực hiện; [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4) không có ngày kết thúc. [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) và sáu GAP P0 tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) vẫn là việc riêng, chưa được nghiệm thu và không tự đổi thành mã Sprint 4.
+
 | ID | Backlog item | Ưu tiên | Owner | Reviewer | Phụ thuộc | Tiêu chí chấp nhận |
 |---|---|---:|---|---|---|---|
-| TRN-01 | Khởi tạo Godot và scene cửa hàng | P1 | TV4 | TV1 | Sprint 0 | Chạy trên máy yếu nhất; có di chuyển, va chạm, tương tác |
-| TRN-02 | Một kịch bản đào tạo | P1 | TV4, TV1 | TV3 | TRN-01 | Có mục tiêu, hướng dẫn, phản hồi sai và kết quả |
-| TRN-03 | Lưu phiên/kết quả cách ly | P1 | TV1 | TV2 | BE-02, TRN-02 | Kết quả được lưu; không thay đổi dữ liệu vận hành |
-| QA-04 | Regression, bảo mật quyền và backup/restore | P0 | TV4 | Cả nhóm | Các sprint trước | Test report đạt; khôi phục CSDL demo trên môi trường sạch |
-| DOC-01 | Hoàn thiện báo cáo và traceability | P0 | TV1 điều phối | Cả nhóm | QA-04 | Yêu cầu–thiết kế–code–test có liên kết và minh chứng |
-| REL-01 | Release candidate và kịch bản vấn đáp | P0 | TV1 | Cả nhóm | DOC-01 | Bản chạy sạch, dữ liệu demo, hướng dẫn và video dự phòng |
+| [TRN-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/54) | Hoàn thiện khu đào tạo 2D trong PWA | P1 | TV3 | TV1; TV4 kiểm mobile/QA | PRO-04 | Scene cửa hàng hiện có chạy trên máy yếu nhất và viewport desktop/mobile đã công bố; có di chuyển, va chạm, tương tác; dữ liệu phiên riêng không làm thay đổi tồn/hóa đơn vận hành |
+| [TRN-02](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55) | Hoàn thiện một kịch bản đào tạo | P1 | TV3, TV4 | TV1 review luật chấm; TV2 review contract | TRN-01 | Ca đào tạo hiện có nối mục tiêu, hướng dẫn, phản hồi sai và kết quả; kiểm thử được luồng hoàn thành/chơi lại |
+| [TRN-03](https://github.com/zomboXx/bach-hoa-sim-tim/issues/56) | Lưu phiên/kết quả cách ly | P1 | TV1 | TV2 | BE-02, TRN-02 | Kết quả được lưu; không thay đổi dữ liệu vận hành |
+| [QA-04](https://github.com/zomboXx/bach-hoa-sim-tim/issues/57) | Regression, bảo mật quyền và backup/restore | P0 | TV2 | TV4 kiểm bằng chứng; TV1 xác nhận; TV3 kiểm web | Các sprint trước | Test report đạt; khôi phục CSDL demo trên môi trường sạch |
+| [DOC-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/58) | Hoàn thiện báo cáo và traceability | P0 | TV1 điều phối | Cả nhóm | QA-04 | Yêu cầu–thiết kế–code–test có liên kết và minh chứng |
+| [REL-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/59) | Release candidate và kịch bản vấn đáp | P0 | TV1 | Cả nhóm | DOC-01 | Bản chạy sạch, dữ liệu demo, hướng dẫn và video dự phòng |
 
 ## Icebox — Không cam kết cuối kỳ
 

@@ -6,6 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
+- Khởi động Sprint 4 ngày 13/10/2026 với milestone và sáu Issue TRN-01/02/03, QA-04, DOC-01, REL-01; kickoff ghi đầu ra, thứ tự và cổng review. QA-03/#34 vẫn theo dõi riêng.
 - **INV-03** (#46): Duyệt điều chỉnh tồn kiểm kê — Endpoint `POST /api/v1/inventory/stocktakes/{id}/approve` cho phép MANAGER và ADMIN duyệt phiên kiểm kê trong phạm vi cửa hàng. Trong một transaction nguyên tử: kiểm tra phiên bản tồn kho của từng lô khớp với `baseVersion`, cập nhật số dư `inventory_balances.on_hand_quantity` theo `actual_quantity` (tăng version), ghi biến động kho `inventory.stock_movements` loại `STOCKTAKE_ADJUSTMENT` và audit log `APPROVE_STOCKTAKE`. Từ chối duyệt hai lần (409 ALREADY_APPROVED), từ chối khi tồn kho bị đổi trước khi duyệt (409 BALANCE_VERSION_MISMATCH) kèm rollback toàn bộ không ghi một phần, từ chối phiên có dòng CONFLICT (409 UNRESOLVED_CONFLICT) và phiên rỗng (422 EMPTY_STOCKTAKE). Migration V14 mở rộng cột `movement_type` lên `varchar(32)` và cấp quyền `stocktakes.approve`. Bổ sung suite integration tests `StocktakeApprovalApiTest` (9 tests) trên PostgreSQL 17 thật qua Testcontainers, đối soát số dư với ledger độc lập `SUM(quantity_delta)`.
 - **SYN-02** (#45): API đồng bộ kiểm kê và xử lý xung đột — ba route `POST /stocktakes`, `GET /stocktakes/{id}`, `POST /stocktakes/{id}/counts`; idempotency theo `clientOperationId` (không tạo dòng trùng khi retry cùng scope), phát hiện xung đột bằng `inventory_balances.version`, trả 409 CONFLICT kèm thông tin đủ để client yêu cầu kiểm lại, không cập nhật tồn khi chỉ gửi số đếm. Migration V12 tạo `stocktakes`, `stocktake_lines`, `processed_operations` và mở rộng CHECK `stock_movements`; V13 thêm quyền `stocktakes.read/write` cho STOCK/MANAGER/ADMIN. Provider integration tests (`StocktakeSyncApiTest`) chạy PostgreSQL 17 sạch, kiểm tra idempotency, conflict, scope isolation và permission matrix.
 - **SYN-01** (#44): Thêm IndexedDB queue chỉ dành cho kiểm kê với `clientOperationId` ổn định, giữ thao tác qua reload, guard actor/organization/store/quyền trước retry và trạng thái chờ/conflict không ghi đè. Bổ sung browser tests cho offline → reload → reconnect, lưu lặp, đổi tài khoản/cửa hàng và tồn thay đổi; API write vẫn chờ contract SYN-02 được review.
@@ -16,6 +17,10 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- Project Owner điều chỉnh tiếp TRN-02 ngày 14/10/2026: TV3 Thi và TV4 Chiến đồng sở hữu, TV1 review luật chấm, TV2 review contract; giữ nguyên tiêu chí và phụ thuộc.
+- Điều chỉnh phân công Sprint 4 ngày 14/10/2026 sau khi TV2 và TV3 nhận chia tải TV4: TV3 chủ trì TRN-01 và phần PWA TRN-02, TV2 chủ trì QA-04; TV4 tập trung QA-03/#34 và kiểm thử các điểm giao, giữ nguyên phạm vi, ưu tiên và phụ thuộc.
+- Tích hợp ADR 0004 `0004-training-2d-web.md` đã có từ 30/09/2026, bỏ bản ADR 0004 trùng được tạo cục bộ và cập nhật liên kết tài liệu hiện hành.
+- Căn lại backlog đào tạo Sprint 4 theo quyết định của Project Owner: hoàn thiện game 2D Vue/SVG trong PWA thay kế hoạch Godot; giữ mã TRN-01/02/03, ưu tiên và phân công. Scrum ghi rõ nhịp review tuần không tự đặt hạn cho milestone hoặc thay tiêu chí Done; QA-03/#34 còn mở.
 - Cập nhật điểm vào tài liệu theo mã đã tích hợp đến 07/10/2026; giữ ảnh chụp tiến độ 30/09 để truy vết và phân biệt 7/7 Issue Sprint 2 đã đóng với QA-02 còn 3 Fail và 3 Blocked P0.
 - Ghi quyết định Project Owner nghiệm thu Sprint 2 có ngoại lệ ngày 07/10/2026 và danh sách sáu khoảng trống QA cần theo dõi trước khi xếp Sprint 3.
 

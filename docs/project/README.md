@@ -8,7 +8,8 @@
 |---|---|---|
 | Công việc Sprint 2 | [Backlog](governance/BACKLOG.md), [kickoff](SPRINT_2_KICKOFF.md), [contract ranh giới](../../contracts/SPRINT_2_BOUNDARY_DRAFT.md) | Contract vẫn là Working Draft; đổi wire/schema cần review trong PR. |
 | Công việc Sprint 3 | [Backlog](governance/BACKLOG.md#sprint-3--hiện-trường-và-kiểm-kê), [kickoff](SPRINT_3_KICKOFF.md), [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Năm mã gốc P1; chi tiết kỹ thuật trong kickoff là gợi ý refinement, cần owner/reviewer chốt trước code. |
-| Ai làm và ai review | [TEAM.md](governance/TEAM.md), từng [Issue Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) | Bảng TEAM ghi trách nhiệm dài hạn; phân công Sprint 3 nằm trong backlog và Issue. |
+| Công việc Sprint 4 | [Backlog](governance/BACKLOG.md#sprint-4--đào-tạo-ổn-định-và-báo-cáo), [ADR 0004](../architecture/adr/0004-training-2d-web.md), [kickoff](SPRINT_4_KICKOFF.md), [milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4) | Giữ sáu mã backlog; khu đào tạo 2D trong PWA thay kế hoạch Godot. Mở việc không chứng minh sprint đã nghiệm thu. |
+| Ai làm và ai review | [TEAM.md](governance/TEAM.md), [backlog](governance/BACKLOG.md), từng [Issue Sprint 3](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/3) và [Issue Sprint 4](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4) | Bảng TEAM ghi trách nhiệm dài hạn; phân công Sprint 4 hiện hành nằm trong backlog và Issue, gồm [TRN-02 #55](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55) do TV3 và TV4 đồng sở hữu. |
 | Phạm vi yêu cầu | [Bản ghi REQ-01 ngày 29/09](REQ-01_SCOPE_RECORD_2026-09-29.md) | Đã tích hợp qua PR #17; Issue #2 đã đóng. |
 | Quy trình và trạng thái | [SCRUM.md](governance/SCRUM.md), Issue/PR | Không dùng các bản nháp cũ để suy ra trạng thái hiện tại. |
 
@@ -22,6 +23,11 @@
 
 - Project Owner giữ năm mã MOB-01, SYN-01, SYN-02, INV-03, QA-03 đúng backlog; milestone không có ngày kết thúc. Owner/reviewer và thứ tự phụ thuộc nằm trong [kickoff](SPRINT_3_KICKOFF.md) cùng từng Issue.
 - Issue #34 vẫn theo dõi ngoại lệ Sprint 2 riêng; không thay thế năm mục kiểm kê. Chỉ đánh dấu Done sau khi code tích hợp và bằng chứng kiểm thử đạt DoD.
+
+## Điểm kiểm tra ngày 13/10/2026
+
+- Bốn mục triển khai của Sprint 3 đã merge/đóng; [QA-03 #47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47) còn mở, nên chưa ghi Sprint 3 hoàn tất. [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) vẫn có sáu GAP P0 của Sprint 2, gồm phần sửa sản phẩm FE/BE; [PR #53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53) là checkpoint QA-02 tái hiện, chưa sửa toàn bộ GAP.
+- Project Owner đã khởi động Sprint 4 ngày 13/10 theo [ADR 0004](../architecture/adr/0004-training-2d-web.md) có từ 30/09, [kickoff](SPRINT_4_KICKOFF.md) và [sáu Issue trong milestone](https://github.com/zomboXx/bach-hoa-sim-tim/milestone/4). QA-03/#34 còn mở nên cần xếp tải và giữ bằng chứng nghiệm thu riêng; không lấy số Issue đã đóng làm bằng chứng hoàn tất sprint.
 
 ## Ảnh chụp tiến độ ngày 30/09/2026
 

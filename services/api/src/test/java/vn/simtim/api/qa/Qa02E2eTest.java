@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +53,7 @@ class Qa02E2eTest {
     private static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
     private static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
     private static final String PASSWORD = "qa02-disposable-password";
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:17-alpine").withDatabaseName("simtim_qa02_test");
@@ -166,7 +169,10 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", riceReceiptId)).isEqualTo(1);
         assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'", new Object[0])).isEqualTo(2);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = jdbc.queryForObject(
+                        "select sold_at from sales.invoices where id=?",
+                        OffsetDateTime.class, invoiceId)
+                .atZoneSameInstant(VN_ZONE).toLocalDate();
         Map<String, Object> revenue = body(get("/api/v1/reports/revenue?from=" + today + "&to=" + today.plusDays(1), managerToken));
         Long sqlRevenue = jdbc.queryForObject("""
                 select coalesce(sum(grand_total),0) from sales.invoices
@@ -274,7 +280,7 @@ class Qa02E2eTest {
                         "acceptedQuantity", "0.000",
                         "rejectedQuantity", "2.000",
                         "unitCost", 10000,
-                        "expiryDate", LocalDate.now().plusDays(8).toString(),
+                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(30).toString(),
                         "discrepancyReason", "Hàng dập hỏng")));
         HttpHeaders requestHeaders = headers(stockToken);
         requestHeaders.set("Idempotency-Key", idempotencyKey.toString());
@@ -305,7 +311,7 @@ class Qa02E2eTest {
         line.put("acceptedQuantity", accepted);
         line.put("rejectedQuantity", rejected);
         line.put("unitCost", 10000);
-        line.put("expiryDate", LocalDate.now().plusDays(8).toString());
+        line.put("expiryDate", LocalDate.now(VN_ZONE).plusDays(30).toString());
         if (reason != null) {
             line.put("discrepancyReason", reason);
         }
