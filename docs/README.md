@@ -13,6 +13,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`project/SPRINT_2_KICKOFF.md`](project/SPRINT_2_KICKOFF.md): thứ tự Issue/PR, owner và quy tắc bắt đầu Sprint 2.
 - [`project/SPRINT_3_KICKOFF.md`](project/SPRINT_3_KICKOFF.md): năm mục kiểm kê đã có trong backlog, phân công, phụ thuộc và điểm review; milestone không có ngày kết thúc.
 - [`project/SPRINT_4_KICKOFF.md`](project/SPRINT_4_KICKOFF.md): kickoff Sprint 4 ngày 13/10/2026 theo sáu Issue trong backlog; ghi phụ thuộc, contract cần review và ngoại lệ còn mở.
+- [`project/REL-01_RELEASE_PREP.md`](project/REL-01_RELEASE_PREP.md): runbook Working cho bản chạy sạch, demo và vấn đáp; chưa phải release candidate.
 - [`architecture/adr/0004-training-2d-web.md`](architecture/adr/0004-training-2d-web.md): quyết định giữ đào tạo 2D trong PWA và bỏ kế hoạch dùng Godot cho Sprint 4; ADR 0002/0003 vẫn giữ phạm vi ban đầu.
 - [`project/REQ-01_SCOPE_RECORD_2026-09-29.md`](project/REQ-01_SCOPE_RECORD_2026-09-29.md): quyết định phạm vi đã tích hợp qua PR #17, Issue #2 đã đóng; không suy ra mọi chức năng đã được triển khai.
 - [`project/SPRINT_2_ACCEPTANCE_2026-10-07.md`](project/SPRINT_2_ACCEPTANCE_2026-10-07.md): quyết định nghiệm thu Sprint 2 có ngoại lệ và sáu điểm cần theo dõi.
@@ -31,6 +32,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 ## Kiểm thử
 
 - [`testing/README.md`](testing/README.md): điểm vào hồ sơ QA-01/QA-02, gồm test plan, ma trận quyền, truy vết và test report; QA-02 chưa đạt đầy đủ P0.
+- [`testing/DOC-01-traceability-working.md`](testing/DOC-01-traceability-working.md): ma trận Working nối yêu cầu, thiết kế, code và test; chờ QA-04 và báo cáo cuối.
 
 ## Tài liệu lịch sử
 
