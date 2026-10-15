@@ -69,6 +69,7 @@ export interface InventoryBatch {
   receivedDate: string;
   onHandQuantity: string;
   availableQuantity: string;
+  version: number;
   businessDate: string;
 }
 
@@ -76,9 +77,9 @@ export interface InventoryMovement {
   movementId: string;
   productId: string;
   batchId: string;
-  type: "RECEIPT" | "SALE" | "ADJUSTMENT";
+  type: "RECEIPT" | "SALE" | "ADJUSTMENT" | "STOCKTAKE_ADJUSTMENT";
   quantityDelta: string;
-  source: { type: "GOODS_RECEIPT" | "INVOICE" | "ADJUSTMENT"; id: string };
+  source: { type: "GOODS_RECEIPT" | "INVOICE" | "ADJUSTMENT" | "STOCKTAKE"; id: string };
   occurredAt: string;
   recordedBy: string;
 }

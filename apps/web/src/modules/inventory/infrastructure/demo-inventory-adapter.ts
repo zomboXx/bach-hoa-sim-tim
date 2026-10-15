@@ -128,6 +128,7 @@ export class DemoInventoryAdapter implements InventoryPort {
         receivedDate: today(),
         onHandQuantity: quantity(batch.quantity),
         availableQuantity: quantity(expiryStatus === "EXPIRED" ? 0 : batch.quantity),
+        version: 0,
         businessDate: today(),
       };
     });

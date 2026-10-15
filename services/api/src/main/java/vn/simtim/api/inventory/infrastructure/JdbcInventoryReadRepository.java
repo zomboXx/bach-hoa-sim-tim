@@ -36,7 +36,7 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                 """;
         long total = count("SELECT count(*) FROM catalog.products p WHERE " + where, params);
         List<InventoryProductView> items = jdbc.query("""
-                SELECT p.id, p.sku, p.name, p.status,
+                 SELECT p.id, p.sku, p.name, u.code AS unit_code, p.status,
                        COALESCE(sum(ib.on_hand_quantity), 0) AS on_hand_quantity,
                        COALESCE(sum(CASE
                            WHEN pb.status = 'AVAILABLE'
@@ -44,6 +44,9 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                             AND ib.on_hand_quantity > 0
                            THEN ib.on_hand_quantity ELSE 0 END), 0) AS available_quantity
                 FROM catalog.products p
+                 JOIN catalog.units u
+                   ON u.organization_id = p.organization_id
+                  AND u.id = p.base_unit_id
                 LEFT JOIN inventory.inventory_balances ib
                   ON ib.organization_id = p.organization_id
                  AND ib.store_id = :storeId
@@ -53,12 +56,12 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                  AND pb.id = ib.batch_id
                 WHERE
                 """ + where + """
-                GROUP BY p.id, p.sku, p.name, p.status
+                 GROUP BY p.id, p.sku, p.name, u.code, p.status
                 ORDER BY lower(p.sku), p.id
                 LIMIT :size OFFSET :offset
                 """, params, (rs, rowNum) -> new InventoryProductView(
                         rs.getObject("id", UUID.class), rs.getString("sku"),
-                        rs.getString("name"), rs.getString("status"),
+                        rs.getString("name"), rs.getString("unit_code"), rs.getString("status"),
                         rs.getBigDecimal("on_hand_quantity"), rs.getBigDecimal("available_quantity"),
                         businessDate));
         return new InventoryPage<>(items, page, size, total);
@@ -93,7 +96,7 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
         List<InventoryBatchView> items = jdbc.query("""
                 SELECT pb.id, pb.product_id, pb.batch_number, pb.supplier_lot_number,
                        pb.status, pb.expiry_date, pb.received_date,
-                       ib.on_hand_quantity,
+                       ib.on_hand_quantity, ib.version,
                        CASE WHEN pb.status = 'AVAILABLE'
                               AND (pb.expiry_date IS NULL OR pb.expiry_date >= :businessDate)
                               AND ib.on_hand_quantity > 0
@@ -114,6 +117,7 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                         rs.getString("status"), ExpiryStatus.valueOf(rs.getString("expiry_status")),
                         nullableDate(rs.getDate("expiry_date")), rs.getDate("received_date").toLocalDate(),
                         rs.getBigDecimal("on_hand_quantity"), rs.getBigDecimal("available_quantity"),
+                        rs.getLong("version"),
                         businessDate));
         return new InventoryPage<>(items, page, size, total);
     }
