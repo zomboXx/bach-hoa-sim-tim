@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
+
+Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
+
+Đã chạy thật `scripts/test-qa03-live.ps1` (`2/2 Pass`) và root gate `scripts/verify.ps1 -SkipInstall`: policy/link/lint/format/build Pass, web demo `14/14`, web API `39/39`, backend PostgreSQL 17.11 Testcontainers `152/152`, Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web`: +547 -31
+- `services/api`: +16 -5
+- `scripts/test-qa03-live.ps1`: +148 -0
+- `docs/testing` (Markdown): +121 -0
+- `docs/testing/evidence/qa-03` (2 PNG): N/A
+- `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
 
 Sửa bản chuẩn bị Sprint 4 sau khi phát hiện ADR 0004 đã tồn tại ở nhánh cục bộ trước đó: dùng `0004-training-2d-web.md` làm bản quyết định duy nhất, bỏ bản ADR 0004 tạo trùng và giữ các mục nhật ký cũ để truy vết. Khởi động Sprint 4 theo sáu mã backlog, đồng bộ kickoff, Scrum, phân công và điểm vào tài liệu; giữ QA-03/#34 là việc riêng chưa nghiệm thu.

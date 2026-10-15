@@ -1,8 +1,8 @@
 # QA-03 — Kế hoạch test desktop/mobile/offline
 
-**Owner:** TV4 — Lê Văn Chiến (`@VanChien11-02`)  
-**Reviewer:** TV3 — Nguyễn Văn Thi (`@thinguyen135`)  
-**Phụ thuộc:** INV-03 ([#46](https://github.com/zomboXx/bach-hoa-sim-tim/issues/46))  
+- **Owner:** TV4 — Lê Văn Chiến (`@VanChien11-02`)
+- **Reviewer:** TV3 — Nguyễn Văn Thi (`@thinguyen135`)
+- **Phụ thuộc:** INV-03 ([#46](https://github.com/zomboXx/bach-hoa-sim-tim/issues/46))
 **Issue:** QA-03 ([#47](https://github.com/zomboXx/bach-hoa-sim-tim/issues/47))
 
 ## Mục tiêu và ranh giới
