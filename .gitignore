@@ -22,6 +22,9 @@ docs/**/*.docx
 .DS_Store
 Thumbs.db
 .vscode/
+infra/backups/
+*.dump
+backup_*.sql
 
 # Future module build output
 services/api/target/
