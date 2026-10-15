@@ -22,6 +22,31 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV2 — Nguyễn Văn Trung - 2026-10-15 08:09:00
+
+Thực hiện [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) từ branch `main`.
+
+Bổ sung suite `Qa04RegressionSecurityTest` (160 test cases) chạy trên PostgreSQL 17 Testcontainers sạch, bao gồm: hồi quy Happy Path nhận hàng → bán → báo cáo; ma trận quyền đầy đủ sáu vai trò (OWNER, MANAGER, SALES, CASHIER, WAREHOUSE, PHARMACIST); xác minh bất biến tồn kho `on_hand_quantity = SUM(quantity_delta)` trên mọi lô; race condition hai luồng thanh toán đồng thời (201 + 409 Conflict); sao lưu/khôi phục CSDL tự động (`pg_dump` → DB sạch → `psql` → đối soát 100%). Ghi nhận trung thực 3 Fail và 3 Blocked của Issue #34 (S2-GAP-01..06), không làm giả kết quả Pass.
+
+Thêm tài liệu đầy đủ: test plan, ma trận quyền (`QA-04-authorize.md`), báo cáo kết quả (`QA-04-test-report.md`), ma trận truy vết yêu cầu (`QA-04-traceability.md`). Thêm `scripts/backup-db.ps1` và `scripts/restore-db.ps1` kèm runbook trong `infra/README.md`. Cập nhật `CHANGELOG.md`, `docs/testing/README.md`, `DOC-01-traceability-working.md` và `.gitignore`.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt: 160/160 tests pass, Maven `BUILD SUCCESS`.
+
+- `.gitignore`: +3 -0
+- `CHANGELOG.md`: +1 -0
+- `docs/testing/DOC-01-traceability-working.md`: +20 -1
+- `docs/testing/QA-04-authorize.md`: +71 -0
+- `docs/testing/QA-04-test-plan.md`: +99 -0
+- `docs/testing/QA-04-test-report.md`: +185 -0
+- `docs/testing/QA-04-traceability.md`: +69 -0
+- `docs/testing/README.md`: +13 -1
+- `infra/README.md`: +49 -0
+- `scripts/backup-db.ps1`: +53 -0
+- `scripts/restore-db.ps1`: +43 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa04RegressionSecurityTest.java`: +720 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
 
 Sửa bản chuẩn bị Sprint 4 sau khi phát hiện ADR 0004 đã tồn tại ở nhánh cục bộ trước đó: dùng `0004-training-2d-web.md` làm bản quyết định duy nhất, bỏ bản ADR 0004 tạo trùng và giữ các mục nhật ký cũ để truy vết. Khởi động Sprint 4 theo sáu mã backlog, đồng bộ kickoff, Scrum, phân công và điểm vào tài liệu; giữ QA-03/#34 là việc riêng chưa nghiệm thu.

@@ -73,6 +73,51 @@ docker compose --env-file infra/.env -f infra/compose.demo.yml logs --tail=100 a
 docker compose --env-file infra/.env -f infra/compose.demo.yml down
 ```
 
-`down` giữ named volume, nên lần sau `up` sẽ giữ hóa đơn và tồn. Đổi `SIMTIM_DEMO_PASSWORD` trong `.env` không đổi mật khẩu của tài khoản đã tạo. Nếu cần làm sạch dữ liệu thử nghiệm, sao lưu thứ cần giữ trước; xóa volume sẽ mất toàn bộ database demo. Compose dev PostgreSQL riêng ở `infra/compose.yml` vẫn có [hướng dẫn API](../services/api/README.md), không dùng chung volume với bản demo này.
-
 Nếu `up --wait` thất bại, kiểm tra `docker compose ... ps` và `logs --tail=100 api` hoặc `logs --tail=100 web`. Nếu Docker báo không kết nối được daemon, hãy khởi động Docker Engine/Desktop trước rồi chạy lại lệnh `up`.
+
+## 5. Sao lưu và khôi phục CSDL trên môi trường sạch (NFR-BAC-01)
+
+Theo [NFR-BAC-01](../docs/product/analysis/02-danh-sach-yeu-cau.md) và tiêu chí chấp nhận của [QA-04](../docs/testing/QA-04-test-report.md), quy trình sao lưu và khôi phục được kiểm chứng độc lập trên PostgreSQL sạch.
+
+### 5.1. Dùng script tiện ích
+
+Chạy tại thư mục gốc repository:
+
+```powershell
+# Sao lưu dữ liệu hiện tại ra file SQL timestamped
+pwsh -File scripts/backup-db.ps1
+
+# Hoặc chỉ định đường dẫn file đầu ra cụ thể
+pwsh -File scripts/backup-db.ps1 -OutFile "infra/backups/demo_checkpoint.sql"
+
+# Khôi phục vào CSDL từ file bản sao
+pwsh -File scripts/restore-db.ps1 -BackupFile "infra/backups/demo_checkpoint.sql"
+```
+
+### 5.2. Lệnh trực tiếp qua Docker Compose
+
+1. **Sao lưu dữ liệu từ service PostgreSQL:**
+
+```powershell
+docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres pg_dump -U simtim -d simtim --clean --if-exists > infra/backups/demo_backup.sql
+```
+
+2. **Dựng môi trường PostgreSQL sạch (xóa toàn bộ volume cũ):**
+
+```powershell
+docker compose --env-file infra/.env -f infra/compose.demo.yml down -v
+docker compose --env-file infra/.env -f infra/compose.demo.yml up -d --wait
+```
+
+3. **Khôi phục dữ liệu vào môi trường sạch:**
+
+```powershell
+Get-Content infra/backups/demo_backup.sql -Raw | docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres psql -U simtim -d simtim
+```
+
+4. **Kiểm tra tính toàn vẹn sau phục hồi:**
+
+- Xác nhận HTTP health: `Invoke-RestMethod http://127.0.0.1:8080/actuator/health` trả `status: UP`.
+- Đăng nhập web **http://127.0.0.1:5174** bằng tài khoản `manager` / `SIMTIM_DEMO_PASSWORD`.
+- Vào **Báo cáo** đối soát doanh thu và số hóa đơn đã checkout trước khi sao lưu.
+- Vào **Tồn kho & lô hàng** đối soát số lượng tồn khả dụng và lịch sử biến động khớp với số liệu trước phục hồi (`on_hand_quantity = SUM(quantity_delta)`).
