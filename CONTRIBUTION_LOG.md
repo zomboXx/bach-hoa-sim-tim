@@ -22,6 +22,22 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
+
+Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.
+
+Bổ sung E2E Playwright test `tests/trn-01-training-scene.spec.ts` kiểm thử trên Desktop (1280x720) và Mobile (390x844), xác nhận không tràn ngang và khẳng định 0 request ghi vận hành. Lập báo cáo benchmark thực tế `docs/TRN-01_BENCHMARK_REPORT.md` trên máy cấu hình yếu. Toàn bộ 16/16 test Playwright, linter, typecheck, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +41 -1
+- `apps/web/src/training/TrainingGame.vue`: +120 -10
+- `apps/web/src/training/training.css`: +54 -0
+- `apps/web/tests/trn-01-training-scene.spec.ts`: +106 -0
+- `docs/TRN-01_BENCHMARK_REPORT.md`: +40 -0
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
 
 Sửa bản chuẩn bị Sprint 4 sau khi phát hiện ADR 0004 đã tồn tại ở nhánh cục bộ trước đó: dùng `0004-training-2d-web.md` làm bản quyết định duy nhất, bỏ bản ADR 0004 tạo trùng và giữ các mục nhật ký cũ để truy vết. Khởi động Sprint 4 theo sáu mã backlog, đồng bộ kickoff, Scrum, phân công và điểm vào tài liệu; giữ QA-03/#34 là việc riêng chưa nghiệm thu.
