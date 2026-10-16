@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV3 — Nguyễn Văn Thi - 2026-10-16 09:56:00
+
+Hoàn thiện kịch bản đào tạo nghiệp vụ PWA (SCN-RETAIL-01) cho hạng mục TRN-02 (#55). Chuẩn hóa 6 bước hành động nghiệp vụ (chào hỏi, nhặt hàng, quét mã & thanh toán, kiểm tra tủ mát, cách ly hàng hết hạn, báo cáo mentor). Tích hợp module kịch bản `scenario.ts` độc lập chứa deterministic evaluation oracle (`Score = max(0, 100 - errors * 10)`, xếp loại Xuất sắc, Đạt yêu cầu, Cần luyện tập thêm) chia sẻ chung giữa browser client, browser tests và API TRN-03; không tin điểm số client tự khai khi lưu kết quả. Cung cấp hộp thoại xác nhận rời ca an toàn bảo toàn trạng thái, cơ chế chơi lại (replay) đặt lại toàn bộ phiên thực hành, và thẻ tổng kết đánh giá chi tiết. Toàn bộ nghiệp vụ ca học được cách ly hoàn toàn khỏi dữ liệu hóa đơn và kho vận hành.
+
+Bổ sung contract Proposed `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và bộ Playwright E2E tests `apps/web/tests/trn-02-training-scenario.spec.ts` kiểm thử 5 ca: Oracle độc lập, luồng hoàn thành đúng hoàn hảo (Happy Path 100đ, 0 request ghi API), luồng phản hồi sai và sửa sai, luồng bỏ dở, luồng chơi lại ca học. Toàn bộ 21/21 web demo tests, 39/39 web API tests, linter, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -0
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +106 -0
+- `apps/web/src/training/scenario.ts`: +169 -0
+- `apps/web/src/training/TrainingGame.vue`: +77 -83
+- `apps/web/src/training/training.css`: +39 -0
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +377 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
 
 Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.

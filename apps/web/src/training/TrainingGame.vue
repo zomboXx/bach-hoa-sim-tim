@@ -2,15 +2,17 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import PixelPerson from "./PixelPerson.vue";
 import { adjacent, blocked, pathTo, stations, type Point, type Station } from "./world";
+import {
+  DEFAULT_GOALS,
+  evaluateTrainingSession,
+  type TrainingActionRecord,
+  type TrainingChoice,
+  type TrainingStage,
+} from "./scenario";
 defineProps<{ employeeName: string }>();
 const emit = defineEmits<{ exit: [] }>();
-type Stage = "greet" | "milk" | "checkout" | "cooler" | "quarantine" | "mentor" | "complete";
-type Choice = {
-  text: string;
-  right: boolean;
-  feedback: string;
-  effect?: () => void;
-};
+type Stage = TrainingStage;
+type Choice = TrainingChoice;
 type Conversation = {
   speaker: string;
   heading: string;
@@ -40,66 +42,12 @@ const world = ref<HTMLElement>();
 const firstChoice = ref<HTMLButtonElement[]>();
 let ticker: ReturnType<typeof setInterval>;
 let noticeTimer: ReturnType<typeof setTimeout>;
-const goals: Record<
-  Stage,
-  {
-    station: string;
-    title: string;
-    detail: string;
-    verb: string;
-    chapter: number;
-  }
-> = {
-  greet: {
-    station: "customer",
-    title: "Đón vị khách đầu tiên",
-    detail: "Đến gặp khách Linh ở cửa ra vào. Lắng nghe trước khi tư vấn.",
-    verb: "Trò chuyện",
-    chapter: 0,
-  },
-  milk: {
-    station: "milk",
-    title: "Tìm đúng món khách cần",
-    detail: "Khách muốn 2 hộp sữa ít đường. Đến kệ sữa để chọn hàng.",
-    verb: "Chọn sản phẩm",
-    chapter: 1,
-  },
-  checkout: {
-    station: "checkout",
-    title: "Hoàn tất một đơn hàng",
-    detail: "Mang 2 hộp sữa tới quầy. Quét hàng, nhận tiền và trả tiền thừa.",
-    verb: "Dùng máy tính tiền",
-    chapter: 1,
-  },
-  cooler: {
-    station: "cooler",
-    title: "Chăm sóc hàng trên kệ",
-    detail: "Mai nhờ bạn kiểm tra tủ mát. Có một sản phẩm cần được xử lý.",
-    verb: "Kiểm tra hàng",
-    chapter: 2,
-  },
-  quarantine: {
-    station: "quarantine",
-    title: "Tách hàng không được bán",
-    detail: "Mang hộp sữa chua hết hạn tới khu hàng cần xử lý, tách khỏi hàng bán.",
-    verb: "Đặt vào khu xử lý",
-    chapter: 2,
-  },
-  mentor: {
-    station: "mentor",
-    title: "Báo lại với Mentor Mai",
-    detail: "Tới gặp Mai để bàn giao tình trạng hàng và kết thúc ca thực hành.",
-    verb: "Báo cáo cuối ca",
-    chapter: 2,
-  },
-  complete: {
-    station: "mentor",
-    title: "Bạn đã hoàn thành ca đầu tiên!",
-    detail: "Giao tiếp, bán hàng và xử lý hàng hóa — bạn đã thử cả ba.",
-    verb: "Trò chuyện",
-    chapter: 3,
-  },
-};
+const actionRecords = ref<TrainingActionRecord[]>([]);
+const completedStages = ref<TrainingStage[]>([]);
+const evaluation = computed(() =>
+  evaluateTrainingSession(actionRecords.value, completedStages.value),
+);
+const goals = DEFAULT_GOALS;
 const goal = computed(() => goals[stage.value]);
 const nearby = computed(() => stations.find((s) => adjacent(player, s)));
 const locked = computed(
@@ -139,12 +87,21 @@ async function converse(c: Conversation) {
   await nextTick();
   firstChoice.value?.[0]?.focus({ preventScroll: true });
 }
-function choose(c: Choice) {
+function choose(c: Choice, actionType?: string) {
   if (correct.value) return;
   picked.value = c;
   feedback.value = c.feedback;
   correct.value = c.right;
   if (!c.right) errors.value++;
+  actionRecords.value.push({
+    sequence: actionRecords.value.length + 1,
+    stage: stage.value,
+    actionType: actionType || stage.value,
+    choiceText: c.text,
+    isRight: c.right,
+    feedback: c.feedback,
+    timestamp: Date.now(),
+  });
 }
 function finishReply() {
   picked.value?.effect?.();
@@ -154,6 +111,9 @@ function finishReply() {
   void focusWorld();
 }
 function advance(s: Stage, entry: string) {
+  if (!completedStages.value.includes(stage.value)) {
+    completedStages.value.push(stage.value);
+  }
   stage.value = s;
   log.value.unshift(entry);
 }
@@ -318,6 +278,15 @@ function employeeNameFallback() {
 function scan() {
   if (scans.value >= 2) return;
   scans.value++;
+  actionRecords.value.push({
+    sequence: actionRecords.value.length + 1,
+    stage: "checkout",
+    actionType: "scan_item",
+    choiceText: `Quét hộp sữa ${scans.value}`,
+    isRight: true,
+    feedback: `Đã quét hộp sữa ${scans.value}`,
+    timestamp: Date.now(),
+  });
 }
 function tender() {
   if (scans.value !== 2) return;
@@ -522,6 +491,8 @@ function reset() {
   steps.value = 0;
   errors.value = 0;
   log.value = [];
+  actionRecords.value = [];
+  completedStages.value = [];
   dialogue.value = null;
   intro.value = true;
 }
@@ -611,7 +582,9 @@ onUnmounted(() => {
     @keydown="keydown"
   >
     <header class="game-header" :inert="intro || exitPrompt || stage === 'complete'">
-      <button @click="leave" class="game-exit">← <span>Về cửa hàng</span></button>
+      <button @click="leave" class="game-exit" data-testid="btn-exit-shift">
+        ← <span>Về cửa hàng</span>
+      </button>
       <div class="game-wordmark">
         <img src="/icon.svg" alt="" />
         <div>SIM TÍM <small>HỌC VIỆC PHIÊU LƯU KÝ</small></div>
@@ -1066,13 +1039,14 @@ onUnmounted(() => {
               ><button :disabled="scans !== 2" @click="tender">Nhận tiền từ khách →</button>
             </div></template
           >
-          <div v-else class="dialogue-choices">
+          <div v-else class="dialogue-choices" data-testid="dialogue-choices">
             <button
               v-for="(c, i) in dialogue.choices"
               ref="firstChoice"
               :key="c.text"
+              :data-testid="'choice-' + i"
               :disabled="correct"
-              @click="choose(c)"
+              @click="choose(c, stage === 'checkout' ? 'tender_payment' : undefined)"
             >
               <span>{{ i + 1 }}</span
               >{{ c.text }}
@@ -1081,16 +1055,23 @@ onUnmounted(() => {
           <p
             v-if="feedback"
             :class="['choice-feedback', correct ? 'right' : 'retry']"
+            data-testid="choice-feedback"
             role="status"
           >
             {{ correct ? "✓" : "↺" }} {{ feedback }}
           </p>
-          <button v-if="correct" class="dialogue-next" @click="finishReply">
+          <button
+            v-if="correct"
+            class="dialogue-next"
+            data-testid="btn-dialogue-next"
+            @click="finishReply"
+          >
             {{ stage === "mentor" ? "Kết thúc ca" : "Tiếp tục trong cửa hàng" }}
             →</button
           ><button
             v-else
             class="conversation-back"
+            data-testid="btn-dialogue-back"
             @click="
               dialogue = null;
               focusWorld();
@@ -1127,13 +1108,16 @@ onUnmounted(() => {
         ><button class="intro-back" @click="emit('exit')">Về giao diện quản lý</button>
       </section>
     </div>
-    <div v-if="exitPrompt" class="game-overlay">
+    <div v-if="exitPrompt" class="game-overlay" data-testid="modal-exit-prompt">
       <section class="leave-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-heading">
         <h2 id="exit-heading">Rời ca thực hành?</h2>
         <p>Tiến độ của lần chơi này sẽ được đặt lại. Dữ liệu cửa hàng không bị ảnh hưởng.</p>
-        <button class="start-shift" @click="emit('exit')">Rời ca</button
-        ><button
+        <button class="start-shift" data-testid="btn-confirm-exit" @click="emit('exit')">
+          Rời ca
+        </button>
+        <button
           class="intro-back"
+          data-testid="btn-cancel-exit"
           @click="
             exitPrompt = false;
             focusWorld();
@@ -1143,7 +1127,7 @@ onUnmounted(() => {
         </button>
       </section>
     </div>
-    <div v-if="stage === 'complete'" class="game-overlay">
+    <div v-if="stage === 'complete'" class="game-overlay" data-testid="modal-complete">
       <section
         class="shift-complete"
         role="dialog"
@@ -1154,21 +1138,31 @@ onUnmounted(() => {
         <span class="intro-kicker">CA THỰC HÀNH HOÀN TẤT</span>
         <h2 id="complete-heading">Một ca làm, ba kỹ năng.</h2>
         <p>Bạn đã trực tiếp chăm khách, bán hàng và xử lý hàng trên kệ trong cửa hàng 2D.</p>
+        <div class="evaluation-card" data-testid="shift-summary">
+          <div class="evaluation-score-pill" data-testid="evaluation-score">
+            <strong>{{ evaluation.score }}</strong> / 100 điểm
+          </div>
+          <div
+            :class="['evaluation-grade-pill', 'grade-' + evaluation.grade.toLowerCase()]"
+            data-testid="evaluation-grade"
+          >
+            {{ evaluation.gradeLabel }}
+          </div>
+        </div>
         <div class="complete-skills">
           <span>✓ Giao tiếp & tư vấn</span><span>✓ Thanh toán & tiền thừa</span
           ><span>✓ Hàng hết hạn & bàn giao</span>
         </div>
-        <p class="practice-summary">
-          {{ steps }} bước chân ·
-          {{
-            errors ? `${errors} lần được mentor hướng dẫn lại` : "Hoàn thành đúng ngay từ lần đầu"
-          }}
+        <p class="practice-summary" data-testid="evaluation-errors">
+          {{ steps }} bước chân · {{ evaluation.summaryText }}
         </p>
         <div class="complete-history">
           <p v-for="entry in [...log].reverse()" :key="entry">✓ {{ entry }}</p>
         </div>
-        <button class="start-shift" @click="emit('exit')">Trở về cửa hàng →</button
-        ><button class="intro-back" @click="reset">Chơi lại ca này</button>
+        <button class="start-shift" data-testid="btn-finish" @click="emit('exit')">
+          Trở về cửa hàng →
+        </button>
+        <button class="intro-back" data-testid="btn-replay" @click="reset">Chơi lại ca này</button>
       </section>
     </div>
   </section>

@@ -948,6 +948,45 @@
 .practice-summary {
   font-size: 10px !important;
 }
+.evaluation-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px;
+  background: #f7efe1;
+  border: 1px solid #e5d3b8;
+  border-radius: 8px;
+}
+.evaluation-score-pill {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7b5388;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8c2e2;
+}
+.evaluation-grade-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #e7eddf;
+  color: #4b7454;
+  border: 1px solid #cfdcc9;
+}
+.evaluation-grade-pill.grade-satisfactory {
+  background: #fdf5e2;
+  color: #9c7336;
+  border-color: #f0deba;
+}
+.evaluation-grade-pill.grade-needs_practice {
+  background: #fce8e6;
+  color: #ab574f;
+  border-color: #f1cfcc;
+}
 .complete-history {
   border-top: 1px dashed #ddcfe4;
   margin: 12px 0 20px;
