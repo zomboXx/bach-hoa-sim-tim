@@ -8,6 +8,7 @@ public record InventoryProductResponse(
         UUID productId,
         String sku,
         String productName,
+        String unitCode,
         String productStatus,
         String onHandQuantity,
         String availableQuantity,
@@ -15,7 +16,7 @@ public record InventoryProductResponse(
 
     static InventoryProductResponse from(InventoryProductView view) {
         return new InventoryProductResponse(
-                view.productId(), view.sku(), view.productName(), view.productStatus(),
+                view.productId(), view.sku(), view.productName(), view.unitCode(), view.productStatus(),
                 view.onHandQuantity().toPlainString(), view.availableQuantity().toPlainString(),
                 view.businessDate());
     }

@@ -15,6 +15,10 @@ export interface StocktakeRecord {
 
 export interface StocktakeSubmission {
   batchId: string;
+  productId: string;
+  expectedQuantity: number;
+  baseVersion: number;
+  unitCode?: string;
   actualQuantity: number;
   note: string;
 }
@@ -31,6 +35,7 @@ export interface StocktakeQueueItem extends StocktakeScope {
   productId: string;
   batchId: string;
   expectedQuantity: number;
+  baseVersion: number;
   actualQuantity: number;
   note: string;
   status: Extract<StocktakeStatus, "PENDING" | "CONFLICT">;
@@ -93,6 +98,7 @@ export function sameStocktakeDraft(
     item.productId === draft.productId &&
     item.batchId === draft.batchId &&
     item.expectedQuantity === draft.expectedQuantity &&
+    item.baseVersion === draft.baseVersion &&
     item.actualQuantity === draft.actualQuantity &&
     item.note === draft.note
   );

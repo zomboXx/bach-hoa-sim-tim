@@ -115,6 +115,7 @@ class InventoryReadApiTest {
         assertThat(body).containsEntry("totalElements", 1);
         Map<String, Object> product = firstItem(body);
         assertThat(product).containsEntry("productId", PRODUCT_ID.toString());
+        assertThat(product).containsEntry("unitCode", "EA");
         assertThat(new BigDecimal(product.get("onHandQuantity").toString()))
                 .isEqualByComparingTo("21.000");
         assertThat(new BigDecimal(product.get("availableQuantity").toString()))
@@ -140,6 +141,7 @@ class InventoryReadApiTest {
         assertThat(byNumber.get("PLUS-8")).containsEntry("expiryStatus", "VALID");
         assertThat(byNumber.get("NO-EXPIRY")).containsEntry("expiryStatus", "NO_EXPIRY");
         assertThat(byNumber.get("BLOCKED")).containsEntry("status", "BLOCKED");
+        assertThat(byNumber.get("PLUS-8")).containsEntry("version", 0);
         assertThat(new BigDecimal(byNumber.get("YESTERDAY").get("availableQuantity").toString()))
                 .isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(new BigDecimal(byNumber.get("TODAY").get("availableQuantity").toString()))
