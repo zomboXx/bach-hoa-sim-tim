@@ -35,6 +35,19 @@ Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue
 - `docs/testing` (Markdown): +121 -0
 - `docs/testing/evidence/qa-03` (2 PNG): N/A
 - `CONTRIBUTION_LOG.md`: +16 -0
+TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
+
+Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.
+
+Bổ sung E2E Playwright test `tests/trn-01-training-scene.spec.ts` kiểm thử trên Desktop (1280x720) và Mobile (390x844), xác nhận không tràn ngang và khẳng định 0 request ghi vận hành. Lập báo cáo benchmark thực tế `docs/TRN-01_BENCHMARK_REPORT.md` trên máy cấu hình yếu. Toàn bộ 16/16 test Playwright, linter, typecheck, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +41 -1
+- `apps/web/src/training/TrainingGame.vue`: +120 -10
+- `apps/web/src/training/training.css`: +54 -0
+- `apps/web/tests/trn-01-training-scene.spec.ts`: +106 -0
+- `docs/TRN-01_BENCHMARK_REPORT.md`: +40 -0
+- `CONTRIBUTION_LOG.md`: +20 -0
 ---
 
 ---
