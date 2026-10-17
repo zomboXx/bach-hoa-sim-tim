@@ -22,6 +22,37 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-17 16:17:09
+
+Hoàn thành phần kịch bản và kiểm thử TRN-02 (#55): bổ sung Playwright acceptance tests cho chặn đảo/bỏ stage trên desktop/mobile, khóa nhận tiền khi chưa quét đủ hàng, sáu phản hồi sai và mức điểm 40/100, cùng chơi lại từ phiên 90 điểm sang phiên sạch 100 điểm. Mở rộng workflow test để chụp và so sánh snapshot hóa đơn, tồn lô `LO01`, movement và phiếu kiểm kê trước/sau ca học, đồng thời xác nhận không có request ghi vận hành.
+
+Cập nhật kịch bản test tay, nhật ký thực thi và test report theo kết quả chạy thật: build/lint/format/typecheck đạt, browser demo 25/25 Pass, API consumer 39/39 Pass, targeted TRN-02 và data isolation 5/5 Pass. M01–M07 đạt trên desktop 1280x720 và mobile 390x844; M08 giữ Blocked đúng dependency TRN-03. Không phát hiện lỗi sản phẩm; chưa chuyển Done cho tới khi CI đạt và TV1/TV2 xác nhận luật chấm/contract.
+
+- `apps/web/tests/trn-02-acceptance-gaps.spec.ts`: +147 -0
+- `apps/web/tests/workflows.spec.ts`: +46 -0
+- `docs/testing/`: +78 -85
+- `CHANGELOG.md`: +3 -0
+- `CONTRIBUTION_LOG.md`: +47 -0
+---
+
+---
+TV3 — Nguyễn Văn Thi - 2026-10-16 09:56:00
+
+Hoàn thiện kịch bản đào tạo nghiệp vụ PWA (SCN-RETAIL-01) cho hạng mục TRN-02 (#55). Chuẩn hóa 6 bước hành động nghiệp vụ (chào hỏi, nhặt hàng, quét mã & thanh toán, kiểm tra tủ mát, cách ly hàng hết hạn, báo cáo mentor). Tích hợp module kịch bản `scenario.ts` độc lập chứa deterministic evaluation oracle (`Score = max(0, 100 - errors * 10)`, xếp loại Xuất sắc, Đạt yêu cầu, Cần luyện tập thêm) chia sẻ chung giữa browser client, browser tests và API TRN-03; không tin điểm số client tự khai khi lưu kết quả. Cung cấp hộp thoại xác nhận rời ca an toàn bảo toàn trạng thái, cơ chế chơi lại (replay) đặt lại toàn bộ phiên thực hành, và thẻ tổng kết đánh giá chi tiết. Toàn bộ nghiệp vụ ca học được cách ly hoàn toàn khỏi dữ liệu hóa đơn và kho vận hành.
+
+Bổ sung contract Proposed `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và bộ Playwright E2E tests `apps/web/tests/trn-02-training-scenario.spec.ts` kiểm thử 5 ca: Oracle độc lập, luồng hoàn thành đúng hoàn hảo (Happy Path 100đ, 0 request ghi API), luồng phản hồi sai và sửa sai, luồng bỏ dở, luồng chơi lại ca học. Toàn bộ 21/21 web demo tests, 39/39 web API tests, linter, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -0
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +106 -0
+- `apps/web/src/training/scenario.ts`: +169 -0
+- `apps/web/src/training/TrainingGame.vue`: +77 -83
+- `apps/web/src/training/training.css`: +39 -0
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +377 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
 
 Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
@@ -35,6 +66,9 @@ Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue
 - `docs/testing` (Markdown): +121 -0
 - `docs/testing/evidence/qa-03` (2 PNG): N/A
 - `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
 
 Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.
