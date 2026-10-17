@@ -47,11 +47,11 @@ import vn.simtim.api.auth.domain.PasswordHasher;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class Qa02E2eTest {
 
-    private static final UUID ORG_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
-    private static final UUID STORE_ID = UUID.fromString("10000000-0000-0000-0000-000000000002");
-    private static final UUID SUPPLIER_ID = UUID.fromString("10000000-0000-0000-0000-000000000061");
-    private static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
-    private static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
+    protected static final UUID ORG_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
+    protected static final UUID STORE_ID = UUID.fromString("10000000-0000-0000-0000-000000000002");
+    protected static final UUID SUPPLIER_ID = UUID.fromString("10000000-0000-0000-0000-000000000061");
+    protected static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
+    protected static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
     private static final String PASSWORD = "qa02-disposable-password";
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -71,10 +71,10 @@ class Qa02E2eTest {
     @Autowired PasswordHasher passwords;
 
     private final List<UUID> fixtureUsers = new ArrayList<>();
-    private String salesToken;
-    private String stockToken;
-    private String managerToken;
-    private String adminToken;
+    protected String salesToken;
+    protected String stockToken;
+    protected String managerToken;
+    protected String adminToken;
 
     @BeforeAll
     void createActors() {
@@ -302,7 +302,7 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements", new Object[0])).isZero();
     }
 
-    private UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
+    protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
         UUID clientOperationId = UUID.randomUUID();
         var line = new java.util.LinkedHashMap<String, Object>();
         line.put("productId", productId);
@@ -328,7 +328,7 @@ class Qa02E2eTest {
         return UUID.fromString(body(response).get("id").toString());
     }
 
-    private String createActor(String role) {
+    protected String createActor(String role) {
         UUID userId = UUID.randomUUID();
         fixtureUsers.add(userId);
         String username = "qa02_" + role.toLowerCase(Locale.ROOT) + "_" + userId;
@@ -348,17 +348,17 @@ class Qa02E2eTest {
         return login.getBody().get("accessToken").toString();
     }
 
-    private ResponseEntity<Object> post(String path, Object request, String token) {
+    protected ResponseEntity<Object> post(String path, Object request, String token) {
         return http.exchange(path, HttpMethod.POST,
                 new HttpEntity<>(request, headers(token)), Object.class);
     }
 
-    private ResponseEntity<Object> get(String path, String token) {
+    protected ResponseEntity<Object> get(String path, String token) {
         return http.exchange(path, HttpMethod.GET,
                 new HttpEntity<>(headers(token)), Object.class);
     }
 
-    private HttpHeaders headers(String token) {
+    protected HttpHeaders headers(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Organization-Id", ORG_ID.toString());
@@ -369,12 +369,12 @@ class Qa02E2eTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> body(ResponseEntity<Object> response) {
+    protected Map<String, Object> body(ResponseEntity<Object> response) {
         assertThat(response.getBody()).isInstanceOf(Map.class);
         return (Map<String, Object>) response.getBody();
     }
 
-    private BigDecimal productBalance(UUID productId) {
+    protected BigDecimal productBalance(UUID productId) {
         return jdbc.queryForObject("""
                 select coalesce(sum(on_hand_quantity),0)
                 from inventory.inventory_balances
@@ -382,7 +382,7 @@ class Qa02E2eTest {
                 """, BigDecimal.class, ORG_ID, STORE_ID, productId);
     }
 
-    private int count(String sql, Object... args) {
+    protected int count(String sql, Object... args) {
         Integer result = jdbc.queryForObject(sql, Integer.class, args);
         return result == null ? 0 : result;
     }
