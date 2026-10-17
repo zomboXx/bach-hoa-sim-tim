@@ -394,6 +394,12 @@ function tick() {
 function walkTo(s: Station) {
   if (locked.value) return;
   held.value = "";
+  if (adjacent(player, s)) {
+    destination.value = undefined;
+    path.value = [];
+    interact(s);
+    return;
+  }
   const result = pathTo(player, (p) => adjacent(p, s));
   if (!result) {
     tell("Chưa có lối đi tới đây.");
@@ -409,7 +415,9 @@ function floorClick(e: MouseEvent) {
   const point = svg.createSVGPoint();
   point.x = e.clientX;
   point.y = e.clientY;
-  const local = point.matrixTransform(svg.getScreenCTM()!.inverse());
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return;
+  const local = point.matrixTransform(ctm.inverse());
   const target = { x: Math.floor(local.x / 40), y: Math.floor(local.y / 40) };
   if (blocked(target)) return;
   const result = pathTo(player, (p) => p.x === target.x && p.y === target.y);
@@ -466,10 +474,12 @@ function keydown(e: KeyboardEvent) {
       const [dx, dy] = map[held.value];
       step(dx, dy);
     }
-  } else if (e.key.toLowerCase() === "e") {
-    e.preventDefault();
-    if (nearby.value) interact(nearby.value);
-    else tell("Đến gần khách, kệ hàng hoặc quầy để tương tác.");
+  } else if (e.key.toLowerCase() === "e" || e.key === " " || e.key === "Enter") {
+    if (!dialogue.value && !intro.value && !exitPrompt.value && stage.value !== "complete") {
+      e.preventDefault();
+      if (nearby.value) interact(nearby.value);
+      else tell("Đến gần khách, kệ hàng hoặc quầy để tương tác.");
+    }
   }
 }
 function keyup(e: KeyboardEvent) {
@@ -477,10 +487,22 @@ function keyup(e: KeyboardEvent) {
 }
 function directionPress(d: string, e: PointerEvent) {
   if (locked.value) return;
-  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  try {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  } catch {
+    // pointer capture fallback
+  }
   path.value = [];
   destination.value = undefined;
   held.value = d;
+  const map: Record<string, number[]> = {
+    up: [0, -1],
+    down: [0, 1],
+    left: [-1, 0],
+    right: [1, 0],
+  };
+  const [dx, dy] = map[d];
+  step(dx, dy);
 }
 function start() {
   intro.value = false;
@@ -503,13 +525,66 @@ function reset() {
   dialogue.value = null;
   intro.value = true;
 }
+
+const perf = reactive({
+  fps: 60,
+  minFps: 60,
+  avgFrameMs: 16.6,
+  maxFrameMs: 16.6,
+});
+const viewportLabel = ref(
+  typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "1366x768",
+);
+
+let rafId = 0;
+let lastRafTime = 0;
+let frameCount = 0;
+let fpsAccumTime = 0;
+let frameMsSum = 0;
+
+function perfLoop(timestamp: number) {
+  if (!lastRafTime) lastRafTime = timestamp;
+  const delta = timestamp - lastRafTime;
+  lastRafTime = timestamp;
+
+  frameCount++;
+  fpsAccumTime += delta;
+  frameMsSum += delta;
+  if (delta > perf.maxFrameMs) {
+    perf.maxFrameMs = Number(delta.toFixed(1));
+  }
+  if (fpsAccumTime >= 500) {
+    const curFps = Math.min(60, Math.round((frameCount * 1000) / fpsAccumTime));
+    perf.fps = curFps;
+    if (curFps > 0 && curFps < perf.minFps) {
+      perf.minFps = curFps;
+    }
+    perf.avgFrameMs = Number((frameMsSum / frameCount).toFixed(1));
+    frameCount = 0;
+    fpsAccumTime = 0;
+    frameMsSum = 0;
+  }
+
+  rafId = requestAnimationFrame(perfLoop);
+}
+
+function updateViewport() {
+  if (typeof window !== "undefined") {
+    viewportLabel.value = `${window.innerWidth}x${window.innerHeight}`;
+  }
+}
+
 watch([intro, exitPrompt, stage], async () => {
   await nextTick();
   gameRoot.value
     ?.querySelector<HTMLButtonElement>(".game-overlay button")
     ?.focus({ preventScroll: true });
 });
+
 onMounted(() => {
+  updateViewport();
+  window.addEventListener("resize", updateViewport);
+  rafId = requestAnimationFrame(perfLoop);
   gameRoot.value
     ?.querySelector<HTMLButtonElement>(".game-overlay button")
     ?.focus({ preventScroll: true });
@@ -518,6 +593,8 @@ onMounted(() => {
   window.addEventListener("blur", stop);
 });
 onUnmounted(() => {
+  if (rafId) cancelAnimationFrame(rafId);
+  window.removeEventListener("resize", updateViewport);
   clearInterval(ticker);
   clearTimeout(noticeTimer);
   window.removeEventListener("keyup", keyup);
@@ -526,7 +603,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section ref="gameRoot" class="training-game" @keydown="keydown">
+  <section
+    ref="gameRoot"
+    class="training-game"
+    data-testid="trn-scene-root"
+    tabindex="0"
+    @keydown="keydown"
+  >
     <header class="game-header" :inert="intro || exitPrompt || stage === 'complete'">
       <button @click="leave" class="game-exit">← <span>Về cửa hàng</span></button>
       <div class="game-wordmark">
@@ -544,7 +627,20 @@ onUnmounted(() => {
           <p>CA THỰC HÀNH 01 <span>•</span> 5–8 PHÚT</p>
           <h1>Ca đầu tiên ở Sim Tím<span>✧</span></h1>
         </div>
-        <span class="sandbox-badge">◈ Không gian thực hành riêng</span>
+        <div class="training-telemetry" data-testid="perf-telemetry">
+          <span class="sandbox-badge" data-testid="sandbox-indicator"
+            >◈ Không gian thực hành riêng (Sandbox)</span
+          >
+          <span class="telemetry-pill"
+            >FPS: <strong data-testid="fps-value">{{ perf.fps }}</strong></span
+          >
+          <span class="telemetry-pill"
+            >Frame: <strong>{{ perf.avgFrameMs }}ms</strong></span
+          >
+          <span class="telemetry-pill"
+            >Viewport: <strong data-testid="viewport-label">{{ viewportLabel }}</strong></span
+          >
+        </div>
       </div>
       <div class="game-layout">
         <div class="world-column">
@@ -559,6 +655,7 @@ onUnmounted(() => {
           >
             <svg
               class="store-world"
+              data-testid="store-svg"
               viewBox="0 0 800 560"
               @click="floorClick"
               role="group"
@@ -614,6 +711,7 @@ onUnmounted(() => {
               <g
                 v-for="s in stations.filter((s) => !['mentor', 'customer'].includes(s.id))"
                 :key="s.id"
+                :data-testid="'station-' + s.id"
                 :transform="`translate(${s.x * 40},${s.y * 40})`"
                 :class="[
                   'world-station',
@@ -755,6 +853,7 @@ onUnmounted(() => {
               <g
                 v-for="s in stations.filter((s) => ['mentor', 'customer'].includes(s.id))"
                 :key="s.id"
+                :data-testid="'npc-' + s.id"
                 :transform="`translate(${s.x * 40},${s.y * 40})`"
                 :class="['world-npc', { target: goal.station === s.id }]"
                 role="button"
@@ -801,6 +900,7 @@ onUnmounted(() => {
               <g
                 :transform="`translate(${player.x * 40},${player.y * 40})`"
                 class="world-player"
+                data-testid="player-avatar"
                 :data-x="player.x"
                 :data-y="player.y"
                 :data-stage="stage"
@@ -855,7 +955,7 @@ onUnmounted(() => {
               <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Di chuyển</span
               ><span><kbd>E</kbd> Tương tác</span>
             </div>
-            <div class="touch-pad" aria-label="Điều khiển di chuyển">
+            <div class="touch-pad" data-testid="touch-pad" aria-label="Điều khiển di chuyển">
               <button
                 v-for="[d, label, arrow] in [
                   ['up', 'Đi lên', '↑'],
@@ -864,6 +964,7 @@ onUnmounted(() => {
                   ['right', 'Đi phải', '→'],
                 ]"
                 :key="d"
+                :data-testid="'dpad-' + d"
                 :aria-label="label"
                 :class="'pad-' + d"
                 :disabled="locked"
@@ -877,6 +978,7 @@ onUnmounted(() => {
             </div>
             <button
               class="interact-button"
+              data-testid="btn-interact"
               :disabled="!nearby || locked"
               @click="nearby && interact(nearby)"
             >
@@ -999,8 +1101,8 @@ onUnmounted(() => {
         </div>
       </div>
       <p class="game-footnote">
-        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Tích hợp Godot và lưu kết quả qua
-        backend ở giai đoạn sau.
+        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Lưu kết quả qua backend ở giai đoạn
+        sau.
       </p>
     </div>
     <div v-if="intro" class="game-overlay">

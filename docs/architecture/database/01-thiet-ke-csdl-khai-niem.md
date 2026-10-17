@@ -2,7 +2,7 @@
 
 ## 1. Mục tiêu thiết kế
 
-Cơ sở dữ liệu phục vụ một cửa hàng bán lẻ mẫu trên kiến trúc client–server triển khai tập trung. PWA và Godot sử dụng chung backend API; chỉ backend được phép cập nhật cơ sở dữ liệu. Mô hình phải bảo đảm tính nhất quán giữa nhận hàng, lô hàng, tồn kho, hóa đơn và báo cáo, đồng thời chừa đường mở rộng sang nhiều tổ chức hoặc nhiều cửa hàng mà không làm tăng phạm vi triển khai cuối kỳ.
+Cơ sở dữ liệu phục vụ một cửa hàng bán lẻ mẫu trên kiến trúc client–server triển khai tập trung. PWA vận hành và khu đào tạo 2D trong PWA dùng chung tài khoản; khi lưu kết quả đào tạo theo TRN-03, chỉ backend được phép cập nhật cơ sở dữ liệu và dữ liệu đào tạo nằm trong schema riêng. Mô hình phải bảo đảm tính nhất quán giữa nhận hàng, lô hàng, tồn kho, hóa đơn và báo cáo, đồng thời chừa đường mở rộng sang nhiều tổ chức hoặc nhiều cửa hàng mà không làm tăng phạm vi triển khai cuối kỳ. [ADR 0004](../adr/0004-training-2d-web.md) thay thế phương án Godot trong phần giới thiệu cũ.
 
 Thiết kế ưu tiên năm thuộc tính:
 

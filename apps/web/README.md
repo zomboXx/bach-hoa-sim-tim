@@ -62,13 +62,13 @@ Màn kiểm kê được tách thành StocktakeWorkspace.vue, đọc snapshot l�
 
 Ba viewport công bố cho MOB-01 là **360×800 (mobile), 768×1024 (tablet) và 1366×768 (desktop)**. File tests/stocktake-responsive.spec.ts kiểm không cuộn ngang, nhập KG đúng/sai, đơn vị đếm và quyền demo. File tests/api-stocktake.spec.ts kiểm loading, store/lô từ INV-02, HTTP 403 và session thiếu inventory.read.
 
-API mode hiện dùng contract đọc INV-02 để review giao diện bằng dữ liệu theo store nhưng cố ý khóa thao tác gửi. Response INV-02 chưa có unit/precision hoặc balance version; route, DTO, permission và lỗi ghi kiểm kê chưa được Accepted. Boundary cần TV3/TV4/TV2 review nằm tại [MOB-01 stocktake consumer review](../../contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md). Sau khi SYN-02 có provider, phải thêm live API/PostgreSQL test và ảnh API mode; consumer mock không được dùng thay bằng chứng provider.
+API mode đọc `unitCode` theo sản phẩm và `version` theo balance/lô, lưu thao tác vào queue khi offline rồi gọi contract SYN-02 sau reconnect. Bằng chứng live API/PostgreSQL và ảnh viewport nằm trong [QA-03 test report](../../docs/testing/QA-03-test-report.md); consumer mock không được dùng thay bằng chứng provider.
 
 ## SYN-01 · Hàng đợi kiểm kê offline
 
 Thao tác kiểm kê offline được lưu trong IndexedDB riêng `simtim-stocktake-queue-v1`; queue không chứa token và không được dùng cho nhận hàng, bán hàng hoặc thanh toán. Mỗi thao tác có một `clientOperationId` UUID ổn định. Lưu lại cùng payload đang chờ trong đúng actor/organization/store trả về thao tác cũ thay vì tạo lần gửi mới.
 
-Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chiếu phiên hiện tại với actor, organization, store và quyền gửi; sai scope giữ nguyên queue và giải thích tài khoản/cửa hàng cần dùng. Tồn thay đổi chuyển thao tác sang `CONFLICT`, yêu cầu kiểm lại và không ghi đè tự động. Demo adapter mô phỏng bước nhận để browser test lifecycle; API mode vẫn khóa ghi cho tới khi SYN-02 chốt route, DTO, baseVersion, permission và lỗi. Chi tiết review nằm tại [SYN-01 offline stocktake queue review](../../contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md).
+Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chiếu phiên hiện tại với actor, organization, store và quyền gửi; sai scope giữ nguyên queue và giải thích tài khoản/cửa hàng cần dùng. Tồn thay đổi chuyển thao tác sang `CONFLICT`, yêu cầu kiểm lại và không ghi đè tự động. Demo adapter giữ regression; API mode mở/lấy phiên SYN-02, gửi `baseVersion` và chỉ xóa queue sau phản hồi thành công. Chi tiết review nằm tại [SYN-01 offline stocktake queue review](../../contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md).
 
 `tests/stocktake-offline-queue.spec.ts` kiểm offline → nhập → lưu lặp → reload → reconnect, đổi actor/store, retry đúng scope và conflict không ghi đè.
 
@@ -84,10 +84,10 @@ Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chi
 
 ## Đã hoạt động / đang mô phỏng
 
-- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động và báo cáo theo quyền server.
+- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động, kiểm kê offline/reconnect và báo cáo theo quyền server.
 - **Đang mô phỏng:** demo mode vẫn mô phỏng đăng nhập, phân quyền, thanh toán, đồng bộ và lưu dữ liệu vận hành trên thiết bị. API mode không dùng các dữ liệu mô phỏng này làm fallback; các feature chưa có adapter server sẽ hiển thị trạng thái rỗng hoặc bị ẩn theo quyền.
-- **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt, dùng Vue/SVG để thử trải nghiệm trước khi tích hợp Godot. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch bao gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả chỉ tồn tại trong phiên chơi; chưa lưu qua backend, chưa phải runtime Godot.
-- **Chưa triển khai:** Godot thực tế, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
+- **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt bằng Vue/SVG là nền được chọn cho Sprint 4. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả hiện chỉ tồn tại trong phiên chơi; TRN-03 sẽ thiết kế phần lưu qua backend với dữ liệu cách ly.
+- **Chưa triển khai:** lưu kết quả đào tạo qua backend, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
 
 Quyền ở frontend chỉ giúp trình diễn; backend thật phải xác thực và kiểm tra quyền độc lập. Các tài khoản demo là công khai, không dùng dữ liệu cửa hàng thật ở đây. Giới hạn offline dành cho kiểm kê; các thao tác ghi khác bị chặn khi mất kết nối được phát hiện.
 
@@ -109,6 +109,8 @@ Lệnh live FE-02 mặc định loại test sales có tag `@qa02-gap05` vì đâ
 
 Sau khi provider/consumer GAP-01…05 có trên nhánh kiểm thử, dùng `pwsh -File scripts/test-qa02-gap06-live.ps1` để chạy một luồng browser nhận hàng → checkout CASH → hóa đơn → báo cáo trên cùng API/PostgreSQL disposable. Runner đối chiếu delta receipt/invoice/payment/revenue và balance với movement ledger bằng SQL độc lập; CI chạy cùng test và oracle trong job `QA-02 live receive-sale-report`.
 
+`pwsh -NoProfile -File scripts/test-qa03-live.ps1` tạo môi trường tương tự cho QA-03, build PWA vào thư mục tạm, kiểm mobile offline/reload/reconnect, cắt phản hồi count đầu để thử idempotent retry, duyệt bằng MANAGER, đối soát balance/movement, RBAC và stale snapshot. Runner tạo hai ảnh chọn lọc trong `docs/testing/evidence/qa-03` và dọn database, API, preview, trace/output tạm sau khi chạy.
+
 ## Tài liệu và cấu trúc
 
 - `src/App.vue`: các màn hình quản lý và cổng chuyển sang khu đào tạo.
@@ -118,7 +120,7 @@ Sau khi provider/consumer GAP-01…05 có trên nhánh kiểm thử, dùng `pwsh
 - `src/training/PixelPerson.vue`, `src/training/training.css`: nhân vật pixel, chuyển động và giao diện game desktop/mobile.
 - `src/api.ts`: kiểu dữ liệu, adapter demo, đăng nhập mẫu, giao dịch bán hàng và lưu trữ.
 - `public/sw.js`: chỉ cache tài nguyên giao diện công khai cùng origin; không cache API nghiệp vụ.
-- `ARCHITECTURE.md`: ranh giới client/backend/Godot và API contract dự kiến.
+- `ARCHITECTURE.md`: ranh giới vận hành/đào tạo PWA, backend và API contract dự kiến.
 - `../../CHANGELOG.md`: lịch sử thay đổi của toàn repository.
 
 Hình mentor trong `public/mentor.png` được kế thừa từ prototype đầu; nguồn lịch sử nằm tại `../../archive/prototype-v1/assets/mentor-mai.png`.

@@ -27,3 +27,18 @@ Checkpoint hiện tại ngày 29/09/2026: TV4 đã chạy source `5f0b14c` có c
 6. [Bằng chứng GAP-06 ngày 13/10](QA-02-gap06-evidence-2026-10-13.md): live nhận–bán–báo cáo, DB oracle trước/sau, root gate và điều kiện cập nhật #34 sau merge.
 
 Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 17.11 disposable và đã bắt lỗi query tồn REP-01 mà mock test bỏ sót. Bản sửa `840a82a` buộc dùng Testcontainers và tăng oracle revenue thành hóa đơn hai dòng; PR #33 đã merge vào `main`. Toàn QA-02 vẫn chưa có bằng chứng nghiệm thu P0 đầy đủ: ma trận còn 3 Fail và 3 Blocked về checkout price/replay, unit precision, invoice privacy và live PWA sales E2E.
+
+## DOC-01 — Truy vết bản cuối kỳ
+
+[Ma trận truy vết bản làm việc](DOC-01-traceability-working.md) nối yêu cầu vận hành và đào tạo với thiết kế, code, test và phần bằng chứng còn thiếu tại `main` ngày 14/10/2026. Đây là đầu vào cho DOC-01 và QA-04, chưa phải kết quả Pass hay báo cáo cuối.
+
+## QA-03 — Desktop/mobile/offline kiểm kê
+
+Đọc theo thứ tự:
+
+1. [Test plan](QA-03-test-plan.md): môi trường, viewport, database sạch và exit criteria.
+2. [Ma trận quyền](QA-03-authorize.md): quyền đọc, gửi và duyệt theo role/store.
+3. [Ma trận truy vết](QA-03-traceability.md): backlog → contract → test → evidence.
+4. [Test report](QA-03-test-report.md): SHA, lệnh chạy thật, ảnh viewport và ngoại lệ còn chờ review.
+
+QA-03 không cập nhật kết luận QA-02 hoặc sáu GAP tại Issue #34.

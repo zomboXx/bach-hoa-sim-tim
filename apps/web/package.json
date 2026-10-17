@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "lint": "eslint . --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{ts,vue,css}\" \"tests/**/*.ts\" \"live-tests/**/*.ts\" \"*.{js,ts,json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,vue,css}\" \"tests/**/*.ts\" \"live-tests/**/*.ts\" \"*.{js,ts,json,md}\"",
+    "format": "prettier --write \"src/**/*.{ts,vue,css}\" \"tests/**/*.ts\" \"live-tests/**/*.ts\" \"qa03-live-tests/**/*.ts\" \"*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,vue,css}\" \"tests/**/*.ts\" \"live-tests/**/*.ts\" \"qa03-live-tests/**/*.ts\" \"*.{js,ts,json,md}\"",
     "typecheck": "vue-tsc --noEmit",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",
@@ -20,6 +20,7 @@
     "test:e2e:live": "playwright test --config=playwright.live.config.ts --grep-invert @qa02-gap05",
     "test:e2e:live:qa02-gap05": "playwright test --config=playwright.live.config.ts --grep @qa02-gap05",
     "test:e2e:live:qa02-gap06": "playwright test --config=playwright.live.config.ts --grep @qa02-gap06",
+    "test:e2e:qa03-live": "playwright test --config=playwright.qa03.config.ts",
     "verify": "npm run lint && npm run format:check && npm run build && npm run test:e2e"
   },
   "dependencies": {

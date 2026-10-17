@@ -15,6 +15,7 @@ public record InventoryBatchResponse(
         LocalDate receivedDate,
         String onHandQuantity,
         String availableQuantity,
+        long version,
         LocalDate businessDate) {
 
     static InventoryBatchResponse from(InventoryBatchView view) {
@@ -22,6 +23,7 @@ public record InventoryBatchResponse(
                 view.batchId(), view.productId(), view.batchNumber(), view.supplierLotNumber(),
                 view.batchStatus(), view.expiryStatus().name(), view.expiryDate(), view.receivedDate(),
                 view.onHandQuantity().toPlainString(), view.availableQuantity().toPlainString(),
+                view.version(),
                 view.businessDate());
     }
 }

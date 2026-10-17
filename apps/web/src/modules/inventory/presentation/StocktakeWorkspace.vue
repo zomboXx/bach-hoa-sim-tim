@@ -103,6 +103,10 @@ async function submit() {
   try {
     await props.save({
       batchId: selectedBatch.value.batchId,
+      productId: selectedBatch.value.productId,
+      expectedQuantity: Number(selectedBatch.value.onHandQuantity),
+      baseVersion: selectedBatch.value.version,
+      unitCode: unitCode.value,
       actualQuantity: validation.value.value,
       note: note.value.trim(),
     });
@@ -110,7 +114,6 @@ async function submit() {
     statusMessage.value = props.connected
       ? "Đã gửi số đếm và chuyển sang trạng thái chờ duyệt."
       : "Đã lưu số đếm trên thiết bị; trạng thái đang chờ kết nối.";
-    await loadInventory();
   } catch (error) {
     formError.value = (error as Error).message || "Không lưu được số đếm. Hãy thử lại.";
   } finally {

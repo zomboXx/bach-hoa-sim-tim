@@ -22,6 +22,112 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-17 10:30:38
+
+Đồng bộ `origin/main` (`18f32a5`) vào branch PR #53 từ head QA-02 `3148efb`, giải quyết sáu file conflict mà vẫn giữ cả luồng bán hàng/GAP-06 của QA-02 và kiểm kê/QA-03, TRN-01 cùng hồ sơ Sprint 4 trên `main`. Loại khai báo `VN_ZONE` bị trùng do auto-merge; giữ oracle ngày bán theo múi giờ Việt Nam và fixture hạn `+8` của QA-02.
+
+Validation trên JDK 24.0.2, Docker Desktop và PostgreSQL 17.11 disposable: policy, Markdown, lint, format, typecheck và build đạt; demo E2E báo `16/16 ok`, API consumer báo `49/49 ok`; backend Maven `165/165 Pass`, riêng `Qa02E2eTest 11/11 Pass`; live GAP-05 `2/2 Pass`; live GAP-06 chạy lại `1/1 Pass` với oracle `receipt_delta=1; invoice_delta=1; payment_delta=1; revenue_delta=40000; balance_mismatches=0`. Lần GAP-06 đầu timeout khi máy vừa chạy toàn bộ Testcontainers, lần chạy lại trên DB sạch đạt; root Playwright local đã báo đủ ca `ok` nhưng tiến trình preview Windows không tự thoát, nên dùng CI của head mới làm bằng chứng gate cuối.
+
+- `CHANGELOG.md`: resolve conflict, giữ QA-02 và nội dung mới từ `main`
+- `CONTRIBUTION_LOG.md`: resolve conflict và bổ sung mục này
+- `apps/web/README.md`: resolve conflict, giữ runbook QA-02/QA-03
+- `apps/web/package.json`: resolve conflict, giữ runner QA-02/QA-03
+- `apps/web/src/App.vue`: resolve conflict, tích hợp sale adapter và stocktake adapter
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: resolve conflict, giữ oracle QA-02
+
+---
+TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
+
+Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
+
+Đã chạy thật `scripts/test-qa03-live.ps1` (`2/2 Pass`) và root gate `scripts/verify.ps1 -SkipInstall`: policy/link/lint/format/build Pass, web demo `14/14`, web API `39/39`, backend PostgreSQL 17.11 Testcontainers `152/152`, Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web`: +547 -31
+- `services/api`: +16 -5
+- `scripts/test-qa03-live.ps1`: +148 -0
+- `docs/testing` (Markdown): +121 -0
+- `docs/testing/evidence/qa-03` (2 PNG): N/A
+- `CONTRIBUTION_LOG.md`: +16 -0
+TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
+
+Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.
+
+Bổ sung E2E Playwright test `tests/trn-01-training-scene.spec.ts` kiểm thử trên Desktop (1280x720) và Mobile (390x844), xác nhận không tràn ngang và khẳng định 0 request ghi vận hành. Lập báo cáo benchmark thực tế `docs/TRN-01_BENCHMARK_REPORT.md` trên máy cấu hình yếu. Toàn bộ 16/16 test Playwright, linter, typecheck, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +41 -1
+- `apps/web/src/training/TrainingGame.vue`: +120 -10
+- `apps/web/src/training/training.css`: +54 -0
+- `apps/web/tests/trn-01-training-scene.spec.ts`: +106 -0
+- `docs/TRN-01_BENCHMARK_REPORT.md`: +40 -0
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
+
+Sửa bản chuẩn bị Sprint 4 sau khi phát hiện ADR 0004 đã tồn tại ở nhánh cục bộ trước đó: dùng `0004-training-2d-web.md` làm bản quyết định duy nhất, bỏ bản ADR 0004 tạo trùng và giữ các mục nhật ký cũ để truy vết. Khởi động Sprint 4 theo sáu mã backlog, đồng bộ kickoff, Scrum, phân công và điểm vào tài liệu; giữ QA-03/#34 là việc riêng chưa nghiệm thu.
+
+Tạo milestone Sprint 4 không hạn kết thúc, nhãn `sprint:4`, Issue #54–#59 với owner/reviewer, mức ưu tiên và tiêu chí kiểm tra; GitHub tự thêm sáu Issue vào Project `Bách Hóa Sim Tím` ở Backlog.
+
+Root gate `pwsh -File scripts/verify.ps1 -SkipInstall` đạt sau khi khởi động Docker Desktop: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`. Lần chạy trước đó dừng ở Testcontainers do Docker Engine chưa chạy.
+
+- `CHANGELOG.md`: +3 -3
+- `README.md`: +3 -2
+- `apps/web/ARCHITECTURE.md`: +1 -1
+- `docs/README.md`: +2 -2
+- `docs/architecture/adr/0004-training-2d-web.md`: +31 -0
+- `docs/architecture/adr/0004-training-experience.md`: +0 -20
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +3 -3
+- `docs/project/SPRINT_4_KICKOFF.md`: +12 -12
+- `docs/project/governance/BACKLOG.md`: +7 -7
+- `docs/project/governance/SCRUM.md`: +3 -1
+- `docs/project/governance/TEAM.md`: +2 -0
+- `CONTRIBUTION_LOG.md`: +24 -0
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-13 05:18:00
+
+Đối chiếu quyết định nền tảng đào tạo với ADR 0002/0003: hai ADR cũ không chốt engine, nên chuyển bản quyết định ngày 13/10 thành ADR 0004 để chỉ có một nơi ghi quyết định kiến trúc. Chuẩn bị kickoff Sprint 4 theo đúng sáu mã backlog, nêu đầu ra, thứ tự, điểm giao API/schema và quyết định còn mở; chưa mở Issue/milestone hay tự ghi Sprint 3 hoàn tất.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/ARCHITECTURE.md`: +1 -1
+- `docs/README.md`: +2 -1
+- `docs/architecture/adr/0004-training-experience.md`: +20 -0
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +2 -2
+- `docs/project/SPRINT_4_KICKOFF.md`: +40 -0
+- `docs/project/TRAINING_PLATFORM_DECISION_2026-10-13.md`: +0 -15
+- `docs/project/governance/BACKLOG.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-13 04:58:30
+
+Chuẩn bị phạm vi Sprint 4 theo quyết định bỏ Godot: ghi bản quyết định, căn lại TRN-01/02 theo game 2D Vue/SVG hiện có trong PWA, giữ mã/ưu tiên/phân công của backlog và tách rõ việc chuẩn bị với kickoff/nghiệm thu. Đồng bộ mô tả kiến trúc, CSDL, hướng dẫn web và dòng giới thiệu trong game; làm rõ nhịp review tuần trong Scrum không tự đặt hạn cho milestone. Giữ QA-03 #47 và sáu GAP P0 ở #34 là việc còn mở.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt: repository policy/Markdown links, web demo E2E 14/14, API consumer 39/39, backend PostgreSQL Testcontainers 152/152; Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/ARCHITECTURE.md`: +8 -10
+- `apps/web/README.md`: +3 -3
+- `apps/web/src/training/TrainingGame.vue`: +2 -2
+- `docs/README.md`: +1 -0
+- `docs/architecture/database/01-thiet-ke-csdl-khai-niem.md`: +1 -1
+- `docs/project/README.md`: +6 -0
+- `docs/project/TRAINING_PLATFORM_DECISION_2026-10-13.md`: +15 -0
+- `docs/project/governance/BACKLOG.md`: +4 -2
+- `docs/project/governance/SCRUM.md`: +1 -1
+- `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
 Lê Văn Chiến - 2026-10-13 15:35:19
 
 S2-GAP-06: bổ sung live E2E nhận hàng → bán CASH → hóa đơn → báo cáo và oracle PostgreSQL độc lập cho QA-02 (PR #53, Refs #34).

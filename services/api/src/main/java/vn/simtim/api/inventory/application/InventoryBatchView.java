@@ -16,4 +16,5 @@ public record InventoryBatchView(
         LocalDate receivedDate,
         BigDecimal onHandQuantity,
         BigDecimal availableQuantity,
+        long version,
         LocalDate businessDate) {}
