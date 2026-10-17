@@ -20,6 +20,12 @@ Các PR provider/consumer đã có trong lịch sử `origin/main` của source 
 > [evidence GAP-06](QA-02-gap06-evidence-2026-10-13.md). Các trạng thái bên dưới
 > vẫn là ảnh chụp 07/10 cho đến khi PR merge, QA chạy lại `main` và TV1 duyệt evidence.
 
+> Follow-up review ngày 17/10/2026 bổ sung consumer/live browser test cho báo giá
+> trước checkout và replay đúng `Idempotency-Key` sau khi server commit nhưng mất
+> response. Oracle GAP-05 xác nhận ba request chỉ tạo hai operation bán: invoice,
+> payment và SALE movement cùng tăng hai; ledger không lệch. Xem
+> [evidence ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md).
+
 | ID | Backlog/contract | Automated test / oracle | Actual | Status |
 |---|---|---|---|---|
 | QA02-REC-001 | INV-01 nhận đủ tạo receipt/lô/balance/movement nguyên tử | `Qa02E2eTest#receiptToCashInvoiceAndReportsReconcileWithIndependentSqlOracle`; query receipt/ledger | Một receipt, một lô và RECEIPT movement; ledger khớp balance | Pass |

@@ -42,6 +42,9 @@ import {
   SaleApiError,
   SaleNetworkError,
   type ApiInvoice,
+  type CartLine,
+  type CheckoutRequest,
+  type QuoteResult,
   type SalePort,
 } from "./modules/sale/domain/sale";
 const state = ref<State>();
@@ -267,7 +270,10 @@ const time = (s: string) =>
     day: "2-digit",
     month: "2-digit",
   });
-const name = (id: string) => state.value?.products.find((p) => p.id === id)?.name || id;
+const name = (id: string) =>
+  (isDemoMode
+    ? state.value?.products.find((p) => p.id === id)?.name
+    : apiSaleProducts.value.find((p) => p.id === id)?.name) || id;
 const dateText = new Date().toLocaleDateString("vi-VN", {
   weekday: "long",
   day: "numeric",
@@ -352,6 +358,7 @@ function go(id: string) {
     void loadInvoices();
   }
   if (id === "sale") {
+    restorePendingCheckout();
     void loadSaleProducts();
   }
 }
@@ -664,12 +671,95 @@ const filtered = computed(() => {
 const cart = ref<{ id: string; quantity: number }[]>([]);
 const method = ref("Tiền mặt");
 const cash = ref(0);
-const total = computed(() => {
-  if (!isDemoMode) {
-    // In API mode the real total comes from the server quote called inside pay().
-    // Show 0 here so the cash-amount guard (cash >= total) still lets pay() proceed.
-    return 0;
+const apiQuote = ref<QuoteResult>();
+const apiQuoteStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
+let apiQuoteRevision = 0;
+
+interface PendingApiCheckout extends CheckoutRequest {
+  scope: string;
+  idempotencyKey: string;
+}
+
+const pendingCheckoutStorageKey = "simtim-v2-pending-sale-checkout";
+const pendingApiCheckout = ref<PendingApiCheckout>();
+const apiCheckoutPending = computed(() => !!pendingApiCheckout.value);
+
+function saleScope() {
+  const session = user.value?.session;
+  return session ? `${session.organizationId}:${session.storeId}:${session.userId}` : "";
+}
+
+function currentCartItems(): CartLine[] {
+  return cart.value.map((line) => ({
+    productId: line.id,
+    quantity: String(line.quantity),
+  }));
+}
+
+function storePendingCheckout(operation?: PendingApiCheckout) {
+  pendingApiCheckout.value = operation;
+  if (operation) sessionStorage.setItem(pendingCheckoutStorageKey, JSON.stringify(operation));
+  else sessionStorage.removeItem(pendingCheckoutStorageKey);
+}
+
+function restorePendingCheckout() {
+  if (isDemoMode || !saleScope()) return;
+  pendingApiCheckout.value = undefined;
+  const saved = sessionStorage.getItem(pendingCheckoutStorageKey);
+  if (!saved) return;
+  try {
+    const operation = JSON.parse(saved) as PendingApiCheckout;
+    if (
+      operation.scope !== saleScope() ||
+      !operation.idempotencyKey ||
+      !Array.isArray(operation.items)
+    ) {
+      return;
+    }
+    pendingApiCheckout.value = operation;
+    cart.value = operation.items.map((line) => ({
+      id: line.productId,
+      quantity: Number(line.quantity),
+    }));
+    cash.value = operation.cashAmount;
+  } catch {
+    sessionStorage.removeItem(pendingCheckoutStorageKey);
   }
+}
+
+async function refreshApiQuote() {
+  if (isDemoMode || pendingApiCheckout.value) return;
+  const revision = ++apiQuoteRevision;
+  if (!cart.value.length) {
+    apiQuote.value = undefined;
+    apiQuoteStatus.value = "idle";
+    return;
+  }
+  apiQuote.value = undefined;
+  apiQuoteStatus.value = "loading";
+  try {
+    const quote = await saleAdapter.quote(currentCartItems());
+    if (revision !== apiQuoteRevision) return;
+    apiQuote.value = quote;
+    apiQuoteStatus.value = "ready";
+  } catch (e) {
+    if (revision !== apiQuoteRevision) return;
+    apiQuoteStatus.value = "error";
+    notify(
+      e instanceof SaleNetworkError
+        ? "Lỗi mạng khi lấy báo giá. Kiểm tra kết nối và thử lại."
+        : (e as Error).message,
+    );
+  }
+}
+
+function apiUnitPrice(productId: string) {
+  return apiQuote.value?.lines.find((line) => line.productId === productId)?.unitPrice;
+}
+
+const total = computed(() => {
+  if (!isDemoMode)
+    return pendingApiCheckout.value?.expectedTotal ?? apiQuote.value?.grandTotal ?? 0;
   return cart.value.reduce(
     (n, l) =>
       n +
@@ -683,6 +773,8 @@ const total = computed(() => {
 });
 function add(id: string) {
   if (!connected.value) return notify("Bán hàng cần kết nối.");
+  if (pendingApiCheckout.value)
+    return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
   if (isDemoMode) {
     const row = cart.value.find((l) => l.id === id);
     if (available(state.value!, id) < (row?.quantity || 0) + 1)
@@ -691,15 +783,25 @@ function add(id: string) {
   const row = cart.value.find((l) => l.id === id);
   if (row) row.quantity++;
   else cart.value.push({ id, quantity: 1 });
+  if (!isDemoMode) void refreshApiQuote();
 }
 function quantity(id: string, delta: number) {
+  if (pendingApiCheckout.value)
+    return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
   const row = cart.value.find((l) => l.id === id)!;
   if (delta > 0) add(id);
-  else if (row.quantity > 1) row.quantity--;
-  else cart.value = cart.value.filter((l) => l.id !== id);
+  else {
+    if (row.quantity > 1) row.quantity--;
+    else cart.value = cart.value.filter((l) => l.id !== id);
+    if (!isDemoMode) void refreshApiQuote();
+  }
 }
 async function pay() {
   if (!user.value || user.value.role === "admin") return;
+  if (!isDemoMode && method.value !== "Tiền mặt")
+    return notify("API bán hàng hiện chỉ hỗ trợ thanh toán CASH.");
+  if (!isDemoMode && !pendingApiCheckout.value && apiQuoteStatus.value !== "ready")
+    return notify("Chưa có báo giá hợp lệ. Hãy chờ máy chủ xác nhận tổng tiền.");
   if (method.value === "Tiền mặt" && cash.value < total.value)
     return notify("Số tiền khách đưa chưa đủ.");
   if (busy.value) return;
@@ -731,63 +833,60 @@ async function pay() {
     return;
   }
 
-  // API mode: quote → confirm price → checkout with idempotency key
+  // API mode: checkout the quote already shown to the cashier. An uncertain
+  // network result keeps this exact payload and key for a safe replay.
   busy.value = true;
-  const idempotencyKey = crypto.randomUUID();
+  const operation =
+    pendingApiCheckout.value ??
+    ({
+      scope: saleScope(),
+      items: currentCartItems(),
+      expectedTotal: apiQuote.value!.grandTotal,
+      cashAmount: cash.value,
+      idempotencyKey: crypto.randomUUID(),
+    } satisfies PendingApiCheckout);
+  if (!pendingApiCheckout.value) storePendingCheckout(operation);
   try {
-    const items = cart.value.map((l) => ({
-      productId: l.id,
-      quantity: String(l.quantity),
-    }));
-    // 1. Quote to get server-calculated total
-    let quoteResult;
-    try {
-      quoteResult = await saleAdapter.quote(items);
-    } catch (e) {
-      if (e instanceof SaleNetworkError) {
-        throw new Error("Lỗi mạng khi lấy báo giá. Kiểm tra kết nối và thử lại.", { cause: e });
-      }
-      throw e;
-    }
-    // 2. Checkout with server total as expectedTotal (guards against price change between quote and checkout)
     let invoice;
     try {
-      invoice = await saleAdapter.checkout({
-        items,
-        expectedTotal: quoteResult.grandTotal,
-        cashAmount: cash.value,
-        idempotencyKey,
-      });
+      invoice = await saleAdapter.checkout(operation);
     } catch (e) {
       if (e instanceof SaleApiError) {
+        storePendingCheckout();
         if (e.code === "PRICE_CHANGED") {
+          void refreshApiQuote();
           throw new Error(
             `Giá sản phẩm vừa thay đổi. Tổng mới: ${e.message}. Vui lòng kiểm tra lại giỏ hàng.`,
             { cause: e },
           );
         }
         if (e.code === "INSUFFICIENT_STOCK") {
+          void refreshApiQuote();
           throw new Error(
             "Không đủ tồn kho cho một hoặc nhiều sản phẩm. Vui lòng điều chỉnh giỏ hàng.",
             { cause: e },
           );
         }
         if (e.code === "IDEMPOTENCY_KEY_REUSED") {
-          // Shouldn't happen with a fresh UUID, but handle gracefully
-          throw new Error("Mã giao dịch bị trùng. Vui lòng thử lại.", { cause: e });
+          throw new Error("Mã giao dịch không khớp payload đã lưu. Vui lòng tạo giao dịch mới.", {
+            cause: e,
+          });
         }
       }
       if (e instanceof SaleNetworkError) {
         throw new Error(
-          "Mất kết nối khi thanh toán. Hệ thống đã ghi lại mã giao dịch — kiểm tra danh sách hóa đơn trước khi thử lại.",
+          "Mất kết nối khi thanh toán. Giao dịch được giữ nguyên; hãy bấm thử lại để dùng đúng mã giao dịch, không tạo hóa đơn thứ hai.",
           { cause: e },
         );
       }
       throw e;
     }
+    storePendingCheckout();
     notify(`Đã tạo hóa đơn ${invoice.invoiceNo} · Tiền thừa ${money(invoice.changeAmount)}`);
     cart.value = [];
     cash.value = 0;
+    apiQuote.value = undefined;
+    apiQuoteStatus.value = "idle";
     // Refresh invoice list then navigate
     await loadInvoices();
     go("invoices");
@@ -1250,7 +1349,11 @@ async function approveCount(record: StocktakeRecord) {
                   v-for="p in filtered"
                   :key="p.id"
                   class="product-card"
-                  :disabled="!connected || (isDemoMode && available(state!, p.id) === 0)"
+                  :disabled="
+                    !connected ||
+                    apiCheckoutPending ||
+                    (isDemoMode && available(state!, p.id) === 0)
+                  "
                   @click="add(p.id)"
                 >
                   <div class="product-picture">
@@ -1263,10 +1366,11 @@ async function approveCount(record: StocktakeRecord) {
                     {{ money(price(state, p))
                     }}<del v-if="price(state, p) < p.price">{{ money(p.price) }}</del>
                   </p>
-                  <p v-else>Xem giá khi thanh toán</p>
+                  <p v-else>Thêm vào giỏ để lấy báo giá</p>
                   <footer>
-                    <span>Còn {{ available(state!, p.id) }} {{ p.unit.toLowerCase() }}</span
-                    ><b>＋</b>
+                    <span v-if="isDemoMode"
+                      >Còn {{ available(state!, p.id) }} {{ p.unit.toLowerCase() }}</span
+                    ><span v-else>Giá và tồn do máy chủ xác nhận</span><b>＋</b>
                   </footer>
                 </button>
               </div>
@@ -1284,32 +1388,59 @@ async function approveCount(record: StocktakeRecord) {
               <div v-for="l in cart" :key="l.id" class="cart-row">
                 <div>
                   <b>{{ name(l.id) }}</b
-                  ><small>{{
-                    isDemoMode
-                      ? money(
-                          price(
-                            state,
-                            state.products.find((p) => p.id === l.id)!,
-                          ),
-                        )
-                      : ""
-                  }}</small>
+                  ><small v-if="isDemoMode">{{
+                    money(
+                      price(
+                        state,
+                        state.products.find((p) => p.id === l.id)!,
+                      ),
+                    )
+                  }}</small
+                  ><small v-else-if="apiUnitPrice(l.id) !== undefined">{{
+                    money(apiUnitPrice(l.id)!)
+                  }}</small
+                  ><small v-else>Đang lấy báo giá…</small>
                 </div>
                 <div class="stepper">
-                  <button :aria-label="'Giảm ' + name(l.id)" @click="quantity(l.id, -1)">−</button
+                  <button
+                    :aria-label="'Giảm ' + name(l.id)"
+                    :disabled="apiCheckoutPending"
+                    @click="quantity(l.id, -1)"
+                  >
+                    −</button
                   ><span>{{ l.quantity }}</span
-                  ><button :aria-label="'Tăng ' + name(l.id)" @click="quantity(l.id, 1)">+</button>
+                  ><button
+                    :aria-label="'Tăng ' + name(l.id)"
+                    :disabled="apiCheckoutPending"
+                    @click="quantity(l.id, 1)"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
               <div class="cart-bottom">
+                <p v-if="!isDemoMode && apiQuoteStatus === 'loading'" role="status">
+                  Đang lấy báo giá từ máy chủ…
+                </p>
+                <p v-else-if="!isDemoMode && apiQuoteStatus === 'error'" class="error" role="alert">
+                  Chưa thể xác nhận giá và tồn. Hãy thay đổi giỏ hoặc thử lại.
+                </p>
+                <p v-if="apiCheckoutPending" class="error" role="status">
+                  Chưa nhận được kết quả thanh toán. Giỏ và số tiền đang được giữ nguyên; lần thử
+                  tiếp theo sẽ dùng đúng mã giao dịch.
+                </p>
                 <div class="total">
                   <span>Tổng thanh toán</span><b>{{ money(total) }}</b>
                 </div>
                 <label
-                  >Phương thức<select v-model="method">
+                  >Phương thức<select
+                    v-model="method"
+                    :disabled="!isDemoMode || apiCheckoutPending"
+                  >
                     <option>Tiền mặt</option>
-                    <option>Chuyển khoản (mô phỏng)</option>
+                    <option v-if="isDemoMode">Chuyển khoản (mô phỏng)</option>
                   </select></label
+                ><small v-if="!isDemoMode">API hiện chỉ hỗ trợ thanh toán CASH.</small
                 ><label v-if="method === 'Tiền mặt'"
                   >Khách đưa<input
                     v-model.number="cash"
@@ -1317,16 +1448,22 @@ async function approveCount(record: StocktakeRecord) {
                     min="0"
                     step="500"
                     placeholder="0"
+                    :disabled="apiCheckoutPending"
                 /></label>
                 <p v-if="method === 'Tiền mặt'" class="change">
                   Tiền thừa <b>{{ money(Math.max(0, cash - total)) }}</b>
                 </p>
                 <button
                   class="primary wide"
-                  :disabled="!cart.length || !connected || busy"
+                  :disabled="
+                    !cart.length ||
+                    !connected ||
+                    busy ||
+                    (!isDemoMode && !apiCheckoutPending && apiQuoteStatus !== 'ready')
+                  "
                   @click="pay"
                 >
-                  Xác nhận thanh toán →
+                  {{ apiCheckoutPending ? "Thử lại cùng mã giao dịch →" : "Xác nhận thanh toán →" }}
                 </button>
               </div>
             </section>

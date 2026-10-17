@@ -42,6 +42,7 @@ test("@qa02-gap05 QA02-WEB-002: sales uses live quote, CASH checkout and invoice
   await nav.getByRole("button", { name: "Bán hàng", exact: false }).click();
   await expect(page.locator(".product-card").first()).toBeVisible();
   await page.locator(".product-card").first().click();
+  await expect(page.locator(".total b")).not.toContainText(/^0/);
   await page.getByLabel("Khách đưa").fill("1000000");
   await page.getByRole("button", { name: "Xác nhận thanh toán", exact: false }).click();
 
@@ -64,16 +65,18 @@ test("@qa02-gap05 QA02-WEB-002: sales uses live quote, CASH checkout and invoice
   await expect(page.locator(".invoice-row").first()).toBeVisible();
 });
 
-test("@qa02-gap05 QA02-WEB-003: checkout recovers from network loss and advises checking invoice list", async ({
+test("@qa02-gap05 QA02-WEB-003: lost checkout response retries one persisted operation", async ({
   page,
 }) => {
-  let checkoutPostCount = 0;
+  const checkoutRequests: Array<{ key: string | undefined; body: string | null }> = [];
   await page.route("**/api/v1/sales/checkout", async (route) => {
-    checkoutPostCount++;
-    // Commit on the server but abort the response — simulates lost response (S2-GAP-04)
+    checkoutRequests.push({
+      key: route.request().headers()["idempotency-key"],
+      body: route.request().postData(),
+    });
     const resp = await route.fetch();
-    // We abort regardless of the server response to test the UI behaviour
-    if (resp.ok()) {
+    // The first request commits on the real server, but its response is lost.
+    if (checkoutRequests.length === 1 && resp.ok()) {
       await route.abort("timedout");
     } else {
       await route.fulfill({ response: resp });
@@ -84,20 +87,20 @@ test("@qa02-gap05 QA02-WEB-003: checkout recovers from network loss and advises 
   await page.locator("nav").getByRole("button", { name: "Bán hàng", exact: false }).click();
   await expect(page.locator(".product-card").first()).toBeVisible();
   await page.locator(".product-card").first().click();
+  await expect(page.locator(".total b")).not.toContainText(/^0/);
   await page.getByLabel("Khách đưa").fill("1000000");
   await page.getByRole("button", { name: "Xác nhận thanh toán", exact: false }).click();
 
-  // Only one POST should have been sent (no auto-retry)
-  await expect.poll(() => checkoutPostCount >= 1, { timeout: 10_000 }).toBe(true);
-  expect(checkoutPostCount).toBe(1);
+  await expect.poll(() => checkoutRequests.length, { timeout: 10_000 }).toBe(1);
+  await expect(page.getByText(/lần thử tiếp theo sẽ dùng đúng mã giao dịch/i)).toBeVisible();
+  await expect(page.getByLabel("Khách đưa")).toBeDisabled();
+  await page.getByRole("button", { name: /Thử lại cùng mã giao dịch/ }).click();
 
-  // UI must warn the user to check invoices before retrying
-  await expect(
-    page
-      .locator("[role='alert'], .toast")
-      .filter({ hasText: /hóa đơn|kết nối/i })
-      .first(),
-  ).toBeVisible({ timeout: 8_000 });
+  await expect.poll(() => checkoutRequests.length, { timeout: 10_000 }).toBe(2);
+  expect(checkoutRequests[0].key).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(checkoutRequests[1].key).toBe(checkoutRequests[0].key);
+  expect(checkoutRequests[1].body).toBe(checkoutRequests[0].body);
+  await expect(page.locator(".invoice-row").first()).toBeVisible();
 });
 
 test("QA02-WEB-001: manager report renders responses from the live API", async ({ page }) => {

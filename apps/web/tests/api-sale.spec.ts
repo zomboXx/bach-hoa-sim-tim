@@ -10,7 +10,7 @@
  *   3. Quote network error shows message to user
  *   4. PRICE_CHANGED error during checkout is shown clearly to user
  *   5. INSUFFICIENT_STOCK error during checkout is shown clearly to user
- *   6. Checkout network error (simulated timeout) warns user to check invoices before retry
+ *   6. Checkout response loss retries the same payload and Idempotency-Key
  *   7. FORBIDDEN (403) on listInvoices shows error state with retry button
  *   8. MANAGER/ADMIN sees full store invoice list (sales.read.store permission)
  *   9. SALES user cannot see Bán hàng or Hóa đơn without sales.* permissions
@@ -213,8 +213,15 @@ test("happy path: quote → CASH checkout → invoice list shows new invoice row
 
   // Product card should be visible
   await expect(page.locator(".product-card").first()).toBeVisible();
+  await expect(page.locator(".product-card").first()).toContainText(
+    "Giá và tồn do máy chủ xác nhận",
+  );
+  await expect(page.locator(".product-card").first()).not.toContainText("Còn 0 Cái");
   await page.locator(".product-card").first().click();
 
+  // The cashier sees the server quote before confirming payment.
+  await expect(page.locator(".cart-row small")).toContainText("22.000");
+  await expect(page.locator(".total b")).toContainText("22.000");
   await page.getByLabel("Khách đưa").fill("30000");
   await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
 
@@ -234,7 +241,9 @@ test("quote network error shows user-friendly message", async ({ page }) => {
   await page.route("**/api/v1/sales/quote", async (route) => {
     await route.abort("failed");
   });
+  let checkoutCalls = 0;
   await page.route("**/api/v1/sales/checkout", async (route) => {
+    checkoutCalls++;
     await json(route, 201, sampleInvoice);
   });
 
@@ -242,16 +251,16 @@ test("quote network error shows user-friendly message", async ({ page }) => {
   await openSale(page);
   await expect(page.locator(".product-card").first()).toBeVisible();
   await page.locator(".product-card").first().click();
-  await page.getByLabel("Khách đưa").fill("30000");
-  await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
 
-  // Error message about network should appear (toast or error element)
+  // Error appears before checkout and an unconfirmed quote cannot be paid.
   await expect(
     page
       .locator("[role='alert'], .toast")
       .filter({ hasText: /mạng|kết nối/i })
       .first(),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Xác nhận thanh toán/ })).toBeDisabled();
+  expect(checkoutCalls).toBe(0);
 });
 
 test("PRICE_CHANGED during checkout shows specific error to user", async ({ page }) => {
@@ -309,15 +318,27 @@ test("INSUFFICIENT_STOCK during checkout shows specific error to user", async ({
   ).toBeVisible();
 });
 
-test("checkout network timeout warns user to check invoices before retry", async ({ page }) => {
+test("checkout response loss retries the exact same payload and Idempotency-Key", async ({
+  page,
+}) => {
   await installLogin(page);
   await installCatalog(page);
 
   await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  const checkoutCalls: Array<{ key: string | undefined; body: string | null }> = [];
   await page.route("**/api/v1/sales/checkout", async (route) => {
-    // Simulate the network dropping after the POST is committed
-    await route.abort("timedout");
+    checkoutCalls.push({
+      key: route.request().headers()["idempotency-key"],
+      body: route.request().postData(),
+    });
+    if (checkoutCalls.length === 1) {
+      // Simulate a committed POST whose response is lost.
+      await route.abort("timedout");
+    } else {
+      await json(route, 200, sampleInvoice);
+    }
   });
+  await page.route("**/api/v1/sales/invoices", (route) => json(route, 200, [sampleInvoice]));
 
   await signIn(page);
   await openSale(page);
@@ -326,13 +347,15 @@ test("checkout network timeout warns user to check invoices before retry", async
   await page.getByLabel("Khách đưa").fill("30000");
   await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
 
-  // Must warn about mất kết nối AND advise checking invoice list
-  await expect(
-    page
-      .locator("[role='alert'], .toast")
-      .filter({ hasText: /mất kết nối|hóa đơn/i })
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByText(/lần thử tiếp theo sẽ dùng đúng mã giao dịch/i)).toBeVisible();
+  await expect(page.getByLabel("Khách đưa")).toBeDisabled();
+  await page.getByRole("button", { name: /Thử lại cùng mã giao dịch/ }).click();
+
+  await expect.poll(() => checkoutCalls.length).toBe(2);
+  expect(checkoutCalls[0].key).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(checkoutCalls[1].key).toBe(checkoutCalls[0].key);
+  expect(checkoutCalls[1].body).toBe(checkoutCalls[0].body);
+  await expect(page.locator(".invoice-row").first()).toContainText("INV-ABCD1234");
 });
 
 test("FORBIDDEN on listInvoices shows error state with retry button", async ({ page }) => {

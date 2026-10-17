@@ -22,6 +22,13 @@
 > 165/165 backend đều đạt. Xem [evidence GAP-06](QA-02-gap06-evidence-2026-10-13.md).
 > Chưa viết lại kết luận lịch sử hoặc tích #34 trước khi PR merge và CI được review.
 
+> Follow-up review ngày 17/10/2026 trên base `7ae6112`: PWA đã hiển thị quote
+> server trước checkout, bỏ tồn/đơn vị giả và giữ nguyên payload +
+> `Idempotency-Key` khi mất response. Browser live bấm lại cùng operation; GAP-05
+> 2/2 và GAP-06 1/1 đạt với oracle invoice/payment/SALE movement độc lập. Xem
+> [evidence ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md). Trạng thái lịch
+> sử và checkbox #34 vẫn chờ merge, CI head mới và QA chạy lại trên `main`.
+
 ## 1. Kết quả hiện hành
 
 Suite QA xuyên module mới chạy 5/5 Pass trên HTTP thật và PostgreSQL sạch. Nó chứng minh receipt accepted/rejected và replay, CASH checkout/invoice/report, rollback đa sản phẩm, cạnh tranh lô cuối, quyền report và oracle ledger độc lập.

@@ -13,6 +13,9 @@ $demoPassword = "Live-$([Guid]::NewGuid().ToString('N'))"
 $apiProcess = $null
 $apiOut = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.out.log"
 $apiErr = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.err.log"
+$liveArtifacts = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-artifacts"
+$playwrightOutput = Join-Path $liveArtifacts 'playwright'
+$webBuildOutput = Join-Path $liveArtifacts 'dist'
 $webTestScript = switch ($Suite) {
   'Qa02Gap05' { 'test:e2e:live:qa02-gap05' }
   'Qa02Gap06' { 'test:e2e:live:qa02-gap06' }
@@ -34,15 +37,16 @@ function Get-QaDatabaseSummary {
       --set ON_ERROR_STOP=1 --tuples-only --no-align --field-separator '|' `
       --username simtim --dbname simtim --command $summarySql)
   if ($LASTEXITCODE -ne 0) { throw 'Could not query the QA-02 GAP-06 database oracle.' }
-  $line = @($output | Where-Object { $_ -match '^\d+\|\d+\|\d+\|\d+\|\d+$' })[-1]
+  $line = @($output | Where-Object { $_ -match '^\d+\|\d+\|\d+\|\d+\|\d+\|\d+$' })[-1]
   if (-not $line) { throw 'QA-02 GAP-06 database oracle returned no summary row.' }
   $values = $line.Split('|')
   return [pscustomobject]@{
     Receipts = [int]$values[0]
     Invoices = [int]$values[1]
     Payments = [int]$values[2]
-    BalanceMismatches = [int]$values[3]
-    Revenue = [long]$values[4]
+    SaleMovements = [int]$values[3]
+    BalanceMismatches = [int]$values[4]
+    Revenue = [long]$values[5]
   }
 }
 
@@ -100,7 +104,7 @@ try {
   }
 
   $qaBaseline = $null
-  if ($Suite -eq 'Qa02Gap06') {
+  if ($Suite -in @('Qa02Gap05', 'Qa02Gap06')) {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
       $qaBaseline = Get-QaDatabaseSummary -ContainerName $containerName
       if ($qaBaseline.Receipts -ge 1) { break }
@@ -113,26 +117,42 @@ try {
   try {
     $env:API_PROXY_TARGET = "http://127.0.0.1:$apiPort"
     $env:SIMTIM_LIVE_PASSWORD = $demoPassword
+    $env:PLAYWRIGHT_OUTPUT_DIR = $playwrightOutput
+    $env:SIMTIM_BUILD_OUT_DIR = $webBuildOutput
     & npm run $webTestScript
     if ($LASTEXITCODE -ne 0) { throw "$Suite live backend test failed." }
-    if ($Suite -eq 'Qa02Gap06') {
+    if ($Suite -in @('Qa02Gap05', 'Qa02Gap06')) {
       $qaAfter = Get-QaDatabaseSummary -ContainerName $containerName
       $receiptDelta = $qaAfter.Receipts - $qaBaseline.Receipts
       $invoiceDelta = $qaAfter.Invoices - $qaBaseline.Invoices
       $paymentDelta = $qaAfter.Payments - $qaBaseline.Payments
+      $saleMovementDelta = $qaAfter.SaleMovements - $qaBaseline.SaleMovements
       $revenueDelta = $qaAfter.Revenue - $qaBaseline.Revenue
-      if ($receiptDelta -ne 1) { throw "Expected receipt delta 1, found $receiptDelta." }
-      if ($invoiceDelta -ne 1) { throw "Expected invoice delta 1, found $invoiceDelta." }
-      if ($paymentDelta -ne 1) { throw "Expected payment delta 1, found $paymentDelta." }
+      $expectedReceiptDelta = if ($Suite -eq 'Qa02Gap06') { 1 } else { 0 }
+      $expectedSaleDelta = if ($Suite -eq 'Qa02Gap06') { 1 } else { 2 }
+      if ($receiptDelta -ne $expectedReceiptDelta) {
+        throw "Expected receipt delta $expectedReceiptDelta, found $receiptDelta."
+      }
+      if ($invoiceDelta -ne $expectedSaleDelta) {
+        throw "Expected invoice delta $expectedSaleDelta, found $invoiceDelta."
+      }
+      if ($paymentDelta -ne $expectedSaleDelta) {
+        throw "Expected payment delta $expectedSaleDelta, found $paymentDelta."
+      }
+      if ($saleMovementDelta -ne $expectedSaleDelta) {
+        throw "Expected SALE movement delta $expectedSaleDelta, found $saleMovementDelta."
+      }
       if ($revenueDelta -le 0) { throw "Expected positive revenue delta, found $revenueDelta." }
       if ($qaAfter.BalanceMismatches -ne 0) {
         throw "Inventory balance differs from movement ledger for $($qaAfter.BalanceMismatches) batch(es)."
       }
-      Write-Output "QA-02 GAP-06 DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
+      Write-Output "QA-02 $Suite DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; sale_movement_delta=$saleMovementDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
     }
   } finally {
     Remove-Item Env:API_PROXY_TARGET -ErrorAction SilentlyContinue
     Remove-Item Env:SIMTIM_LIVE_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:PLAYWRIGHT_OUTPUT_DIR -ErrorAction SilentlyContinue
+    Remove-Item Env:SIMTIM_BUILD_OUT_DIR -ErrorAction SilentlyContinue
     Pop-Location
   }
 } finally {
@@ -141,4 +161,9 @@ try {
   }
   & docker stop $containerName *> $null
   Remove-Item -LiteralPath $apiOut, $apiErr -Force -ErrorAction SilentlyContinue
+  $resolvedLiveArtifacts = [System.IO.Path]::GetFullPath($liveArtifacts)
+  $resolvedTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+  if ($resolvedLiveArtifacts.StartsWith($resolvedTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Remove-Item -LiteralPath $resolvedLiveArtifacts -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }

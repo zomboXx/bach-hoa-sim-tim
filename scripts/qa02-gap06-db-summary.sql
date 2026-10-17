@@ -10,6 +10,11 @@ select
    where organization_id = '10000000-0000-0000-0000-000000000001'
      and store_id = '10000000-0000-0000-0000-000000000002'
      and status = 'COMPLETED'),
+  (select count(*) from inventory.stock_movements
+   where organization_id = '10000000-0000-0000-0000-000000000001'
+     and store_id = '10000000-0000-0000-0000-000000000002'
+     and movement_type = 'SALE'
+     and reference_type = 'INVOICE'),
   (with movement_totals as (
      select organization_id, store_id, product_id, batch_id, sum(quantity_delta) as quantity
      from inventory.stock_movements

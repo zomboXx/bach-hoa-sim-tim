@@ -22,6 +22,21 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-17 21:15:43
+
+Sửa review PR #53 trên base `7ae6112`: API sale lấy và hiển thị quote server trước checkout, chỉ cho phép CASH, không hiển thị tồn/đơn vị giả; khi mất response, PWA khóa operation và retry đúng payload + `Idempotency-Key`. Bổ sung consumer/live browser test bấm lần hai sau commit, oracle PostgreSQL đếm độc lập invoice/payment/SALE movement và tách output live build/test để tránh lỗi file lock trên Windows. Giữ nguyên kết luận lịch sử QA-02 và chưa đánh dấu #34 Pass trước merge.
+
+Validation: policy/Markdown/lint/format/typecheck/build Pass; demo `16/16`, API consumer `49/49`, backend `165/165`, `Qa02E2eTest` `11/11`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một và ledger khớp.
+
+- `apps/web/src/App.vue`: quote trước checkout, CASH-only và pending checkout replay
+- `apps/web/tests/api-sale.spec.ts`: consumer test giá/tồn và retry cùng key/payload
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: mất response sau commit rồi bấm lại
+- `apps/web/playwright.live.config.ts`, `apps/web/vite.config.ts`, `scripts/test-fe02-live.ps1`: output live cô lập và oracle trước/sau
+- `scripts/qa02-gap06-db-summary.sql`: bổ sung đếm SALE movement
+- `docs/testing`: bổ sung evidence và follow-up traceability/report
+- `CONTRIBUTION_LOG.md`: bổ sung mục này
+
+---
 TV4 — Lê Văn Chiến - 2026-10-17 10:30:38
 
 Đồng bộ `origin/main` (`18f32a5`) vào branch PR #53 từ head QA-02 `3148efb`, giải quyết sáu file conflict mà vẫn giữ cả luồng bán hàng/GAP-06 của QA-02 và kiểm kê/QA-03, TRN-01 cùng hồ sơ Sprint 4 trên `main`. Loại khai báo `VN_ZONE` bị trùng do auto-merge; giữ oracle ngày bán theo múi giờ Việt Nam và fixture hạn `+8` của QA-02.
