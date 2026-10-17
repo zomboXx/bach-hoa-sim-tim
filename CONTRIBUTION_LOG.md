@@ -33,6 +33,7 @@ Validation: policy/Markdown/lint/format/typecheck/build Pass; demo `16/16`, API 
 - `apps/web/live-tests/qa02-sales-report.live.spec.ts`: mất response sau commit rồi bấm lại
 - `apps/web/playwright.live.config.ts`, `apps/web/vite.config.ts`, `scripts/test-fe02-live.ps1`: output live cô lập và oracle trước/sau
 - `scripts/qa02-gap06-db-summary.sql`: bổ sung đếm SALE movement
+- `.github/workflows/ci.yml`: đọc oracle sáu cột và kiểm `sale_movement_delta=1`
 - `docs/testing`: bổ sung evidence và follow-up traceability/report
 - `CONTRIBUTION_LOG.md`: bổ sung mục này
 

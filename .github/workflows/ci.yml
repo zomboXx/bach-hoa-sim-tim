@@ -125,16 +125,17 @@ jobs:
           after=$(docker compose -f infra/compose.demo.yml exec -T postgres \
             psql -U simtim -d simtim -At -F '|' \
             < scripts/qa02-gap06-db-summary.sql)
-          IFS='|' read -r before_receipts before_invoices before_payments _ before_revenue \
+          IFS='|' read -r before_receipts before_invoices before_payments before_sale_movements _ before_revenue \
             <<< "$QA02_DB_BASELINE"
-          IFS='|' read -r after_receipts after_invoices after_payments mismatches after_revenue \
+          IFS='|' read -r after_receipts after_invoices after_payments after_sale_movements mismatches after_revenue \
             <<< "$after"
           test $((after_receipts - before_receipts)) -eq 1
           test $((after_invoices - before_invoices)) -eq 1
           test $((after_payments - before_payments)) -eq 1
+          test $((after_sale_movements - before_sale_movements)) -eq 1
           test $((after_revenue - before_revenue)) -gt 0
           test "$mismatches" -eq 0
-          printf 'QA-02 GAP-06 DB oracle: receipt_delta=1; invoice_delta=1; payment_delta=1; revenue_delta=%s; balance_mismatches=0\n' \
+          printf 'QA-02 GAP-06 DB oracle: receipt_delta=1; invoice_delta=1; payment_delta=1; sale_movement_delta=1; revenue_delta=%s; balance_mismatches=0\n' \
             "$((after_revenue - before_revenue))"
       - name: Show logs on failure
         if: failure()
