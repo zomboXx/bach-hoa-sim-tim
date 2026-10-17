@@ -9,6 +9,7 @@ public record InventoryProductView(
         UUID productId,
         String sku,
         String productName,
+        String unitCode,
         String productStatus,
         BigDecimal onHandQuantity,
         BigDecimal availableQuantity,

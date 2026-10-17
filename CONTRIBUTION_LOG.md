@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
+
+Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
+
+Đã chạy thật `scripts/test-qa03-live.ps1` (`2/2 Pass`) và root gate `scripts/verify.ps1 -SkipInstall`: policy/link/lint/format/build Pass, web demo `14/14`, web API `39/39`, backend PostgreSQL 17.11 Testcontainers `152/152`, Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web`: +547 -31
+- `services/api`: +16 -5
+- `scripts/test-qa03-live.ps1`: +148 -0
+- `docs/testing` (Markdown): +121 -0
+- `docs/testing/evidence/qa-03` (2 PNG): N/A
+- `CONTRIBUTION_LOG.md`: +16 -0
 TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
 
 Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.

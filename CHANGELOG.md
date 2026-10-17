@@ -7,6 +7,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 ### Added
 
 - Chuẩn bị contract Proposed cho TRN-03: route, quyền xem lịch sử theo gán cửa hàng hiện hành, retry/idempotency và bằng chứng cách ly trước khi triển khai API/migration.
+- **QA-03** (#47): Nối queue kiểm kê PWA với contract SYN-02/INV-03 trên API mode; bổ sung live Playwright chạy mobile offline → reload → reconnect, response-loss retry, duyệt quản lý và đối soát tồn/movement trên PostgreSQL 17 disposable. Thêm ma trận quyền/truy vết, test report và ảnh viewport mobile/desktop; giữ QA-02 #34 riêng.
 - **TRN-01** (#54): Hoàn thiện scene đào tạo 2D Vue/SVG hiện có (`TrainingGame.vue`, `world.ts`). Hỗ trợ điều khiển đồng thời bằng bàn phím (`WASD`, mũi tên, `E`, `Space`, `Enter`), chuột (click sàn tìm đường BFS, click trạm/NPC) và chạm cảm ứng (Touch D-Pad ảo phản hồi tức thời kèm nút tương tác `E`). Tích hợp bộ đo hiệu năng FPS & Frame Time thực tế (`perf-telemetry`) kiểm chứng độ ổn định trên máy yếu nhất nhóm; tối ưu va chạm tường biên và quầy kệ. Toàn bộ nghiệp vụ ca học được cô lập hoàn toàn khỏi API bán, nhận và tồn kho vận hành. Bổ sung E2E Playwright test `tests/trn-01-training-scene.spec.ts` kiểm thử trên Viewport Desktop (`1280x720`) và Mobile (`390x844`), xác nhận không tràn ngang và 0 request ghi vận hành; lập báo cáo nghiệm thu kỹ thuật và benchmark `docs/TRN-01_BENCHMARK_REPORT.md`.
 - Chuẩn bị ma trận truy vết DOC-01 và runbook REL-01 ở trạng thái Working, gắn rõ bằng chứng còn thiếu trước khi chọn release candidate.
 - Khởi động Sprint 4 ngày 13/10/2026 với milestone và sáu Issue TRN-01/02/03, QA-04, DOC-01, REL-01; kickoff ghi đầu ra, thứ tự và cổng review. QA-03/#34 vẫn theo dõi riêng.
@@ -29,6 +30,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- **QA-03** (#47): API đọc tồn trả thêm `version` theo lô và `unitCode` theo sản phẩm để client gửi `baseVersion` thật và áp precision EA/KG; PWA không reload API ngay sau khi lưu offline, khử trùng queue/response cùng `clientOperationId`, và hiển thị nguồn movement `STOCKTAKE_ADJUSTMENT`/`STOCKTAKE`.
 - **INV-03 fix** (#46): Xử lý review PR #52: Khóa phiên nguyên tử (`PESSIMISTIC_WRITE`) ngay đầu transaction của `approveStocktake` và `submitCount`, loại bỏ duyệt lặp và double audit log khi duyệt đồng thời trên phiên có số đếm bằng tồn kho (`delta == 0`). Kiểm tra độ chính xác số lượng theo `catalog.units.precision_scale` (EA = số nguyên, KG = tối đa 3 chữ số thập phân) trước khi duyệt, trả 422 `QUANTITY_PRECISION` khi vi phạm. Bổ sung 4 regression tests (nâng tổng lên 13 tests trong `StocktakeApprovalApiTest`).
 - **QA-02 / REP-01**: Sửa query báo cáo tồn dùng sai tên cột/khóa/trạng thái so với migration (`on_hand_quantity`, `batch_id`, `EXHAUSTED`) và ràng buộc join theo organization/store/product. Bổ sung E2E PostgreSQL xuyên receipt → checkout → invoice → reports với oracle ledger độc lập, rollback và checkout cạnh tranh.
 - **PRO-01B** (#23): Chặn lô khác cửa hàng cùng tổ chức khi thêm target; kiểm thử biên thời gian, mức giảm tốt nhất/tie-break, snapshot sau khi sửa chương trình và làm tròn quote/checkout.
