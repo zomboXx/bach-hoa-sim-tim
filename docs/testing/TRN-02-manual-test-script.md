@@ -137,24 +137,26 @@ Ca này dành cho lúc TRN-03 có API lưu phiên/kết quả.
 
 ## 5. Nhật ký thực thi
 
-| Trường                | Giá trị            |
-| --------------------- | ------------------ |
-| Ngày/giờ              | 21:35 16/10/2026   |
-| Người chạy            | TV4 — Lê Văn Chiến |
-| Commit SHA            | Chưa ghi           |
-| Trình duyệt/phiên bản | Chưa ghi           |
-| Thiết bị/viewport     | Chưa ghi           |
-| Lệnh test tự động     | Chưa ghi           |
+Nhật ký dưới đây là kết quả đối chiếu kịch bản bằng Playwright trên Chrome; chưa được ghi nhận là một lượt test tay độc lập.
 
-| Test case | Desktop | Mobile  | Bằng chứng             | Ghi chú/Issue  |
-| --------- | ------- | ------- | ---------------------- | -------------- |
-| TRN02-M01 | Run     | Run     | ![alt text](image.png) | pass           |
-| TRN02-M02 | Not run | Not run | —                      | —              |
-| TRN02-M03 | Not run | Not run | —                      | —              |
-| TRN02-M04 | Not run | Not run | —                      | —              |
-| TRN02-M05 | Not run | Not run | —                      | —              |
-| TRN02-M06 | Not run | Not run | —                      | —              |
-| TRN02-M07 | Not run | Not run | —                      | —              |
-| TRN02-M08 | Blocked | Blocked | —                      | Chờ TRN-03 API |
+| Trường                | Giá trị                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| Ngày/giờ              | 16:05 17/10/2026                                            |
+| Người chạy            | TV4 — Lê Văn Chiến                                          |
+| Commit SHA            | Kết quả merge evidence `e855e74` + implementation `c56437c` |
+| Trình duyệt/phiên bản | Google Chrome `155.0.8059.80`                               |
+| Thiết bị/viewport     | Desktop `1280x720`; mobile `390x844`                        |
+| Lệnh test tự động     | Demo `25/25 Pass`; API consumer `39/39 Pass`                |
+
+| Test case | Desktop | Mobile  | Bằng chứng                                                           | Ghi chú/Issue                                    |
+| --------- | ------- | ------- | -------------------------------------------------------------------- | ------------------------------------------------ |
+| TRN02-M01 | Pass    | Pass    | [`image.png`](image.png); `trn-01-training-scene.spec.ts`            | Mục tiêu, hướng dẫn, sandbox và viewport đạt     |
+| TRN02-M02 | Pass    | Pass    | `trn-02-training-scenario.spec.ts`; `workflows.spec.ts`              | 100 điểm; 0 request ghi vận hành                 |
+| TRN02-M03 | Pass    | Pass    | `trn-02-training-scenario.spec.ts`; `trn-02-acceptance-gaps.spec.ts` | 6 phản hồi sai; 40 điểm                          |
+| TRN02-M04 | Pass    | Pass    | `trn-02-acceptance-gaps.spec.ts`                                     | Không tiến stage; nhận tiền bị khóa khi quét 1/2 |
+| TRN02-M05 | Pass    | Pass    | `trn-02-training-scenario.spec.ts`; `workflows.spec.ts`              | Hủy modal giữ tiến độ; rời ca reset phiên        |
+| TRN02-M06 | Pass    | Pass    | `trn-02-training-scenario.spec.ts`; `trn-02-acceptance-gaps.spec.ts` | Phiên 90 điểm chơi lại thành phiên sạch 100 điểm |
+| TRN02-M07 | Pass    | Pass    | `workflows.spec.ts`                                                  | Snapshot hóa đơn/tồn/movement/phiếu không đổi    |
+| TRN02-M08 | Blocked | Blocked | —                                                                    | Chờ TRN-03 API                                   |
 
 Giá trị hợp lệ: `Pass`, `Fail`, `Blocked`, `Not run`. Với `Fail`, ghi bước tái hiện, expected, actual, SHA, ảnh/trace và liên kết Issue.

@@ -1,5 +1,42 @@
 import { test, expect, type Page } from "@playwright/test";
 
+type OperationalSnapshot = {
+  invoiceCount: number;
+  lo01Quantity: number;
+  movementCount: number;
+  stocktakeCount: number;
+};
+
+async function readDemoOperationalSnapshot(page: Page): Promise<OperationalSnapshot> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("simtim-v2", 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const state = await new Promise<{
+        invoices: unknown[];
+        batches: { id: string; quantity: number }[];
+        movements: unknown[];
+        counts: unknown[];
+      }>((resolve, reject) => {
+        const request = db.transaction("state").objectStore("state").get("demo");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return {
+        invoiceCount: state.invoices.length,
+        lo01Quantity: state.batches.find((batch) => batch.id === "LO01")?.quantity ?? -1,
+        movementCount: state.movements.length,
+        stocktakeCount: state.counts.length,
+      };
+    } finally {
+      db.close();
+    }
+  });
+}
+
 test("touch controls stop on release; exit and re-entry reset the practice session", async ({
   page,
 }) => {
@@ -151,10 +188,19 @@ test("receive → sell → invoice → offline count → approval; training isol
   await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
   await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).click();
   await expect(page.locator(".count-row")).toContainText("Đã duyệt");
+  const beforeTraining = await readDemoOperationalSnapshot(page);
+  expect(beforeTraining).toEqual({
+    invoiceCount: 1,
+    lo01Quantity: 46,
+    movementCount: 3,
+    stocktakeCount: 1,
+  });
   await page.getByRole("button", { name: "Mở menu", exact: true }).click();
   await nav.getByRole("button", { name: "Đào tạo nghiệp vụ", exact: false }).click();
   await playShift(page);
   await page.getByRole("button", { name: "Trở về cửa hàng", exact: false }).click();
+  const afterTraining = await readDemoOperationalSnapshot(page);
+  expect(afterTraining).toEqual(beforeTraining);
   await page.getByRole("button", { name: "Mở menu", exact: true }).click();
   await nav.getByRole("button", { name: "Tồn kho & lô hàng", exact: false }).click();
   await expect(page.locator("tr").filter({ hasText: "LO01" })).toContainText("46");

@@ -93,6 +93,12 @@
   color: #caa17a;
   margin-left: 15px;
 }
+.training-telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .sandbox-badge {
   font-size: 9px;
   border: 1px solid #dfd5e1;
@@ -100,6 +106,17 @@
   color: #9f87a8;
   border-radius: 5px;
   background: #faf7f1;
+}
+.telemetry-pill {
+  font-size: 11px;
+  background: #ffffff;
+  border: 1px solid #dfd5e1;
+  border-radius: 5px;
+  padding: 6px 9px;
+  color: #614b70;
+}
+.telemetry-pill strong {
+  color: #3b2a47;
 }
 .game-layout {
   display: grid;
@@ -361,7 +378,42 @@
   opacity: 0.4;
 }
 .touch-pad {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  grid-template-rows: repeat(2, 32px);
+  gap: 4px;
+  touch-action: none;
+}
+.touch-pad button {
+  padding: 0;
+  border: 1px solid #d6c5de;
+  border-bottom: 3px solid #c9b4d3;
+  border-radius: 5px;
+  background: #f6eef9;
+  color: #9e7daf;
+  font-size: 17px;
+  touch-action: none;
+  cursor: pointer;
+}
+.touch-pad button:active {
+  background: #ecdcf2;
+  border-bottom-width: 1px;
+}
+.pad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+.pad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.pad-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+.pad-right {
+  grid-column: 3;
+  grid-row: 2;
 }
 .quest-panel {
   border: 1px solid #e1d5de;
@@ -895,6 +947,45 @@
 }
 .practice-summary {
   font-size: 10px !important;
+}
+.evaluation-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px;
+  background: #f7efe1;
+  border: 1px solid #e5d3b8;
+  border-radius: 8px;
+}
+.evaluation-score-pill {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7b5388;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d8c2e2;
+}
+.evaluation-grade-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #e7eddf;
+  color: #4b7454;
+  border: 1px solid #cfdcc9;
+}
+.evaluation-grade-pill.grade-satisfactory {
+  background: #fdf5e2;
+  color: #9c7336;
+  border-color: #f0deba;
+}
+.evaluation-grade-pill.grade-needs_practice {
+  background: #fce8e6;
+  color: #ab574f;
+  border-color: #f1cfcc;
 }
 .complete-history {
   border-top: 1px dashed #ddcfe4;

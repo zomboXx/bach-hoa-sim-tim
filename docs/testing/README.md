@@ -34,7 +34,7 @@ Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 
 
 [Kịch bản kiểm thử thủ công TRN-02](TRN-02-manual-test-script.md) hướng dẫn TV4 kiểm luồng đúng, sai, đảo thứ tự, bỏ dở, chơi lại và cách ly hóa đơn/tồn; đồng thời ghi checklist để TV1 review luật chấm và TV2 review contract. Bảng kết quả khởi tạo là `Not run`/`Blocked`, không phải bằng chứng nghiệm thu.
 
-[Test report TRN-02](TRN-02-test-report.md) là mẫu tổng hợp môi trường, kết quả tự động/thủ công, lỗi, oracle cách ly dữ liệu và comment ngắn để cập nhật Issue #55. Trạng thái ban đầu là chưa kết luận cho tới khi TV4 điền đủ kết quả thực thi.
+[Test report TRN-02](TRN-02-test-report.md) ghi kết quả local ngày 17/10/2026: M01–M07 đạt trên kết quả merge evidence `e855e74` với implementation `c56437c`, demo `25/25` và API consumer `39/39`; M08 còn `Blocked` chờ TRN-03. Đây chưa phải bằng chứng Done vì CI và review TV1/TV2 còn chờ.
 
 ## QA-03 — Desktop/mobile/offline kiểm kê
 

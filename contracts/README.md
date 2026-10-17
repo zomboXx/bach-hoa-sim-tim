@@ -14,3 +14,4 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 - [Sales/invoices OpenAPI 3.1](sales-invoices.openapi.yaml): Working Draft wire contract cho SAL-01.
 - [PRO-01B promotions](SALES_PROMOTIONS_REVIEW.md): Working Draft cho Issue #23 / PR #25, wire `/api/v1/sales/promotions` và ma trận quyền `promotions.*`.
 - [Promotions OpenAPI 3.1](sales-promotions.openapi.yaml): Working Draft wire contract cho PRO-01B.
+- [TRN-02 training scenario contract](TRN-02_TRAINING_SCENARIO_CONTRACT.md): Proposed contract kịch bản đào tạo, sự kiện đánh giá và oracle chấm điểm thuần nhất cho Issue #55.

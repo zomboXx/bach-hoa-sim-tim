@@ -40,6 +40,36 @@ import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 const state = ref<State>();
 const user = ref<AuthUser>();
 const route = ref("dashboard");
+const isTrainingRoute = ref(
+  typeof window !== "undefined" &&
+    (window.location.pathname === "/training" ||
+      window.location.pathname.startsWith("/training/") ||
+      window.location.hash === "#training" ||
+      window.location.hash.startsWith("#/training") ||
+      new URLSearchParams(window.location.search).has("training")),
+);
+
+function exitTrainingRoute() {
+  if (typeof window !== "undefined") {
+    if (window.location.pathname === "/training") {
+      window.history.pushState({}, "", "/");
+      isTrainingRoute.value = false;
+    } else {
+      isTrainingRoute.value = false;
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    isTrainingRoute.value =
+      window.location.pathname === "/training" ||
+      window.location.pathname.startsWith("/training/") ||
+      window.location.hash === "#training" ||
+      window.location.hash.startsWith("#/training") ||
+      new URLSearchParams(window.location.search).has("training");
+  });
+}
 const error = ref("");
 const toast = ref("");
 let timer: ReturnType<typeof setTimeout>;
@@ -732,7 +762,8 @@ async function approveCount(record: StocktakeRecord) {
 </script>
 
 <template>
-  <div v-if="!state" class="loading">
+  <TrainingGame v-if="isTrainingRoute" employee-name="Học viên Sim Tím" @exit="exitTrainingRoute" />
+  <div v-else-if="!state" class="loading">
     {{ error || "Đang mở không gian cửa hàng…" }}
   </div>
   <div v-else-if="!user" class="login">
@@ -800,6 +831,14 @@ async function approveCount(record: StocktakeRecord) {
           <p>
             Mật khẩu chung: <b>demo123</b>. Xác thực được mô phỏng; dữ liệu demo lưu trên thiết bị
             này.
+          </p>
+          <p style="margin-top: 12px">
+            <a
+              href="/training"
+              style="color: var(--primary); font-weight: 600; text-decoration: none"
+            >
+              ✦ Mở ca đào tạo nghiệp vụ (Sandbox) →
+            </a>
           </p>
         </div>
       </div>
