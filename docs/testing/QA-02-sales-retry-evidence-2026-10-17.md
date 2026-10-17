@@ -32,6 +32,8 @@ Kết quả:
 
 Trong môi trường agent, lệnh root đã hoàn tất policy/web rồi Maven Wrapper bị sandbox chặn đọc cache/network. QA chạy lại đúng bước backend bằng `.\mvnw.cmd verify` với quyền Docker/Maven và nhận `BUILD SUCCESS`; đây là giới hạn môi trường thực thi, không phải test failure.
 
+GitHub Actions [`baseline-quality` run 39040328554](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554) trên commit `9f01dc8` đạt **5/5 job**: Repository policy, Web baseline, API bootstrap, QA-02 live receive-sale-report và Demo Compose. Job live dùng oracle sáu cột và kiểm thêm `sale_movement_delta=1`.
+
 ## Điều kiện tích hợp
 
 Đây vẫn là bằng chứng trên head PR trước merge. Không sửa kết luận lịch sử ngày 07/10 và chưa tích checkbox #34. Sau khi head mới có CI xanh và PR merge, TV4 chạy lại trên `main`, gắn URL CI/PR vào Issue #34; TV1 review evidence rồi mới chuyển từng GAP sang Pass hoặc đóng Issue.

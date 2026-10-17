@@ -28,6 +28,8 @@ Sửa review PR #53 trên base `7ae6112`: API sale lấy và hiển thị quote 
 
 Validation: policy/Markdown/lint/format/typecheck/build Pass; demo `16/16`, API consumer `49/49`, backend `165/165`, `Qa02E2eTest` `11/11`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một và ledger khớp.
 
+GitHub Actions [`39040328554`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554) trên commit `9f01dc8` đạt 5/5 job, gồm `QA-02 live receive-sale-report` với oracle SALE movement mới.
+
 - `apps/web/src/App.vue`: quote trước checkout, CASH-only và pending checkout replay
 - `apps/web/tests/api-sale.spec.ts`: consumer test giá/tồn và retry cùng key/payload
 - `apps/web/live-tests/qa02-sales-report.live.spec.ts`: mất response sau commit rồi bấm lại

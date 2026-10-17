@@ -28,6 +28,7 @@
 > 2/2 và GAP-06 1/1 đạt với oracle invoice/payment/SALE movement độc lập. Xem
 > [evidence ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md). Trạng thái lịch
 > sử và checkbox #34 vẫn chờ merge, CI head mới và QA chạy lại trên `main`.
+> CI của bản sửa: [`baseline-quality` run 39040328554](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554), **5/5 job Pass**.
 
 ## 1. Kết quả hiện hành
 
