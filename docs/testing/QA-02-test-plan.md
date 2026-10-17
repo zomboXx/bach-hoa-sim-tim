@@ -7,6 +7,12 @@
 - Issue: [QA-02 #24](https://github.com/zomboXx/bach-hoa-sim-tim/issues/24)
 - Nhánh: `feature/QA-02-e2e`
 
+> Cập nhật phạm vi ngày 11/10/2026: sáu ngoại lệ tiếp tục được theo dõi tại
+> [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34). Bước tái hiện,
+> expected-red test và điều kiện chạy lại nằm trong
+> [checkpoint 11/10](QA-02-gap-checkpoint-2026-10-11.md). Phần dưới giữ nguyên hồ sơ
+> kế hoạch/checkpoint ngày 07/10 để truy vết.
+
 ## 1. Mục tiêu và oracle
 
 Chứng minh bằng HTTP thật và PostgreSQL độc lập luồng tạo dữ liệu danh mục/giá hợp lệ → nhận hàng → tồn/lô → quote/checkout CASH → hóa đơn → báo cáo. Response API chỉ là đầu vào quan sát; kết luận transaction, số tiền và tồn phải được đối chiếu thêm từ các bảng nguồn.

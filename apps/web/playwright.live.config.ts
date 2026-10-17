@@ -5,6 +5,7 @@ if (!apiProxyTarget) throw new Error("API_PROXY_TARGET is required for live back
 
 export default defineConfig({
   testDir: "./live-tests",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || "test-results/live",
   workers: 1,
   use: {
     baseURL: "http://127.0.0.1:4176",

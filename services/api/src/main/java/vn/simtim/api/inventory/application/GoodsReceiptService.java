@@ -163,7 +163,28 @@ public class GoodsReceiptService {
                 throw new InventoryReceiptException("NOT_FOUND",
                         prefix + ".productId: sản phẩm không tồn tại hoặc không hoạt động");
             }
+
+            int precisionScale = productChecker.getPrecisionScale(organizationId, lc.productId());
+            if (!isValidPrecision(lc.expectedQuantity(), precisionScale)
+                    || !isValidPrecision(lc.deliveredQuantity(), precisionScale)
+                    || !isValidPrecision(lc.acceptedQuantity(), precisionScale)
+                    || !isValidPrecision(lc.rejectedQuantity(), precisionScale)) {
+                throw new InventoryReceiptException("QUANTITY_PRECISION", String.format(
+                        "%s: số lượng không hợp lệ với độ chính xác đơn vị của sản phẩm (tối đa %d chữ số thập phân)",
+                        prefix, precisionScale));
+            }
         }
+    }
+
+    private static boolean isValidPrecision(BigDecimal quantity, int precisionScale) {
+        if (quantity == null) {
+            return false;
+        }
+        if (quantity.signum() == 0) {
+            return true;
+        }
+        int normalizedScale = Math.max(0, quantity.stripTrailingZeros().scale());
+        return normalizedScale <= precisionScale;
     }
 
     @Transactional(readOnly = true)

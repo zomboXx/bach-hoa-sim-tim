@@ -1,10 +1,10 @@
 package vn.simtim.api.qa;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,13 +47,13 @@ import vn.simtim.api.auth.domain.PasswordHasher;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class Qa02E2eTest {
 
-    private static final UUID ORG_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
-    private static final UUID STORE_ID = UUID.fromString("10000000-0000-0000-0000-000000000002");
-    private static final UUID SUPPLIER_ID = UUID.fromString("10000000-0000-0000-0000-000000000061");
-    private static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
-    private static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
-    private static final String PASSWORD = "qa02-disposable-password";
+    protected static final UUID ORG_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
+    protected static final UUID STORE_ID = UUID.fromString("10000000-0000-0000-0000-000000000002");
+    protected static final UUID SUPPLIER_ID = UUID.fromString("10000000-0000-0000-0000-000000000061");
+    protected static final UUID RICE_ID = UUID.fromString("10000000-0000-0000-0000-000000000041");
+    protected static final UUID APPLE_ID = UUID.fromString("10000000-0000-0000-0000-000000000042");
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final String PASSWORD = "qa02-disposable-password";
 
     private static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:17-alpine").withDatabaseName("simtim_qa02_test");
@@ -66,15 +66,15 @@ class Qa02E2eTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 
-    @Autowired TestRestTemplate http;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired PasswordHasher passwords;
+    @Autowired protected TestRestTemplate http;
+    @Autowired protected JdbcTemplate jdbc;
+    @Autowired protected PasswordHasher passwords;
 
     private final List<UUID> fixtureUsers = new ArrayList<>();
-    private String salesToken;
-    private String stockToken;
-    private String managerToken;
-    private String adminToken;
+    protected String salesToken;
+    protected String stockToken;
+    protected String managerToken;
+    protected String adminToken;
 
     @BeforeAll
     void createActors() {
@@ -169,11 +169,12 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements where reference_id=? and reference_type='GOODS_RECEIPT'", riceReceiptId)).isEqualTo(1);
         assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'", new Object[0])).isEqualTo(2);
 
-        LocalDate today = jdbc.queryForObject(
-                        "select sold_at from sales.invoices where id=?",
-                        OffsetDateTime.class, invoiceId)
-                .atZoneSameInstant(VN_ZONE).toLocalDate();
-        Map<String, Object> revenue = body(get("/api/v1/reports/revenue?from=" + today + "&to=" + today.plusDays(1), managerToken));
+        LocalDate saleDay = jdbc.queryForObject("""
+                select (sold_at at time zone 'Asia/Ho_Chi_Minh')::date
+                from sales.invoices where id=?
+                """, LocalDate.class, invoiceId);
+        Map<String, Object> revenue = body(get(
+                "/api/v1/reports/revenue?from=" + saleDay + "&to=" + saleDay.plusDays(1), managerToken));
         Long sqlRevenue = jdbc.queryForObject("""
                 select coalesce(sum(grand_total),0) from sales.invoices
                 where organization_id=? and store_id=? and status='COMPLETED'
@@ -280,7 +281,7 @@ class Qa02E2eTest {
                         "acceptedQuantity", "0.000",
                         "rejectedQuantity", "2.000",
                         "unitCost", 10000,
-                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(30).toString(),
+                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(8).toString(),
                         "discrepancyReason", "Hàng dập hỏng")));
         HttpHeaders requestHeaders = headers(stockToken);
         requestHeaders.set("Idempotency-Key", idempotencyKey.toString());
@@ -302,7 +303,213 @@ class Qa02E2eTest {
         assertThat(count("select count(*) from inventory.stock_movements", new Object[0])).isZero();
     }
 
-    private UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
+    @Test
+    void fractionalEaReceiptIsRejectedWithoutAnyWrite() {
+        UUID operationId = UUID.randomUUID();
+        Map<String, Object> request = Map.of(
+                "supplierId", SUPPLIER_ID,
+                "clientOperationId", operationId,
+                "lines", List.of(Map.of(
+                        "productId", RICE_ID,
+                        "expectedQuantity", "0.500",
+                        "deliveredQuantity", "0.500",
+                        "acceptedQuantity", "0.500",
+                        "rejectedQuantity", "0.000",
+                        "unitCost", 10000,
+                        "expiryDate", LocalDate.now(VN_ZONE).plusDays(8).toString())));
+        var requestHeaders = headers(stockToken);
+        requestHeaders.set("Idempotency-Key", UUID.randomUUID().toString());
+
+        ResponseEntity<Object> response = http.exchange(
+                "/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(request, requestHeaders), Object.class);
+
+        assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY),
+                () -> assertThat(count(
+                        "select count(*) from inventory.goods_receipts where client_operation_id=?",
+                        operationId)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.goods_receipt_lines where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.product_batches where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.inventory_balances where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.stock_movements where organization_id=? and product_id=?",
+                        ORG_ID, RICE_ID)).isZero());
+    }
+
+    @Test
+    void fractionalEaSaleIsRejectedWithoutAnyWrite() {
+        receive(RICE_ID, "2.000", "2.000", "0.000", null);
+        var balanceBefore = productBalance(RICE_ID);
+
+        List<Map<String, Object>> items = List.of(
+                Map.of("productId", RICE_ID, "quantity", "0.500"));
+
+        ResponseEntity<Object> quoteResp = post(
+                "/api/v1/sales/quote", Map.of("items", items), salesToken);
+        assertThat(quoteResp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(body(quoteResp)).containsEntry("code", "QUANTITY_PRECISION");
+
+        ResponseEntity<Object> checkoutResp = post(
+                "/api/v1/sales/checkout", Map.of("items", items, "cashAmount", 50000), salesToken);
+        assertAll(
+                () -> assertThat(checkoutResp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY),
+                () -> assertThat(body(checkoutResp)).containsEntry("code", "QUANTITY_PRECISION"),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isZero(),
+                () -> assertThat(count(
+                        "select count(*) from inventory.stock_movements where movement_type='SALE' and organization_id=?",
+                        ORG_ID)).isZero(),
+                () -> assertThat(productBalance(RICE_ID)).isEqualByComparingTo(balanceBefore));
+    }
+
+    @Test
+    void priceChangedAfterQuoteRejectsCheckoutAndRollsBack() {
+        receive(APPLE_ID, "2.000", "2.000", "0.000", null);
+        List<Map<String, Object>> items = List.of(
+                Map.of("productId", APPLE_ID, "quantity", "1.000"));
+        Map<String, Object> quote = body(post("/api/v1/sales/quote", Map.of("items", items), salesToken));
+        long expectedTotal = ((Number) quote.get("grandTotal")).longValue();
+        var balanceBefore = productBalance(APPLE_ID);
+
+        try {
+            jdbc.update("""
+                    update catalog.product_prices set sale_price=41000
+                    where organization_id=? and store_id=? and product_id=? and effective_to is null
+                    """, ORG_ID, STORE_ID, APPLE_ID);
+            ResponseEntity<Object> response = post(
+                    "/api/v1/sales/checkout", Map.of(
+                            "items", items,
+                            "expectedTotal", expectedTotal,
+                            "cashAmount", 100000), salesToken);
+
+            assertAll(
+                    () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                    () -> assertThat(body(response)).containsEntry("code", "PRICE_CHANGED"),
+                    () -> assertThat(count(
+                            "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isZero(),
+                    () -> assertThat(count(
+                            "select count(*) from sales.payments where organization_id=?", ORG_ID)).isZero(),
+                    () -> assertThat(count("""
+                            select count(*) from inventory.stock_movements
+                            where organization_id=? and movement_type='SALE'
+                            """, ORG_ID)).isZero(),
+                    () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo(balanceBefore));
+        } finally {
+            jdbc.update("""
+                    update catalog.product_prices set sale_price=40000
+                    where organization_id=? and store_id=? and product_id=? and effective_to is null
+                    """, ORG_ID, STORE_ID, APPLE_ID);
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void salesCannotReadAnotherSellerInvoiceInTheSameStore() {
+        receive(RICE_ID, "2.000", "2.000", "0.000", null);
+        ResponseEntity<Object> checkout = post(
+                "/api/v1/sales/checkout", Map.of(
+                        "items", List.of(Map.of("productId", RICE_ID, "quantity", "1.000")),
+                        "cashAmount", 50000), salesToken);
+        assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID invoiceId = UUID.fromString(body(checkout).get("id").toString());
+        String otherSalesToken = createActor("SALES");
+        UUID otherSellerId = UUID.fromString(
+                body(get("/api/v1/auth/session", otherSalesToken)).get("userId").toString());
+
+        ResponseEntity<Object> listResponse = get("/api/v1/sales/invoices", otherSalesToken);
+        ResponseEntity<Object> detailResponse = get(
+                "/api/v1/sales/invoices/" + invoiceId, otherSalesToken);
+        List<Map<String, Object>> visibleInvoices =
+                (List<Map<String, Object>>) listResponse.getBody();
+
+        assertAll(
+                () -> assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK),
+                () -> assertThat(visibleInvoices)
+                        .noneMatch(invoice -> invoiceId.toString().equals(invoice.get("id"))),
+                () -> assertThat(detailResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where id=? and sold_by<>?",
+                        invoiceId, otherSellerId)).isEqualTo(1));
+    }
+
+    @Test
+    void checkoutReplayWritesOneInvoiceAndRejectsKeyReuseWithAnotherPayload() {
+        receive(APPLE_ID, "4.000", "4.000", "0.000", null);
+        UUID idempotencyKey = UUID.randomUUID();
+        Map<String, Object> request = Map.of(
+                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.000")),
+                "cashAmount", 100000);
+        ResponseEntity<Object> first = checkoutWithKey(request, idempotencyKey);
+        ResponseEntity<Object> replay = checkoutWithKey(request, idempotencyKey);
+        Map<String, Object> changedRequest = new java.util.LinkedHashMap<>(request);
+        changedRequest.put("items", List.of(
+                Map.of("productId", APPLE_ID, "quantity", "2.000")));
+        ResponseEntity<Object> changed = checkoutWithKey(changedRequest, idempotencyKey);
+
+        assertAll(
+                () -> assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED),
+                () -> assertThat(replay.getStatusCode().value()).isIn(200, 201),
+                () -> assertThat(body(replay).get("id")).isEqualTo(body(first).get("id")),
+                () -> assertThat(changed.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                () -> assertThat(body(changed)).containsEntry("code", "IDEMPOTENCY_KEY_REUSED"),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(count(
+                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(count("""
+                        select count(*) from inventory.stock_movements
+                        where organization_id=? and movement_type='SALE'
+                        """, ORG_ID)).isEqualTo(1),
+                () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo("3.000"));
+    }
+
+    @Test
+    void checkoutReplayByAnotherSellerRejectsWithoutLeakingInvoice() {
+        receive(APPLE_ID, "2.000", "2.000", "0.000", null);
+        UUID idempotencyKey = UUID.randomUUID();
+        Map<String, Object> request = Map.of(
+                "items", List.of(Map.of("productId", APPLE_ID, "quantity", "1.000")),
+                "cashAmount", 100000);
+        ResponseEntity<Object> first = checkoutWithKey(request, idempotencyKey);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UUID invoiceId = UUID.fromString(body(first).get("id").toString());
+
+        String otherSalesToken = createActor("SALES");
+        HttpHeaders otherHeaders = headers(otherSalesToken);
+        otherHeaders.set("Idempotency-Key", idempotencyKey.toString());
+        ResponseEntity<Object> replay = http.exchange(
+                "/api/v1/sales/checkout", HttpMethod.POST,
+                new HttpEntity<>(request, otherHeaders), Object.class);
+
+        assertAll(
+                () -> assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                () -> assertThat(body(replay)).containsEntry("code", "IDEMPOTENCY_KEY_REUSED"),
+                () -> assertThat(replay.getBody().toString()).doesNotContain(invoiceId.toString()),
+                () -> assertThat(count(
+                        "select count(*) from sales.invoices where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(count(
+                        "select count(*) from sales.payments where organization_id=?", ORG_ID)).isEqualTo(1),
+                () -> assertThat(productBalance(APPLE_ID)).isEqualByComparingTo("1.000"));
+    }
+
+    private ResponseEntity<Object> checkoutWithKey(Map<String, Object> request, UUID idempotencyKey) {
+        var requestHeaders = headers(salesToken);
+        requestHeaders.set("Idempotency-Key", idempotencyKey.toString());
+        return http.exchange(
+                "/api/v1/sales/checkout", HttpMethod.POST,
+                new HttpEntity<>(request, requestHeaders), Object.class);
+    }
+
+    protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
         UUID clientOperationId = UUID.randomUUID();
         var line = new java.util.LinkedHashMap<String, Object>();
         line.put("productId", productId);
@@ -328,7 +535,7 @@ class Qa02E2eTest {
         return UUID.fromString(body(response).get("id").toString());
     }
 
-    private String createActor(String role) {
+    protected String createActor(String role) {
         UUID userId = UUID.randomUUID();
         fixtureUsers.add(userId);
         String username = "qa02_" + role.toLowerCase(Locale.ROOT) + "_" + userId;
@@ -348,17 +555,17 @@ class Qa02E2eTest {
         return login.getBody().get("accessToken").toString();
     }
 
-    private ResponseEntity<Object> post(String path, Object request, String token) {
+    protected ResponseEntity<Object> post(String path, Object request, String token) {
         return http.exchange(path, HttpMethod.POST,
                 new HttpEntity<>(request, headers(token)), Object.class);
     }
 
-    private ResponseEntity<Object> get(String path, String token) {
+    protected ResponseEntity<Object> get(String path, String token) {
         return http.exchange(path, HttpMethod.GET,
                 new HttpEntity<>(headers(token)), Object.class);
     }
 
-    private HttpHeaders headers(String token) {
+    protected HttpHeaders headers(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Organization-Id", ORG_ID.toString());
@@ -369,12 +576,12 @@ class Qa02E2eTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> body(ResponseEntity<Object> response) {
+    protected Map<String, Object> body(ResponseEntity<Object> response) {
         assertThat(response.getBody()).isInstanceOf(Map.class);
         return (Map<String, Object>) response.getBody();
     }
 
-    private BigDecimal productBalance(UUID productId) {
+    protected BigDecimal productBalance(UUID productId) {
         return jdbc.queryForObject("""
                 select coalesce(sum(on_hand_quantity),0)
                 from inventory.inventory_balances
@@ -382,12 +589,12 @@ class Qa02E2eTest {
                 """, BigDecimal.class, ORG_ID, STORE_ID, productId);
     }
 
-    private int count(String sql, Object... args) {
+    protected int count(String sql, Object... args) {
         Integer result = jdbc.queryForObject(sql, Integer.class, args);
         return result == null ? 0 : result;
     }
 
-    private BigDecimal decimal(Object value) {
+    protected BigDecimal decimal(Object value) {
         return new BigDecimal(value.toString());
     }
 }

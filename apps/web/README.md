@@ -105,6 +105,10 @@ Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), k
 
 Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 17 disposable, chạy Spring API với mật khẩu demo sinh ngẫu nhiên và thực thi Playwright qua proxy thật. Test cho POST commit vào database nhưng response bị cắt ở trình duyệt, rồi reload/đăng nhập lại và xác nhận UI chỉ GET theo `clientOperationId`, tìm được phiếu và không POST lần hai. Script luôn dừng API, xóa container cùng credential tạm sau khi chạy.
 
+Lệnh live FE-02 mặc định loại test sales có tag `@qa02-gap05` vì đây là ca expected-red theo dõi tại Issue #34, không phải regression FE-02. Dùng `pwsh -File scripts/test-qa02-gap05-live.ps1` để chủ động tái hiện riêng GAP-05 trên API/PostgreSQL disposable; failure của lệnh này không được ghi là regression mới hoặc Pass trước khi provider/consumer fix liên quan đã tích hợp.
+
+Sau khi provider/consumer GAP-01…05 có trên nhánh kiểm thử, dùng `pwsh -File scripts/test-qa02-gap06-live.ps1` để chạy một luồng browser nhận hàng → checkout CASH → hóa đơn → báo cáo trên cùng API/PostgreSQL disposable. Runner đối chiếu delta receipt/invoice/payment/revenue và balance với movement ledger bằng SQL độc lập; CI chạy cùng test và oracle trong job `QA-02 live receive-sale-report`.
+
 `pwsh -NoProfile -File scripts/test-qa03-live.ps1` tạo môi trường tương tự cho QA-03, build PWA vào thư mục tạm, kiểm mobile offline/reload/reconnect, cắt phản hồi count đầu để thử idempotent retry, duyệt bằng MANAGER, đối soát balance/movement, RBAC và stale snapshot. Runner tạo hai ảnh chọn lọc trong `docs/testing/evidence/qa-03` và dọn database, API, preview, trace/output tạm sau khi chạy.
 
 ## Tài liệu và cấu trúc

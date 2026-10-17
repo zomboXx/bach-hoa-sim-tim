@@ -8,6 +8,28 @@
 - Integration fix đã chạy gate: `654992fc8b44be9719b7fa4f82028894f2f9e6f8`
 - Base tích hợp: `4a665f7b9aab5e80500b36272ff551512af91f32`
 
+> Đây là báo cáo lịch sử ngày 07/10/2026 và không được viết lại để che trạng thái
+> 17 Pass, 3 Fail, 3 Blocked. Việc tái hiện theo quyết định mới tại Issue #34 được
+> ghi riêng trong [checkpoint ngày 11/10/2026](QA-02-gap-checkpoint-2026-10-11.md).
+
+> Cập nhật điều phối ngày 12/10/2026: TV1 đã chốt owner/reviewer và thứ tự xử lý
+> sáu GAP tại #34. Ca live sales expected-red của GAP-05 có runner riêng và không
+> còn chạy trong lệnh live FE-02 mặc định; lệnh mặc định đã chạy lại đạt 2/2 trên
+> API/PostgreSQL disposable. Cập nhật này không đổi kết quả báo cáo.
+
+> Follow-up QA ngày 13/10/2026 trên head PR #53: GAP-05 live 2/2, GAP-06
+> nhận–bán–báo cáo 1/1 với DB oracle và root gate 14/14 demo, 49/49 consumer,
+> 165/165 backend đều đạt. Xem [evidence GAP-06](QA-02-gap06-evidence-2026-10-13.md).
+> Chưa viết lại kết luận lịch sử hoặc tích #34 trước khi PR merge và CI được review.
+
+> Follow-up review ngày 17/10/2026 trên base `7ae6112`: PWA đã hiển thị quote
+> server trước checkout, bỏ tồn/đơn vị giả và giữ nguyên payload +
+> `Idempotency-Key` khi mất response. Browser live bấm lại cùng operation; GAP-05
+> 2/2 và GAP-06 1/1 đạt với oracle invoice/payment/SALE movement độc lập. Xem
+> [evidence ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md). Trạng thái lịch
+> sử và checkbox #34 vẫn chờ merge, CI head mới và QA chạy lại trên `main`.
+> CI của bản sửa: [`baseline-quality` run 39040328554](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554), **5/5 job Pass**.
+
 ## 1. Kết quả hiện hành
 
 Suite QA xuyên module mới chạy 5/5 Pass trên HTTP thật và PostgreSQL sạch. Nó chứng minh receipt accepted/rejected và replay, CASH checkout/invoice/report, rollback đa sản phẩm, cạnh tranh lô cuối, quyền report và oracle ledger độc lập.

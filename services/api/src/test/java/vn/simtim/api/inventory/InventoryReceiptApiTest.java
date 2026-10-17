@@ -38,6 +38,7 @@ class InventoryReceiptApiTest {
     static final String STORE_ID = "10000000-0000-0000-0000-000000000002";
     static final String SUPPLIER_ID = "10000000-0000-0000-0000-000000000061";
     static final String PRODUCT_RICE_ID = "10000000-0000-0000-0000-000000000041";
+    static final String PRODUCT_APPLE_ID = "10000000-0000-0000-0000-000000000042";
 
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("simtim_inv_test");
@@ -236,6 +237,65 @@ class InventoryReceiptApiTest {
             assertThat(jdbc.queryForObject("select count(*) from inventory.stock_movements", Integer.class))
                     .isEqualTo(movementsBefore);
         }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void confirmReceipt_fractionalEaQuantity_returns422QuantityPrecisionAndRollsBack() {
+        UUID clientOpId = UUID.randomUUID();
+        Map<String, Object> body = new HashMap<>(validReceiptBody(clientOpId));
+        Map<String, Object> line = new HashMap<>((Map<String, Object>) ((List<?>) body.get("lines")).get(0));
+        // PRODUCT_RICE_ID có đơn vị EA (precision_scale = 0), gửi số lượng lẻ 0.500
+        line.put("expectedQuantity", "0.500");
+        line.put("deliveredQuantity", "0.500");
+        line.put("acceptedQuantity", "0.500");
+        line.put("rejectedQuantity", "0.000");
+        body.put("lines", List.of(line));
+
+        int receiptsBefore = jdbc.queryForObject("select count(*) from inventory.goods_receipts", Integer.class);
+        int batchesBefore = jdbc.queryForObject("select count(*) from inventory.product_batches", Integer.class);
+        int balancesBefore = jdbc.queryForObject("select count(*) from inventory.inventory_balances", Integer.class);
+        int movementsBefore = jdbc.queryForObject("select count(*) from inventory.stock_movements", Integer.class);
+
+        var response = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(body, authHeaders(stockToken, UUID.randomUUID())), Map.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
+        assertThat(response.getBody()).containsEntry("code", "QUANTITY_PRECISION");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from inventory.goods_receipts where client_operation_id=?",
+                Integer.class, clientOpId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from inventory.goods_receipts", Integer.class))
+                .isEqualTo(receiptsBefore);
+        assertThat(jdbc.queryForObject("select count(*) from inventory.product_batches", Integer.class))
+                .isEqualTo(batchesBefore);
+        assertThat(jdbc.queryForObject("select count(*) from inventory.inventory_balances", Integer.class))
+                .isEqualTo(balancesBefore);
+        assertThat(jdbc.queryForObject("select count(*) from inventory.stock_movements", Integer.class))
+                .isEqualTo(movementsBefore);
+    }
+
+    @Test
+    void confirmReceipt_validFractionalKgQuantity_creates201Successfully() {
+        UUID clientOpId = UUID.randomUUID();
+        var body = Map.of(
+                "supplierId", SUPPLIER_ID,
+                "clientOperationId", clientOpId.toString(),
+                "lines", List.of(Map.of(
+                        "productId", PRODUCT_APPLE_ID,
+                        "expectedQuantity", "1.250",
+                        "deliveredQuantity", "1.250",
+                        "acceptedQuantity", "1.250",
+                        "rejectedQuantity", "0.000",
+                        "unitCost", 30000,
+                        "expiryDate", LocalDate.now().plusDays(15).toString()
+                )));
+
+        var response = rest.exchange("/api/v1/inventory/receipts", HttpMethod.POST,
+                new HttpEntity<>(body, authHeaders(stockToken, UUID.randomUUID())), Map.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(201);
+        assertThat(response.getBody()).containsEntry("status", "CONFIRMED");
     }
 
     @Test
