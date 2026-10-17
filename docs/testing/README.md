@@ -30,6 +30,12 @@ Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 
 
 [Ma trận truy vết bản làm việc](DOC-01-traceability-working.md) nối yêu cầu vận hành và đào tạo với thiết kế, code, test và phần bằng chứng còn thiếu tại `main` ngày 14/10/2026. Đây là đầu vào cho DOC-01 và QA-04, chưa phải kết quả Pass hay báo cáo cuối.
 
+## TRN-02 — Kịch bản đào tạo
+
+[Kịch bản kiểm thử thủ công TRN-02](TRN-02-manual-test-script.md) hướng dẫn TV4 kiểm luồng đúng, sai, đảo thứ tự, bỏ dở, chơi lại và cách ly hóa đơn/tồn; đồng thời ghi checklist để TV1 review luật chấm và TV2 review contract. Bảng kết quả khởi tạo là `Not run`/`Blocked`, không phải bằng chứng nghiệm thu.
+
+[Test report TRN-02](TRN-02-test-report.md) là mẫu tổng hợp môi trường, kết quả tự động/thủ công, lỗi, oracle cách ly dữ liệu và comment ngắn để cập nhật Issue #55. Trạng thái ban đầu là chưa kết luận cho tới khi TV4 điền đủ kết quả thực thi.
+
 ## QA-03 — Desktop/mobile/offline kiểm kê
 
 Đọc theo thứ tự:
