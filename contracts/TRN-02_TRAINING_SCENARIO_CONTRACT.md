@@ -137,12 +137,15 @@ Oracle phân tích chuỗi `actions: readonly TrainingActionEvent[]` đối chi�
    - Từng sự kiện bắt buộc có `choiceKey` tồn tại trong catalog server.
    - Trả về định nghĩa lựa chọn chính thức; nếu `!choice.isRight`, hành động không được tính để hoàn thành bước.
 2. **Suy diễn tiến trình hoàn thành tuần tự (`deriveCompletedStages`):**
+   - Chỉ lựa chọn đúng của bước đang chờ mới đưa tiến trình sang bước kế tiếp. Lựa chọn của bước sau được gửi sớm không được tích lũy để hoàn thành sau đó; `hint_ack` không hoàn thành bước nào.
    - **Bước `checkout`:** Bắt buộc quét đủ **cả 2 mã khác nhau** `REQUIRED_CHECKOUT_SCAN_KEYS = ['scan_item_1', 'scan_item_2']` (lưu trữ bằng `Set<string>`, quét trùng 1 mã 2 lần không được công nhận) VÀ có hành động trả tiền đúng `REQUIRED_CHECKOUT_TENDER_KEY = 'tender_3k_receipt'`.
+   - Hành động trả tiền đúng chỉ hoàn thành checkout nếu xảy ra **sau** hai lần quét hợp lệ; trả tiền trước rồi quét bù không được tính.
    - **Các bước khác (`greet`, `milk`, `cooler`, `quarantine`, `mentor`):** Được ghi nhận hoàn thành khi xuất hiện lựa chọn đúng thuộc `stage` tương ứng theo cấu hình catalog server.
    - Kết quả trả về danh sách các stage hoàn thành nằm trong `catalog.requiredStages`.
 
 ### 3.4. Công thức tính điểm và Xếp loại Authoritative
 - **Tỷ lệ chính xác (Accuracy Ratio):** $\text{accuracyRatio} = \frac{\text{rightCount}}{\text{totalActions}}$
+- Khi tính tỷ lệ, bỏ `hint_ack` và các lần lặp lại cùng một lựa chọn đúng; lựa chọn sai vẫn được tính mỗi lần. Cách này ngăn việc gửi lặp hành động đúng để pha loãng lỗi.
 - **Tỷ lệ hoàn thành bước (Stage Ratio):** $\text{stageRatio} = \frac{\text{completedStages.length}}{\text{requiredStages.length}}$
 - **Điểm số (Score):**
   - Nếu hoàn thành tất cả các bước: $\text{score} = \text{round}(\text{accuracyRatio} \times 100)$
