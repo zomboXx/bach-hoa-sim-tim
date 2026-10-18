@@ -79,45 +79,26 @@ Nếu `up --wait` thất bại, kiểm tra `docker compose ... ps` và `logs --t
 
 Theo [NFR-BAC-01](../docs/product/analysis/02-danh-sach-yeu-cau.md) và tiêu chí chấp nhận của [QA-04](../docs/testing/QA-04-test-report.md), quy trình sao lưu và khôi phục được kiểm chứng độc lập trên PostgreSQL sạch.
 
-### 5.1. Dùng script tiện ích
+### 5.1. Sao lưu đúng project đang chạy
 
-Chạy tại thư mục gốc repository:
-
-```powershell
-# Sao lưu dữ liệu hiện tại ra file SQL timestamped
-pwsh -File scripts/backup-db.ps1
-
-# Hoặc chỉ định đường dẫn file đầu ra cụ thể
-pwsh -File scripts/backup-db.ps1 -OutFile "infra/backups/demo_checkpoint.sql"
-
-# Khôi phục vào CSDL từ file bản sao
-pwsh -File scripts/restore-db.ps1 -BackupFile "infra/backups/demo_checkpoint.sql"
-```
-
-### 5.2. Lệnh trực tiếp qua Docker Compose
-
-1. **Sao lưu dữ liệu từ service PostgreSQL:**
+Chạy tại thư mục gốc repository. Truyền cùng tên project và env file đã dùng khi `up` để không chạm vào bản demo khác:
 
 ```powershell
-docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres pg_dump -U simtim -d simtim --clean --if-exists > infra/backups/demo_backup.sql
+$sourceProject = 'simtim-demo' # thay bằng giá trị sau -p lúc khởi động
+$envFile = 'infra/.env'
+$dump = 'infra/backups/demo_checkpoint.sql'
+pwsh -File scripts/backup-db.ps1 -ProjectName $sourceProject -EnvFile $envFile -OutFile $dump
 ```
 
-2. **Dựng môi trường PostgreSQL sạch (xóa toàn bộ volume cũ):**
+### 5.2. Thử khôi phục trên project mới
+
+Tạo tên project riêng; chỉ khởi động PostgreSQL, không dùng lại volume của bản nguồn. Script restore dùng `ON_ERROR_STOP=1` và một transaction nên SQL lỗi trả mã khác 0 và rollback:
 
 ```powershell
-docker compose --env-file infra/.env -f infra/compose.demo.yml down -v
-docker compose --env-file infra/.env -f infra/compose.demo.yml up -d --wait
+$restoreProject = 'simtim-restore-' + (Get-Date -Format yyyyMMddHHmmss)
+docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml up -d --wait postgres
+pwsh -File scripts/restore-db.ps1 -ProjectName $restoreProject -EnvFile $envFile -BackupFile $dump
+docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml exec -T postgres psql -U simtim -d simtim -Atc 'select count(*) from sales.invoices'
 ```
 
-3. **Khôi phục dữ liệu vào môi trường sạch:**
-
-```powershell
-Get-Content infra/backups/demo_backup.sql -Raw | docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres psql -U simtim -d simtim
-```
-
-4. **Kiểm tra tính toàn vẹn sau phục hồi:**
-
-- Xác nhận HTTP health: `Invoke-RestMethod http://127.0.0.1:8080/actuator/health` trả `status: UP`.
-- Đăng nhập web **http://127.0.0.1:5174** bằng tài khoản `manager` / `SIMTIM_DEMO_PASSWORD`.
-- Vào **Báo cáo** đối soát doanh thu và số hóa đơn đã checkout trước khi sao lưu.
-- Vào **Tồn kho & lô hàng** đối soát số lượng tồn khả dụng và lịch sử biến động khớp với số liệu trước phục hồi (`on_hand_quantity = SUM(quantity_delta)`).
+Đối chiếu thêm số dư, `SUM(quantity_delta)`, hóa đơn/thanh toán và kết quả học trước/sau bằng SQL trên hai project. Khi đã lưu bằng chứng, dọn **chỉ project khôi phục vừa tạo** bằng `docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml down -v`. Không chạy `down -v` trên project nguồn.
