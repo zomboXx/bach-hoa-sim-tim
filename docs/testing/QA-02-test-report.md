@@ -30,6 +30,13 @@
 > sử và checkbox #34 vẫn chờ merge, CI head mới và QA chạy lại trên `main`.
 > CI của bản sửa: [`baseline-quality` run 39040328554](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554), **5/5 job Pass**.
 
+> Follow-up review ngày 18/10/2026 trên base `0972629`: giữ nguyên pending
+> operation cho HTTP 5xx thay vì xóa payload/key khi proxy trả 502/503. Consumer
+> test HTTP 502 và live browser test commit thật rồi thay response bằng 502 đều
+> replay cùng payload + `Idempotency-Key`; GAP-05 2/2 và GAP-06 1/1 đạt với DB
+> oracle độc lập. Xem [evidence ngày 18/10](QA-02-sales-502-evidence-2026-10-18.md).
+> Chưa đổi kết luận lịch sử hoặc checkbox #34 trước merge và QA lại trên `main`.
+
 ## 1. Kết quả hiện hành
 
 Suite QA xuyên module mới chạy 5/5 Pass trên HTTP thật và PostgreSQL sạch. Nó chứng minh receipt accepted/rejected và replay, CASH checkout/invoice/report, rollback đa sản phẩm, cạnh tranh lô cuối, quyền report và oracle ledger độc lập.

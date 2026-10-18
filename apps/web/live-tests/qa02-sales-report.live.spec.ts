@@ -65,7 +65,7 @@ test("@qa02-gap05 QA02-WEB-002: sales uses live quote, CASH checkout and invoice
   await expect(page.locator(".invoice-row").first()).toBeVisible();
 });
 
-test("@qa02-gap05 QA02-WEB-003: lost checkout response retries one persisted operation", async ({
+test("@qa02-gap05 QA02-WEB-003: HTTP 502 after commit retries one persisted operation", async ({
   page,
 }) => {
   const checkoutRequests: Array<{ key: string | undefined; body: string | null }> = [];
@@ -75,9 +75,16 @@ test("@qa02-gap05 QA02-WEB-003: lost checkout response retries one persisted ope
       body: route.request().postData(),
     });
     const resp = await route.fetch();
-    // The first request commits on the real server, but its response is lost.
+    // The first request commits on the real server, but the proxy reports 502.
     if (checkoutRequests.length === 1 && resp.ok()) {
-      await route.abort("timedout");
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "TEMPORARILY_UNAVAILABLE",
+          message: "Upstream response was lost after commit",
+        }),
+      });
     } else {
       await route.fulfill({ response: resp });
     }
@@ -92,6 +99,7 @@ test("@qa02-gap05 QA02-WEB-003: lost checkout response retries one persisted ope
   await page.getByRole("button", { name: "Xác nhận thanh toán", exact: false }).click();
 
   await expect.poll(() => checkoutRequests.length, { timeout: 10_000 }).toBe(1);
+  await expect(page.getByText(/502.*chưa chắc chắn/i)).toBeVisible();
   await expect(page.getByText(/lần thử tiếp theo sẽ dùng đúng mã giao dịch/i)).toBeVisible();
   await expect(page.getByLabel("Khách đưa")).toBeDisabled();
   await page.getByRole("button", { name: /Thử lại cùng mã giao dịch/ }).click();

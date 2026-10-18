@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-18 19:47:09
+
+Sửa P1 review PR #53 trên base `0972629`: checkout API không còn xóa pending payload và `Idempotency-Key` khi proxy trả HTTP 5xx sau lúc server có thể đã commit. PWA giữ nguyên operation cho kết quả chưa chắc chắn, chỉ bỏ operation khi giao dịch bị từ chối chắc chắn (4xx) hoặc đã hoàn tất. Bổ sung consumer test 502 và live browser test commit thật → proxy 502 → bấm lại cùng key/payload; cập nhật evidence GAP-05/06 nhưng chưa chuyển #34 sang Pass.
+
+Validation: lint, format, typecheck và build Pass; API consumer in đủ `50/50` ca `ok`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một, revenue tăng 40.000 và ledger khớp.
+
+- `apps/web/src/App.vue`: phân loại checkout HTTP 5xx là kết quả chưa chắc chắn và giữ pending operation
+- `apps/web/tests/api-sale.spec.ts`: consumer test HTTP 502 retry cùng key/payload
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: commit backend thật rồi trả 502 cho trình duyệt và replay
+- `docs/testing`: evidence ngày 18/10, test report và traceability follow-up
+- `CONTRIBUTION_LOG.md`: bổ sung mục này
+
+---
 TV4 — Lê Văn Chiến - 2026-10-17 21:15:43
 
 Sửa review PR #53 trên base `7ae6112`: API sale lấy và hiển thị quote server trước checkout, chỉ cho phép CASH, không hiển thị tồn/đơn vị giả; khi mất response, PWA khóa operation và retry đúng payload + `Idempotency-Key`. Bổ sung consumer/live browser test bấm lần hai sau commit, oracle PostgreSQL đếm độc lập invoice/payment/SALE movement và tách output live build/test để tránh lỗi file lock trên Windows. Giữ nguyên kết luận lịch sử QA-02 và chưa đánh dấu #34 Pass trước merge.

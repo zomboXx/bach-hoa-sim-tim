@@ -727,6 +727,10 @@ function restorePendingCheckout() {
   }
 }
 
+function checkoutOutcomeIsUncertain(error: SaleApiError) {
+  return error.status >= 500;
+}
+
 async function refreshApiQuote() {
   if (isDemoMode || pendingApiCheckout.value) return;
   const revision = ++apiQuoteRevision;
@@ -852,6 +856,14 @@ async function pay() {
       invoice = await saleAdapter.checkout(operation);
     } catch (e) {
       if (e instanceof SaleApiError) {
+        if (checkoutOutcomeIsUncertain(e)) {
+          throw new Error(
+            `Máy chủ trung gian trả lỗi ${e.status}; kết quả thanh toán chưa chắc chắn. Giao dịch được giữ nguyên, hãy bấm thử lại để dùng đúng mã giao dịch.`,
+            { cause: e },
+          );
+        }
+        // A 4xx response definitively rejected this operation, so the cashier
+        // may correct the cart/quote and start a new checkout with a new key.
         storePendingCheckout();
         if (e.code === "PRICE_CHANGED") {
           void refreshApiQuote();

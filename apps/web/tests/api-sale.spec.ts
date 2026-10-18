@@ -11,9 +11,10 @@
  *   4. PRICE_CHANGED error during checkout is shown clearly to user
  *   5. INSUFFICIENT_STOCK error during checkout is shown clearly to user
  *   6. Checkout response loss retries the same payload and Idempotency-Key
- *   7. FORBIDDEN (403) on listInvoices shows error state with retry button
- *   8. MANAGER/ADMIN sees full store invoice list (sales.read.store permission)
- *   9. SALES user cannot see Bán hàng or Hóa đơn without sales.* permissions
+ *   7. HTTP 502 after checkout commit retries the same payload and Idempotency-Key
+ *   8. FORBIDDEN (403) on listInvoices shows error state with retry button
+ *   9. MANAGER/ADMIN sees full store invoice list (sales.read.store permission)
+ *  10. SALES user cannot see Bán hàng or Hóa đơn without sales.* permissions
  */
 
 import { expect, test, type Page, type Route } from "@playwright/test";
@@ -347,6 +348,50 @@ test("checkout response loss retries the exact same payload and Idempotency-Key"
   await page.getByLabel("Khách đưa").fill("30000");
   await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
 
+  await expect(page.getByText(/lần thử tiếp theo sẽ dùng đúng mã giao dịch/i)).toBeVisible();
+  await expect(page.getByLabel("Khách đưa")).toBeDisabled();
+  await page.getByRole("button", { name: /Thử lại cùng mã giao dịch/ }).click();
+
+  await expect.poll(() => checkoutCalls.length).toBe(2);
+  expect(checkoutCalls[0].key).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(checkoutCalls[1].key).toBe(checkoutCalls[0].key);
+  expect(checkoutCalls[1].body).toBe(checkoutCalls[0].body);
+  await expect(page.locator(".invoice-row").first()).toContainText("INV-ABCD1234");
+});
+
+test("HTTP 502 after checkout commit retries the exact same payload and Idempotency-Key", async ({
+  page,
+}) => {
+  await installLogin(page);
+  await installCatalog(page);
+
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  const checkoutCalls: Array<{ key: string | undefined; body: string | null }> = [];
+  await page.route("**/api/v1/sales/checkout", async (route) => {
+    checkoutCalls.push({
+      key: route.request().headers()["idempotency-key"],
+      body: route.request().postData(),
+    });
+    if (checkoutCalls.length === 1) {
+      // The upstream committed, but the proxy could not return that success.
+      await json(route, 502, {
+        code: "TEMPORARILY_UNAVAILABLE",
+        message: "Upstream response was lost after commit",
+      });
+    } else {
+      await json(route, 200, sampleInvoice);
+    }
+  });
+  await page.route("**/api/v1/sales/invoices", (route) => json(route, 200, [sampleInvoice]));
+
+  await signIn(page);
+  await openSale(page);
+  await expect(page.locator(".product-card").first()).toBeVisible();
+  await page.locator(".product-card").first().click();
+  await page.getByLabel("Khách đưa").fill("30000");
+  await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
+
+  await expect(page.getByText(/502.*chưa chắc chắn/i)).toBeVisible();
   await expect(page.getByText(/lần thử tiếp theo sẽ dùng đúng mã giao dịch/i)).toBeVisible();
   await expect(page.getByLabel("Khách đưa")).toBeDisabled();
   await page.getByRole("button", { name: /Thử lại cùng mã giao dịch/ }).click();

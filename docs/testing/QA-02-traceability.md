@@ -26,6 +26,13 @@ Các PR provider/consumer đã có trong lịch sử `origin/main` của source 
 > payment và SALE movement cùng tăng hai; ledger không lệch. Xem
 > [evidence ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md).
 
+> Follow-up review ngày 18/10/2026 bổ sung phân loại kết quả checkout chưa chắc
+> chắn: HTTP 5xx giữ pending operation, HTTP 4xx mới xóa để sửa giỏ. Consumer và
+> live browser test HTTP 502 replay cùng payload/key; oracle GAP-05 xác nhận ba
+> request chỉ tạo hai invoice/payment/SALE movement, ledger không lệch. Xem
+> [evidence ngày 18/10](QA-02-sales-502-evidence-2026-10-18.md). Trạng thái vẫn
+> chờ merge, chạy lại trên `main` và TV1 duyệt.
+
 | ID | Backlog/contract | Automated test / oracle | Actual | Status |
 |---|---|---|---|---|
 | QA02-REC-001 | INV-01 nhận đủ tạo receipt/lô/balance/movement nguyên tử | `Qa02E2eTest#receiptToCashInvoiceAndReportsReconcileWithIndependentSqlOracle`; query receipt/ledger | Một receipt, một lô và RECEIPT movement; ledger khớp balance | Pass |
