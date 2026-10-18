@@ -105,6 +105,8 @@ export class TrainingRun {
   private flushing?: Promise<void>;
   private failed = false;
   private completed = false;
+  private started = false;
+  private stopped = false;
 
   constructor(
     private readonly api: TrainingApiAdapter,
@@ -116,23 +118,33 @@ export class TrainingRun {
   ) {}
 
   start(): Promise<void> {
+    if (this.stopped) return Promise.resolve();
+    this.started = true;
     return this.flush();
   }
 
   append(action: TrainingActionInput): void {
-    if (this.completed) return;
+    if (this.completed || this.stopped) return;
     this.pending.push(action);
     this.update("Đang lưu tiến độ đào tạo…");
     if (!this.failed) void this.flush();
   }
 
   retry(): Promise<void> {
+    if (this.stopped) return Promise.resolve();
     this.failed = false;
     return this.flush();
   }
 
   async abandon(): Promise<void> {
+    this.stopped = true;
     if (this.flushing) await this.flushing;
+    if (!this.sessionId && this.started) {
+      // The server may have created the session before its response was lost.
+      const scenario = await this.api.retailScenario();
+      const session = await this.api.start(scenario.id, this.startKey);
+      this.sessionId = session.id;
+    }
     if (this.sessionId && !this.completed) await this.api.abandon(this.sessionId);
   }
 
@@ -145,7 +157,8 @@ export class TrainingRun {
       })
       .finally(() => {
         this.flushing = undefined;
-        if (this.pending.length && !this.failed && !this.completed) void this.flush();
+        if (this.pending.length && !this.failed && !this.completed && !this.stopped)
+          void this.flush();
       });
     return this.flushing;
   }
@@ -158,7 +171,7 @@ export class TrainingRun {
       this.sessionId = session.id;
       this.nextSequence = session.nextActionSequence;
     }
-    while (this.pending.length && !this.completed) {
+    while (this.pending.length && !this.completed && !this.stopped) {
       const action = this.pending[0];
       const response = await this.api.action(this.sessionId, this.nextSequence, action);
       this.pending.shift();
@@ -168,6 +181,7 @@ export class TrainingRun {
         this.update("Kết quả đã lưu trên máy chủ.", response.result);
       }
     }
-    if (!this.pending.length && !this.completed) this.update("Tiến độ đã lưu trên máy chủ.");
+    if (!this.pending.length && !this.completed && !this.stopped)
+      this.update("Tiến độ đã lưu trên máy chủ.");
   }
 }
