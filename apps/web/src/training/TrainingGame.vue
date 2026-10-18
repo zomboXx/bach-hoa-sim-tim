@@ -23,6 +23,7 @@ const props = defineProps<{
   employeeName: string;
   saveStatus?: string;
   saveError?: boolean;
+  serverResultRequired?: boolean;
   savedResult?: TrainingSavedResult;
   history?: TrainingHistoryItem[];
 }>();
@@ -1284,13 +1285,22 @@ onUnmounted(() => {
         <p>Bạn đã trực tiếp chăm khách, bán hàng và xử lý hàng trên kệ trong cửa hàng 2D.</p>
         <div class="evaluation-card" data-testid="shift-summary">
           <div class="evaluation-score-pill" data-testid="evaluation-score">
-            <strong>{{ evaluation.score }}</strong> / 100 điểm
+            <template v-if="serverResultRequired && !savedResult"
+              >Đang chờ điểm từ máy chủ</template
+            >
+            <template v-else
+              ><strong>{{ evaluation.score }}</strong> / 100 điểm</template
+            >
           </div>
           <div
             :class="['evaluation-grade-pill', 'grade-' + evaluation.grade.toLowerCase()]"
             data-testid="evaluation-grade"
           >
-            {{ evaluation.gradeLabel }}
+            {{
+              serverResultRequired && !savedResult
+                ? "Chưa có kết quả chính thức"
+                : evaluation.gradeLabel
+            }}
           </div>
         </div>
         <p role="status" data-testid="training-result-save-status">
