@@ -2,7 +2,7 @@
 
 - QA owner: TV4 — Lê Văn Chiến (`@VanChien11-02`)
 - Reviewer: TV1 — Nguyễn Đức Phát (`@zomboXx`)
-- Base được review: `0972629`; bản sửa nằm trên PR [#53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53)
+- Base được review: `0972629`; bản sửa `6ff393c` nằm trên PR [#53](https://github.com/zomboXx/bach-hoa-sim-tim/pull/53)
 - Theo dõi: [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34), `Refs #34 — S2-GAP-05, S2-GAP-06`
 - Runtime: Windows, Docker Desktop 29.8.2, PostgreSQL 17.11 disposable
 
@@ -36,6 +36,7 @@ Kết quả:
 - GAP-05 live: **2/2 Pass**. Suite gửi ba checkout request cho hai operation bán; request replay sau HTTP 502 giữ nguyên payload và `Idempotency-Key`.
 - Oracle GAP-05: `receipt_delta=0; invoice_delta=2; payment_delta=2; sale_movement_delta=2; revenue_delta=80000; balance_mismatches=0`. Vì chỉ có hai operation, replay không tạo invoice/payment/movement thứ hai.
 - GAP-06 live: **1/1 Pass**; oracle `receipt_delta=1; invoice_delta=1; payment_delta=1; sale_movement_delta=1; revenue_delta=40000; balance_mismatches=0`.
+- GitHub Actions [`baseline-quality` run 39128836102](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39128836102) trên commit `6ff393c` đạt **5/5 job**: Repository policy, Web baseline, API bootstrap, QA-02 live receive-sale-report và Demo Compose.
 
 ## Điều kiện tích hợp
 

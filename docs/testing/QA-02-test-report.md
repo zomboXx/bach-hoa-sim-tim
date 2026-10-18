@@ -36,6 +36,7 @@
 > replay cùng payload + `Idempotency-Key`; GAP-05 2/2 và GAP-06 1/1 đạt với DB
 > oracle độc lập. Xem [evidence ngày 18/10](QA-02-sales-502-evidence-2026-10-18.md).
 > Chưa đổi kết luận lịch sử hoặc checkbox #34 trước merge và QA lại trên `main`.
+> CI của bản sửa HTTP 502: [`baseline-quality` run 39128836102](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39128836102), **5/5 job Pass**.
 
 ## 1. Kết quả hiện hành
 

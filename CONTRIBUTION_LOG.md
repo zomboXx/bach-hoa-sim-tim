@@ -28,6 +28,8 @@ Sửa P1 review PR #53 trên base `0972629`: checkout API không còn xóa pendi
 
 Validation: lint, format, typecheck và build Pass; API consumer in đủ `50/50` ca `ok`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một, revenue tăng 40.000 và ledger khớp.
 
+GitHub Actions [`39128836102`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39128836102) trên commit `6ff393c` đạt 5/5 job, gồm `QA-02 live receive-sale-report`.
+
 - `apps/web/src/App.vue`: phân loại checkout HTTP 5xx là kết quả chưa chắc chắn và giữ pending operation
 - `apps/web/tests/api-sale.spec.ts`: consumer test HTTP 502 retry cùng key/payload
 - `apps/web/live-tests/qa02-sales-report.live.spec.ts`: commit backend thật rồi trả 502 cho trình duyệt và replay
