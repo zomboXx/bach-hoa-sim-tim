@@ -5,6 +5,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 ## Unreleased
 
 ### Added
+
+- TRN-03 (#56): thêm provider và Flyway V15 cho kịch bản, lựa chọn, phiên, hành động, kết quả đào tạo; server chấm theo bản chụp lựa chọn, kiểm phạm vi từ Bearer session, chống ghi/đếm điểm lặp khi retry và giữ dữ liệu bán/tồn độc lập. Cần seed kịch bản từ PR #66 và nối PWA trước khi đóng issue.
 - **TRN-02 contract & oracle (TV3)** (#55): Chuẩn hóa giao thức sự kiện đào tạo độc lập client/server:
   - Bổ sung bộ định danh ổn định (Vocabulary of Stable Identifiers) cho toàn bộ hành động (`actionType`), đích tương tác (`targetKey`) và mã lựa chọn (`choiceKey`).
   - Thiết lập bảng ánh xạ tĩnh lựa chọn đúng/sai theo phiên bản kịch bản (`SCENARIO_CHOICE_MAP_V1` cho `SCN-RETAIL-01` v1.0.0) độc lập ở cả client và server, loại bỏ sự phụ thuộc vào cờ boolean do client gửi.
