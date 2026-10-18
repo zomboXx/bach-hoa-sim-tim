@@ -37,6 +37,8 @@ Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 
 
 Checkpoint ngày 15/10/2026: TV2 đã chạy suite QA-04 và đối soát CSDL độc lập trên PostgreSQL 17 Testcontainers; khôi phục CSDL demo sạch thành công; đối soát đầy đủ 6 GAP của Issue #34.
 
+Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi kết quả cục bộ sau khi ghép TRN-01/02/03: Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. Kết luận QA cuối vẫn chờ TV4 review, CI và mã tích hợp lên `main`.
+
 ## DOC-01 — Truy vết bản cuối kỳ
 
 [Ma trận truy vết bản làm việc](DOC-01-traceability-working.md) nối yêu cầu vận hành và đào tạo với thiết kế, code, test và phần bằng chứng còn thiếu tại `main` ngày 14/10/2026. Đây là đầu vào cho DOC-01 và QA-04, chưa phải kết quả Pass hay báo cáo cuối.
