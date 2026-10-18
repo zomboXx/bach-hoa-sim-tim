@@ -233,13 +233,24 @@ function expiryLabel(status: string) {
 }
 
 function movementLabel(type: string) {
-  return { RECEIPT: "Nhận hàng", SALE: "Bán hàng", ADJUSTMENT: "Điều chỉnh" }[type] || type;
+  return (
+    {
+      RECEIPT: "Nhận hàng",
+      SALE: "Bán hàng",
+      ADJUSTMENT: "Điều chỉnh",
+      STOCKTAKE_ADJUSTMENT: "Điều chỉnh kiểm kê",
+    }[type] || type
+  );
 }
 
 function sourceLabel(type: string) {
   return (
-    { GOODS_RECEIPT: "Phiếu nhận", INVOICE: "Hóa đơn", ADJUSTMENT: "Phiếu điều chỉnh" }[type] ||
-    type
+    {
+      GOODS_RECEIPT: "Phiếu nhận",
+      INVOICE: "Hóa đơn",
+      ADJUSTMENT: "Phiếu điều chỉnh",
+      STOCKTAKE: "Phiếu kiểm kê",
+    }[type] || type
   );
 }
 

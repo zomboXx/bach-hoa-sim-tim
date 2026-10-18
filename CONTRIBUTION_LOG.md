@@ -22,30 +22,55 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
-TV2 — Nguyễn Văn Trung - 2026-10-15 08:09:00
+TV2 — Nguyễn Văn Trung - 2026-10-18 20:15:00
 
-Thực hiện [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) từ branch `main`.
+Cập nhật [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) đồng bộ từ `main` mới nhất (đã có TRN-01 #63 và QA-03 #65).
 
-Bổ sung suite `Qa04RegressionSecurityTest` (160 test cases) chạy trên PostgreSQL 17 Testcontainers sạch, bao gồm: hồi quy Happy Path nhận hàng → bán → báo cáo; ma trận quyền đầy đủ sáu vai trò (OWNER, MANAGER, SALES, CASHIER, WAREHOUSE, PHARMACIST); xác minh bất biến tồn kho `on_hand_quantity = SUM(quantity_delta)` trên mọi lô; race condition hai luồng thanh toán đồng thời (201 + 409 Conflict); sao lưu/khôi phục CSDL tự động (`pg_dump` → DB sạch → `psql` → đối soát 100%). Ghi nhận trung thực 3 Fail và 3 Blocked của Issue #34 (S2-GAP-01..06), không làm giả kết quả Pass.
+Giải quyết xung đột merge với `main`. Bổ sung xử lý theo hai điểm review:
+1. Sửa `scripts/restore-db.ps1` và hướng dẫn `infra/README.md` bổ sung cờ `-v ON_ERROR_STOP=1` cho `psql`, ngăn script bỏ sót lỗi SQL; bổ sung ca kiểm thử tự động `restore_corruptedDump_failsWhenOnErrorStopEnabled` trong `Qa04RegressionSecurityTest` (nâng tổng số test lên 9/9 Pass).
+2. Làm rõ ca kiểm thử cô lập đào tạo end-to-end (NFR-TRN-01) ở trạng thái Blocked trong ma trận truy vết và tài liệu kiểm thử do TRN-03 (API đào tạo backend) chưa tích hợp lên `main`. Giữ nguyên test kiểm chứng cờ session `trainingEnabled` và tính bất biến của bảng vận hành; ca hành động thật sẽ được chạy lại sau khi TRN-03 lên main.
 
-Thêm tài liệu đầy đủ: test plan, ma trận quyền (`QA-04-authorize.md`), báo cáo kết quả (`QA-04-test-report.md`), ma trận truy vết yêu cầu (`QA-04-traceability.md`). Thêm `scripts/backup-db.ps1` và `scripts/restore-db.ps1` kèm runbook trong `infra/README.md`. Cập nhật `CHANGELOG.md`, `docs/testing/README.md`, `DOC-01-traceability-working.md` và `.gitignore`.
-
-Root gate `pwsh -File scripts/verify.ps1` đạt: 160/160 tests pass, Maven `BUILD SUCCESS`.
+Root gate `pwsh -File scripts/verify.ps1` đạt toàn diện.
 
 - `.gitignore`: +3 -0
 - `CHANGELOG.md`: +1 -0
-- `docs/testing/DOC-01-traceability-working.md`: +20 -1
+- `docs/testing/DOC-01-traceability-working.md`: +22 -1
 - `docs/testing/QA-04-authorize.md`: +71 -0
-- `docs/testing/QA-04-test-plan.md`: +99 -0
-- `docs/testing/QA-04-test-report.md`: +185 -0
-- `docs/testing/QA-04-traceability.md`: +69 -0
-- `docs/testing/README.md`: +13 -1
+- `docs/testing/QA-04-test-plan.md`: +100 -0
+- `docs/testing/QA-04-test-report.md`: +193 -0
+- `docs/testing/QA-04-traceability.md`: +74 -0
+- `docs/testing/README.md`: +19 -0
 - `infra/README.md`: +49 -0
 - `scripts/backup-db.ps1`: +53 -0
 - `scripts/restore-db.ps1`: +43 -0
-- `services/api/src/test/java/vn/simtim/api/qa/Qa04RegressionSecurityTest.java`: +720 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa04RegressionSecurityTest.java`: +751 -0
 ---
+TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
 
+Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
+
+Đã chạy thật `scripts/test-qa03-live.ps1` (`2/2 Pass`) và root gate `scripts/verify.ps1 -SkipInstall`: policy/link/lint/format/build Pass, web demo `14/14`, web API `39/39`, backend PostgreSQL 17.11 Testcontainers `152/152`, Maven `BUILD SUCCESS`.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web`: +547 -31
+- `services/api`: +16 -5
+- `scripts/test-qa03-live.ps1`: +148 -0
+- `docs/testing` (Markdown): +121 -0
+- `docs/testing/evidence/qa-03` (2 PNG): N/A
+- `CONTRIBUTION_LOG.md`: +16 -0
+TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
+
+Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.
+
+Bổ sung E2E Playwright test `tests/trn-01-training-scene.spec.ts` kiểm thử trên Desktop (1280x720) và Mobile (390x844), xác nhận không tràn ngang và khẳng định 0 request ghi vận hành. Lập báo cáo benchmark thực tế `docs/TRN-01_BENCHMARK_REPORT.md` trên máy cấu hình yếu. Toàn bộ 16/16 test Playwright, linter, typecheck, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +41 -1
+- `apps/web/src/training/TrainingGame.vue`: +120 -10
+- `apps/web/src/training/training.css`: +54 -0
+- `apps/web/tests/trn-01-training-scene.spec.ts`: +106 -0
+- `docs/TRN-01_BENCHMARK_REPORT.md`: +40 -0
+- `CONTRIBUTION_LOG.md`: +20 -0
 ---
 TV1 — Nguyễn Đức Phát - 2026-10-13 17:09:25
 

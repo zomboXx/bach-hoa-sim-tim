@@ -1,7 +1,7 @@
 # QA-04 — Báo cáo kiểm thử Regression, Bảo mật quyền và Backup/Restore
 
-- Kết luận: **Core QA-04 gate ĐẠT — Suite hồi quy và bảo mật đạt 8/8 Pass; Sao lưu & phục hồi trên CSDL sạch (NFR-BAC-01) đạt 100%; Ma trận truy vết đạt 21 Pass, 3 Fail, 3 Blocked (ghi nhận trung thực theo Issue #34)**
-- Ngày chạy: 2026-10-15 (Asia/Bangkok)
+- Kết luận: **Core QA-04 gate ĐẠT — Suite hồi quy và bảo mật đạt 9/9 Pass; Sao lưu & phục hồi trên CSDL sạch (NFR-BAC-01) đạt 100% với cờ dừng lỗi SQL; Ma trận truy vết đạt 21 Pass, 3 Fail, 4 Blocked (ghi nhận trung thực theo Issue #34 và ca đào tạo E2E chờ TRN-03)**
+- Ngày chạy: 2026-10-18 (Asia/Bangkok)
 - Owner chạy test: TV2 — Nguyễn Văn Trung (`@nguyentrung01ute-ui`)
 - Reviewer kiểm bằng chứng: TV4 — Lê Văn Chiến (`@VanChien11-02`)
 - Reviewer xác nhận: TV1 — Nguyễn Đức Phát (`@zomboXx`)
@@ -14,17 +14,18 @@
 ## 1. Tóm tắt kết quả
 
 1. **Suite kiểm thử tự động QA-04 (`Qa04RegressionSecurityTest`):**
-   - Đạt **8/8 tests Pass** (0 failure, 0 error, 0 skipped) trong 25.64 giây trên PostgreSQL 17.11 Testcontainers sạch.
+   - Đạt **9/9 tests Pass** (0 failure, 0 error, 0 skipped) trong 31.77 giây trên PostgreSQL 17.11 Testcontainers sạch.
    - Chứng minh toàn vẹn chuỗi nghiệp vụ xuyên suốt Sprints 1, 2, 3: Nhận hàng (INV-01) → Đồng bộ kiểm kê (SYN-02) → Duyệt điều chỉnh tồn (INV-03) → Báo giá & Thanh toán CASH có khuyến mãi (SAL-01, PRO-01B) → Đối soát báo cáo doanh thu và tồn kho với oracle SQL độc lập (REP-01).
    - Kiểm chứng bất biến sổ cái kho: `inventory_balances.on_hand_quantity = SUM(inventory.stock_movements.quantity_delta)` được bảo toàn nghiêm ngặt sau mọi biến động kho.
    - Thẩm tra ma trận quyền Spring Security thật trên 4 vai trò máy chủ (`SALES`, `STOCK`, `MANAGER`, `ADMIN`) và cơ chế từ chối mặc định (`401` khi thiếu token, `403` khi thiếu quyền).
    - Xác nhận che giấu dữ liệu nhạy cảm: `SALES` xem được tồn kho nhưng không thấy giá vốn/giá mua (`unitCost`).
    - Xác nhận cô lập phạm vi cửa hàng: yêu cầu thao tác chéo cửa hàng bị từ chối `422/403`.
-   - Xác nhận tính cách ly đào tạo (NFR-TRN-01): cờ `trainingEnabled` hoạt động đúng, không gây ô nhiễm bảng vận hành.
+   - Xác nhận cờ phiên đào tạo (NFR-TRN-01): cờ `trainingEnabled` hoạt động đúng, không gây ô nhiễm bảng vận hành khi đọc session; ghi nhận ca cô lập end-to-end ở trạng thái Blocked do TRN-03 chưa lên main.
    - Xác nhận an toàn giao dịch: rollback toàn bộ giỏ hàng khi một mặt hàng thiếu tồn và tuần tự hóa hai giao dịch cạnh tranh tranh chấp đơn vị tồn cuối cùng (1 thành công 201, 1 từ chối 409).
 
 2. **Khôi phục dữ liệu trên môi trường sạch (NFR-BAC-01):**
-   - Đã kiểm chứng tự động việc sao lưu bằng `pg_dump` và khôi phục bằng `psql` vào một cơ sở dữ liệu hoàn toàn mới và sạch (`simtim_clean_restore`).
+   - Đã kiểm chứng tự động việc sao lưu bằng `pg_dump` và khôi phục bằng `psql` kèm cờ `-v ON_ERROR_STOP=1` vào một cơ sở dữ liệu hoàn toàn mới và sạch (`simtim_clean_restore`).
+   - Kiểm chứng tự động ca phục hồi thất bại (`restore_corruptedDump_failsWhenOnErrorStopEnabled`): khi SQL lỗi cú pháp, lệnh dừng ngay và trả mã lỗi khác 0, ngăn script báo phục hồi thành công sai lệch.
    - Đối soát 100% khớp tuyệt đối các chỉ số trước và sau phục hồi:
      * Người dùng & vai trò: 100% khớp.
      * Danh mục & sản phẩm: 100% khớp.
@@ -32,11 +33,11 @@
      * Biến động kho (`stock_movements` gồm RECEIPT, STOCKTAKE_ADJUSTMENT, SALE): 100% khớp.
      * Hóa đơn, chi tiết phân bổ lô và thanh toán: 100% khớp.
      * Báo cáo doanh thu và bất biến sổ cái kho: `on_hand_quantity = SUM(quantity_delta)` khớp trên toàn bộ các lô.
-   - Bổ sung công cụ dòng lệnh tiện ích `scripts/backup-db.ps1`, `scripts/restore-db.ps1` và runbook chi tiết tại `infra/README.md`.
+   - Bổ sung công cụ dòng lệnh tiện ích `scripts/backup-db.ps1`, `scripts/restore-db.ps1` (bật `-v ON_ERROR_STOP=1`) và runbook chi tiết tại `infra/README.md`.
 
-3. **Hiện trạng các ngoại lệ Issue #34 và QA-03:**
-   - Không tự động chuyển thành Pass khi chưa có mã nguồn sửa lỗi: ghi nhận đúng **3 Fail** (S2-GAP-01 precision EA, S2-GAP-02 PRICE_CHANGED, S2-GAP-03 invoice privacy) và **3 Blocked** (S2-GAP-04 idempotency, S2-GAP-05 PWA API checkout, S2-GAP-06 live web E2E).
-   - Toàn bộ ma trận truy vết gồm 27 ca: **21 Pass, 3 Fail, 3 Blocked**.
+3. **Hiện trạng các ngoại lệ Issue #34, QA-03 và Đào tạo:**
+   - Không tự động chuyển thành Pass khi chưa có mã nguồn sửa lỗi: ghi nhận đúng **3 Fail** (S2-GAP-01 precision EA, S2-GAP-02 PRICE_CHANGED, S2-GAP-03 invoice privacy) và **4 Blocked** (S2-GAP-04 idempotency, S2-GAP-05 PWA API checkout, S2-GAP-06 live web E2E, và ca cách ly đào tạo end-to-end NFR-TRN-01 chờ backend TRN-03).
+   - Toàn bộ ma trận truy vết gồm 28 ca: **21 Pass, 3 Fail, 4 Blocked**.
 
 ---
 
@@ -59,12 +60,12 @@ Pop-Location
 **Kết quả:**
 ```text
 [INFO] Running vn.simtim.api.qa.Qa04RegressionSecurityTest
-[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 25.64 s -- in vn.simtim.api.qa.Qa04RegressionSecurityTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 31.77 s -- in vn.simtim.api.qa.Qa04RegressionSecurityTest
 [INFO] Results:
-[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
-[INFO] Total time:  31.781 s
+[INFO] Total time:  35.510 s
 [INFO] ------------------------------------------------------------------------
 ```
 
@@ -139,7 +140,8 @@ Pop-Location
 ### 3.5. Ca cô lập đào tạo (`trainingIsolation_...`)
 - Phiên của người dùng đào tạo trả về `trainingEnabled: true`.
 - Phiên của người dùng bình thường trả về `trainingEnabled: false`.
-- Toàn bộ bảng vận hành (`sales.invoices`, `inventory.stock_movements`, `inventory.inventory_balances`) giữ nguyên số lượng bản ghi trước và sau khi thao tác.
+- Toàn bộ bảng vận hành (`sales.invoices`, `inventory.stock_movements`, `inventory.inventory_balances`) giữ nguyên số lượng bản ghi trước và sau khi thao tác đọc session.
+- **Hiện trạng ca cô lập end-to-end:** Do backend đào tạo TRN-03 (#56) chưa tích hợp lên `main`, ca kiểm chứng cách ly end-to-end (thực thi chuỗi hành động đào tạo thật và đối soát bảng vận hành) được ghi nhận trung thực ở trạng thái **Blocked**; sẽ chạy lại với hành động thật sau khi TRN-03 lên main.
 
 ### 3.6. Ca an toàn giao dịch (`rollbackSafety_...` & `concurrency_...`)
 - Rollback: Khi giỏ hàng gồm 2 sản phẩm (1 sản phẩm đủ tồn, 1 sản phẩm thiếu tồn), request checkout trả về `409 Conflict`. CSDL không ghi nhận bất kỳ hóa đơn, payment hay movement nào; số dư cả 2 sản phẩm giữ nguyên.
@@ -148,12 +150,18 @@ Pop-Location
 ### 3.7. Ca sao lưu và phục hồi CSDL trên môi trường sạch (`backupAndRestore_...`)
 - Thực hiện sao lưu dữ liệu giao dịch bằng `pg_dump -Fp` ra file `/tmp/backup_qa04.sql`.
 - Tạo CSDL sạch mới hoàn toàn `simtim_clean_restore` bên trong PostgreSQL server.
-- Khôi phục dữ liệu từ file sao lưu vào `simtim_clean_restore` bằng `psql`.
+- Khôi phục dữ liệu từ file sao lưu vào `simtim_clean_restore` bằng `psql` kèm cờ dừng lỗi `-v ON_ERROR_STOP=1`.
 - Đối soát toàn vẹn trên CSDL được khôi phục:
   * Số lượng users, roles, categories, products, goods_receipts, product_batches, inventory_balances, stock_movements, invoices, payments: **khớp 100% với trước sao lưu**.
   * Doanh thu tích lũy: **khớp 100% với trước sao lưu**.
   * Tồn kho từng sản phẩm: **khớp 100% với trước sao lưu**.
   * Bất biến sổ cái kho: `on_hand_quantity = SUM(quantity_delta)` được duy trì trên toàn bộ các lô sau khôi phục.
+
+### 3.8. Ca kiểm tra phục hồi thất bại khi file SQL lỗi cú pháp (`restore_corruptedDump_...`)
+- Chuẩn bị file dump lỗi cố tình chứa câu lệnh SQL sai cú pháp (`MALFORMED SQL SYNTAX ERROR;`).
+- Gọi `psql` với cờ `-v ON_ERROR_STOP=1` khôi phục vào CSDL sạch.
+- Kết quả: `psql` dừng thực thi ngay tại câu lệnh lỗi và trả về mã thoát khác 0 (non-zero exit code).
+- Xác nhận cơ chế trong `scripts/restore-db.ps1` ngăn chặn tình trạng script báo thành công sai lệch khi quá trình phục hồi CSDL gặp lỗi.
 
 ---
 

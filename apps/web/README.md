@@ -62,13 +62,13 @@ Màn kiểm kê được tách thành StocktakeWorkspace.vue, đọc snapshot l�
 
 Ba viewport công bố cho MOB-01 là **360×800 (mobile), 768×1024 (tablet) và 1366×768 (desktop)**. File tests/stocktake-responsive.spec.ts kiểm không cuộn ngang, nhập KG đúng/sai, đơn vị đếm và quyền demo. File tests/api-stocktake.spec.ts kiểm loading, store/lô từ INV-02, HTTP 403 và session thiếu inventory.read.
 
-API mode hiện dùng contract đọc INV-02 để review giao diện bằng dữ liệu theo store nhưng cố ý khóa thao tác gửi. Response INV-02 chưa có unit/precision hoặc balance version; route, DTO, permission và lỗi ghi kiểm kê chưa được Accepted. Boundary cần TV3/TV4/TV2 review nằm tại [MOB-01 stocktake consumer review](../../contracts/MOB-01_STOCKTAKE_CONSUMER_REVIEW.md). Sau khi SYN-02 có provider, phải thêm live API/PostgreSQL test và ảnh API mode; consumer mock không được dùng thay bằng chứng provider.
+API mode đọc `unitCode` theo sản phẩm và `version` theo balance/lô, lưu thao tác vào queue khi offline rồi gọi contract SYN-02 sau reconnect. Bằng chứng live API/PostgreSQL và ảnh viewport nằm trong [QA-03 test report](../../docs/testing/QA-03-test-report.md); consumer mock không được dùng thay bằng chứng provider.
 
 ## SYN-01 · Hàng đợi kiểm kê offline
 
 Thao tác kiểm kê offline được lưu trong IndexedDB riêng `simtim-stocktake-queue-v1`; queue không chứa token và không được dùng cho nhận hàng, bán hàng hoặc thanh toán. Mỗi thao tác có một `clientOperationId` UUID ổn định. Lưu lại cùng payload đang chờ trong đúng actor/organization/store trả về thao tác cũ thay vì tạo lần gửi mới.
 
-Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chiếu phiên hiện tại với actor, organization, store và quyền gửi; sai scope giữ nguyên queue và giải thích tài khoản/cửa hàng cần dùng. Tồn thay đổi chuyển thao tác sang `CONFLICT`, yêu cầu kiểm lại và không ghi đè tự động. Demo adapter mô phỏng bước nhận để browser test lifecycle; API mode vẫn khóa ghi cho tới khi SYN-02 chốt route, DTO, baseVersion, permission và lỗi. Chi tiết review nằm tại [SYN-01 offline stocktake queue review](../../contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md).
+Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chiếu phiên hiện tại với actor, organization, store và quyền gửi; sai scope giữ nguyên queue và giải thích tài khoản/cửa hàng cần dùng. Tồn thay đổi chuyển thao tác sang `CONFLICT`, yêu cầu kiểm lại và không ghi đè tự động. Demo adapter giữ regression; API mode mở/lấy phiên SYN-02, gửi `baseVersion` và chỉ xóa queue sau phản hồi thành công. Chi tiết review nằm tại [SYN-01 offline stocktake queue review](../../contracts/SYN-01_OFFLINE_QUEUE_REVIEW.md).
 
 `tests/stocktake-offline-queue.spec.ts` kiểm offline → nhập → lưu lặp → reload → reconnect, đổi actor/store, retry đúng scope và conflict không ghi đè.
 
@@ -84,7 +84,7 @@ Reload vẫn hiển thị thao tác `PENDING`. Trước retry, client đối chi
 
 ## Đã hoạt động / đang mô phỏng
 
-- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động và báo cáo theo quyền server.
+- **Hoạt động trong trình duyệt:** responsive, form và validation, dữ liệu demo nối xuyên suốt, IndexedDB, Service Worker cache giao diện, lưu kiểm kê offline và xử lý trạng thái phiếu; API mode có đăng nhập/session, nhận hàng, tồn/lô/hạn, biến động, kiểm kê offline/reconnect và báo cáo theo quyền server.
 - **Đang mô phỏng:** demo mode vẫn mô phỏng đăng nhập, phân quyền, thanh toán, đồng bộ và lưu dữ liệu vận hành trên thiết bị. API mode không dùng các dữ liệu mô phỏng này làm fallback; các feature chưa có adapter server sẽ hiển thị trạng thái rỗng hoặc bị ẩn theo quyền.
 - **Đào tạo:** trò chơi nhập vai 2D trên trình duyệt bằng Vue/SVG là nền được chọn cho Sprint 4. Có di chuyển, va chạm, tìm đường, hội thoại với NPC, giỏ cầm tay và chuỗi nhiệm vụ; không còn biểu mẫu nhập số lượng nhận hàng. Một ca liền mạch gồm giao tiếp, bán hàng và xử lý hàng hóa. Kết quả hiện chỉ tồn tại trong phiên chơi; TRN-03 sẽ thiết kế phần lưu qua backend với dữ liệu cách ly.
 - **Chưa triển khai:** lưu kết quả đào tạo qua backend, quét camera, xuất/in hóa đơn và quản lý sửa/xóa đầy đủ. Các phần này không được tính là hoàn thành bởi prototype/PWA hiện tại.
@@ -104,6 +104,8 @@ Kiểm thử dùng Google Chrome đã cài qua Playwright (`channel: chrome`), k
 `npm run test:e2e:api` tự build API mode và chạy cổng 4175 với HTTP mock theo DTO BE-02, INV-01 và INV-02. Consumer/E2E bao phủ form hợp lệ/sai, server field error, pending/double-click, 401/403, timeout/reload, giữ idempotency key, đọc lại tồn, SALES không thấy giá nhập và viewport mobile. Bộ này không thay thế kiểm thử kết nối với backend/PostgreSQL thật trước khi merge.
 
 Từ root repository, `pwsh -File scripts/test-fe02-live.ps1` tạo PostgreSQL 17 disposable, chạy Spring API với mật khẩu demo sinh ngẫu nhiên và thực thi Playwright qua proxy thật. Test cho POST commit vào database nhưng response bị cắt ở trình duyệt, rồi reload/đăng nhập lại và xác nhận UI chỉ GET theo `clientOperationId`, tìm được phiếu và không POST lần hai. Script luôn dừng API, xóa container cùng credential tạm sau khi chạy.
+
+`pwsh -NoProfile -File scripts/test-qa03-live.ps1` tạo môi trường tương tự cho QA-03, build PWA vào thư mục tạm, kiểm mobile offline/reload/reconnect, cắt phản hồi count đầu để thử idempotent retry, duyệt bằng MANAGER, đối soát balance/movement, RBAC và stale snapshot. Runner tạo hai ảnh chọn lọc trong `docs/testing/evidence/qa-03` và dọn database, API, preview, trace/output tạm sau khi chạy.
 
 ## Tài liệu và cấu trúc
 

@@ -37,10 +37,11 @@
 | **QA04-PRO-01** | FR-PRO-01..03 | [SALES_PROMOTIONS_REVIEW](../../contracts/SALES_PROMOTIONS_REVIEW.md) | `Qa04RegressionSecurityTest` (Step 3 & 4) | Áp dụng khuyến mãi 10% gạo, snapshot chiết khấu trên từng dòng hóa đơn và tổng tiền | **Pass** |
 | **QA04-REP-01** | FR-REP-01 (Doanh thu) | [Backlog REP-01](../project/governance/BACKLOG.md) | `Qa04RegressionSecurityTest` (Step 5) | Báo cáo doanh thu API khớp chính xác với oracle SQL `SUM(grand_total)` và số lượng hóa đơn | **Pass** |
 | **QA04-REP-02** | FR-REP-02..05 (Báo cáo tồn) | [Backlog REP-01](../project/governance/BACKLOG.md) | `Qa04RegressionSecurityTest` (Step 5) | Báo cáo tồn kho khớp chính xác với số dư trên các lô khả dụng | **Pass** |
-| **QA04-TRN-01** | NFR-TRN-01 (Đào tạo cô lập) | [ADR 0004](../architecture/adr/0004-training-2d-web.md) | `Qa04RegressionSecurityTest#trainingIsolation_sessionCarriesFlagAndOperationalTablesRemainClean` | Cờ `trainingEnabled` hoạt động; không phát sinh bản ghi nào vào bảng hóa đơn và biến động kho vận hành | **Pass** |
+| **QA04-TRN-01** | NFR-TRN-01 (Đào tạo cô lập E2E) | [ADR 0004](../architecture/adr/0004-training-2d-web.md), [TRN-03 #56](https://github.com/zomboXx/bach-hoa-sim-tim/issues/56) | `Qa04RegressionSecurityTest#trainingIsolation_sessionCarriesFlagAndOperationalTablesRemainClean` | Cờ `trainingEnabled` trong session hoạt động đúng và bảng vận hành sạch khi đọc session. Ca cô lập end-to-end với hành động đào tạo thật ghi nhận **Blocked** do TRN-03 chưa lên `main`; chạy lại sau khi TRN-03 lên main | **Blocked** |
 | **QA04-BAC-01** | NFR-BAC-01 (Sao lưu CSDL) | [Compose runbook](../../infra/README.md) | `Qa04RegressionSecurityTest#backupAndRestore_cleanPostgresRestoresAllEntitiesAndPreservesInvariants` | Xuất bản sao lưu dữ liệu sạch bằng `pg_dump` thành công | **Pass** |
-| **QA04-BAC-02** | NFR-BAC-01 (Khôi phục CSDL) | [Compose runbook](../../infra/README.md) | `Qa04RegressionSecurityTest#backupAndRestore_cleanPostgresRestoresAllEntitiesAndPreservesInvariants` | Phục hồi thành công vào CSDL PostgreSQL sạch mới hoàn toàn bằng `psql` | **Pass** |
+| **QA04-BAC-02** | NFR-BAC-01 (Khôi phục CSDL) | [Compose runbook](../../infra/README.md) | `Qa04RegressionSecurityTest#backupAndRestore_cleanPostgresRestoresAllEntitiesAndPreservesInvariants` | Phục hồi thành công vào CSDL PostgreSQL sạch mới hoàn toàn bằng `psql` với cờ dừng lỗi `-v ON_ERROR_STOP=1` | **Pass** |
 | **QA04-BAC-03** | NFR-BAC-01 (Đối soát tính toàn vẹn) | [Compose runbook](../../infra/README.md) | `Qa04RegressionSecurityTest#backupAndRestore_cleanPostgresRestoresAllEntitiesAndPreservesInvariants` | Đối soát 100% số lượng bảng, số dư tồn, bất biến sổ cái và doanh thu sau phục hồi | **Pass** |
+| **QA04-BAC-04** | NFR-BAC-01 (Bắt lỗi phục hồi CSDL) | [scripts/restore-db.ps1](../../scripts/restore-db.ps1) | `Qa04RegressionSecurityTest#restore_corruptedDump_failsWhenOnErrorStopEnabled` | Kiểm chứng ca restore thất bại: với `-v ON_ERROR_STOP=1`, psql dừng ngay và trả mã lỗi khác 0 khi file SQL có lỗi cú pháp | **Pass** |
 | **QA04-WEB-01** | S2-GAP-05 (PWA API Checkout) | [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) | `apps/web/src/App.vue` | Màn hình bán hàng web API mode vẫn dùng state mô phỏng, chưa nối API backend | **Blocked** |
 | **QA04-WEB-02** | S2-GAP-06 (Live E2E nhận-bán-BC) | [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) | Browser Playwright E2E live | Chưa có suite tự động chạy live browser trên API/DB thật cho toàn luồng bán hàng | **Blocked** |
 
@@ -50,14 +51,14 @@
 
 | Trạng thái | Số lượng | Tỷ lệ | Diễn giải |
 |---|:---:|:---:|---|
-| **Pass** | **21** | **77.8%** | Đã có code tích hợp và kiểm thử tự động đạt 100% trên PostgreSQL Testcontainers sạch. |
-| **Fail** | **3** | **11.1%** | 3 khoảng trống thuộc [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34): S2-GAP-01 (precision EA), S2-GAP-02 (price changed), S2-GAP-03 (invoice privacy). |
-| **Blocked** | **3** | **11.1%** | 3 khoảng trống thuộc [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34): S2-GAP-04 (checkout idempotency), S2-GAP-05 (PWA API checkout), S2-GAP-06 (live web E2E). |
-| **Tổng cộng** | **27** | **100%** | Báo cáo phản ánh trung thực toàn bộ hiện trạng tích hợp của repository tại Sprint 4. |
+| **Pass** | **21** | **75.0%** | Đã có code tích hợp và kiểm thử tự động đạt 100% trên PostgreSQL Testcontainers sạch (gồm cả kiểm tra phục hồi dừng khi SQL hỏng). |
+| **Fail** | **3** | **10.7%** | 3 khoảng trống thuộc [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34): S2-GAP-01 (precision EA), S2-GAP-02 (price changed), S2-GAP-03 (invoice privacy). |
+| **Blocked** | **4** | **14.3%** | 3 khoảng trống thuộc [Issue #34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) (S2-GAP-04 checkout idempotency, S2-GAP-05 PWA API checkout, S2-GAP-06 live web E2E) và ca cách ly đào tạo end-to-end NFR-TRN-01 chờ backend TRN-03. |
+| **Tổng cộng** | **28** | **100%** | Báo cáo phản ánh trung thực toàn bộ hiện trạng tích hợp của repository tại Sprint 4. |
 
 ---
 
-## 3. Kết luận về các ngoại lệ Issue #34 và QA-03
+## 3. Kết luận về các ngoại lệ Issue #34, QA-03 và Đào tạo
 
 1. **Về Issue #34 (6 GAP P0 từ Sprint 2):**
    - Không tự động đánh dấu hoàn thành (không fake Pass) cho bất kỳ GAP nào khi mã nguồn chưa xử lý.
@@ -67,3 +68,7 @@
 2. **Về QA-03 #47 (Kiểm kê offline và responsive):**
    - Các API nền tảng phía backend gồm SYN-02 (đồng bộ số đếm) và INV-03 (quản lý duyệt tồn kho) đã được tích hợp và kiểm chứng **Pass** 100% trong QA-04.
    - Bằng chứng trải nghiệm kiểm kê ngoại tuyến trên thiết bị di động thật và kiểm thử reconnect ngoại tuyến vẫn do TV4 phụ trách tại Issue gốc #47.
+
+3. **Về NFR-TRN-01 (Đào tạo cô lập E2E):**
+   - Cờ `trainingEnabled` trong session đã xác nhận đúng (`Qa04RegressionSecurityTest`), bảng vận hành không bị đổi khi đăng nhập.
+   - Ca kiểm chứng cách ly end-to-end với hành động đào tạo thật ghi nhận **Blocked** do backend TRN-03 (#56) chưa tích hợp lên `main`. Sẽ chạy lại với hành động thật sau khi TRN-03 lên main.

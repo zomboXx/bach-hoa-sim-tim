@@ -53,8 +53,8 @@ import vn.simtim.api.auth.domain.PasswordHasher;
  *   <li>Invoice privacy behavior: documenting current S2-GAP-03 visibility for SALES in the same store.</li>
  *   <li>Training isolation: session principal carries trainingEnabled flag without contaminating operational tables.</li>
  *   <li>Transaction safety: cart rollback on insufficient inventory and concurrency serialization on the last unit.</li>
- *   <li>Backup & restore on a clean PostgreSQL environment (NFR-BAC-01): pg_dump, clean database restore,
- *       and full entity/invariant/oracle reconciliation.</li>
+ *   <li>Backup & restore on a clean PostgreSQL environment (NFR-BAC-01): pg_dump, clean database restore
+ *       with -v ON_ERROR_STOP=1, failure on corrupted SQL dump, and full entity/invariant/oracle reconciliation.</li>
  * </ul>
  */
 @ActiveProfiles("demo")
@@ -410,6 +410,10 @@ public class Qa04RegressionSecurityTest {
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 5. Training Isolation (NFR-TRN-01): Session carries training flag, no operational writes
+    //    NOTE: Ca cách ly end-to-end (thực hiện hành động đào tạo thật và đối soát bảng vận hành)
+    //    hiện ở trạng thái Blocked do TRN-03 (API đào tạo backend) chưa được tích hợp lên main.
+    //    Test dưới đây xác minh session mang cờ trainingEnabled và việc đọc session không làm
+    //    phát sinh dữ liệu vào bảng vận hành. Ca E2E sẽ được kiểm chứng lại sau khi TRN-03 lên main.
     // ─────────────────────────────────────────────────────────────────────────────
 
     @Test
@@ -548,7 +552,7 @@ public class Qa04RegressionSecurityTest {
 
         // Step 5: Restore the dump into the clean database
         Container.ExecResult restoreResult = POSTGRES.execInContainer(
-                "psql", "-U", POSTGRES.getUsername(), "-d", cleanDb, "-f", dumpPath);
+                "psql", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(), "-d", cleanDb, "-f", dumpPath);
         assertThat(restoreResult.getExitCode())
                 .as("psql restore into clean DB must exit with code 0: %s", restoreResult.getStderr())
                 .isZero();
@@ -612,6 +616,33 @@ public class Qa04RegressionSecurityTest {
         // Teardown clean DB
         POSTGRES.execInContainer("psql", "-U", POSTGRES.getUsername(), "-d", "postgres",
                 "-c", "DROP DATABASE " + cleanDb + ";");
+    }
+
+    @Test
+    void restore_corruptedDump_failsWhenOnErrorStopEnabled() throws Exception {
+        String testDb = "simtim_corrupted_restore_test";
+        POSTGRES.execInContainer("psql", "-U", POSTGRES.getUsername(), "-d", "postgres",
+                "-c", "DROP DATABASE IF EXISTS " + testDb + ";");
+        Container.ExecResult createDbResult = POSTGRES.execInContainer(
+                "psql", "-U", POSTGRES.getUsername(), "-d", "postgres",
+                "-c", "CREATE DATABASE " + testDb + ";");
+        assertThat(createDbResult.getExitCode()).isZero();
+
+        String corruptedDumpPath = "/tmp/corrupted_dump.sql";
+        POSTGRES.execInContainer("sh", "-c",
+                "echo 'CREATE TABLE test_table (id int); MALFORMED SQL SYNTAX ERROR;' > " + corruptedDumpPath);
+
+        // With -v ON_ERROR_STOP=1, psql must abort and return non-zero exit code on SQL error
+        Container.ExecResult failResult = POSTGRES.execInContainer(
+                "psql", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(), "-d", testDb, "-f", corruptedDumpPath);
+        assertThat(failResult.getExitCode())
+                .as("psql must exit with non-zero code when ON_ERROR_STOP=1 encounters malformed SQL: %s",
+                        failResult.getStderr())
+                .isNotZero();
+
+        // Teardown
+        POSTGRES.execInContainer("psql", "-U", POSTGRES.getUsername(), "-d", "postgres",
+                "-c", "DROP DATABASE " + testDb + ";");
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

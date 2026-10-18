@@ -32,7 +32,7 @@ $composeArgs = @('compose')
 if (Test-Path $envFile) {
   $composeArgs += @('--env-file', $envFile)
 }
-$composeArgs += @('-f', $composeFile, 'exec', '-T', 'postgres', 'psql', '-U', $user, '-d', $db)
+$composeArgs += @('-f', $composeFile, 'exec', '-T', 'postgres', 'psql', '-v', 'ON_ERROR_STOP=1', '-U', $user, '-d', $db)
 
 Get-Content $BackupFile -Raw | & docker @composeArgs
 

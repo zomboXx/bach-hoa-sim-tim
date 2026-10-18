@@ -112,7 +112,7 @@ docker compose --env-file infra/.env -f infra/compose.demo.yml up -d --wait
 3. **Khôi phục dữ liệu vào môi trường sạch:**
 
 ```powershell
-Get-Content infra/backups/demo_backup.sql -Raw | docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres psql -U simtim -d simtim
+Get-Content infra/backups/demo_backup.sql -Raw | docker compose --env-file infra/.env -f infra/compose.demo.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U simtim -d simtim
 ```
 
 4. **Kiểm tra tính toàn vẹn sau phục hồi:**

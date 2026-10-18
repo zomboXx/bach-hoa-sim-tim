@@ -32,11 +32,11 @@ Mục tiêu của QA-04 là đánh giá độc lập tính ổn định tổng t
    - Quy tắc từ chối mặc định (deny-by-default): request không có token trả về `401 Unauthorized`; vai trò không có quyền tương ứng trả về `403 Forbidden`.
    - Che giấu dữ liệu nhạy cảm (Data Masking): nhân viên `SALES` xem được tồn kho và lô hàng nhưng không được xem giá vốn/giá nhập (`unit_cost`).
    - Cô lập phạm vi cửa hàng (Store Scope Isolation): từ chối xử lý khi request gửi kèm `storeId` khác với cửa hàng trong phiên đăng nhập.
-   - Độc lập đào tạo (Training Isolation - NFR-TRN-01): cờ `trainingEnabled` nằm trong phiên người dùng, không ghi dữ liệu hoặc làm thay đổi số dư vận hành (`sales.*`, `inventory.*`).
+   - Độc lập đào tạo (Training Isolation - NFR-TRN-01): cờ `trainingEnabled` nằm trong phiên người dùng, không ghi dữ liệu hoặc làm thay đổi số dư vận hành (`sales.*`, `inventory.*`). Ghi nhận ca cách ly end-to-end với hành động đào tạo thật ở trạng thái Blocked do backend TRN-03 chưa tích hợp lên main.
 
 3. **Sao lưu và phục hồi dữ liệu (Backup & Restore - NFR-BAC-01):**
    - Thực hiện sao lưu dữ liệu bằng `pg_dump` trên CSDL đã phát sinh giao dịch thật.
-   - Kiểm chứng lệnh và quy trình khôi phục (`psql` / `pg_restore`) trên môi trường CSDL sạch không có dữ liệu cũ.
+   - Kiểm chứng lệnh và quy trình khôi phục (`psql` / `pg_restore`) trên môi trường CSDL sạch không có dữ liệu cũ; kích hoạt cờ `-v ON_ERROR_STOP=1` ngăn script báo thành công sai lệch và kiểm thử tự động ca restore thất bại khi file SQL lỗi.
    - Chứng minh toàn vẹn: đối soát 100% số lượng thực thể, số dư tồn kho, bất biến sổ cái và doanh thu báo cáo trước và sau khi phục hồi.
 
 ---
@@ -80,12 +80,13 @@ Tuân thủ nghiêm ngặt quy định kiểm thử và nghiệm thu của repos
 | **Data Masking** | QA04-SEC-06 | Ẩn giá vốn khi SALES xem tồn kho | Phản hồi JSON không chứa `unitCost`, `unit_cost`, `purchase` |
 | **Scope** | QA04-SCO-01 | Cô lập cửa hàng: gửi `storeId` khác với phiên làm việc | Trả về lỗi `422` hoặc `403`, không ghi nhận hoặc tiết lộ dữ liệu cửa hàng khác |
 | **Privacy** | QA04-PRV-01 | Nhân viên SALES xem danh sách hóa đơn cùng cửa hàng | Đối chiếu với ngoại lệ S2-GAP-03: hiện ghi nhận xem được toàn bộ hóa đơn cùng cửa hàng (Fail) |
-| **Training** | QA04-TRN-01 | Cờ `trainingEnabled` trong session principal và tính cô lập bảng vận hành (NFR-TRN-01) | Session trả đúng cờ boolean; số lượng bản ghi `sales.invoices` và `inventory.stock_movements` không bị thay đổi |
+| **Training** | QA04-TRN-01 | Cờ `trainingEnabled` trong session và tính bất biến bảng vận hành khi đọc session (NFR-TRN-01); ghi nhận Blocked ca cách ly E2E do TRN-03 chưa lên main | Session trả đúng cờ boolean; số lượng bản ghi `sales.invoices` và `inventory.stock_movements` không bị thay đổi. Chạy lại ca E2E khi TRN-03 hoàn tất |
 | **Rollback** | QA04-TXN-01 | Thiếu tồn kho mặt hàng thứ 2 trong giỏ hàng | Trả về `409 Conflict`, rollback toàn bộ giỏ, không tạo hóa đơn, payment hay movement lẻ |
 | **Concurrency** | QA04-TXN-02 | Hai giao dịch thanh toán đồng thời tranh chấp đơn vị tồn cuối cùng | Đúng một giao dịch thành công (201) và một giao dịch bị từ chối (409); tồn kho cuối cùng bằng 0 |
 | **Backup/Restore** | QA04-BAC-01 | Sao lưu CSDL đã phát sinh giao dịch bằng `pg_dump` | Lệnh thoát mã 0, file dump tồn tại và dung lượng > 0 |
-| **Backup/Restore** | QA04-BAC-02 | Khôi phục bản sao lưu vào CSDL PostgreSQL sạch | Lệnh thoát mã 0, tái tạo toàn bộ schema, bảng, ràng buộc và dữ liệu |
+| **Backup/Restore** | QA04-BAC-02 | Khôi phục bản sao lưu vào CSDL PostgreSQL sạch với `-v ON_ERROR_STOP=1` | Lệnh thoát mã 0, tái tạo toàn bộ schema, bảng, ràng buộc và dữ liệu |
 | **Backup/Restore** | QA04-BAC-03 | Đối soát tính toàn vẹn và bất biến sổ cái sau khi khôi phục | Toàn bộ số lượng bản ghi, số dư tồn, báo cáo doanh thu và bất biến `on_hand_quantity = SUM(quantity_delta)` khớp 100% với trước sao lưu |
+| **Backup/Restore** | QA04-BAC-04 | Kiểm tra ca phục hồi thất bại khi file dump bị lỗi cú pháp SQL với `-v ON_ERROR_STOP=1` | Lệnh `psql` dừng ngay và thoát mã lỗi khác 0, không báo thành công sai lệch |
 
 ---
 
