@@ -7,7 +7,8 @@ Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi
 | Kiểm tra | Lệnh và môi trường | Kết quả tại thời điểm ghi |
 |---|---|---|
 | TRN-01/02/03 trước khi ghép QA-04 | `pwsh -File scripts/verify.ps1`; Java 25, Docker Desktop 29.6.2, PostgreSQL 17 Testcontainers | Repository/links, web demo 33/33, API consumer 42/42, backend 160/160 Pass; `BUILD SUCCESS` tại `9e6dbba` |
-| QA-04 và TRN-03 sau khi ghép | `mvnw.cmd -q '-Dtest=Qa04RegressionSecurityTest,TrainingApiTest' test` trên PostgreSQL 17 Testcontainers | Bản QA-04 cũ 8/8 và TRN-03 7/7 Pass; head QA-04 mới nhất từ PR #64 có thêm ca restore lỗi, chờ root gate bên dưới |
+| QA-04 và TRN-03 sau khi ghép | `pwsh -File scripts/verify.ps1` trên PostgreSQL 17 Testcontainers, Java 25, Node 25 | Root gate cục bộ tại `cda2ec0`: web demo 33/33, API consumer 42/42, backend 169/169 Pass; trong đó QA-04 9/9 và TRN-03 7/7 Pass |
+| Adapter rời ca sau khi mất phản hồi | `npm run verify` trong `apps/web` sau commit `7e013c2` | Lint, format, build, web demo 33/33, API consumer 43/43 Pass; thêm ca test dùng lại key để bỏ phiên đã tạo |
 | Compose mới và ca đào tạo thật | `docker compose -p simtim-qa04-20261019004215 --env-file <env riêng> -f infra/compose.demo.yml up --build -d --wait`; web `15175`, API `18081`, PostgreSQL 17 | 3/3 service Healthy; web 200, API `UP`; 2 lựa chọn sai + 8 đúng được 80 điểm/Đạt; retry cuối giữ 1 kết quả/phiên; lịch sử người học đọc được |
 | Cách ly vận hành trên Compose | Tạo 1 hóa đơn CASH 22.500 VND rồi chạy thêm ca đào tạo; đối chiếu SQL trước/sau | Hóa đơn `1→1`, doanh thu `22.500→22.500`, tổng tồn `149→149`, movement `3→3` |
 | Backup/restore bằng script | `backup-db.ps1` trên project nguồn; `restore-db.ps1` trên PostgreSQL của project sạch `simtim-restore-20261019005043` | Dump 138.282 byte; nguồn/đích khớp 4 user, 2 sản phẩm, 1 hóa đơn, doanh thu 22.500, 2 phiên/20 action/2 kết quả; hash hóa đơn/kết quả và Flyway 16 bản ghi khớp |
@@ -17,7 +18,7 @@ Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi
 
 - Sáu GAP tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) chưa tự chuyển Pass từ test nhánh QA-04. PR #53 còn mở và cần QA chạy lại sau tích hợp.
 - Lệnh chạy Compose dùng env file và mật khẩu riêng nằm ngoài Git. Bản dump và log đối soát giữ cục bộ trong `.codex/`; không commit dữ liệu người dùng hoặc secret.
-- TV4 kiểm bằng chứng QA, TV1 xác nhận kết luận; không đóng #57 chỉ từ lượt chạy cục bộ. Cần root gate/CI trên commit tích hợp và review PR mới.
+- TV4 kiểm bằng chứng QA, TV1 xác nhận kết luận; không đóng #57 chỉ từ lượt chạy cục bộ. Cần CI trên commit tích hợp và review PR mới. Backend và root gate trên mã trước sửa adapter đã đạt; web gate chạy lại sau sửa adapter cũng đã đạt.
 
 ---
 
