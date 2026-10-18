@@ -5,9 +5,13 @@ import { adjacent, blocked, pathTo, stations, type Point, type Station } from ".
 import {
   DEFAULT_GOALS,
   evaluateTrainingSession,
+  SCENARIO_VERSION,
   type TrainingActionRecord,
+  type TrainingActionType,
   type TrainingChoice,
+  type TrainingChoiceKey,
   type TrainingStage,
+  type TrainingTargetKey,
 } from "./scenario";
 defineProps<{ employeeName: string }>();
 const emit = defineEmits<{ exit: [] }>();
@@ -19,6 +23,8 @@ type Conversation = {
   text: string;
   choices: Choice[];
   type?: "scan";
+  actionType?: TrainingActionType | string;
+  targetKey?: TrainingTargetKey | string;
 };
 const stage = ref<Stage>("greet");
 const player = reactive({ x: 10, y: 11, direction: "down" });
@@ -87,20 +93,42 @@ async function converse(c: Conversation) {
   await nextTick();
   firstChoice.value?.[0]?.focus({ preventScroll: true });
 }
-function choose(c: Choice, actionType?: string) {
+function choose(c: Choice, actionType?: string, targetKey?: string) {
   if (correct.value) return;
   picked.value = c;
   feedback.value = c.feedback;
   correct.value = c.right;
   if (!c.right) errors.value++;
+  const effectiveActionType = actionType || dialogue.value?.actionType || stage.value;
+  const effectiveTargetKey =
+    targetKey ||
+    dialogue.value?.targetKey ||
+    (stage.value === "greet"
+      ? "customer_linh"
+      : stage.value === "milk"
+        ? "shelf_milk"
+        : stage.value === "checkout"
+          ? "pos_cash"
+          : stage.value === "cooler"
+            ? "cooler_display"
+            : stage.value === "quarantine"
+              ? "quarantine_bin"
+              : stage.value === "mentor"
+                ? "mentor_mai"
+                : "any");
+  const effectiveChoiceKey = (c.choiceKey || c.id) as TrainingChoiceKey | undefined;
+
   actionRecords.value.push({
     sequence: actionRecords.value.length + 1,
     stage: stage.value,
-    actionType: actionType || stage.value,
+    actionType: effectiveActionType,
+    targetKey: effectiveTargetKey,
+    choiceKey: effectiveChoiceKey,
     choiceText: c.text,
     isRight: c.right,
     feedback: c.feedback,
     timestamp: Date.now(),
+    scenarioVersion: SCENARIO_VERSION,
   });
 }
 function finishReply() {
@@ -129,7 +157,17 @@ function interact(s: Station) {
           : s.id === "mentor"
             ? "Chị ở đây nếu em cần hướng dẫn. " + goal.value.detail
             : "Mình sẽ quay lại đây khi cần. " + goal.value.detail,
-      choices: [{ text: "Mình hiểu rồi", right: true, feedback: goal.value.detail }],
+      actionType: "interact_hint",
+      targetKey: s.id as TrainingTargetKey,
+      choices: [
+        {
+          id: "hint_ack",
+          choiceKey: "hint_ack",
+          text: "Mình hiểu rồi",
+          right: true,
+          feedback: goal.value.detail,
+        },
+      ],
     });
     return;
   }
@@ -138,20 +176,28 @@ function interact(s: Station) {
       speaker: "Khách Linh",
       heading: "“Chào em, chị cần mua sữa…”",
       text: "Chị muốn mua hai hộp sữa, nhưng không thích ngọt lắm. Em giúp chị chọn được không?",
+      actionType: "greet_customer",
+      targetKey: "customer_linh",
       choices: [
         {
+          id: "greet_discount",
+          choiceKey: "greet_discount",
           text: "Chị cứ lấy loại đang giảm giá đi ạ.",
           right: false,
           feedback:
             "Mai: Khuyến mãi chưa chắc phù hợp. Hãy hỏi và xác nhận nhu cầu của khách trước nhé.",
         },
         {
+          id: "greet_confirm_need",
+          choiceKey: "greet_confirm_need",
           text: "Dạ, chị muốn 2 hộp sữa ít đường đúng không ạ? Em lấy giúp chị nhé.",
           right: true,
           feedback: "Linh: Đúng rồi, cảm ơn em! Chị chờ ở quầy nhé.",
           effect: () => advance("milk", "Đã lắng nghe và xác nhận nhu cầu của khách."),
         },
         {
+          id: "greet_self_service",
+          choiceKey: "greet_self_service",
           text: "Sữa ở trên kệ đó chị tự tìm nhé.",
           right: false,
           feedback:
@@ -164,8 +210,12 @@ function interact(s: Station) {
       speaker: employeeNameFallback(),
       heading: "Trước kệ sữa & đồ uống",
       text: "Hãy chọn hàng theo lời khách: 2 hộp sữa ít đường. Sản phẩm còn hạn, bao bì nguyên vẹn.",
+      actionType: "pick_product",
+      targetKey: "shelf_milk",
       choices: [
         {
+          id: "milk_pick_2_low_sugar",
+          choiceKey: "milk_pick_2_low_sugar",
           text: "Lấy 2 hộp sữa ít đường · 8.500đ / hộp",
           right: true,
           feedback:
@@ -176,11 +226,15 @@ function interact(s: Station) {
           },
         },
         {
+          id: "milk_pick_2_sweetened",
+          choiceKey: "milk_pick_2_sweetened",
           text: "Lấy 2 hộp sữa có đường · 8.000đ / hộp",
           right: false,
           feedback: "Mai: Loại này có đường, chưa đúng nhu cầu khách vừa xác nhận.",
         },
         {
+          id: "milk_pick_1_low_sugar",
+          choiceKey: "milk_pick_1_low_sugar",
           text: "Lấy 1 hộp sữa ít đường",
           right: false,
           feedback: "Mai: Khách cần hai hộp. Hãy kiểm tra cả loại hàng và số lượng nhé.",
@@ -194,6 +248,8 @@ function interact(s: Station) {
       heading: "Đưa hàng qua máy quét",
       text: "Hai hộp sữa ít đường đang ở trong giỏ của bạn. Quét đủ từng hộp để lên hóa đơn.",
       type: "scan",
+      actionType: "scan_item",
+      targetKey: "pos_scanner",
       choices: [],
     });
   } else if (stage.value === "cooler")
@@ -201,14 +257,20 @@ function interact(s: Station) {
       speaker: "Mentor Mai",
       heading: "Có gì không ổn trong tủ mát?",
       text: "Bạn thấy một hộp sữa chua hết hạn từ hôm qua. Bao bì vẫn nguyên vẹn. Bạn sẽ làm gì?",
+      actionType: "inspect_cooler",
+      targetKey: "cooler_display",
       choices: [
         {
+          id: "cooler_discount",
+          choiceKey: "cooler_discount",
           text: "Giảm giá để bán nhanh trong hôm nay.",
           right: false,
           feedback:
             "Mai: Hàng đã hết hạn không được tiếp tục bán, kể cả giảm giá. Phải tách khỏi hàng còn bán được.",
         },
         {
+          id: "cooler_quarantine_expired",
+          choiceKey: "cooler_quarantine_expired",
           text: "Lấy hộp hết hạn khỏi tủ và mang tới khu hàng cần xử lý.",
           right: true,
           feedback:
@@ -219,6 +281,8 @@ function interact(s: Station) {
           },
         },
         {
+          id: "cooler_push_inside",
+          choiceKey: "cooler_push_inside",
           text: "Đẩy hộp này vào phía trong tủ.",
           right: false,
           feedback:
@@ -231,8 +295,12 @@ function interact(s: Station) {
       speaker: "Bạn",
       heading: "Khu hàng cần xử lý",
       text: "Hộp sữa chua này cần được tách riêng và ghi rõ tình trạng để quản lý xử lý tiếp.",
+      actionType: "quarantine_product",
+      targetKey: "quarantine_bin",
       choices: [
         {
+          id: "quarantine_label_expired",
+          choiceKey: "quarantine_label_expired",
           text: "Đặt vào khay riêng, gắn nhãn “Hết hạn — không bán”.",
           right: true,
           feedback:
@@ -243,6 +311,8 @@ function interact(s: Station) {
           },
         },
         {
+          id: "quarantine_mixed_with_new",
+          choiceKey: "quarantine_mixed_with_new",
           text: "Đặt chung vào thùng hàng mới nhận.",
           right: false,
           feedback:
@@ -255,8 +325,12 @@ function interact(s: Station) {
       speaker: "Mentor Mai",
       heading: "“Ca đầu tiên thế nào rồi em?”",
       text: "Hãy báo lại đúng việc bạn đã làm, để chị tiếp tục xử lý sản phẩm hết hạn.",
+      actionType: "report_mentor",
+      targetKey: "mentor_mai",
       choices: [
         {
+          id: "mentor_full_report",
+          choiceKey: "mentor_full_report",
           text: "Em đã bán đúng hàng cho khách; có 1 hộp sữa chua hết hạn, đã tách và gắn nhãn ở khu xử lý.",
           right: true,
           feedback:
@@ -264,6 +338,8 @@ function interact(s: Station) {
           effect: () => advance("complete", "Đã báo cáo đầy đủ cho người phụ trách."),
         },
         {
+          id: "mentor_report_nothing",
+          choiceKey: "mentor_report_nothing",
           text: "Không có gì cần báo chị ạ.",
           right: false,
           feedback:
@@ -278,14 +354,18 @@ function employeeNameFallback() {
 function scan() {
   if (scans.value >= 2) return;
   scans.value++;
+  const choiceKey: TrainingChoiceKey = scans.value === 1 ? "scan_item_1" : "scan_item_2";
   actionRecords.value.push({
     sequence: actionRecords.value.length + 1,
     stage: "checkout",
     actionType: "scan_item",
+    targetKey: "pos_scanner",
+    choiceKey,
     choiceText: `Quét hộp sữa ${scans.value}`,
     isRight: true,
     feedback: `Đã quét hộp sữa ${scans.value}`,
     timestamp: Date.now(),
+    scenarioVersion: SCENARIO_VERSION,
   });
 }
 function tender() {
@@ -294,13 +374,19 @@ function tender() {
     speaker: "Khách Linh",
     heading: "“Chị gửi em 20.000 đồng.”",
     text: "Hóa đơn: 2 × 8.500đ = 17.000đ. Bạn trả lại khách bao nhiêu và nói gì?",
+    actionType: "tender_payment",
+    targetKey: "pos_cash",
     choices: [
       {
+        id: "tender_2k_change",
+        choiceKey: "tender_2k_change",
         text: "Trả 2.000đ, cảm ơn khách.",
         right: false,
         feedback: "Mai: Hãy tính lại: 20.000 − 17.000 = 3.000 đồng. Đếm lại trước khi đưa khách.",
       },
       {
+        id: "tender_3k_receipt",
+        choiceKey: "tender_3k_receipt",
         text: "“Em gửi chị 3.000đ tiền thừa và hóa đơn. Cảm ơn chị, hẹn gặp lại!”",
         right: true,
         feedback:
@@ -311,6 +397,8 @@ function tender() {
         },
       },
       {
+        id: "tender_5k_no_receipt",
+        choiceKey: "tender_5k_no_receipt",
         text: "Trả 5.000đ và bỏ qua hóa đơn.",
         right: false,
         feedback:
@@ -1046,7 +1134,13 @@ onUnmounted(() => {
               :key="c.text"
               :data-testid="'choice-' + i"
               :disabled="correct"
-              @click="choose(c, stage === 'checkout' ? 'tender_payment' : undefined)"
+              @click="
+                choose(
+                  c,
+                  dialogue.actionType || (stage === 'checkout' ? 'tender_payment' : undefined),
+                  dialogue.targetKey,
+                )
+              "
             >
               <span>{{ i + 1 }}</span
               >{{ c.text }}

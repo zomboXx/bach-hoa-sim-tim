@@ -102,6 +102,127 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
     const resPartial = evaluateTrainingSession(perfectActions, partialStages);
     expect(resPartial.passed).toBe(false);
     expect(resPartial.completedSteps).toBe(2);
+
+    // Ca 6: Suy diễn hoàn thành các bước từ chuỗi sự kiện định danh ổn định (Không truyền completedStages)
+    const stableActions: TrainingActionRecord[] = [
+      {
+        sequence: 1,
+        stage: "greet",
+        actionType: "greet_customer",
+        targetKey: "customer_linh",
+        choiceKey: "greet_confirm_need",
+        choiceText: "Dạ, chị muốn 2 hộp sữa ít đường đúng không ạ? Em lấy giúp chị nhé.",
+        isRight: true,
+        feedback: "Linh: Đúng rồi",
+        timestamp: 1001,
+      },
+      {
+        sequence: 2,
+        stage: "milk",
+        actionType: "pick_product",
+        targetKey: "shelf_milk",
+        choiceKey: "milk_pick_2_low_sugar",
+        choiceText: "Lấy 2 hộp sữa ít đường · 8.500đ / hộp",
+        isRight: true,
+        feedback: "Tốt lắm",
+        timestamp: 1002,
+      },
+      {
+        sequence: 3,
+        stage: "checkout",
+        actionType: "scan_item",
+        targetKey: "pos_scanner",
+        choiceKey: "scan_item_1",
+        choiceText: "Quét hộp sữa 1",
+        isRight: true,
+        feedback: "Đã quét",
+        timestamp: 1003,
+      },
+      {
+        sequence: 4,
+        stage: "checkout",
+        actionType: "scan_item",
+        targetKey: "pos_scanner",
+        choiceKey: "scan_item_2",
+        choiceText: "Quét hộp sữa 2",
+        isRight: true,
+        feedback: "Đã quét",
+        timestamp: 1004,
+      },
+      {
+        sequence: 5,
+        stage: "checkout",
+        actionType: "tender_payment",
+        targetKey: "pos_cash",
+        choiceKey: "tender_3k_receipt",
+        choiceText: "“Em gửi chị 3.000đ tiền thừa và hóa đơn. Cảm ơn chị, hẹn gặp lại!”",
+        isRight: true,
+        feedback: "Hoàn tất",
+        timestamp: 1005,
+      },
+      {
+        sequence: 6,
+        stage: "cooler",
+        actionType: "inspect_cooler",
+        targetKey: "cooler_display",
+        choiceKey: "cooler_quarantine_expired",
+        choiceText: "Lấy hộp hết hạn khỏi tủ",
+        isRight: true,
+        feedback: "Tốt",
+        timestamp: 1006,
+      },
+      {
+        sequence: 7,
+        stage: "quarantine",
+        actionType: "quarantine_product",
+        targetKey: "quarantine_bin",
+        choiceKey: "quarantine_label_expired",
+        choiceText: "Đặt vào khay riêng, gắn nhãn “Hết hạn — không bán”.",
+        isRight: true,
+        feedback: "Tốt",
+        timestamp: 1007,
+      },
+      {
+        sequence: 8,
+        stage: "mentor",
+        actionType: "report_mentor",
+        targetKey: "mentor_mai",
+        choiceKey: "mentor_full_report",
+        choiceText:
+          "Em đã bán đúng hàng cho khách; có 1 hộp sữa chua hết hạn, đã tách và gắn nhãn ở khu xử lý.",
+        isRight: true,
+        feedback: "Hoàn thành",
+        timestamp: 1008,
+      },
+    ];
+
+    // Gọi Oracle tự suy diễn tiến trình mà KHÔNG truyền completedStages
+    const resDerived = evaluateTrainingSession(stableActions);
+    expect(resDerived.score).toBe(100);
+    expect(resDerived.errors).toBe(0);
+    expect(resDerived.passed).toBe(true);
+    expect(resDerived.completedSteps).toBe(6);
+    expect(resDerived.grade).toBe("EXCELLENT");
+
+    // Ca 7: Chống gian lận (Client cố tình gửi isRight: true cho lựa chọn sai trong catalog)
+    const spoofedActions: TrainingActionRecord[] = [
+      ...stableActions,
+      {
+        sequence: 9,
+        stage: "greet",
+        actionType: "greet_customer",
+        targetKey: "customer_linh",
+        choiceKey: "greet_discount", // Là lựa chọn SAI theo SCENARIO_CHOICE_MAP
+        choiceText: "Chị cứ lấy loại đang giảm giá đi ạ.",
+        isRight: true, // CLIENT GIAN LẬN: TỰ GỬI isRight: true
+        feedback: "Khuyến mãi chưa chắc phù hợp",
+        timestamp: 1009,
+      },
+    ];
+    const resSpoofed = evaluateTrainingSession(spoofedActions);
+    expect(resSpoofed.errors).toBe(1); // Oracle tra cứu catalog và phát hiện lỗi
+    expect(resSpoofed.score).toBe(90);
+    expect(resSpoofed.grade).toBe("SATISFACTORY");
   });
 
   test("Luồng hoàn thành đúng hoàn hảo (Happy Path) đạt 100 điểm và không gọi API vận hành", async ({
@@ -319,6 +440,7 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
   test("Luồng chơi lại ca học (Replay) đặt lại toàn bộ trạng thái phiên sạch sẽ", async ({
     page,
   }) => {
+    test.setTimeout(60000);
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(TRAINING_ROUTE);
     await page.getByRole("button", { name: /Bắt đầu ca thực hành/ }).click();

@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV3 — Nguyễn Văn Thi - 2026-10-18 20:31:41
+
+Hoàn thiện giao thức sự kiện đào tạo độc lập cho TRN-02 (#55) theo phản hồi review của TV1:
+- Bổ sung định danh ổn định (Vocabulary of Stable Identifiers) cho hành động (`actionType`), đích tương tác (`targetKey`) và lựa chọn (`choiceKey`).
+- Thiết lập bảng ánh xạ tĩnh lựa chọn đúng/sai theo phiên bản kịch bản (`SCENARIO_CHOICE_MAP_V1` cho `SCN-RETAIL-01` v1.0.0) và hàm `resolveActionRight()` tra cứu catalog độc lập ở cả client và server, loại bỏ sự phụ thuộc vào cờ boolean do client gửi và phát hiện client spoofing.
+- Xây dựng thuật toán suy diễn tiến trình hoàn thành từng bước (`deriveCompletedStages()`) trực tiếp từ chuỗi sự kiện `TrainingActionRecord[]` thay vì tin cờ `completedStages` của client; ca học chỉ được đánh giá hoàn thành khi chuỗi sự kiện thỏa mãn đủ 6 bước tuần tự.
+- Cập nhật hợp đồng `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`, tích hợp đầy đủ định danh vào `TrainingGame.vue` và bổ sung unit test xác thực độc lập tại `trn-02-training-scenario.spec.ts`. Toàn bộ 9/9 TRN-02 E2E tests, typecheck, build, lint và format check đều đạt Pass.
+
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +68 -12
+- `apps/web/src/training/scenario.ts`: +379 -8
+- `apps/web/src/training/TrainingGame.vue`: +98 -4
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +122 -0
+- `CHANGELOG.md`: +5 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
 TV4 — Lê Văn Chiến - 2026-10-17 16:17:09
 
 Hoàn thành phần kịch bản và kiểm thử TRN-02 (#55): bổ sung Playwright acceptance tests cho chặn đảo/bỏ stage trên desktop/mobile, khóa nhận tiền khi chưa quét đủ hàng, sáu phản hồi sai và mức điểm 40/100, cùng chơi lại từ phiên 90 điểm sang phiên sạch 100 điểm. Mở rộng workflow test để chụp và so sánh snapshot hóa đơn, tồn lô `LO01`, movement và phiếu kiểm kê trước/sau ca học, đồng thời xác nhận không có request ghi vận hành.
