@@ -1,5 +1,18 @@
-// Training Scenario definitions and Evaluation Oracle (TRN-02)
+// Training Scenario definitions and Evaluation Oracle (TRN-02 / TRN-03)
 // Data isolation rule: No operational state, sales invoices, or inventory records are modified.
+
+export const REQUIRED_CHECKOUT_SCAN_KEYS = ["scan_item_1", "scan_item_2"] as const;
+export const REQUIRED_CHECKOUT_TENDER_KEY = "tender_3k_receipt" as const;
+
+export class TrainingCatalogValidationError extends Error {
+  constructor(
+    public readonly code: "UNKNOWN_CATALOG_VERSION" | "MISSING_CHOICE_KEY" | "UNKNOWN_CHOICE_KEY",
+    message: string,
+  ) {
+    super(message);
+    this.name = "TrainingCatalogValidationError";
+  }
+}
 
 export type TrainingStage =
   "greet" | "milk" | "checkout" | "cooler" | "quarantine" | "mentor" | "complete";
@@ -52,14 +65,23 @@ export type TrainingChoiceKey =
   // Hint / nav
   | "hint_ack";
 
-export interface ScenarioChoiceDefinition {
+export interface CatalogChoiceDefinition {
   choiceKey: string;
-  stage: TrainingStage;
-  actionType: TrainingActionType | string;
-  targetKey: TrainingTargetKey | string;
+  stage: string;
+  actionType?: string;
+  targetKey?: string;
   isRight: boolean;
-  textSnippet: string;
-  feedback: string;
+  textSnippet?: string;
+  feedback?: string;
+}
+
+export type ScenarioChoiceDefinition = CatalogChoiceDefinition;
+
+export interface TrainingCatalog {
+  version: string;
+  requiredStages: readonly string[];
+  choicesByKey:
+    ReadonlyMap<string, CatalogChoiceDefinition> | Record<string, CatalogChoiceDefinition>;
 }
 
 export interface TrainingChoice {
@@ -79,17 +101,35 @@ export interface TrainingGoal {
   chapter: number;
 }
 
-export interface TrainingActionRecord {
+export interface TrainingActionEvent {
+  choiceKey?: string;
+  // Các trường dưới đây do client gửi lên sẽ bị BỎ QUA hoàn toàn trên đường authoritative:
+  isRight?: boolean;
+  stage?: string;
+  actionType?: string;
+  choiceText?: string;
+  targetKey?: string;
+  feedback?: string;
+  sequence?: number;
+  timestamp?: number;
+  scenarioVersion?: string;
+}
+
+export type TrainingActionRecord = TrainingActionEvent & {
   sequence: number;
   stage: TrainingStage;
   actionType: TrainingActionType | string;
-  targetKey?: TrainingTargetKey | string;
-  choiceKey?: TrainingChoiceKey | string;
   choiceText: string;
   isRight: boolean;
   feedback: string;
   timestamp: number;
-  scenarioVersion?: string;
+};
+
+export interface EvaluateTrainingSessionInput {
+  catalogVersion?: string;
+  actions: readonly TrainingActionEvent[];
+  // BỎ QUA trên đường authoritative:
+  completedStages?: readonly string[];
 }
 
 export type TrainingGrade = "EXCELLENT" | "SATISFACTORY" | "NEEDS_PRACTICE";
@@ -105,6 +145,22 @@ export interface TrainingEvaluationResult {
   summaryText: string;
 }
 
+export interface AuthoritativeEvaluationResult {
+  score: number;
+  passed: boolean;
+  rating: "EXCELLENT" | "GOOD" | "NEEDS_IMPROVEMENT";
+  completedStages: string[];
+  rightCount: number;
+  totalActions: number;
+  // Trường tương thích giao diện PWA:
+  errors: number;
+  grade: TrainingGrade;
+  gradeLabel: string;
+  completedSteps: number;
+  totalRequiredSteps: number;
+  summaryText: string;
+}
+
 export const SCENARIO_ID = "SCN-RETAIL-01";
 export const SCENARIO_VERSION = "1.0.0";
 export const SCENARIO_TITLE = "Ca đầu tiên ở Sim Tím";
@@ -112,12 +168,73 @@ export const TOTAL_REQUIRED_STEPS = 6;
 export const BASE_SCORE = 100;
 export const PENALTY_PER_ERROR = 10;
 
+export const REQUIRED_STAGES: readonly TrainingStage[] = [
+  "greet",
+  "milk",
+  "checkout",
+  "cooler",
+  "quarantine",
+  "mentor",
+];
+
+export const DEFAULT_GOALS: Record<TrainingStage, TrainingGoal> = {
+  greet: {
+    station: "customer",
+    title: "Đón vị khách đầu tiên",
+    detail: "Đến gặp khách Linh ở cửa ra vào. Lắng nghe trước khi tư vấn.",
+    verb: "Trò chuyện",
+    chapter: 0,
+  },
+  milk: {
+    station: "milk",
+    title: "Tìm đúng món khách cần",
+    detail: "Khách muốn 2 hộp sữa ít đường. Đến kệ sữa để chọn hàng.",
+    verb: "Chọn sản phẩm",
+    chapter: 1,
+  },
+  checkout: {
+    station: "checkout",
+    title: "Hoàn tất một đơn hàng",
+    detail: "Mang 2 hộp sữa tới quầy. Quét hàng, nhận tiền và trả tiền thừa.",
+    verb: "Dùng máy tính tiền",
+    chapter: 1,
+  },
+  cooler: {
+    station: "cooler",
+    title: "Chăm sóc hàng trên kệ",
+    detail: "Mai nhờ bạn kiểm tra tủ mát. Có một sản phẩm cần được xử lý.",
+    verb: "Kiểm tra hàng",
+    chapter: 2,
+  },
+  quarantine: {
+    station: "quarantine",
+    title: "Tách hàng không được bán",
+    detail: "Mang hộp sữa chua hết hạn tới khu hàng cần xử lý, tách khỏi hàng bán.",
+    verb: "Đặt vào khu xử lý",
+    chapter: 2,
+  },
+  mentor: {
+    station: "mentor",
+    title: "Báo lại với Mentor Mai",
+    detail: "Tới gặp Mai để bàn giao tình trạng hàng và kết thúc ca thực hành.",
+    verb: "Báo cáo cuối ca",
+    chapter: 2,
+  },
+  complete: {
+    station: "mentor",
+    title: "Bạn đã hoàn thành ca đầu tiên!",
+    detail: "Giao tiếp, bán hàng và xử lý hàng hóa — bạn đã thử cả ba.",
+    verb: "Trò chuyện",
+    chapter: 3,
+  },
+};
+
 /**
  * Scenario Choice Mapping Table for SCN-RETAIL-01 (version 1.0.0).
  * Used by frontend and backend (TRN-03) to independently determine right/wrong choices
  * without trusting client-supplied boolean flags.
  */
-export const SCENARIO_CHOICE_MAP_V1: Record<string, ScenarioChoiceDefinition> = {
+export const SCENARIO_CHOICE_MAP_V1: Record<string, CatalogChoiceDefinition> = {
   greet_discount: {
     choiceKey: "greet_discount",
     stage: "greet",
@@ -301,107 +418,229 @@ export const SCENARIO_CHOICE_MAP_V1: Record<string, ScenarioChoiceDefinition> = 
   },
 };
 
-export const SCENARIO_CATALOG_BY_VERSION: Record<
-  string,
-  Record<string, ScenarioChoiceDefinition>
-> = {
-  "1.0.0": SCENARIO_CHOICE_MAP_V1,
+export const SCENARIO_CATALOG_V1: TrainingCatalog = {
+  version: "1.0.0",
+  requiredStages: REQUIRED_STAGES,
+  choicesByKey: SCENARIO_CHOICE_MAP_V1,
 };
 
-export const DEFAULT_GOALS: Record<TrainingStage, TrainingGoal> = {
-  greet: {
-    station: "customer",
-    title: "Đón vị khách đầu tiên",
-    detail: "Đến gặp khách Linh ở cửa ra vào. Lắng nghe trước khi tư vấn.",
-    verb: "Trò chuyện",
-    chapter: 0,
-  },
-  milk: {
-    station: "milk",
-    title: "Tìm đúng món khách cần",
-    detail: "Khách muốn 2 hộp sữa ít đường. Đến kệ sữa để chọn hàng.",
-    verb: "Chọn sản phẩm",
-    chapter: 1,
-  },
-  checkout: {
-    station: "checkout",
-    title: "Hoàn tất một đơn hàng",
-    detail: "Mang 2 hộp sữa tới quầy. Quét hàng, nhận tiền và trả tiền thừa.",
-    verb: "Dùng máy tính tiền",
-    chapter: 1,
-  },
-  cooler: {
-    station: "cooler",
-    title: "Chăm sóc hàng trên kệ",
-    detail: "Mai nhờ bạn kiểm tra tủ mát. Có một sản phẩm cần được xử lý.",
-    verb: "Kiểm tra hàng",
-    chapter: 2,
-  },
-  quarantine: {
-    station: "quarantine",
-    title: "Tách hàng không được bán",
-    detail: "Mang hộp sữa chua hết hạn tới khu hàng cần xử lý, tách khỏi hàng bán.",
-    verb: "Đặt vào khu xử lý",
-    chapter: 2,
-  },
-  mentor: {
-    station: "mentor",
-    title: "Báo lại với Mentor Mai",
-    detail: "Tới gặp Mai để bàn giao tình trạng hàng và kết thúc ca thực hành.",
-    verb: "Báo cáo cuối ca",
-    chapter: 2,
-  },
-  complete: {
-    station: "mentor",
-    title: "Bạn đã hoàn thành ca đầu tiên!",
-    detail: "Giao tiếp, bán hàng và xử lý hàng hóa — bạn đã thử cả ba.",
-    verb: "Trò chuyện",
-    chapter: 3,
-  },
+export const SCENARIO_CATALOG_BY_VERSION: Record<string, TrainingCatalog> = {
+  "1.0.0": SCENARIO_CATALOG_V1,
+  v1: SCENARIO_CATALOG_V1,
 };
 
-export const REQUIRED_STAGES: TrainingStage[] = [
-  "greet",
-  "milk",
-  "checkout",
-  "cooler",
-  "quarantine",
-  "mentor",
-];
-
-/**
- * Resolves whether an action was correct using the authoritative scenario catalog for the given version.
- * If choiceKey exists in catalog, its catalog value takes precedence over client-supplied `isRight`.
- * If choiceKey is absent (legacy test cases), fallback to client-supplied `isRight`.
- */
-export function resolveActionRight(
-  action: TrainingActionRecord,
-  version: string = action.scenarioVersion || SCENARIO_VERSION,
-): boolean {
-  const catalog = SCENARIO_CATALOG_BY_VERSION[version] ?? SCENARIO_CHOICE_MAP_V1;
-  if (action.choiceKey && catalog[action.choiceKey]) {
-    return catalog[action.choiceKey].isRight;
+function getCatalogChoice(
+  catalog: TrainingCatalog,
+  choiceKey: string,
+): CatalogChoiceDefinition | undefined {
+  if (catalog.choicesByKey instanceof Map) {
+    return catalog.choicesByKey.get(choiceKey);
   }
-  return action.isRight;
+  return (catalog.choicesByKey as Record<string, CatalogChoiceDefinition>)[choiceKey];
 }
 
 /**
- * Deduces completed training stages strictly from the action events sequence.
- * Enforces sequential stage progression (cannot skip preceding required stage).
- * A stage is marked completed only when its required correct action(s) are present in the stream.
+ * Tra cứu và xác thực choiceKey từ catalog của server.
+ * Tuyệt đối không fallback về dữ liệu tự khai của client.
+ */
+export function resolveCatalogChoiceAuthoritative(
+  action: TrainingActionEvent,
+  catalog: TrainingCatalog = SCENARIO_CATALOG_V1,
+): CatalogChoiceDefinition {
+  const rawKey = typeof action.choiceKey === "string" ? action.choiceKey.trim() : "";
+  if (!rawKey) {
+    throw new TrainingCatalogValidationError(
+      "MISSING_CHOICE_KEY",
+      "Action event is missing required choiceKey for authoritative evaluation.",
+    );
+  }
+
+  const catalogChoice = getCatalogChoice(catalog, rawKey);
+  if (!catalogChoice) {
+    throw new TrainingCatalogValidationError(
+      "UNKNOWN_CHOICE_KEY",
+      `Unknown choiceKey "${rawKey}" in catalog version "${catalog.version}".`,
+    );
+  }
+
+  return catalogChoice;
+}
+
+/**
+ * Authoritative: Đúng/sai chỉ suy ra từ catalog trên server.
+ * Không bao giờ rơi về action.isRight.
+ */
+export function resolveActionRight(
+  action: TrainingActionEvent,
+  catalogOrVersion: TrainingCatalog | string = SCENARIO_CATALOG_V1,
+): boolean {
+  const catalog =
+    typeof catalogOrVersion === "string"
+      ? (SCENARIO_CATALOG_BY_VERSION[catalogOrVersion] ?? SCENARIO_CATALOG_V1)
+      : catalogOrVersion;
+  const catalogChoice = resolveCatalogChoiceAuthoritative(action, catalog);
+  return catalogChoice.isRight;
+}
+
+/**
+ * Authoritative: Tiến độ hoàn thành các stage chỉ suy ra từ catalogChoice.
+ * Riêng bước checkout yêu cầu đủ cả scan_item_1, scan_item_2 và tender_3k_receipt.
  */
 export function deriveCompletedStages(
-  actions: TrainingActionRecord[],
-  version: string = SCENARIO_VERSION,
-): TrainingStage[] {
+  actions: readonly TrainingActionEvent[],
+  catalogOrVersion: TrainingCatalog | string = SCENARIO_CATALOG_V1,
+): string[] {
+  const catalog =
+    typeof catalogOrVersion === "string"
+      ? (SCENARIO_CATALOG_BY_VERSION[catalogOrVersion] ?? SCENARIO_CATALOG_V1)
+      : catalogOrVersion;
+
+  const completedStages = new Set<string>();
+  const scannedCheckoutKeys = new Set<string>();
+  let hasValidTenderReceipt = false;
+
+  for (const action of actions) {
+    const choice = resolveCatalogChoiceAuthoritative(action, catalog);
+    if (!choice.isRight) {
+      continue;
+    }
+
+    if (choice.stage === "checkout") {
+      if (
+        REQUIRED_CHECKOUT_SCAN_KEYS.includes(
+          choice.choiceKey as (typeof REQUIRED_CHECKOUT_SCAN_KEYS)[number],
+        )
+      ) {
+        scannedCheckoutKeys.add(choice.choiceKey);
+      } else if (choice.choiceKey === REQUIRED_CHECKOUT_TENDER_KEY) {
+        hasValidTenderReceipt = true;
+      }
+
+      const hasAllRequiredScans = REQUIRED_CHECKOUT_SCAN_KEYS.every((reqKey) =>
+        scannedCheckoutKeys.has(reqKey),
+      );
+      if (hasAllRequiredScans && hasValidTenderReceipt) {
+        completedStages.add("checkout");
+      }
+    } else {
+      // Các stage khác chỉ được tính hoàn thành dựa trên cấu hình stage trong catalog server
+      completedStages.add(choice.stage);
+    }
+  }
+
+  return catalog.requiredStages.filter((stage) => completedStages.has(stage));
+}
+
+/**
+ * Đường chấm Authoritative dùng cho TRN-03 / lưu kết quả trên server.
+ * Bỏ qua hoàn toàn input.completedStages, action.isRight, action.stage, action.actionType hay choiceText.
+ */
+export function evaluateTrainingSession(
+  inputOrActions: EvaluateTrainingSessionInput | readonly TrainingActionEvent[],
+  catalogOrStages?: TrainingCatalog | readonly string[],
+): AuthoritativeEvaluationResult {
+  const input: EvaluateTrainingSessionInput =
+    "actions" in inputOrActions
+      ? (inputOrActions as EvaluateTrainingSessionInput)
+      : { actions: inputOrActions };
+
+  const catalog: TrainingCatalog =
+    catalogOrStages && "choicesByKey" in catalogOrStages ? catalogOrStages : SCENARIO_CATALOG_V1;
+
+  if (input.catalogVersion !== undefined && input.catalogVersion !== catalog.version) {
+    throw new TrainingCatalogValidationError(
+      "UNKNOWN_CATALOG_VERSION",
+      `Unsupported catalogVersion "${input.catalogVersion}". Expected "${catalog.version}".`,
+    );
+  }
+
+  if (!Array.isArray(input.actions) || input.actions.length === 0) {
+    return {
+      score: 0,
+      passed: false,
+      rating: "NEEDS_IMPROVEMENT" as const,
+      completedStages: [] as string[],
+      rightCount: 0,
+      totalActions: 0,
+      errors: 0,
+      grade: "NEEDS_PRACTICE" as const,
+      gradeLabel: "Cần luyện tập thêm",
+      completedSteps: 0,
+      totalRequiredSteps: catalog.requiredStages.length,
+      summaryText: "0 lần được mentor hướng dẫn lại",
+    };
+  }
+
+  // Xác thực toàn bộ chuỗi sự kiện với catalog trước khi tính điểm
+  const resolvedChoices = input.actions.map((action) =>
+    resolveCatalogChoiceAuthoritative(action, catalog),
+  );
+
+  const rightCount = resolvedChoices.filter((c) => c.isRight).length;
+  const completedStages = deriveCompletedStages(input.actions, catalog);
+  const allStagesCompleted = catalog.requiredStages.every((stage) =>
+    completedStages.includes(stage),
+  );
+
+  const accuracyRatio = rightCount / resolvedChoices.length;
+  const stageRatio =
+    catalog.requiredStages.length > 0 ? completedStages.length / catalog.requiredStages.length : 0;
+
+  // Điểm số và trạng thái pass phụ thuộc chặt vào việc hoàn thành đủ các bước từ catalog server
+  const rawScore = Math.round(accuracyRatio * 100);
+  const score = allStagesCompleted ? rawScore : Math.min(rawScore, Math.round(stageRatio * 80));
+  const passed = allStagesCompleted && score >= 80;
+
+  const rating =
+    passed && score >= 95
+      ? ("EXCELLENT" as const)
+      : passed
+        ? ("GOOD" as const)
+        : ("NEEDS_IMPROVEMENT" as const);
+
+  const errors = resolvedChoices.length - rightCount;
+  const grade: TrainingGrade =
+    rating === "EXCELLENT" ? "EXCELLENT" : rating === "GOOD" ? "SATISFACTORY" : "NEEDS_PRACTICE";
+  const gradeLabel =
+    grade === "EXCELLENT"
+      ? "Xuất sắc (Đúng ngay từ lần đầu)"
+      : grade === "SATISFACTORY"
+        ? "Đạt yêu cầu"
+        : "Cần luyện tập thêm";
+  const summaryText =
+    errors === 0 ? "Hoàn thành đúng ngay từ lần đầu" : `${errors} lần được mentor hướng dẫn lại`;
+
+  return {
+    score,
+    passed,
+    rating,
+    completedStages,
+    rightCount,
+    totalActions: resolvedChoices.length,
+    errors,
+    grade,
+    gradeLabel,
+    completedSteps: completedStages.length,
+    totalRequiredSteps: catalog.requiredStages.length,
+    summaryText,
+  };
+}
+
+/**
+ * Hàm suy diễn tiến trình hoàn thành cho luồng mô phỏng trình duyệt legacy.
+ */
+function deriveLegacyCompletedStages(actions: TrainingActionRecord[]): TrainingStage[] {
   const completed: TrainingStage[] = [];
   let scanCount = 0;
 
   for (const a of actions) {
-    const isRight = resolveActionRight(a, version);
+    const isRight =
+      a.choiceKey && SCENARIO_CHOICE_MAP_V1[a.choiceKey]
+        ? SCENARIO_CHOICE_MAP_V1[a.choiceKey].isRight
+        : a.isRight;
     if (!isRight) continue;
 
-    // Stage 1: greet (Greeting & confirming customer need)
+    // Stage 1: greet
     if (!completed.includes("greet")) {
       if (
         a.choiceKey === "greet_confirm_need" ||
@@ -414,7 +653,7 @@ export function deriveCompletedStages(
       continue;
     }
 
-    // Stage 2: milk (Picking correct product & quantity)
+    // Stage 2: milk
     if (!completed.includes("milk")) {
       if (
         a.choiceKey === "milk_pick_2_low_sugar" ||
@@ -427,7 +666,7 @@ export function deriveCompletedStages(
       continue;
     }
 
-    // Stage 3: checkout (Scanning 2 items + tender payment with exact change)
+    // Stage 3: checkout
     if (!completed.includes("checkout")) {
       if (a.actionType === "scan_item" || a.choiceKey?.startsWith("scan_item_")) {
         scanCount++;
@@ -444,7 +683,7 @@ export function deriveCompletedStages(
       continue;
     }
 
-    // Stage 4: cooler (Inspecting cooler & separating expired item)
+    // Stage 4: cooler
     if (!completed.includes("cooler")) {
       if (
         a.choiceKey === "cooler_quarantine_expired" ||
@@ -457,7 +696,7 @@ export function deriveCompletedStages(
       continue;
     }
 
-    // Stage 5: quarantine (Placing item in quarantine tray with label)
+    // Stage 5: quarantine
     if (!completed.includes("quarantine")) {
       if (
         a.choiceKey === "quarantine_label_expired" ||
@@ -470,7 +709,7 @@ export function deriveCompletedStages(
       continue;
     }
 
-    // Stage 6: mentor (Full handover report to Mentor Mai)
+    // Stage 6: mentor
     if (!completed.includes("mentor")) {
       if (
         a.choiceKey === "mentor_full_report" ||
@@ -488,25 +727,26 @@ export function deriveCompletedStages(
 }
 
 /**
- * Deterministic scoring oracle shared between browser client, browser tests,
- * and future backend evaluation in TRN-03.
- *
- * Scoring logic:
- * - Base score: 100 points
- * - Each wrong action choice incurs a 10-point penalty (resolved via version catalog)
- * - Stage completion is deduced directly from event stream when completedStages is omitted
- * - Grade EXCELLENT: 100 points (0 errors, 6/6 steps)
- * - Grade SATISFACTORY: 70-90 points (1-3 errors, 6/6 steps)
- * - Grade NEEDS_PRACTICE: < 70 points (> 3 errors or incomplete)
+ * CHỈ DÙNG CHO LEGACY BROWSER PREVIEW (Không dùng để chấm/lưu kết quả trên server).
+ * Giữ nguyên logic tính điểm trừ dần phục vụ trải nghiệm người học tại trình duyệt.
  */
-export function evaluateTrainingSession(
-  actions: TrainingActionRecord[],
+export function evaluateLegacyBrowserSimulation(
+  inputOrActions: EvaluateTrainingSessionInput | TrainingActionRecord[],
   completedStages?: TrainingStage[],
-  scenarioVersion: string = SCENARIO_VERSION,
 ): TrainingEvaluationResult {
-  const errors = actions.filter((a) => !resolveActionRight(a, scenarioVersion)).length;
+  const actions: TrainingActionRecord[] = Array.isArray(inputOrActions)
+    ? inputOrActions
+    : (inputOrActions.actions as TrainingActionRecord[]);
+
+  const errors = actions.filter((a) => {
+    if (a.choiceKey && SCENARIO_CHOICE_MAP_V1[a.choiceKey]) {
+      return !SCENARIO_CHOICE_MAP_V1[a.choiceKey].isRight;
+    }
+    return !a.isRight;
+  }).length;
+
   const score = Math.max(0, BASE_SCORE - errors * PENALTY_PER_ERROR);
-  const effectiveStages = completedStages ?? deriveCompletedStages(actions, scenarioVersion);
+  const effectiveStages = completedStages ?? deriveLegacyCompletedStages(actions);
   const completedSteps = REQUIRED_STAGES.filter((s) => effectiveStages.includes(s)).length;
   const passed = completedSteps === REQUIRED_STAGES.length;
 
@@ -538,3 +778,8 @@ export function evaluateTrainingSession(
     summaryText,
   };
 }
+
+/**
+ * Alias cho evaluateLegacyBrowserSimulation phục vụ tương thích hợp đồng.
+ */
+export const evaluateLegacyBrowserTrainingSession = evaluateLegacyBrowserSimulation;

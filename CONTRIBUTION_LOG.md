@@ -22,7 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
-TV3 — Nguyễn Văn Thi - 2026-10-18 20:31:41
+TV3 — Nguyễn Văn Thi - 2026-10-18 21:40:15
+
+Khắc phục triệt để hai lỗ hổng trong Training Oracle / Contract TRN-03 (#55) theo yêu cầu review:
+- Loại bỏ hoàn toàn sự phụ thuộc vào dữ liệu tự khai từ client (`isRight`, `stage`, `actionType`, `choiceText`, `completedStages`) trên đường chấm authoritative của server. Ném lỗi `TrainingCatalogValidationError` khi thiếu `choiceKey`, `choiceKey` lạ hoặc sai `catalogVersion`.
+- Các hàm `resolveActionRight()` và `deriveCompletedStages()` chỉ đọc định nghĩa từ catalog server, không fallback sang dữ liệu client.
+- Bắt buộc quét đủ cả hai mã khác nhau `REQUIRED_CHECKOUT_SCAN_KEYS = ['scan_item_1', 'scan_item_2']` cùng `REQUIRED_CHECKOUT_TENDER_KEY = 'tender_3k_receipt'` ở bước checkout (dùng `Set<string>` thay vì biến đếm `scanCount++` để ngăn việc quét trùng một mã).
+- Tách riêng đường mô phỏng `evaluateLegacyBrowserSimulation` (alias `evaluateLegacyBrowserTrainingSession`) phục vụ client preview và test giao diện người dùng mà không ảnh hưởng tới đường authoritative của server.
+- Bổ sung 4 unit tests kiểm thử TRN-03 authoritative oracle (từ chối chuỗi sự kiện giả mạo, từ chối thiếu key/sai version, từ chối quét trùng checkout, và happy path 100 điểm) tại `apps/web/tests/trn-02-training-scenario.spec.ts`.
+- Cập nhật hợp đồng `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và `CHANGELOG.md`.
+
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +70 -41
+- `apps/web/src/training/scenario.ts`: +358 -113
+- `apps/web/src/training/TrainingGame.vue`: +2 -2
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +175 -16
+- `CHANGELOG.md`: +1 -0
+- `CONTRIBUTION_LOG.md`: +18 -1
+---
 
 Hoàn thiện giao thức sự kiện đào tạo độc lập cho TRN-02 (#55) theo phản hồi review của TV1:
 - Bổ sung định danh ổn định (Vocabulary of Stable Identifiers) cho hành động (`actionType`), đích tương tác (`targetKey`) và lựa chọn (`choiceKey`).

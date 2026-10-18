@@ -4,7 +4,7 @@ import PixelPerson from "./PixelPerson.vue";
 import { adjacent, blocked, pathTo, stations, type Point, type Station } from "./world";
 import {
   DEFAULT_GOALS,
-  evaluateTrainingSession,
+  evaluateLegacyBrowserSimulation,
   SCENARIO_VERSION,
   type TrainingActionRecord,
   type TrainingActionType,
@@ -51,7 +51,7 @@ let noticeTimer: ReturnType<typeof setTimeout>;
 const actionRecords = ref<TrainingActionRecord[]>([]);
 const completedStages = ref<TrainingStage[]>([]);
 const evaluation = computed(() =>
-  evaluateTrainingSession(actionRecords.value, completedStages.value),
+  evaluateLegacyBrowserSimulation(actionRecords.value, completedStages.value),
 );
 const goals = DEFAULT_GOALS;
 const goal = computed(() => goals[stage.value]);

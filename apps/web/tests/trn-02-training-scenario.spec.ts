@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 import {
   evaluateTrainingSession,
+  evaluateLegacyBrowserSimulation,
+  deriveCompletedStages,
+  resolveActionRight,
+  TrainingCatalogValidationError,
+  REQUIRED_STAGES,
+  SCENARIO_CATALOG_V1,
   type TrainingActionRecord,
   type TrainingStage,
 } from "../src/training/scenario";
@@ -28,7 +34,7 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
       feedback: "Tốt lắm",
       timestamp: 1000 + i,
     }));
-    const resPerfect = evaluateTrainingSession(perfectActions, requiredStages);
+    const resPerfect = evaluateLegacyBrowserSimulation(perfectActions, requiredStages);
     expect(resPerfect.score).toBe(100);
     expect(resPerfect.errors).toBe(0);
     expect(resPerfect.passed).toBe(true);
@@ -57,7 +63,7 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
         timestamp: 2001,
       },
     ];
-    const resTwoErrors = evaluateTrainingSession(twoErrorActions, requiredStages);
+    const resTwoErrors = evaluateLegacyBrowserSimulation(twoErrorActions, requiredStages);
     expect(resTwoErrors.score).toBe(80);
     expect(resTwoErrors.errors).toBe(2);
     expect(resTwoErrors.passed).toBe(true);
@@ -77,7 +83,7 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
         timestamp: 3000 + idx,
       })),
     ];
-    const resFiveErrors = evaluateTrainingSession(fiveErrorActions, requiredStages);
+    const resFiveErrors = evaluateLegacyBrowserSimulation(fiveErrorActions, requiredStages);
     expect(resFiveErrors.score).toBe(50);
     expect(resFiveErrors.errors).toBe(5);
     expect(resFiveErrors.grade).toBe("NEEDS_PRACTICE");
@@ -93,13 +99,13 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
       feedback: "Nhắc nhở",
       timestamp: 4000 + idx,
     }));
-    const resZero = evaluateTrainingSession(twelveErrorActions, requiredStages);
+    const resZero = evaluateLegacyBrowserSimulation(twelveErrorActions, requiredStages);
     expect(resZero.score).toBe(0);
     expect(resZero.errors).toBe(12);
 
     // Ca 5: Bỏ dở hoặc chưa đủ 6 bước -> passed = false
     const partialStages: TrainingStage[] = ["greet", "milk"];
-    const resPartial = evaluateTrainingSession(perfectActions, partialStages);
+    const resPartial = evaluateLegacyBrowserSimulation(perfectActions, partialStages);
     expect(resPartial.passed).toBe(false);
     expect(resPartial.completedSteps).toBe(2);
 
@@ -196,13 +202,26 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
       },
     ];
 
-    // Gọi Oracle tự suy diễn tiến trình mà KHÔNG truyền completedStages
-    const resDerived = evaluateTrainingSession(stableActions);
-    expect(resDerived.score).toBe(100);
-    expect(resDerived.errors).toBe(0);
-    expect(resDerived.passed).toBe(true);
-    expect(resDerived.completedSteps).toBe(6);
-    expect(resDerived.grade).toBe("EXCELLENT");
+    // Gọi Oracle mô phỏng trình duyệt tự suy diễn tiến trình
+    const resDerivedLegacy = evaluateLegacyBrowserSimulation(stableActions);
+    expect(resDerivedLegacy.score).toBe(100);
+    expect(resDerivedLegacy.errors).toBe(0);
+    expect(resDerivedLegacy.passed).toBe(true);
+    expect(resDerivedLegacy.completedSteps).toBe(6);
+    expect(resDerivedLegacy.grade).toBe("EXCELLENT");
+
+    // Gọi Oracle authoritative server
+    const resDerivedAuth = evaluateTrainingSession(
+      {
+        catalogVersion: "1.0.0",
+        actions: stableActions,
+      },
+      SCENARIO_CATALOG_V1,
+    );
+    expect(resDerivedAuth.score).toBe(100);
+    expect(resDerivedAuth.passed).toBe(true);
+    expect(resDerivedAuth.rating).toBe("EXCELLENT");
+    expect(resDerivedAuth.completedStages).toEqual(REQUIRED_STAGES);
 
     // Ca 7: Chống gian lận (Client cố tình gửi isRight: true cho lựa chọn sai trong catalog)
     const spoofedActions: TrainingActionRecord[] = [
@@ -219,10 +238,22 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
         timestamp: 1009,
       },
     ];
-    const resSpoofed = evaluateTrainingSession(spoofedActions);
-    expect(resSpoofed.errors).toBe(1); // Oracle tra cứu catalog và phát hiện lỗi
-    expect(resSpoofed.score).toBe(90);
-    expect(resSpoofed.grade).toBe("SATISFACTORY");
+    const resSpoofedLegacy = evaluateLegacyBrowserSimulation(spoofedActions);
+    expect(resSpoofedLegacy.errors).toBe(1); // Oracle tra cứu catalog và phát hiện lỗi
+    expect(resSpoofedLegacy.score).toBe(90);
+    expect(resSpoofedLegacy.grade).toBe("SATISFACTORY");
+
+    const resSpoofedAuth = evaluateTrainingSession(
+      {
+        catalogVersion: "1.0.0",
+        actions: spoofedActions,
+      },
+      SCENARIO_CATALOG_V1,
+    );
+    expect(resSpoofedAuth.rightCount).toBe(8);
+    expect(resSpoofedAuth.totalActions).toBe(9);
+    expect(resSpoofedAuth.passed).toBe(true);
+    expect(resSpoofedAuth.rating).toBe("GOOD");
   });
 
   test("Luồng hoàn thành đúng hoàn hảo (Happy Path) đạt 100 điểm và không gọi API vận hành", async ({
@@ -495,5 +526,133 @@ test.describe("TRN-02 Kịch bản đào tạo PWA & Oracle đánh giá", () => 
     await expect(player).toHaveAttribute("data-y", "11");
     await expect(player).toHaveAttribute("data-stage", "greet");
     await expect(page.locator(".bag-panel")).toContainText("Chưa mang theo sản phẩm");
+  });
+});
+
+const MOCK_SERVER_CATALOG = {
+  version: "v1",
+  requiredStages: ["greeting", "consultation", "checkout"] as const,
+  choicesByKey: {
+    greet_warm: { choiceKey: "greet_warm", stage: "greeting", isRight: true },
+    consult_need: { choiceKey: "consult_need", stage: "consultation", isRight: true },
+    scan_item_1: {
+      choiceKey: "scan_item_1",
+      stage: "checkout",
+      actionType: "scan_item",
+      isRight: true,
+    },
+    scan_item_2: {
+      choiceKey: "scan_item_2",
+      stage: "checkout",
+      actionType: "scan_item",
+      isRight: true,
+    },
+    tender_3k_receipt: {
+      choiceKey: "tender_3k_receipt",
+      stage: "checkout",
+      actionType: "tender",
+      isRight: true,
+    },
+  },
+};
+
+test.describe("TRN-03 Authoritative Training Oracle", () => {
+  test("Ca 1: Từ chối chuỗi 8 sự kiện dùng choiceKey không tồn tại dù client truyền isRight=true và completedStages", () => {
+    const forgedEvents = Array.from({ length: 8 }, (_, idx) => ({
+      choiceKey: `non_existent_key_${idx + 1}`,
+      isRight: true,
+      stage: idx < 2 ? "greeting" : idx < 5 ? "consultation" : "checkout",
+      actionType: "scan_item",
+      choiceText: "Client forged text",
+    }));
+
+    expect(() =>
+      evaluateTrainingSession(
+        {
+          catalogVersion: "v1",
+          actions: forgedEvents,
+          completedStages: ["greeting", "consultation", "checkout"],
+        },
+        MOCK_SERVER_CATALOG,
+      ),
+    ).toThrow(TrainingCatalogValidationError);
+
+    expect(() =>
+      resolveActionRight({ choiceKey: "non_existent_key", isRight: true }, MOCK_SERVER_CATALOG),
+    ).toThrow(TrainingCatalogValidationError);
+  });
+
+  test("Ca 1b: Từ chối khi thiếu choiceKey hoặc sai catalogVersion", () => {
+    expect(() =>
+      evaluateTrainingSession(
+        {
+          catalogVersion: "invalid_version",
+          actions: [{ choiceKey: "greet_warm", isRight: true }],
+        },
+        MOCK_SERVER_CATALOG,
+      ),
+    ).toThrow(/Unsupported catalogVersion/);
+
+    expect(() =>
+      evaluateTrainingSession(
+        {
+          catalogVersion: "v1",
+          actions: [{ isRight: true, stage: "greeting" }],
+        },
+        MOCK_SERVER_CATALOG,
+      ),
+    ).toThrow(/missing required choiceKey/);
+  });
+
+  test("Ca 2: Không tính hoàn thành bước checkout và không đạt 100 điểm nếu quét trùng scan_item_1 hai lần mà thiếu scan_item_2", () => {
+    const duplicateScanActions = [
+      { choiceKey: "greet_warm" },
+      { choiceKey: "consult_need" },
+      { choiceKey: "scan_item_1" },
+      { choiceKey: "scan_item_1" }, // Quét trùng mã 1, thiếu scan_item_2
+      { choiceKey: "tender_3k_receipt" },
+    ];
+
+    const completedStages = deriveCompletedStages(duplicateScanActions, MOCK_SERVER_CATALOG);
+    expect(completedStages).not.toContain("checkout");
+    expect(completedStages).toEqual(["greeting", "consultation"]);
+
+    const result = evaluateTrainingSession(
+      {
+        catalogVersion: "v1",
+        actions: duplicateScanActions,
+        // Cố tình truyền completedStages giả từ client để đảm bảo server phớt lờ
+        completedStages: ["greeting", "consultation", "checkout"],
+      },
+      MOCK_SERVER_CATALOG,
+    );
+
+    expect(result.completedStages).not.toContain("checkout");
+    expect(result.passed).toBe(false);
+    expect(result.score).toBeLessThan(100);
+    expect(result.rating).not.toBe("EXCELLENT");
+  });
+
+  test("Happy Path: Đạt 100 điểm, passed=true, EXCELLENT khi có đủ scan_item_1, scan_item_2 và tender_3k_receipt hợp lệ từ catalog", () => {
+    const validActions = [
+      { choiceKey: "greet_warm", isRight: false }, // Server phải lấy isRight=true từ catalog bất kể client gửi false
+      { choiceKey: "consult_need" },
+      { choiceKey: "scan_item_1" },
+      { choiceKey: "scan_item_2" },
+      { choiceKey: "tender_3k_receipt" },
+    ];
+
+    const result = evaluateTrainingSession(
+      {
+        catalogVersion: "v1",
+        actions: validActions,
+      },
+      MOCK_SERVER_CATALOG,
+    );
+
+    expect(result.completedStages).toEqual(["greeting", "consultation", "checkout"]);
+    expect(result.score).toBe(100);
+    expect(result.passed).toBe(true);
+    expect(result.rating).toBe("EXCELLENT");
   });
 });

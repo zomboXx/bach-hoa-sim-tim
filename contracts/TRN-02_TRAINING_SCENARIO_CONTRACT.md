@@ -75,54 +75,83 @@ Bảng ánh xạ tĩnh (Scenario Catalog) được lưu trữ độc lập ở c
 ## 3. Quy tắc chấm và Điều kiện hoàn thành (Deterministic Scoring Oracle)
 
 ### 3.1. Nguyên tắc không tin điểm hoặc cờ trạng thái client (Zero-trust Client State)
-- Khi hoàn tất ca học hoặc lưu kết quả (TRN-03), client chỉ gửi chuỗi sự kiện hành động `TrainingActionRecord[]` kèm định danh phiên và phiên bản kịch bản.
-- Server tự tính lại điểm, số lỗi và suy diễn tiến độ hoàn thành các bước trực tiếp từ chuỗi sự kiện này.
-- Tuyệt đối không chấp nhận các trường do client tự khai báo như `score`, `grade`, `passed`, `isRight` hoặc danh sách `completedStages`.
+- Khi chấm authoritative (TRN-03), server nhận đầu vào `EvaluateTrainingSessionInput { catalogVersion?, actions: TrainingActionEvent[] }` và đối chiếu với `TrainingCatalog` của phiên bản tương ứng.
+- **Từ chối Key/Version không hợp lệ:** Ném lỗi `TrainingCatalogValidationError`:
+  - Mã `UNKNOWN_CATALOG_VERSION`: nếu `catalogVersion` gửi lên không khớp với phiên bản catalog server hỗ trợ.
+  - Mã `MISSING_CHOICE_KEY`: nếu sự kiện hành động thiếu trường `choiceKey`.
+  - Mã `UNKNOWN_CHOICE_KEY`: nếu `choiceKey` không tồn tại trong catalog của server.
+- **Tuyệt đối không fallback sang dữ liệu client:**
+  - `resolveActionRight()` chỉ đọc `catalogChoice.isRight` từ catalog server, bỏ hoàn toàn việc đọc `action.isRight`.
+  - `deriveCompletedStages()` chỉ suy diễn từ định nghĩa `catalogChoice.stage` và `catalogChoice.choiceKey` trong catalog server, bỏ hoàn toàn các trường `input.completedStages`, `action.stage`, `action.actionType`, hay `action.choiceText`.
+- **Tách biệt đường legacy browser simulation:** Tách riêng hàm `evaluateLegacyBrowserSimulation` (alias `evaluateLegacyBrowserTrainingSession`) chỉ phục vụ UI mô phỏng phía client, không sử dụng trên đường chấm authoritative backend.
 
-### 3.2. Cấu trúc bản ghi sự kiện hành động (`TrainingActionRecord`)
+### 3.2. Cấu trúc bản ghi sự kiện và dữ liệu Catalog
 ```typescript
-interface TrainingActionRecord {
-  sequence: number;           // Thứ tự hành động (bắt đầu từ 1, tăng đơn điệu)
-  stage: TrainingStage;       // "greet" | "milk" | "checkout" | "cooler" | "quarantine" | "mentor"
-  actionType: string;         // Định danh hành động nghiệp vụ (actionType)
-  targetKey?: string;         // Định danh đích tương tác (targetKey)
-  choiceKey?: string;         // Định danh ổn định của lựa chọn (choiceKey)
-  choiceText: string;         // Nội dung lựa chọn đã thực hiện (phục vụ audit/UI)
-  isRight: boolean;           // Cờ do client ghi nhận (chỉ để tham khảo/legacy fallback)
-  feedback: string;           // Lời nhận xét / hướng dẫn tương ứng
-  timestamp: number;          // Thời điểm thực hiện (epoch ms)
-  scenarioVersion?: string;   // Phiên bản kịch bản (mặc định "1.0.0")
+export const REQUIRED_CHECKOUT_SCAN_KEYS = ['scan_item_1', 'scan_item_2'] as const;
+export const REQUIRED_CHECKOUT_TENDER_KEY = 'tender_3k_receipt' as const;
+
+export class TrainingCatalogValidationError extends Error {
+  constructor(
+    public readonly code: 'UNKNOWN_CATALOG_VERSION' | 'MISSING_CHOICE_KEY' | 'UNKNOWN_CHOICE_KEY',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'TrainingCatalogValidationError';
+  }
+}
+
+export interface CatalogChoiceDefinition {
+  choiceKey: string;
+  stage: string;
+  actionType?: string;
+  isRight: boolean;
+}
+
+export interface TrainingCatalog {
+  version: string;
+  requiredStages: readonly string[];
+  choicesByKey: ReadonlyMap<string, CatalogChoiceDefinition> | Record<string, CatalogChoiceDefinition>;
+}
+
+export interface TrainingActionEvent {
+  choiceKey?: string;
+  // Bị bỏ qua hoàn toàn trên đường authoritative:
+  isRight?: boolean;
+  stage?: string;
+  actionType?: string;
+  choiceText?: string;
+}
+
+export interface EvaluateTrainingSessionInput {
+  catalogVersion?: string;
+  actions: readonly TrainingActionEvent[];
+  // Bị bỏ qua hoàn toàn trên đường authoritative:
+  completedStages?: readonly string[];
 }
 ```
 
 ### 3.3. Thuật toán xác định hoàn thành bước từ chuỗi sự kiện (Stage Completion Deduction Algorithm)
 
-Thay vì tin cờ `completedStages` do client gửi lên, Oracle phân tích chuỗi `actions: TrainingActionRecord[]` theo thuật toán đơn điệu sau:
-
-1. **Phân giải đúng/sai độc lập (`resolveActionRight`):**
-   - Với mỗi hành động `a`, Oracle lấy `a.choiceKey` tra vào bảng ánh xạ `SCENARIO_CATALOG[version]`.
-   - Nếu `catalog[choiceKey].isRight === false`, ghi nhận là một lần phạm lỗi (`errors++`).
-   - Mọi cờ `isRight: true` do client tự gán cho một `choiceKey` sai đều bị vô hiệu hóa.
+Oracle phân tích chuỗi `actions: readonly TrainingActionEvent[]` đối chiếu với `TrainingCatalog`:
+1. **Phân giải đúng/sai độc lập (`resolveCatalogChoiceAuthoritative`):**
+   - Từng sự kiện bắt buộc có `choiceKey` tồn tại trong catalog server.
+   - Trả về định nghĩa lựa chọn chính thức; nếu `!choice.isRight`, hành động không được tính để hoàn thành bước.
 2. **Suy diễn tiến trình hoàn thành tuần tự (`deriveCompletedStages`):**
-   Tiến trình bắt buộc phải đi qua 6 bước theo đúng thứ tự:
-   - **Bước 1 (`greet`):** Được công nhận hoàn thành khi chuỗi sự kiện xuất hiện hành động hợp lệ có `choiceKey === "greet_confirm_need"` (hoặc `actionType === "greet_customer"` đúng).
-   - **Bước 2 (`milk`):** Yêu cầu bước 1 đã hoàn thành; được công nhận khi có hành động hợp lệ `choiceKey === "milk_pick_2_low_sugar"` (hoặc `actionType === "pick_product"` đúng).
-   - **Bước 3 (`checkout`):** Yêu cầu bước 2 đã hoàn thành; được công nhận khi có **đủ ít nhất 2 sự kiện** `actionType === "scan_item"` (`scan_item_1` và `scan_item_2`) VÀ có hành động thanh toán đúng `choiceKey === "tender_3k_receipt"`.
-   - **Bước 4 (`cooler`):** Yêu cầu bước 3 đã hoàn thành; được công nhận khi có hành động hợp lệ `choiceKey === "cooler_quarantine_expired"` (hoặc `actionType === "inspect_cooler"` đúng).
-   - **Bước 5 (`quarantine`):** Yêu cầu bước 4 đã hoàn thành; được công nhận khi có hành động hợp lệ `choiceKey === "quarantine_label_expired"` (hoặc `actionType === "quarantine_product"` đúng).
-   - **Bước 6 (`mentor`):** Yêu cầu bước 5 đã hoàn thành; được công nhận khi có hành động báo cáo đúng `choiceKey === "mentor_full_report"`.
-3. **Ràng buộc hoàn thành ca học (`passed`):**
-   $$\text{passed} = (\text{completedSteps} == 6)$$
-   Nếu chuỗi sự kiện bị ngắt quãng, thiếu hành động đúng ở bất kỳ bước nào hoặc đi sai thứ tự, ca học bị đánh giá `passed = false`.
+   - **Bước `checkout`:** Bắt buộc quét đủ **cả 2 mã khác nhau** `REQUIRED_CHECKOUT_SCAN_KEYS = ['scan_item_1', 'scan_item_2']` (lưu trữ bằng `Set<string>`, quét trùng 1 mã 2 lần không được công nhận) VÀ có hành động trả tiền đúng `REQUIRED_CHECKOUT_TENDER_KEY = 'tender_3k_receipt'`.
+   - **Các bước khác (`greet`, `milk`, `cooler`, `quarantine`, `mentor`):** Được ghi nhận hoàn thành khi xuất hiện lựa chọn đúng thuộc `stage` tương ứng theo cấu hình catalog server.
+   - Kết quả trả về danh sách các stage hoàn thành nằm trong `catalog.requiredStages`.
 
-### 3.4. Công thức tính điểm và Xếp loại
-- **Điểm cơ bản (Base Score):** 100 điểm.
-- **Trừ điểm:** Mỗi thao tác sai hoặc lựa chọn sai bị trừ 10 điểm:
-  $$\text{Score} = \max(0, 100 - \text{errorCount} \times 10)$$
-- **Thang xếp loại (Grade):**
-  - **`EXCELLENT` (Xuất sắc):** Đạt 100 điểm (0 lỗi, hoàn thành đủ 6/6 bước).
-  - **`SATISFACTORY` (Đạt yêu cầu):** Đạt 70 – 90 điểm (1 – 3 lần được hướng dẫn lại, hoàn thành đủ 6/6 bước).
-  - **`NEEDS_PRACTICE` (Cần luyện tập thêm):** Dưới 70 điểm (> 3 lỗi) hoặc chưa hoàn thành đủ 6 bước. Người học được khuyến nghị bấm "Chơi lại ca này" để nắm vững quy trình.
+### 3.4. Công thức tính điểm và Xếp loại Authoritative
+- **Tỷ lệ chính xác (Accuracy Ratio):** $\text{accuracyRatio} = \frac{\text{rightCount}}{\text{totalActions}}$
+- **Tỷ lệ hoàn thành bước (Stage Ratio):** $\text{stageRatio} = \frac{\text{completedStages.length}}{\text{requiredStages.length}}$
+- **Điểm số (Score):**
+  - Nếu hoàn thành tất cả các bước: $\text{score} = \text{round}(\text{accuracyRatio} \times 100)$
+  - Nếu chưa hoàn thành đủ các bước: $\text{score} = \min(\text{rawScore}, \text{round}(\text{stageRatio} \times 80))$
+- **Trạng thái đạt (`passed`):** $\text{allStagesCompleted} \land (\text{score} \ge 80)$
+- **Xếp loại (`rating`):**
+  - **`EXCELLENT`:** $\text{passed} \land (\text{score} \ge 95)$
+  - **`GOOD`:** $\text{passed} \land (\text{score} < 95)$
+  - **`NEEDS_IMPROVEMENT`:** Không thỏa mãn điều kiện `passed`.
 
 ---
 
