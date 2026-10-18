@@ -534,6 +534,7 @@ const MOCK_SERVER_CATALOG = {
   requiredStages: ["greeting", "consultation", "checkout"] as const,
   choicesByKey: {
     greet_warm: { choiceKey: "greet_warm", stage: "greeting", isRight: true },
+    greet_cold: { choiceKey: "greet_cold", stage: "greeting", isRight: false },
     consult_need: { choiceKey: "consult_need", stage: "consultation", isRight: true },
     scan_item_1: {
       choiceKey: "scan_item_1",
@@ -654,5 +655,68 @@ test.describe("TRN-03 Authoritative Training Oracle", () => {
     expect(result.score).toBe(100);
     expect(result.passed).toBe(true);
     expect(result.rating).toBe("EXCELLENT");
+  });
+
+  test("không công nhận bước làm sai thứ tự hoặc nhận tiền trước khi quét đủ hai mã", () => {
+    const aheadOfOrder = evaluateTrainingSession(
+      {
+        catalogVersion: "v1",
+        actions: [
+          { choiceKey: "scan_item_1" },
+          { choiceKey: "scan_item_2" },
+          { choiceKey: "tender_3k_receipt" },
+          { choiceKey: "greet_warm" },
+          { choiceKey: "consult_need" },
+        ],
+      },
+      MOCK_SERVER_CATALOG,
+    );
+    expect(aheadOfOrder.completedStages).toEqual(["greeting", "consultation"]);
+    expect(aheadOfOrder.passed).toBe(false);
+
+    expect(
+      deriveCompletedStages(
+        [
+          { choiceKey: "greet_warm" },
+          { choiceKey: "consult_need" },
+          { choiceKey: "tender_3k_receipt" },
+          { choiceKey: "scan_item_1" },
+          { choiceKey: "scan_item_2" },
+        ],
+        MOCK_SERVER_CATALOG,
+      ),
+    ).toEqual(["greeting", "consultation"]);
+  });
+
+  test("lặp lựa chọn đúng không xóa lỗi đã mắc hoặc nâng điểm", () => {
+    const actions = [
+      { choiceKey: "greet_cold" },
+      { choiceKey: "greet_warm" },
+      { choiceKey: "consult_need" },
+      { choiceKey: "scan_item_1" },
+      { choiceKey: "scan_item_2" },
+      { choiceKey: "tender_3k_receipt" },
+    ];
+    const baseline = evaluateTrainingSession({ actions }, MOCK_SERVER_CATALOG);
+    const repeated = evaluateTrainingSession(
+      { actions: [...actions, ...Array.from({ length: 30 }, () => ({ choiceKey: "greet_warm" }))] },
+      MOCK_SERVER_CATALOG,
+    );
+    expect(baseline.score).toBe(83);
+    expect(repeated.score).toBe(baseline.score);
+    expect(repeated.errors).toBe(1);
+    expect(repeated.rating).not.toBe("EXCELLENT");
+  });
+
+  test("từ chối khóa prototype và phiên bản không có trong catalog", () => {
+    expect(() => evaluateTrainingSession({ actions: [{ choiceKey: "__proto__" }] })).toThrow(
+      TrainingCatalogValidationError,
+    );
+    expect(() => resolveActionRight({ choiceKey: "greet_confirm_need" }, "missing")).toThrow(
+      TrainingCatalogValidationError,
+    );
+    expect(() => deriveCompletedStages([{ choiceKey: "greet_confirm_need" }], "__proto__")).toThrow(
+      TrainingCatalogValidationError,
+    );
   });
 });

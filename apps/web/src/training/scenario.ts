@@ -429,6 +429,20 @@ export const SCENARIO_CATALOG_BY_VERSION: Record<string, TrainingCatalog> = {
   v1: SCENARIO_CATALOG_V1,
 };
 
+function catalogFor(versionOrCatalog: TrainingCatalog | string): TrainingCatalog {
+  if (typeof versionOrCatalog !== "string") return versionOrCatalog;
+  const catalog = Object.hasOwn(SCENARIO_CATALOG_BY_VERSION, versionOrCatalog)
+    ? SCENARIO_CATALOG_BY_VERSION[versionOrCatalog]
+    : undefined;
+  if (!catalog) {
+    throw new TrainingCatalogValidationError(
+      "UNKNOWN_CATALOG_VERSION",
+      `Unsupported catalogVersion "${versionOrCatalog}".`,
+    );
+  }
+  return catalog;
+}
+
 function getCatalogChoice(
   catalog: TrainingCatalog,
   choiceKey: string,
@@ -436,7 +450,9 @@ function getCatalogChoice(
   if (catalog.choicesByKey instanceof Map) {
     return catalog.choicesByKey.get(choiceKey);
   }
-  return (catalog.choicesByKey as Record<string, CatalogChoiceDefinition>)[choiceKey];
+  return Object.hasOwn(catalog.choicesByKey, choiceKey)
+    ? (catalog.choicesByKey as Record<string, CatalogChoiceDefinition>)[choiceKey]
+    : undefined;
 }
 
 /**
@@ -474,10 +490,7 @@ export function resolveActionRight(
   action: TrainingActionEvent,
   catalogOrVersion: TrainingCatalog | string = SCENARIO_CATALOG_V1,
 ): boolean {
-  const catalog =
-    typeof catalogOrVersion === "string"
-      ? (SCENARIO_CATALOG_BY_VERSION[catalogOrVersion] ?? SCENARIO_CATALOG_V1)
-      : catalogOrVersion;
+  const catalog = catalogFor(catalogOrVersion);
   const catalogChoice = resolveCatalogChoiceAuthoritative(action, catalog);
   return catalogChoice.isRight;
 }
@@ -490,18 +503,15 @@ export function deriveCompletedStages(
   actions: readonly TrainingActionEvent[],
   catalogOrVersion: TrainingCatalog | string = SCENARIO_CATALOG_V1,
 ): string[] {
-  const catalog =
-    typeof catalogOrVersion === "string"
-      ? (SCENARIO_CATALOG_BY_VERSION[catalogOrVersion] ?? SCENARIO_CATALOG_V1)
-      : catalogOrVersion;
+  const catalog = catalogFor(catalogOrVersion);
 
-  const completedStages = new Set<string>();
+  const completedStages: string[] = [];
   const scannedCheckoutKeys = new Set<string>();
-  let hasValidTenderReceipt = false;
 
   for (const action of actions) {
     const choice = resolveCatalogChoiceAuthoritative(action, catalog);
-    if (!choice.isRight) {
+    const expectedStage = catalog.requiredStages[completedStages.length];
+    if (!choice.isRight || choice.choiceKey === "hint_ack" || choice.stage !== expectedStage) {
       continue;
     }
 
@@ -512,23 +522,18 @@ export function deriveCompletedStages(
         )
       ) {
         scannedCheckoutKeys.add(choice.choiceKey);
-      } else if (choice.choiceKey === REQUIRED_CHECKOUT_TENDER_KEY) {
-        hasValidTenderReceipt = true;
-      }
-
-      const hasAllRequiredScans = REQUIRED_CHECKOUT_SCAN_KEYS.every((reqKey) =>
-        scannedCheckoutKeys.has(reqKey),
-      );
-      if (hasAllRequiredScans && hasValidTenderReceipt) {
-        completedStages.add("checkout");
+      } else if (
+        choice.choiceKey === REQUIRED_CHECKOUT_TENDER_KEY &&
+        REQUIRED_CHECKOUT_SCAN_KEYS.every((reqKey) => scannedCheckoutKeys.has(reqKey))
+      ) {
+        completedStages.push("checkout");
       }
     } else {
-      // Các stage khác chỉ được tính hoàn thành dựa trên cấu hình stage trong catalog server
-      completedStages.add(choice.stage);
+      completedStages.push(choice.stage);
     }
   }
 
-  return catalog.requiredStages.filter((stage) => completedStages.has(stage));
+  return completedStages;
 }
 
 /**
@@ -576,13 +581,21 @@ export function evaluateTrainingSession(
     resolveCatalogChoiceAuthoritative(action, catalog),
   );
 
-  const rightCount = resolvedChoices.filter((c) => c.isRight).length;
+  const seenCorrect = new Set<string>();
+  const scoreableChoices = resolvedChoices.filter((choice) => {
+    if (choice.choiceKey === "hint_ack") return false;
+    if (!choice.isRight) return true;
+    if (seenCorrect.has(choice.choiceKey)) return false;
+    seenCorrect.add(choice.choiceKey);
+    return true;
+  });
+  const rightCount = scoreableChoices.filter((choice) => choice.isRight).length;
   const completedStages = deriveCompletedStages(input.actions, catalog);
   const allStagesCompleted = catalog.requiredStages.every((stage) =>
     completedStages.includes(stage),
   );
 
-  const accuracyRatio = rightCount / resolvedChoices.length;
+  const accuracyRatio = scoreableChoices.length ? rightCount / scoreableChoices.length : 0;
   const stageRatio =
     catalog.requiredStages.length > 0 ? completedStages.length / catalog.requiredStages.length : 0;
 
@@ -598,7 +611,7 @@ export function evaluateTrainingSession(
         ? ("GOOD" as const)
         : ("NEEDS_IMPROVEMENT" as const);
 
-  const errors = resolvedChoices.length - rightCount;
+  const errors = scoreableChoices.length - rightCount;
   const grade: TrainingGrade =
     rating === "EXCELLENT" ? "EXCELLENT" : rating === "GOOD" ? "SATISFACTORY" : "NEEDS_PRACTICE";
   const gradeLabel =
@@ -616,7 +629,7 @@ export function evaluateTrainingSession(
     rating,
     completedStages,
     rightCount,
-    totalActions: resolvedChoices.length,
+    totalActions: scoreableChoices.length,
     errors,
     grade,
     gradeLabel,
