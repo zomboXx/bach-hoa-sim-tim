@@ -95,6 +95,14 @@ WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
 ON CONFLICT DO NOTHING;
 
 
+-- TRN-03: role grants are seeded after versioned migrations create the demo roles.
+INSERT INTO iam.role_permissions(role_id,permission_id)
+SELECT r.id,p.id FROM iam.roles r CROSS JOIN iam.permissions p
+WHERE r.organization_id='10000000-0000-0000-0000-000000000001'
+  AND ((p.code='training.results.read.store' AND r.code='MANAGER')
+       OR (p.code='training.results.read.organization' AND r.code='ADMIN'))
+ON CONFLICT DO NOTHING;
+
 -- PRO-01B: khuyến mãi mẫu — giảm 10% trên gạo tại cửa hàng MAIN.
 INSERT INTO sales.promotions
     (id, organization_id, store_id, code, name, discount_type, discount_value,
