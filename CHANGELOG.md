@@ -30,6 +30,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- **TRN-01** (#54): Ngăn khởi động đồng bộ kiểm kê khi mở màn đào tạo và giữ hàng đợi kiểm kê chờ nguyên trạng; bổ sung browser test cho phiên đã đăng nhập. Đính chính báo cáo benchmark: số FPS và cấu hình máy cũ chưa có log đo nên chưa dùng làm bằng chứng nghiệm thu.
 - **QA-03** (#47): API đọc tồn trả thêm `version` theo lô và `unitCode` theo sản phẩm để client gửi `baseVersion` thật và áp precision EA/KG; PWA không reload API ngay sau khi lưu offline, khử trùng queue/response cùng `clientOperationId`, và hiển thị nguồn movement `STOCKTAKE_ADJUSTMENT`/`STOCKTAKE`.
 - **INV-03 fix** (#46): Xử lý review PR #52: Khóa phiên nguyên tử (`PESSIMISTIC_WRITE`) ngay đầu transaction của `approveStocktake` và `submitCount`, loại bỏ duyệt lặp và double audit log khi duyệt đồng thời trên phiên có số đếm bằng tồn kho (`delta == 0`). Kiểm tra độ chính xác số lượng theo `catalog.units.precision_scale` (EA = số nguyên, KG = tối đa 3 chữ số thập phân) trước khi duyệt, trả 422 `QUANTITY_PRECISION` khi vi phạm. Bổ sung 4 regression tests (nâng tổng lên 13 tests trong `StocktakeApprovalApiTest`).
 - **QA-02 / REP-01**: Sửa query báo cáo tồn dùng sai tên cột/khóa/trạng thái so với migration (`on_hand_quantity`, `batch_id`, `EXHAUSTED`) và ràng buộc join theo organization/store/product. Bổ sung E2E PostgreSQL xuyên receipt → checkout → invoice → reports với oracle ledger độc lập, rollback và checkout cạnh tranh.

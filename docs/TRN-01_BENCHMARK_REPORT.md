@@ -1,33 +1,26 @@
-# Báo cáo Nghiệm thu Kỹ thuật TRN-01: Hoàn thiện Scene Cửa Hàng 2D (Vue/SVG)
+# TRN-01 — kiểm chứng scene đào tạo 2D (Vue/SVG)
 
-## 1. Cấu hình máy yếu nhất trong nhóm (Low-End Target Machine)
+**Đính chính ngày 18/10/2026:** Bản trước ghi cấu hình máy và các mức FPS cụ thể nhưng không kèm tên máy đo, commit/build, thao tác, dữ liệu thô hoặc log đo. Các con số đó chưa thể dùng làm bằng chứng nghiệm thu hiệu năng. Cần đo lại trên thiết bị thật và lưu artefact trước khi kết luận tiêu chí máy yếu nhất đạt.
 
-| Hạng mục | Thông số thực tế ghi nhận |
-| :--- | :--- |
-| **Thiết bị / Model** | Laptop văn phòng cấu hình thấp (Intel Core i3 Gen 8 / Ryzen 3 / Celeron) |
-| **CPU** | 2 nhân / 4 luồng @ 2.10GHz (Đã bật CPU Throttling 4x trên DevTools để mô phỏng tải nặng) |
-| **RAM** | 4 GB DDR4 |
-| **GPU** | Đồ họa tích hợp Intel UHD Graphics 620 (Shared Memory) |
-| **Hệ điều hành & Trình duyệt** | Windows 10/11 64-bit — Chromium / Google Chrome / Microsoft Edge |
+## 1. Thiết bị đo hiệu năng
 
-## 2. Kết quả đo hiệu năng thực tế trên các Viewport đã công bố
+Chưa có bằng chứng xác định máy yếu nhất đã được đo. Mô phỏng CPU throttling trong DevTools không thay cho phép đo trên thiết bị thật. Khi đo lại, ghi model, CPU/RAM/GPU, hệ điều hành, trình duyệt, commit/build và thời gian đo.
 
-| Viewport công bố | Kích thước (px) | Phương thức điều khiển | FPS Trung bình | 1% Low / Min FPS | Frame Time TB (ms) | Trạng thái Va chạm & Tương tác |
-| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Desktop Standard** | `1280 x 720` | Bàn phím (`WASD`/Mũi tên) + Chuột | 58 – 60 FPS | >= 52 FPS | ~16.6 ms | Không xuyên tường/kệ, tương tác mượt |
-| **Desktop Full HD** | `1366 x 768` | Bàn phím (`WASD`/Mũi tên) + Chuột | 58 – 60 FPS | >= 50 FPS | ~16.7 ms | Không xuyên tường/kệ, tương tác mượt |
-| **Mobile Compact** | `360 x 800` | Chạm SVG + D-Pad ảo + Nút `E` | 55 – 60 FPS | >= 46 FPS | ~17.3 ms | Bố cục không tràn ngang, D-Pad nhạy |
-| **Mobile Modern** | `390 x 844` | Chạm SVG + D-Pad ảo + Nút `E` | 56 – 60 FPS | >= 47 FPS | ~17.1 ms | Bố cục không tràn ngang, thao tác chạm chính xác |
+## 2. Kết quả hiệu năng cần đo lại
+
+| Viewport cần kiểm | Kích thước (px) | FPS và frame time | Artefact |
+| :--- | :---: | :--- | :--- |
+| Desktop Standard | `1280 x 720` | Chưa có phép đo kiểm chứng | Chờ log/video trên máy thật |
+| Desktop Full HD | `1366 x 768` | Chưa có phép đo kiểm chứng | Chờ log/video trên máy thật |
+| Mobile Compact | `360 x 800` | Chưa có phép đo kiểm chứng | Chờ log/video trên máy thật |
+| Mobile Modern | `390 x 844` | Chưa có phép đo kiểm chứng | Chờ log/video trên máy thật |
 
 ## 3. Xác nhận cô lập dữ liệu ca học (Zero Operational Writes)
 
-- **Cơ chế cô lập**: Toàn bộ thao tác trong ca học (chào khách, nhặt sữa ít đường vào giỏ, quét mã vạch POS, thanh toán tiền thừa, kiểm tra tủ mát và tách hàng hết hạn) được quản lý trong bộ nhớ phiên riêng biệt của scene đào tạo, không tải hay ghi qua bất kỳ API vận hành nào.
+- **Cơ chế cô lập:** Thao tác trong scene đào tạo được giữ trong bộ nhớ phiên riêng. Bài kiểm thử mới còn xác nhận đường đồng bộ kiểm kê của `App.vue` không chạy khi đang ở màn đào tạo, kể cả khi nhân viên có hàng đợi kiểm kê chờ.
 - **Kiểm chứng qua Network Listener (Playwright Test)**:
-  - `POST/PUT/PATCH/DELETE` tới `/api/sales`, `/api/invoices`: **0 request**.
-  - `POST/PUT/PATCH/DELETE` tới `/api/receiving`: **0 request**.
-  - `POST/PUT/PATCH/DELETE` tới `/api/inventory`, `/api/stocktake`: **0 request**.
-  - `POST/PUT/PATCH/DELETE` tới `/api/catalog`: **0 request**.
-- **Kết luận**: Dữ liệu ca học tách biệt hoàn toàn khỏi dữ liệu bán, nhận và tồn vận hành (đáp ứng tiêu chuẩn NFR-TRN-01).
+  - Matcher hiện kiểm `POST/PUT/PATCH/DELETE` tới `/api/v1/inventory`, `/api/v1/sales`, `/api/v1/receipts` và các route vận hành liên quan; trong các ca test đã chạy, số request ghi là **0**.
+  - Kiểm tra trên bản tích hợp cuối và PostgreSQL thật vẫn thuộc QA-04 trước khi xác nhận NFR-TRN-01 toàn bộ.
 
 ## 4. Bằng chứng kiểm thử tự động
 
