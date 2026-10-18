@@ -163,7 +163,7 @@ public class TrainingService {
                 "evaluationStatus", choice.correct() ? "CORRECT" : "INCORRECT",
                 "feedback", choice.feedback(), "status", status,
                 "nextActionSequence", sequence + 1);
-        TrainingOracle.Result result = complete ? TrainingOracle.complete(errors) : null;
+        TrainingOracle.Result result = complete ? TrainingOracle.complete(steps.size(), errors) : null;
         if (result != null) {
             response.put("result", map("totalScore", result.totalScore(), "passed", result.passed(),
                     "grade", result.grade(), "errorCount", result.errorCount(), "completedAt", now));

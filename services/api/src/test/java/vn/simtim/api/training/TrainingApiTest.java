@@ -102,6 +102,19 @@ class TrainingApiTest {
     @AfterAll
     void cleanup() {
         try {
+            // The seeded retail scenario is also exercised by this fixture. Remove only
+            // its sessions owned by the fixture users before deleting those users.
+            for (UUID user : users) {
+                jdbc.update("""
+                        delete from training.session_results where session_id in
+                            (select id from training.sessions where learner_user_id=?)
+                        """, user);
+                jdbc.update("""
+                        delete from training.session_actions where session_id in
+                            (select id from training.sessions where learner_user_id=?)
+                        """, user);
+                jdbc.update("delete from training.sessions where learner_user_id=?", user);
+            }
             jdbc.update("""
                     delete from training.session_results where session_id in
                         (select id from training.sessions where scenario_id=?)
@@ -168,7 +181,8 @@ class TrainingApiTest {
             if (i == STAGES.length - 1) {
                 assertThat(response.getBody()).containsEntry("status", "COMPLETED");
                 Map<?, ?> result = (Map<?, ?>) response.getBody().get("result");
-                assertThat(result.get("totalScore")).isEqualTo(90);
+                assertThat(result.get("totalScore")).isEqualTo(86);
+                assertThat(result.get("passed")).isEqualTo(true);
                 assertThat(result.get("grade")).isEqualTo("SATISFACTORY");
                 var finalReplay = post(actionPath(id), action(i + 2, i, "right"), learnerToken, null);
                 assertThat(finalReplay.getBody()).isEqualTo(response.getBody());
@@ -186,6 +200,59 @@ class TrainingApiTest {
         assertThat(self.getStatusCode().value()).isEqualTo(200);
         assertThat((List<?>) self.getBody().get("items")).isNotEmpty();
         assertThat(get("/api/v1/training/sessions/" + id, managerToken).getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void seededRetailScenarioRequiresTwoDistinctScansAndKeepsOperationsUnchanged() {
+        UUID demoScenario = jdbc.queryForObject("""
+                select id from training.scenarios
+                where organization_id=? and code='SCN-RETAIL-01' and scenario_version=1
+                """, UUID.class, ORG);
+        assertThat(demoScenario).isNotNull();
+        assertThat(jdbc.queryForObject("select count(*) from training.scenario_steps where scenario_id=?",
+                Integer.class, demoScenario)).isEqualTo(8);
+        Map<String, Number> before = operationalCounts();
+        UUID id = UUID.fromString((String) post("/api/v1/training/sessions",
+                Map.of("scenarioId", demoScenario.toString()), learnerToken, UUID.randomUUID())
+                .getBody().get("id"));
+        String[] actionTypes = {"greet_customer", "pick_product", "scan_item", "scan_item",
+                "tender_payment", "inspect_cooler", "quarantine_product", "report_mentor"};
+        String[] targetKeys = {"customer_linh", "shelf_milk", "pos_scanner", "pos_scanner",
+                "pos_cash", "cooler_display", "quarantine_bin", "mentor_mai"};
+        String[] choiceKeys = {"greet_confirm_need", "milk_pick_2_low_sugar", "scan_item_1",
+                "scan_item_2", "tender_3k_receipt", "cooler_quarantine_expired",
+                "quarantine_label_expired", "mentor_full_report"};
+        for (int i = 0; i < choiceKeys.length; i++) {
+            var response = post(actionPath(id), Map.of("actionSequence", i + 1,
+                    "actionType", actionTypes[i], "targetKey", targetKeys[i],
+                    "choiceKey", choiceKeys[i]), learnerToken, null);
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            if (i == choiceKeys.length - 1) {
+                assertThat(response.getBody().get("status")).isEqualTo("COMPLETED");
+                Map<?, ?> result = (Map<?, ?>) response.getBody().get("result");
+                assertThat(result.get("totalScore")).isEqualTo(100);
+                assertThat(result.get("passed")).isEqualTo(true);
+            }
+        }
+        assertThat(operationalCounts()).isEqualTo(before);
+
+        UUID retryId = UUID.fromString((String) post("/api/v1/training/sessions",
+                Map.of("scenarioId", demoScenario.toString()), learnerToken, UUID.randomUUID())
+                .getBody().get("id"));
+        for (int i = 0; i < 3; i++) {
+            assertThat(post(actionPath(retryId), Map.of("actionSequence", i + 1,
+                    "actionType", actionTypes[i], "targetKey", targetKeys[i],
+                    "choiceKey", choiceKeys[i]), learnerToken, null).getStatusCode().value())
+                    .isEqualTo(200);
+        }
+        var duplicate = post(actionPath(retryId), Map.of("actionSequence", 4,
+                "actionType", "scan_item", "targetKey", "pos_scanner",
+                "choiceKey", "scan_item_1"), learnerToken, null);
+        assertThat(duplicate.getBody()).containsEntry("evaluationStatus", "INCORRECT")
+                .containsEntry("status", "IN_PROGRESS");
+        assertThat(jdbc.queryForObject("select step_cursor from training.sessions where id=?",
+                Integer.class, retryId)).isEqualTo(3);
+        assertThat(operationalCounts()).isEqualTo(before);
     }
 
     @Test

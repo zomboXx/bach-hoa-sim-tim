@@ -6,11 +6,13 @@ public final class TrainingOracle {
 
     public record Result(int totalScore, boolean passed, String grade, int errorCount) {}
 
-    public static Result complete(int errors) {
-        if (errors < 0) throw new IllegalArgumentException("errors must be nonnegative");
-        int score = errors >= 10 ? 0 : 100 - errors * 10;
-        String grade = errors == 0 ? "EXCELLENT"
-                : errors <= 3 ? "SATISFACTORY" : "NEEDS_PRACTICE";
-        return new Result(score, true, grade, errors);
+    public static Result complete(int correctActions, int errors) {
+        if (correctActions <= 0 || errors < 0)
+            throw new IllegalArgumentException("correctActions must be positive and errors nonnegative");
+        int score = Math.round((100f * correctActions) / (correctActions + errors));
+        boolean passed = score >= 80;
+        String grade = passed && score >= 95 ? "EXCELLENT"
+                : passed ? "SATISFACTORY" : "NEEDS_PRACTICE";
+        return new Result(score, passed, grade, errors);
     }
 }
