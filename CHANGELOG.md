@@ -49,7 +49,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
-- **QA-02 / S2-GAP-05** (Refs #34, #53): Khôi phục tìm và thêm hàng bằng mã vạch ở quầy bán demo; chế độ API tra mã vạch qua endpoint catalog khi nhấn Enter. Danh mục API tải sản phẩm khi mở trực tiếp, hiển thị đơn vị thực từ catalog và không gán giá/tồn giả bằng 0.
+- **QA-02 / S2-GAP-05/06** (Refs #34, #53): Khôi phục tìm và thêm hàng bằng mã vạch ở quầy bán demo; chế độ API tra mã vạch qua endpoint catalog khi nhấn Enter. Danh mục API tải sản phẩm khi mở trực tiếp, hiển thị đơn vị thực và không gán giá/tồn giả bằng 0. Báo cáo API mặc định theo ngày kinh doanh Việt Nam và tính ngày kết thúc độc lập múi giờ trình duyệt.
 
 - **QA-02 CI** (Refs #53): Dùng ngày bán đã lưu theo múi giờ Việt Nam khi đối chiếu báo cáo doanh thu; fixture lô dùng ngày Việt Nam và hạn đủ xa để test không đổi kết quả khi runner chạy qua nửa đêm. Loại lỗi test phụ thuộc múi giờ UTC của GitHub Actions.
 - **QA-02 / S2-GAP-04** (Refs #34, #53): Checkout replay từ SALES khác trong cùng cửa hàng trả 409 `IDEMPOTENCY_KEY_REUSED` trước khi đọc chi tiết hóa đơn; không lộ hóa đơn hoặc ghi giao dịch lần hai. Bổ sung test HTTP/PostgreSQL với hai người bán vào QA gate.

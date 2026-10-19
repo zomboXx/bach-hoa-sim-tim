@@ -382,7 +382,17 @@ function notify(message: string) {
   clearTimeout(timer);
   timer = setTimeout(() => (toast.value = ""), 4000);
 }
-const reportPeriod = reactive({ from: today(), to: today() });
+function businessDay() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+const reportPeriod = reactive({ from: businessDay(), to: businessDay() });
 const reportStatus = ref<"loading" | "error" | "ready" | "empty">("ready");
 const apiReport = ref<{ revenue: number; invoiceCount: number; inventory: any[] }>();
 async function loadReports() {
@@ -392,9 +402,9 @@ async function loadReports() {
   }
   try {
     reportStatus.value = "loading";
-    const toDate = new Date(reportPeriod.to);
-    toDate.setDate(toDate.getDate() + 1);
-    const toStr = localDay(toDate);
+    const toDate = new Date(`${reportPeriod.to}T00:00:00Z`);
+    toDate.setUTCDate(toDate.getUTCDate() + 1);
+    const toStr = toDate.toISOString().slice(0, 10);
     const [revRes, invRes] = await Promise.all([
       authAdapter.fetchApi(`/api/v1/reports/revenue?from=${reportPeriod.from}&to=${toStr}`),
       authAdapter.fetchApi(`/api/v1/reports/inventory`),
@@ -425,8 +435,8 @@ function go(id: string) {
   error.value = "";
   window.scrollTo(0, 0);
   if (id === "reports") {
-    reportPeriod.from = today();
-    reportPeriod.to = today();
+    reportPeriod.from = businessDay();
+    reportPeriod.to = businessDay();
     loadReports();
   }
   if (id === "invoices") {
