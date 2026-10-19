@@ -5,6 +5,10 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 ## Unreleased
 
 ### Added
+
+- TRN-03 (#56): thêm provider và Flyway V15 cho kịch bản, lựa chọn, phiên, hành động, kết quả đào tạo; server chấm theo bản chụp lựa chọn, kiểm phạm vi từ Bearer session, chống ghi/đếm điểm lặp khi retry và giữ dữ liệu bán/tồn độc lập. Thêm seed demo `SCN-RETAIL-01`, adapter PWA giữ idempotency key/sequence khi retry, và hiển thị kết quả server cùng lịch sử của người học.
+- Quyết định chấm điểm 19/10/2026: kết quả lưu trên server dùng tỷ lệ lựa chọn đúng, đạt từ 80 điểm, Xuất sắc từ 95 điểm; thay thế dải điểm trừ dần đã ghi trong mô tả TRN-02 cũ. Điểm trong bản chơi thử trình duyệt chỉ là xem trước cho đến khi màn hình TRN-02 được đồng bộ.
+- Gate Playwright demo khởi động preview đúng cổng do cấu hình test chọn, cho phép dùng `SIMTIM_DEMO_TEST_PORT` khi cổng mặc định đang bận và tránh kiểm nhầm một server cũ.
 - **TRN-02 contract & oracle (TV3)** (#55): Chuẩn hóa giao thức sự kiện đào tạo độc lập client/server:
   - Bổ sung bộ định danh ổn định (Vocabulary of Stable Identifiers) cho toàn bộ hành động (`actionType`), đích tương tác (`targetKey`) và mã lựa chọn (`choiceKey`).
   - Thiết lập bảng ánh xạ tĩnh lựa chọn đúng/sai theo phiên bản kịch bản (`SCENARIO_CHOICE_MAP_V1` cho `SCN-RETAIL-01` v1.0.0) độc lập ở cả client và server, loại bỏ sự phụ thuộc vào cờ boolean do client gửi.
@@ -36,9 +40,9 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Fixed
 
+- **TRN-01** (#54): Ngăn khởi động đồng bộ kiểm kê khi mở màn đào tạo và giữ hàng đợi kiểm kê chờ nguyên trạng; bổ sung browser test cho phiên đã đăng nhập. Đính chính báo cáo benchmark: số FPS và cấu hình máy cũ chưa có log đo nên chưa dùng làm bằng chứng nghiệm thu.
 - **TRN-02** (#55): Oracle chấm theo thứ tự bước, chỉ nhận thanh toán sau hai mã quét khác nhau; bỏ hint và lựa chọn đúng lặp khi tính tỷ lệ để không nâng điểm giả. Từ chối khóa catalog/version không tồn tại, gồm cả tên thuộc prototype của JavaScript.
 - **TRN-02 / TRN-03 Oracle fix** (#55): Khắc phục triệt để hai lỗ hổng trong Training Oracle / Contract TRN-03 theo yêu cầu review: loại bỏ hoàn toàn việc phụ thuộc vào dữ liệu tự khai từ client (`isRight`, `stage`, `actionType`, `choiceText`, `completedStages`) trên đường chấm authoritative server (ném lỗi `TrainingCatalogValidationError` khi thiếu/sai `choiceKey` hoặc `catalogVersion` không hợp lệ; `resolveActionRight` và `deriveCompletedStages` chỉ suy diễn từ server catalog). Bắt buộc quét đủ cả hai mã `scan_item_1` lẫn `scan_item_2` ở bước `checkout` (`Set<string>` thay vì biến đếm `scanCount++` để chặn quét trùng). Tách riêng hàm `evaluateLegacyBrowserSimulation` chỉ phục vụ mô phỏng browser preview. Bổ sung 4 unit test cases TRN-03 authoritative oracle kiểm thử chuỗi sự kiện giả mạo, sai catalogVersion, quét trùng checkout và happy path 100 điểm.
-- **TRN-01** (#54): Ngăn khởi động đồng bộ kiểm kê khi mở màn đào tạo và giữ hàng đợi kiểm kê chờ nguyên trạng; bổ sung browser test cho phiên đã đăng nhập. Đính chính báo cáo benchmark: số FPS và cấu hình máy cũ chưa có log đo nên chưa dùng làm bằng chứng nghiệm thu.
 - **QA-03** (#47): API đọc tồn trả thêm `version` theo lô và `unitCode` theo sản phẩm để client gửi `baseVersion` thật và áp precision EA/KG; PWA không reload API ngay sau khi lưu offline, khử trùng queue/response cùng `clientOperationId`, và hiển thị nguồn movement `STOCKTAKE_ADJUSTMENT`/`STOCKTAKE`.
 - **INV-03 fix** (#46): Xử lý review PR #52: Khóa phiên nguyên tử (`PESSIMISTIC_WRITE`) ngay đầu transaction của `approveStocktake` và `submitCount`, loại bỏ duyệt lặp và double audit log khi duyệt đồng thời trên phiên có số đếm bằng tồn kho (`delta == 0`). Kiểm tra độ chính xác số lượng theo `catalog.units.precision_scale` (EA = số nguyên, KG = tối đa 3 chữ số thập phân) trước khi duyệt, trả 422 `QUANTITY_PRECISION` khi vi phạm. Bổ sung 4 regression tests (nâng tổng lên 13 tests trong `StocktakeApprovalApiTest`).
 - **QA-02 / REP-01**: Sửa query báo cáo tồn dùng sai tên cột/khóa/trạng thái so với migration (`on_hand_quantity`, `batch_id`, `EXHAUSTED`) và ràng buộc join theo organization/store/product. Bổ sung E2E PostgreSQL xuyên receipt → checkout → invoice → reports với oracle ledger độc lập, rollback và checkout cạnh tranh.

@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-18 19:14:54
+
+Chuẩn bị provider TRN-03 trên nhánh local: migration V15 lưu kịch bản/lựa chọn/phiên/hành động/kết quả; API bắt đầu ca, gửi hành động, bỏ dở và đọc kết quả. Server tự chấm từ lựa chọn đã lưu, lấy quyền/phạm vi từ Bearer session, lưu response để retry không ghi hoặc cộng điểm hai lần. Project Owner duyệt phạm vi contract ở PR #61; #56 vẫn mở vì ca thật và PWA chưa được nối.
+
+Kiểm thử tại thời điểm triển khai provider: 6/6 test TRN-03 và 153/153 API đạt trên PostgreSQL 18 tạm khi loại test QA-02 cần Docker; web demo 16/16 và web API consumer 39/39 đạt. Root gate chưa xanh do cổng 4174 bị ứng dụng khác chiếm và Docker daemon không sẵn có; PostgreSQL 17/CI còn chờ.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -1
+- `contracts/TRN-03_TRAINING_API_REVIEW.md`: +4 -2
+- `docs/README.md`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/training/`: +569 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +8 -0
+- `services/api/src/main/resources/db/migration/V15__training_sessions.sql`: +106 -0
+- `services/api/src/test/java/vn/simtim/api/training/TrainingApiTest.java`: +418 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
 TV3 — Nguyễn Văn Thi - 2026-10-18 21:40:15
 
 Khắc phục triệt để hai lỗ hổng trong Training Oracle / Contract TRN-03 (#55) theo yêu cầu review:

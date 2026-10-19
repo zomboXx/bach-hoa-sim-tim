@@ -1,8 +1,10 @@
 # TRN-03 — Contract lưu phiên và kết quả đào tạo
 
-**Status:** Proposed — Project Owner chốt quyền xem lịch sử ngày 14/10/2026; chờ TV2 review provider/schema và TV3/TV4 chốt sự kiện, luật chấm ở TRN-02. Chưa có route hay migration được triển khai.
+**Status:** Project Owner duyệt phạm vi ngày 18/10/2026 tại [PR #61](https://github.com/zomboXx/bach-hoa-sim-tim/pull/61#issuecomment-6249679679); còn chờ TV2 duyệt kỹ thuật head mới và TV3/TV4 chốt event/choice map ở TRN-02. Provider/migration đang triển khai trên nhánh riêng, chưa tích hợp vào `main`.
 
 **Owner:** TV1 — Nguyễn Đức Phát. **Reviewer:** TV2 — Nguyễn Văn Trung; TV3/TV4 kiểm consumer và luật kịch bản.
+
+**Quyết định chấm điểm 19/10/2026:** Project Owner chọn luật oracle mới: điểm = làm tròn `100 × số lựa chọn đúng / (số lựa chọn đúng + số lựa chọn sai)`; chỉ có kết quả khi hoàn thành đủ bước, đạt từ **80** điểm, Xuất sắc từ **95** điểm. Lựa chọn đúng lặp lại không cộng điểm. Provider tính từ các action đã lưu và catalog của phiên, không nhận điểm do PWA gửi. Bản chơi thử trên trình duyệt vẫn là điểm xem trước theo luật cũ cho tới khi TRN-02 đồng bộ UI; kết quả lưu trên server là nguồn chính thức. Quyết định này thay thế dải 70–90 điểm ghi trong mô tả cũ của PR #66.
 
 **Nguồn:** [TRN-03 #56](https://github.com/zomboXx/bach-hoa-sim-tim/issues/56), [TRN-02 #55](https://github.com/zomboXx/bach-hoa-sim-tim/issues/55), [FR-TRN-01..08 và NFR-TRN-01](../docs/product/analysis/02-danh-sach-yeu-cau.md), [ADR 0004](../docs/architecture/adr/0004-training-2d-web.md). Thiết kế đích [DB-01](../docs/architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md) không phải migration đã chạy.
 
@@ -28,6 +30,8 @@ Các route dưới `/api/v1/training`, dùng Bearer session và `Cache-Control: 
 | `GET /results` | `scope=SELF|STORE|ORGANIZATION` (mặc định `SELF`), `learnerId?`, `page` (từ 0), `size` (1–100) | `200`: `{items, page, size, total}` chứa kết quả tóm tắt | `SELF` của chính mình; `STORE` cho MANAGER theo gán nhân viên hiện hành; `ORGANIZATION` chỉ ADMIN cùng tổ chức |
 
 Không nhận `score`, `passed`, `status`, `organizationId`, `storeId`, `learnerId` trong POST. `scenarioId` phải thuộc đúng tổ chức, ACTIVE ở lúc bắt đầu. Phiên giữ `scenarioId` và `scenarioVersion`; RETIRED sau đó không làm đổi kết quả cũ. `GET /results` trả tóm tắt tối thiểu `{sessionId, scenarioCode, scenarioVersion, learnerId, storeId, attemptNumber, totalScore, passed, completedAt}`; chỉ chủ phiên dùng `GET /sessions/{id}` để xem action/feedback chi tiết. Với `scope=SELF`, `learnerId` khác actor bị từ chối; với `scope=STORE`, query đối chiếu gán cửa hàng **hiện hành** của learner với store session của MANAGER; `scope=ORGANIZATION` giới hạn theo organization của ADMIN.
+
+Provider lưu bản chụp các bước/lựa chọn của version vào phiên ngay khi bắt đầu. Mỗi lựa chọn có `choiceKey` ổn định, cờ đúng/sai và phản hồi ở phía server; action không có lựa chọn hiển thị dùng bản ghi `_default` nội bộ. Bản seed demo `SCN-RETAIL-01` và adapter PWA trên nhánh cục bộ dùng tám bước/choiceKey từ head PR #66; vẫn cần review và tích hợp PR #66 trước khi coi đây là baseline.
 
 ### Gửi hành động và retry
 
@@ -62,4 +66,4 @@ Lỗi trả `{code, message}` theo mẫu API hiện hành. Không dùng `500` ch
 | NFR-TRN-01 | So sánh `inventory_balances`, `stock_movements`, `sales.invoices` và tổng doanh thu trước/sau ca, kể cả lỗi/rollback; kiểm không có dependency ghi chéo schema |
 | Browser | Demo/API mode, hoàn thành/chơi lại, keyboard/touch, timeout, logout; API lỗi không fallback sang dữ liệu demo |
 
-Chạy provider test trên PostgreSQL 17 sạch qua root gate/CI. Chỉ đổi status thành **Accepted** sau khi TV2 và consumer reviewer xác nhận cách hiện thực gán store trong IAM, vocabulary/luật chấm, DTO, quyền và test oracle; lúc đó mới viết migration/API/adapter theo contract đã chốt.
+Chạy provider test trên PostgreSQL 17 sạch qua root gate/CI. Project Owner đã duyệt phạm vi để triển khai provider; chỉ đổi status kỹ thuật thành **Accepted** sau khi TV2 và consumer reviewer xác nhận cách hiện thực gán store trong IAM, vocabulary/luật chấm, DTO, quyền và test oracle. Adapter PWA và demo seed dùng key thực tế của PR #66 sau điểm review đó.

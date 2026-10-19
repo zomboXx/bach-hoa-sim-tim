@@ -13,8 +13,26 @@ import {
   type TrainingStage,
   type TrainingTargetKey,
 } from "./scenario";
-defineProps<{ employeeName: string }>();
-const emit = defineEmits<{ exit: [] }>();
+import type {
+  TrainingActionInput,
+  TrainingHistoryItem,
+  TrainingSavedResult,
+} from "./api-training-adapter";
+
+const props = defineProps<{
+  employeeName: string;
+  saveStatus?: string;
+  saveError?: boolean;
+  savedResult?: TrainingSavedResult;
+  history?: TrainingHistoryItem[];
+}>();
+const emit = defineEmits<{
+  exit: [];
+  start: [];
+  action: [TrainingActionInput];
+  reset: [];
+  retrySave: [];
+}>();
 type Stage = TrainingStage;
 type Choice = TrainingChoice;
 type Conversation = {
@@ -50,9 +68,24 @@ let ticker: ReturnType<typeof setInterval>;
 let noticeTimer: ReturnType<typeof setTimeout>;
 const actionRecords = ref<TrainingActionRecord[]>([]);
 const completedStages = ref<TrainingStage[]>([]);
-const evaluation = computed(() =>
-  evaluateLegacyBrowserSimulation(actionRecords.value, completedStages.value),
-);
+const evaluation = computed(() => {
+  const preview = evaluateLegacyBrowserSimulation(actionRecords.value, completedStages.value);
+  const saved = props.savedResult;
+  if (!saved) return preview;
+  return {
+    ...preview,
+    score: saved.totalScore,
+    passed: saved.passed,
+    errors: saved.errorCount,
+    grade: saved.grade,
+    gradeLabel:
+      saved.grade === "EXCELLENT"
+        ? "Xuất sắc"
+        : saved.grade === "SATISFACTORY"
+          ? "Đạt yêu cầu"
+          : "Cần luyện tập thêm",
+  };
+});
 const goals = DEFAULT_GOALS;
 const goal = computed(() => goals[stage.value]);
 const nearby = computed(() => stations.find((s) => adjacent(player, s)));
@@ -130,6 +163,13 @@ function choose(c: Choice, actionType?: string, targetKey?: string) {
     timestamp: Date.now(),
     scenarioVersion: SCENARIO_VERSION,
   });
+  if (effectiveChoiceKey && effectiveChoiceKey !== "hint_ack") {
+    emit("action", {
+      actionType: effectiveActionType,
+      targetKey: effectiveTargetKey,
+      choiceKey: effectiveChoiceKey,
+    });
+  }
 }
 function finishReply() {
   picked.value?.effect?.();
@@ -367,6 +407,7 @@ function scan() {
     timestamp: Date.now(),
     scenarioVersion: SCENARIO_VERSION,
   });
+  emit("action", { actionType: "scan_item", targetKey: "pos_scanner", choiceKey });
 }
 function tender() {
   if (scans.value !== 2) return;
@@ -563,6 +604,7 @@ function directionPress(d: string, e: PointerEvent) {
 }
 function start() {
   intro.value = false;
+  emit("start");
   void focusWorld();
 }
 function leave() {
@@ -572,6 +614,7 @@ function leave() {
 }
 function reset() {
   stop();
+  emit("reset");
   stage.value = "greet";
   Object.assign(player, { x: 10, y: 11, direction: "down" });
   Object.assign(bag, { milk: 0, expired: 0 });
@@ -1175,9 +1218,9 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
-      <p class="game-footnote">
-        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Lưu kết quả qua backend ở giai đoạn
-        sau.
+      <p class="game-footnote" role="status" data-testid="training-save-status">
+        {{ saveStatus || "Bản chơi thử trên trình duyệt; kết quả chưa lưu trên máy chủ." }}
+        <button v-if="saveError" type="button" @click="emit('retrySave')">Thử lưu lại</button>
       </p>
     </div>
     <div v-if="intro" class="game-overlay">
@@ -1194,6 +1237,13 @@ onUnmounted(() => {
         </p>
         <div class="intro-skills">
           <span>♡ Giao tiếp</span><span>▤ Bán hàng</span><span>▦ Hàng hóa</span>
+        </div>
+        <div v-if="history?.length" class="training-history" data-testid="training-history">
+          <b>Kết quả đã lưu gần đây</b>
+          <p v-for="item in history" :key="item.sessionId">
+            Lần {{ item.attemptNumber }} · {{ item.totalScore }}/100 ·
+            {{ item.passed ? "Đạt" : "Cần luyện tập thêm" }}
+          </p>
         </div>
         <button class="start-shift" @click="start">Bắt đầu ca thực hành <span>→</span></button
         ><small
@@ -1243,6 +1293,10 @@ onUnmounted(() => {
             {{ evaluation.gradeLabel }}
           </div>
         </div>
+        <p role="status" data-testid="training-result-save-status">
+          {{ saveStatus || "Điểm xem trước; kết quả chưa lưu trên máy chủ." }}
+          <button v-if="saveError" type="button" @click="emit('retrySave')">Thử lưu lại</button>
+        </p>
         <div class="complete-skills">
           <span>✓ Giao tiếp & tư vấn</span><span>✓ Thanh toán & tiền thừa</span
           ><span>✓ Hàng hết hạn & bàn giao</span>
