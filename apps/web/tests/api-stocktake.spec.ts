@@ -98,6 +98,87 @@ async function openStocktake(page: Page) {
   await page.locator("nav").getByRole("button", { name: "Kiểm kê", exact: false }).click();
 }
 
+test("training with an API session never replays a pending stocktake", async ({ page }) => {
+  await installLogin(page, { ...stockSession, trainingEnabled: true });
+  const operationalWrites: string[] = [];
+  page.on("request", (request) => {
+    if (
+      /^(POST|PUT|PATCH|DELETE)$/.test(request.method()) &&
+      /\/api\/v1\/(?:inventory|sales|receipts)(?:\/|$)/.test(new URL(request.url()).pathname)
+    ) {
+      operationalWrites.push(`${request.method()} ${request.url()}`);
+    }
+  });
+  await signIn(page);
+  await expect(page.locator("nav")).toBeVisible();
+
+  await page.evaluate(
+    async ({ actorId, organizationId, storeId, productId, batchId }) => {
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("simtim-stocktake-queue-v1", 1);
+        request.onupgradeneeded = () =>
+          request.result.createObjectStore("operations", { keyPath: "clientOperationId" });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction("operations", "readwrite");
+          tx.objectStore("operations").put({
+            clientOperationId: "api-training-pending",
+            actorId,
+            organizationId,
+            storeId,
+            countedAt: new Date().toISOString(),
+            productId,
+            batchId,
+            expectedQuantity: 12.5,
+            baseVersion: 7,
+            actualQuantity: 11.75,
+            note: "Chờ đồng bộ ngoài ca học",
+            status: "PENDING",
+          });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      });
+    },
+    {
+      actorId: stockSession.userId,
+      organizationId: stockSession.organizationId,
+      storeId,
+      productId,
+      batchId,
+    },
+  );
+
+  await page.locator("nav").getByRole("button", { name: "Đào tạo nghiệp vụ" }).click();
+  await expect(page.getByTestId("trn-scene-root")).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await page.getByRole("button", { name: /Bắt đầu ca thực hành/ }).click();
+  expect(operationalWrites).toEqual([]);
+  const queued = await page.evaluate(async () => {
+    return new Promise<unknown>((resolve, reject) => {
+      const request = indexedDB.open("simtim-stocktake-queue-v1", 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const item = db
+          .transaction("operations")
+          .objectStore("operations")
+          .get("api-training-pending");
+        item.onsuccess = () => {
+          resolve(item.result);
+          db.close();
+        };
+        item.onerror = () => reject(item.error);
+      };
+    });
+  });
+  expect(queued).toMatchObject({ clientOperationId: "api-training-pending", status: "PENDING" });
+});
+
 test("API mode submits the store-scoped batch snapshot through the accepted provider contract", async ({
   page,
 }) => {
