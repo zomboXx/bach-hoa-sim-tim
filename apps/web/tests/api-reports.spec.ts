@@ -66,3 +66,46 @@ test.describe("Reports API Adapter", () => {
     await expect(page.locator("text=Product 1").first()).toBeVisible();
   });
 });
+
+test.describe("Vietnam report date", () => {
+  test.use({ timezoneId: "America/Los_Angeles" });
+
+  test("uses the Vietnam business day and an exclusive next-day boundary", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-10-19T18:30:00Z") });
+    await page.route("**/api/v1/auth/login", async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: {
+          accessToken: "mocked-token-for-testing-only-with-43-chars",
+          tokenType: "Bearer",
+          expiresAt: "2026-10-21T00:00:00Z",
+          session: {
+            userId: "00000000-0000-0000-0000-000000000001",
+            organizationId: "00000000-0000-0000-0000-000000000001",
+            storeId: "00000000-0000-0000-0000-000000000001",
+            fullName: "Manager User",
+            trainingEnabled: false,
+            roles: ["MANAGER"],
+            permissions: ["reports.read"],
+          },
+        },
+      });
+    });
+    await page.route("**/api/v1/reports/revenue*", (route) =>
+      route.fulfill({ status: 200, json: { revenue: 0, invoiceCount: 0 } }),
+    );
+    await page.route("**/api/v1/reports/inventory*", (route) =>
+      route.fulfill({ status: 200, json: { items: [] } }),
+    );
+
+    await page.goto("/");
+    await page.getByLabel("Mã nhân viên", { exact: true }).fill("manager");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("password");
+    await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
+    const revenueRequest = page.waitForRequest("**/api/v1/reports/revenue*");
+    await page.getByRole("button", { name: /Báo cáo/ }).click();
+    const url = new URL((await revenueRequest).url());
+    expect(url.searchParams.get("from")).toBe("2026-10-20");
+    expect(url.searchParams.get("to")).toBe("2026-10-21");
+  });
+});

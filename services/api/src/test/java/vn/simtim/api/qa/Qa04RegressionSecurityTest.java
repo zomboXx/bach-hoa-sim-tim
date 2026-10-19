@@ -50,7 +50,7 @@ import vn.simtim.api.auth.domain.PasswordHasher;
  *   <li>Authorization & RBAC matrix: 4 roles (SALES, STOCK, MANAGER, ADMIN) + anonymous 401,
  *       deny-by-default, and sensitive purchase cost masking for SALES.</li>
  *   <li>Store scope isolation: preventing cross-store data leakage or mutation.</li>
- *   <li>Invoice privacy behavior: documenting current S2-GAP-03 visibility for SALES in the same store.</li>
+ *   <li>Invoice privacy: SALES cannot read another seller's invoice in the same store.</li>
  *   <li>Training isolation: session principal carries trainingEnabled flag without contaminating operational tables.</li>
  *   <li>Transaction safety: cart rollback on insufficient inventory and concurrency serialization on the last unit.</li>
  *   <li>Backup & restore on a clean PostgreSQL environment (NFR-BAC-01): pg_dump, clean database restore
@@ -378,12 +378,12 @@ public class Qa04RegressionSecurityTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 4. Invoice Privacy: Documents actual S2-GAP-03 behavior for SALES in same store
+    // 4. Invoice Privacy: SALES sees only own invoices in the same store
     // ─────────────────────────────────────────────────────────────────────────────
 
     @Test
     @SuppressWarnings("unchecked")
-    void invoicePrivacy_documentsSalesVisibilityBehavior() {
+    void invoicePrivacy_salesCannotReadAnotherSellerInvoice() {
         receive(RICE_ID, "5.000", "5.000", "0.000", 15000, null, null);
 
         // Sales1 creates an invoice
@@ -400,12 +400,11 @@ public class Qa04RegressionSecurityTest {
         List<Map<String, Object>> invoices = (List<Map<String, Object>>) listResp.getBody();
         boolean seenBySales2 = invoices.stream().anyMatch(inv -> invoiceId.toString().equals(inv.get("id")));
 
-        // In the current baseline, SaleController#list returns all store invoices without filtering by soldBy.
-        // As documented in #34 (S2-GAP-03), SALES can see invoices created by other sellers in the same store.
-        // We assert true here to document the real, verified status (FAIL for the requirement "SALES only sees own invoices").
         assertThat(seenBySales2)
-                .as("S2-GAP-03: Current implementation allows Sales2 to see Sales1 invoices within same store (Fail against requirement)")
-                .isTrue();
+                .as("S2-GAP-03: Sales2 must not see Sales1 invoices within the same store")
+                .isFalse();
+        assertThat(get("/api/v1/sales/invoices/" + invoiceId, salesToken2).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

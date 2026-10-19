@@ -22,4 +22,18 @@ class JdbcProductExistenceChecker implements ProductExistenceChecker {
                 Integer.class, organizationId, productId);
         return count != null && count > 0;
     }
+
+    @Override
+    public int getPrecisionScale(UUID organizationId, UUID productId) {
+        var list = jdbc.queryForList("""
+                SELECT u.precision_scale
+                FROM catalog.products p
+                JOIN catalog.units u ON p.organization_id = u.organization_id AND p.base_unit_id = u.id
+                WHERE p.organization_id = ? AND p.id = ?
+                """, Integer.class, organizationId, productId);
+        if (list.isEmpty() || list.getFirst() == null) {
+            return 3;
+        }
+        return list.getFirst();
+    }
 }

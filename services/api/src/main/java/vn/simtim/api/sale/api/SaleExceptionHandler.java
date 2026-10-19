@@ -21,12 +21,15 @@ public class SaleExceptionHandler {
 
     @ExceptionHandler({SaleConflictException.class, InventoryConflictException.class})
     public ResponseEntity<Map<String, String>> conflict(RuntimeException ex) {
-        return ResponseEntity.status(409).body(Map.of("code", "CONFLICT", "message", ex.getMessage()));
+        String code = (ex instanceof SaleConflictException sce && sce.getCode() != null)
+                ? sce.getCode() : "CONFLICT";
+        return ResponseEntity.status(409).body(Map.of("code", code, "message", ex.getMessage()));
     }
 
     @ExceptionHandler(SaleValidationException.class)
     public ResponseEntity<Map<String, String>> validation(SaleValidationException ex) {
-        return ResponseEntity.status(422).body(Map.of("code", "VALIDATION_ERROR", "message", ex.getMessage()));
+        String code = ex.getCode() != null ? ex.getCode() : "VALIDATION_ERROR";
+        return ResponseEntity.status(422).body(Map.of("code", code, "message", ex.getMessage()));
     }
 
     @ExceptionHandler(InventorySaleException.class)

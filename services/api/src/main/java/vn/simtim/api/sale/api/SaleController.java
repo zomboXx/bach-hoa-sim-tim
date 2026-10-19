@@ -50,6 +50,7 @@ public class SaleController {
     @PostMapping({"/checkout", "/invoices"})
     public ResponseEntity<InvoiceResponse> checkout(
             @RequestHeader("X-Organization-Id") UUID orgId,
+            @RequestHeader(value = "Idempotency-Key", required = false) UUID idempotencyKey,
             @Valid @RequestBody CheckoutRequest req,
             Authentication auth) {
         SessionPrincipal principal = (SessionPrincipal) auth.getPrincipal();
@@ -61,7 +62,7 @@ public class SaleController {
         var items = req.items().stream()
                 .map(i -> new CheckoutItem(i.productId(), i.quantity()))
                 .toList();
-        var invoice = service.checkout(orgId, storeId, soldBy, items, req.cashAmount());
+        var invoice = service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount(), idempotencyKey);
         return ResponseEntity
                 .created(URI.create("/api/v1/sales/invoices/" + invoice.id()))
                 .body(InvoiceResponse.from(invoice));
@@ -77,7 +78,8 @@ public class SaleController {
         if (!effectiveStoreId.equals(principal.storeId())) {
             throw new vn.simtim.api.sale.domain.SaleValidationException("Cửa hàng không thuộc phiên làm việc");
         }
-        return service.listInvoices(orgId, effectiveStoreId).stream().map(InvoiceResponse::from).toList();
+        UUID filterSellerId = canReadAllStoreInvoices(principal) ? null : principal.userId();
+        return service.listInvoices(orgId, effectiveStoreId, filterSellerId).stream().map(InvoiceResponse::from).toList();
     }
 
     /** Chi tiết hóa đơn. Yêu cầu quyền sales.read trong phạm vi store. */
@@ -86,6 +88,13 @@ public class SaleController {
                                @PathVariable UUID id,
                                Authentication auth) {
         SessionPrincipal principal = (SessionPrincipal) auth.getPrincipal();
-        return InvoiceResponse.from(service.getInvoice(orgId, principal.storeId(), id));
+        UUID filterSellerId = canReadAllStoreInvoices(principal) ? null : principal.userId();
+        return InvoiceResponse.from(service.getInvoice(orgId, principal.storeId(), id, filterSellerId));
+    }
+
+    private static boolean canReadAllStoreInvoices(SessionPrincipal principal) {
+        return principal.roles().contains("MANAGER")
+                || principal.roles().contains("ADMIN")
+                || principal.permissions().contains("sales.read.store");
     }
 }

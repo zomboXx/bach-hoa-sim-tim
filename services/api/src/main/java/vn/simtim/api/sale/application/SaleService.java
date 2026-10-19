@@ -53,7 +53,7 @@ public class SaleService {
 
     @Transactional(readOnly = true)
     public QuoteResult quote(UUID orgId, UUID storeId, List<CheckoutItem> items) {
-        validateItems(items);
+        validateItems(orgId, items);
         Instant capturedAt = Instant.now();
         List<QuoteResult.QuoteLineResult> lines = new ArrayList<>();
         for (CheckoutItem item : mergeItems(items)) {
@@ -80,8 +80,32 @@ public class SaleService {
     }
 
     public Invoice checkout(
-            UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items, long cashAmount) {
-        validateItems(items);
+            UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items,
+            Long expectedTotal, long cashAmount, UUID idempotencyKey) {
+
+        // --- Idempotency guard ---
+        if (idempotencyKey != null) {
+            var existing = repo.findInvoiceByIdempotencyKey(orgId, storeId, idempotencyKey);
+            if (existing.isPresent()) {
+                Invoice previous = existing.get();
+                if (!previous.soldBy().equals(soldByUserId)) {
+                    throw new SaleConflictException("IDEMPOTENCY_KEY_REUSED",
+                            "Idempotency key đã được dùng trong phiên khác");
+                }
+                Invoice cached = withDetails(orgId, previous);
+                // Payload fingerprint: item list must match exactly (same product+quantity set)
+                List<CheckoutItem> normalised = mergeItems(items);
+                boolean samePayload = payloadMatches(cached, normalised, expectedTotal, cashAmount);
+                if (!samePayload) {
+                    throw new SaleConflictException("IDEMPOTENCY_KEY_REUSED",
+                            "Idempotency key đã được dùng với payload khác; không thể tái sử dụng key: "
+                                    + idempotencyKey);
+                }
+                return cached;
+            }
+        }
+
+        validateItems(orgId, items);
         StoreScope scope = new StoreScope(orgId, storeId);
         FefoPlan plan = checkoutInventory.planForCheckout(scope, toDemands(items));
         Map<UUID, ProductSnapshot> snapshots = new LinkedHashMap<>();
@@ -105,6 +129,11 @@ public class SaleService {
             lineData.add(new LineData(allocation, snapshots.get(allocation.productId()), unitPrice, gross, promotion));
         }
         long grandTotal = Math.subtractExact(subtotal, discountTotal);
+        if (expectedTotal != null && grandTotal != expectedTotal) {
+            throw new SaleConflictException("PRICE_CHANGED",
+                    "Giá sản phẩm đã thay đổi kể từ khi báo giá. Tổng mới: " + grandTotal
+                    + ", tổng kỳ vọng: " + expectedTotal);
+        }
         if (cashAmount < grandTotal) {
             throw new SaleValidationException(
                     "Số tiền nhận (" + cashAmount + ") nhỏ hơn tổng hoá đơn (" + grandTotal + ")");
@@ -115,7 +144,7 @@ public class SaleService {
                 UUID.randomUUID(), orgId, storeId,
                 "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(), "COMPLETED",
                 soldByUserId, now, subtotal, discountTotal, grandTotal, grandTotal,
-                cashAmount - grandTotal, List.of(), List.of(), 0L));
+                cashAmount - grandTotal, List.of(), List.of(), 0L, idempotencyKey));
 
         List<SaleIssue> issues = new ArrayList<>();
         for (LineData data : lineData) {
@@ -138,24 +167,47 @@ public class SaleService {
         return getInvoice(orgId, storeId, invoice.id());
     }
 
+    /** Backward-compatible overload without idempotency key (used by internal callers). */
+    public Invoice checkout(
+            UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items,
+            Long expectedTotal, long cashAmount) {
+        return checkout(orgId, storeId, soldByUserId, items, expectedTotal, cashAmount, null);
+    }
+
     @Transactional(readOnly = true)
-    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id) {
+    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id, UUID sellerId) {
         var invoice = repo.findInvoiceById(orgId, id)
                 .orElseThrow(() -> new SaleNotFoundException("Hóa đơn không tồn tại: " + id));
         if (storeId != null && !invoice.storeId().equals(storeId)) {
+            throw new SaleNotFoundException("Hóa đơn không tồn tại: " + id);
+        }
+        if (sellerId != null && !invoice.soldBy().equals(sellerId)) {
             throw new SaleNotFoundException("Hóa đơn không tồn tại: " + id);
         }
         return withDetails(orgId, invoice);
     }
 
     @Transactional(readOnly = true)
+    public Invoice getInvoice(UUID orgId, UUID storeId, UUID id) {
+        return getInvoice(orgId, storeId, id, null);
+    }
+
+    @Transactional(readOnly = true)
     public Invoice getInvoice(UUID orgId, UUID id) {
-        return getInvoice(orgId, null, id);
+        return getInvoice(orgId, null, id, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Invoice> listInvoices(UUID orgId, UUID storeId, UUID sellerId) {
+        List<Invoice> invoices = sellerId == null
+                ? repo.listInvoices(orgId, storeId)
+                : repo.listInvoicesBySeller(orgId, storeId, sellerId);
+        return invoices.stream().map(invoice -> withDetails(orgId, invoice)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<Invoice> listInvoices(UUID orgId, UUID storeId) {
-        return repo.listInvoices(orgId, storeId).stream().map(invoice -> withDetails(orgId, invoice)).toList();
+        return listInvoices(orgId, storeId, null);
     }
 
     private Invoice withDetails(UUID orgId, Invoice invoice) {
@@ -163,7 +215,8 @@ public class SaleService {
                 invoice.status(), invoice.soldBy(), invoice.soldAt(), invoice.subtotal(),
                 invoice.discountTotal(), invoice.grandTotal(), invoice.paidTotal(), invoice.changeAmount(),
                 repo.findLinesByInvoiceId(orgId, invoice.id()),
-                repo.findPaymentsByInvoiceId(orgId, invoice.id()), invoice.version());
+                repo.findPaymentsByInvoiceId(orgId, invoice.id()), invoice.version(),
+                invoice.idempotencyKey());
     }
 
     private QuoteResult quoteResult(UUID storeId, List<QuoteResult.QuoteLineResult> lines) {
@@ -204,13 +257,68 @@ public class SaleService {
         return quantities.entrySet().stream().map(entry -> new CheckoutItem(entry.getKey(), entry.getValue())).toList();
     }
 
-    private void validateItems(List<CheckoutItem> items) {
+    /**
+     * Payload-match check for idempotency replay.
+     * Validates that cashAmount, expectedTotal (if provided), and normalized items (products and quantities)
+     * match the recorded invoice.
+     */
+    private boolean payloadMatches(
+            Invoice cached, List<CheckoutItem> normalisedItems, Long expectedTotal, long cashAmount) {
+        if (expectedTotal != null && cached.grandTotal() != expectedTotal.longValue()) {
+            return false;
+        }
+        long originalCashAmount = cached.grandTotal() + cached.changeAmount();
+        if (cashAmount != originalCashAmount) {
+            return false;
+        }
+        Map<UUID, BigDecimal> cachedQuantities = new LinkedHashMap<>();
+        if (cached.lines() != null) {
+            for (InvoiceLine line : cached.lines()) {
+                cachedQuantities.merge(line.productId(), line.quantity(), BigDecimal::add);
+            }
+        }
+        Map<UUID, BigDecimal> requestedQuantities = new LinkedHashMap<>();
+        if (normalisedItems != null) {
+            for (CheckoutItem item : normalisedItems) {
+                requestedQuantities.merge(item.productId(), item.quantity(), BigDecimal::add);
+            }
+        }
+        if (cachedQuantities.size() != requestedQuantities.size()) {
+            return false;
+        }
+        for (Map.Entry<UUID, BigDecimal> entry : requestedQuantities.entrySet()) {
+            BigDecimal cachedQty = cachedQuantities.get(entry.getKey());
+            if (cachedQty == null || cachedQty.compareTo(entry.getValue()) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void validateItems(UUID orgId, List<CheckoutItem> items) {
         if (items == null || items.isEmpty()) throw new SaleValidationException("Đơn hàng không có sản phẩm");
         for (CheckoutItem item : items) {
             if (item.quantity() == null || item.quantity().signum() <= 0 || item.quantity().scale() > 3) {
                 throw new SaleValidationException("Số lượng không hợp lệ cho sản phẩm: " + item.productId());
             }
+            ProductSnapshot snapshot = resolveSnapshot(orgId, item.productId());
+            if (!isValidPrecision(item.quantity(), snapshot.precisionScale())) {
+                throw new SaleValidationException("QUANTITY_PRECISION", String.format(
+                        "Số lượng %s không hợp lệ với độ chính xác đơn vị của sản phẩm %s (tối đa %d chữ số thập phân)",
+                        item.quantity(), snapshot.sku(), snapshot.precisionScale()));
+            }
         }
+    }
+
+    private static boolean isValidPrecision(BigDecimal quantity, int precisionScale) {
+        if (quantity == null) {
+            return false;
+        }
+        if (quantity.signum() == 0) {
+            return true;
+        }
+        int normalizedScale = Math.max(0, quantity.stripTrailingZeros().scale());
+        return normalizedScale <= precisionScale;
     }
 
     private long resolvePrice(UUID orgId, UUID storeId, UUID productId, Instant at) {

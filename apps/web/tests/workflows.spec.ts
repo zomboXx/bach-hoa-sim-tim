@@ -112,6 +112,21 @@ async function playShift(page: Page) {
   await expect(page.locator(".complete-skills")).toContainText("Thanh toán & tiền thừa");
   await expect(page.locator(".complete-skills")).toContainText("Hàng hết hạn & bàn giao");
 }
+test("demo sale finds a product by barcode", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Quản lý cửa hàng QL001" }).click();
+  await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Bán hàng/ })
+    .click();
+  const search = page.getByRole("textbox", { name: "Tìm sản phẩm bán hàng" });
+  await search.fill("8934673120010");
+  await expect(page.locator(".product-card")).toHaveCount(1);
+  await search.press("Enter");
+  await expect(page.locator(".cart")).toContainText("Sữa tươi ít đường");
+});
+
 test("changed inventory requires recount instead of overwriting stock", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Quản lý cửa hàng QL001" }).click();

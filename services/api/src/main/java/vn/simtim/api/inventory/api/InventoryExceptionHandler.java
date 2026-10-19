@@ -34,6 +34,7 @@ public class InventoryExceptionHandler {
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "IDEMPOTENCY_KEY_REUSED" -> HttpStatus.CONFLICT;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
+            case "QUANTITY_PRECISION" -> HttpStatus.UNPROCESSABLE_ENTITY;
             default -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
         return ResponseEntity.status(status)

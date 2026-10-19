@@ -21,7 +21,19 @@ public record Invoice(
         long changeAmount,
         List<InvoiceLine> lines,
         List<Payment> payments,
-        long version) {
+        long version,
+        /** Idempotency key ghi từ header Idempotency-Key, null nếu không truyền. */
+        UUID idempotencyKey) {
+
+    /** Constructor tương thích ngược: không có idempotencyKey. */
+    public Invoice(UUID id, UUID organizationId, UUID storeId, String invoiceNo, String status,
+                   UUID soldBy, Instant soldAt, long subtotal, long discountTotal,
+                   long grandTotal, long paidTotal, long changeAmount,
+                   List<InvoiceLine> lines, List<Payment> payments, long version) {
+        this(id, organizationId, storeId, invoiceNo, status, soldBy, soldAt,
+                subtotal, discountTotal, grandTotal, paidTotal, changeAmount,
+                lines, payments, version, null);
+    }
 
     public boolean isCompleted() { return "COMPLETED".equals(status); }
 }

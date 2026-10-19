@@ -14,4 +14,17 @@ interface InvoiceJpaRepository extends JpaRepository<InvoiceJpa, UUID> {
 
     @Query("SELECT i FROM InvoiceJpa i WHERE i.organizationId = :orgId AND i.storeId = :storeId ORDER BY i.soldAt DESC")
     List<InvoiceJpa> findByOrganizationIdAndStoreId(@Param("orgId") UUID orgId, @Param("storeId") UUID storeId);
+
+    @Query("SELECT i FROM InvoiceJpa i WHERE i.organizationId = :orgId AND i.storeId = :storeId AND i.soldBy = :soldBy ORDER BY i.soldAt DESC")
+    List<InvoiceJpa> findByOrganizationIdAndStoreIdAndSoldBy(
+            @Param("orgId") UUID orgId,
+            @Param("storeId") UUID storeId,
+            @Param("soldBy") UUID soldBy);
+
+    @Query("SELECT i FROM InvoiceJpa i WHERE i.organizationId = :orgId AND i.storeId = :storeId AND i.idempotencyKey = :key")
+    Optional<InvoiceJpa> findByOrganizationIdAndStoreIdAndIdempotencyKey(
+            @Param("orgId") UUID orgId,
+            @Param("storeId") UUID storeId,
+            @Param("key") UUID key);
 }
+

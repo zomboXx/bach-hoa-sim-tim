@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   };
   return {
     plugins: [vue()],
+    build: { outDir: process.env.SIMTIM_BUILD_OUT_DIR || "dist", emptyOutDir: true },
     server: { port: 5174, proxy },
     preview: { port: 4174, proxy },
   };

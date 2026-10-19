@@ -22,6 +22,53 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV4 — Lê Văn Chiến - 2026-10-18 19:47:09
+
+Sửa P1 review PR #53 trên base `0972629`: checkout API không còn xóa pending payload và `Idempotency-Key` khi proxy trả HTTP 5xx sau lúc server có thể đã commit. PWA giữ nguyên operation cho kết quả chưa chắc chắn, chỉ bỏ operation khi giao dịch bị từ chối chắc chắn (4xx) hoặc đã hoàn tất. Bổ sung consumer test 502 và live browser test commit thật → proxy 502 → bấm lại cùng key/payload; cập nhật evidence GAP-05/06 nhưng chưa chuyển #34 sang Pass.
+
+Validation: lint, format, typecheck và build Pass; API consumer in đủ `50/50` ca `ok`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một, revenue tăng 40.000 và ledger khớp.
+
+GitHub Actions [`39128836102`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39128836102) trên commit `6ff393c` đạt 5/5 job, gồm `QA-02 live receive-sale-report`.
+
+- `apps/web/src/App.vue`: phân loại checkout HTTP 5xx là kết quả chưa chắc chắn và giữ pending operation
+- `apps/web/tests/api-sale.spec.ts`: consumer test HTTP 502 retry cùng key/payload
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: commit backend thật rồi trả 502 cho trình duyệt và replay
+- `docs/testing`: evidence ngày 18/10, test report và traceability follow-up
+- `CONTRIBUTION_LOG.md`: bổ sung mục này
+
+---
+TV4 — Lê Văn Chiến - 2026-10-17 21:15:43
+
+Sửa review PR #53 trên base `7ae6112`: API sale lấy và hiển thị quote server trước checkout, chỉ cho phép CASH, không hiển thị tồn/đơn vị giả; khi mất response, PWA khóa operation và retry đúng payload + `Idempotency-Key`. Bổ sung consumer/live browser test bấm lần hai sau commit, oracle PostgreSQL đếm độc lập invoice/payment/SALE movement và tách output live build/test để tránh lỗi file lock trên Windows. Giữ nguyên kết luận lịch sử QA-02 và chưa đánh dấu #34 Pass trước merge.
+
+Validation: policy/Markdown/lint/format/typecheck/build Pass; demo `16/16`, API consumer `49/49`, backend `165/165`, `Qa02E2eTest` `11/11`; GAP-05 live `2/2` với `invoice_delta=2; payment_delta=2; sale_movement_delta=2; balance_mismatches=0`; GAP-06 live `1/1` với receipt/invoice/payment/SALE movement cùng tăng một và ledger khớp.
+
+GitHub Actions [`39040328554`](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39040328554) trên commit `9f01dc8` đạt 5/5 job, gồm `QA-02 live receive-sale-report` với oracle SALE movement mới.
+
+- `apps/web/src/App.vue`: quote trước checkout, CASH-only và pending checkout replay
+- `apps/web/tests/api-sale.spec.ts`: consumer test giá/tồn và retry cùng key/payload
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: mất response sau commit rồi bấm lại
+- `apps/web/playwright.live.config.ts`, `apps/web/vite.config.ts`, `scripts/test-fe02-live.ps1`: output live cô lập và oracle trước/sau
+- `scripts/qa02-gap06-db-summary.sql`: bổ sung đếm SALE movement
+- `.github/workflows/ci.yml`: đọc oracle sáu cột và kiểm `sale_movement_delta=1`
+- `docs/testing`: bổ sung evidence và follow-up traceability/report
+- `CONTRIBUTION_LOG.md`: bổ sung mục này
+
+---
+TV4 — Lê Văn Chiến - 2026-10-17 10:30:38
+
+Đồng bộ `origin/main` (`18f32a5`) vào branch PR #53 từ head QA-02 `3148efb`, giải quyết sáu file conflict mà vẫn giữ cả luồng bán hàng/GAP-06 của QA-02 và kiểm kê/QA-03, TRN-01 cùng hồ sơ Sprint 4 trên `main`. Loại khai báo `VN_ZONE` bị trùng do auto-merge; giữ oracle ngày bán theo múi giờ Việt Nam và fixture hạn `+8` của QA-02.
+
+Validation trên JDK 24.0.2, Docker Desktop và PostgreSQL 17.11 disposable: policy, Markdown, lint, format, typecheck và build đạt; demo E2E báo `16/16 ok`, API consumer báo `49/49 ok`; backend Maven `165/165 Pass`, riêng `Qa02E2eTest 11/11 Pass`; live GAP-05 `2/2 Pass`; live GAP-06 chạy lại `1/1 Pass` với oracle `receipt_delta=1; invoice_delta=1; payment_delta=1; revenue_delta=40000; balance_mismatches=0`. Lần GAP-06 đầu timeout khi máy vừa chạy toàn bộ Testcontainers, lần chạy lại trên DB sạch đạt; root Playwright local đã báo đủ ca `ok` nhưng tiến trình preview Windows không tự thoát, nên dùng CI của head mới làm bằng chứng gate cuối.
+
+- `CHANGELOG.md`: resolve conflict, giữ QA-02 và nội dung mới từ `main`
+- `CONTRIBUTION_LOG.md`: resolve conflict và bổ sung mục này
+- `apps/web/README.md`: resolve conflict, giữ runbook QA-02/QA-03
+- `apps/web/package.json`: resolve conflict, giữ runner QA-02/QA-03
+- `apps/web/src/App.vue`: resolve conflict, tích hợp sale adapter và stocktake adapter
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: resolve conflict, giữ oracle QA-02
+
+---
 TV2 — Nguyễn Văn Trung - 2026-10-18 20:15:00
 
 Cập nhật [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) đồng bộ từ `main` mới nhất (đã có TRN-01 #63 và QA-03 #65).
@@ -123,7 +170,6 @@ Bổ sung contract Proposed `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và
 - `apps/web/src/training/training.css`: +39 -0
 - `apps/web/tests/trn-02-training-scenario.spec.ts`: +377 -0
 - `CONTRIBUTION_LOG.md`: +17 -0
----
 
 ---
 TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
@@ -218,6 +264,191 @@ Root gate `pwsh -File scripts/verify.ps1` đạt: repository policy/Markdown lin
 - `docs/project/governance/BACKLOG.md`: +4 -2
 - `docs/project/governance/SCRUM.md`: +1 -1
 - `CONTRIBUTION_LOG.md`: +20 -0
+---
+
+---
+Lê Văn Chiến - 2026-10-13 15:35:19
+
+S2-GAP-06: bổ sung live E2E nhận hàng → bán CASH → hóa đơn → báo cáo và oracle PostgreSQL độc lập cho QA-02 (PR #53, Refs #34).
+
+Test `QA02-WEB-004` đăng nhập lần lượt bằng STOCK, SALES và MANAGER trên cùng API/DB sạch; nhận một lô, bán đúng sản phẩm vừa nhận, đọc hóa đơn và đối chiếu revenue/inventory report. Runner PowerShell chờ seed hoàn tất, chụp baseline trước test rồi query trực tiếp PostgreSQL sau test để bắt buộc tăng đúng một receipt, một invoice, một payment, doanh thu dương và không có chênh lệch giữa balance với tổng movement. Workflow CI có job riêng, dựng/xóa volume Compose ở mỗi run và dùng chung SQL oracle với local runner. Hồ sơ QA ghi rõ đây là checkpoint trước merge; giữ nguyên kết quả lịch sử 17 Pass, 3 Fail, 3 Blocked cho tới khi PR merge, rerun trên `main`, có URL CI và TV1 review.
+
+Validation: `npm run lint`, `npm run format:check`, `npm run typecheck`, PowerShell parse, repository policy, Markdown links và `git diff --check` đạt. `pwsh -File scripts/test-qa02-gap06-live.ps1` đạt 1/1; DB oracle: `receipt_delta=1; invoice_delta=1; payment_delta=1; revenue_delta=40000; balance_mismatches=0`. Root gate trên cùng provider/consumer head đạt demo 14/14, API consumer 49/49, backend 165/165 và `Qa02E2eTest` 11/11 trên PostgreSQL 17.11 Testcontainers. GitHub Actions `38370638776` đạt 5/5 job, gồm `QA-02 live receive-sale-report`.
+
+- `.github/workflows/ci.yml`: +69 -1
+- `CHANGELOG.md`: +1 -0
+- `apps/web/README.md`: +2 -0
+- `apps/web/live-tests/qa02-receive-sale-report.live.spec.ts`: +109 -0
+- `apps/web/package.json`: +1 -0
+- `docs/testing/QA-02-gap-checkpoint-2026-10-11.md`: +13 -4
+- `docs/testing/QA-02-gap06-evidence-2026-10-13.md`: +41 -0
+- `docs/testing/QA-02-test-report.md`: +5 -0
+- `docs/testing/QA-02-traceability.md`: +6 -0
+- `docs/testing/README.md`: +1 -0
+- `scripts/qa02-gap06-db-summary.sql`: +35 -0
+- `scripts/test-fe02-live.ps1`: +51 -2
+- `scripts/test-qa02-gap06-live.ps1`: +4 -0
+- `CONTRIBUTION_LOG.md`: +24 -0
+
+---
+Nguyễn Văn Thi - 2026-10-13 09:42:00
+
+S2-GAP-05: Bán hàng trên PWA API mode (FE + contract) — nối quote, checkout CASH và xem hóa đơn qua API thật (Refs #34).
+
+Vấn đề: PWA trước đây chỉ chạy bán hàng trên mock/demo state cục bộ, chưa tích hợp với API backend bán hàng (`/api/v1/sales/*`), chưa xử lý quote giá động, phân bổ FEFO, biến động giá `PRICE_CHANGED`, hết hàng `INSUFFICIENT_STOCK`, mất kết nối timeout và không áp dụng header `Idempotency-Key` theo S2-GAP-04.
+Giải pháp:
+1. Tạo module bán hàng `apps/web/src/modules/sale/` theo port/adapter: `SalePort` (domain interface), `ApiSaleAdapter` (gọi `POST /sales/quote`, `POST /sales/checkout`, `GET /sales/invoices`) và `DemoSaleAdapter` (đóng gói logic demo hiện tại trong `api.ts`, giữ cô lập và không ảnh hưởng demo mode).
+2. Tích hợp `App.vue`: khi ở API mode, nạp danh mục sản phẩm từ `GET /api/v1/products`, hỗ trợ tìm kiếm/lọc danh mục. Luồng thanh toán `pay()` nguyên tử: gọi `quote()` lấy tổng tiền server tính, gọi `checkout()` với UUID `Idempotency-Key` mới và `expectedTotal`. Bắt và hiển thị thông báo thân thiện bằng tiếng Việt cho `PRICE_CHANGED`, `INSUFFICIENT_STOCK`, `IDEMPOTENCY_KEY_REUSED` và cảnh báo mất mạng (hướng dẫn kiểm tra hóa đơn trước khi thử lại).
+3. Hóa đơn API mode: sau checkout tự động nạp lại hóa đơn qua `loadInvoices()` và chuyển trang; trang hóa đơn có trạng thái loading, error (nút Thử lại), empty state và dialog xem chi tiết hóa đơn `api-invoice`.
+4. Phân quyền: cập nhật `routesFor()` trong `adapter.ts` cho phép truy cập route `sale` và `invoices` theo các quyền `sales.create`, `sales.write`, `sales.read.*`.
+5. Kiểm thử: bổ sung 10 consumer tests trong `tests/api-sale.spec.ts` (10/10 Pass) và 2 live tests trong `live-tests/qa02-sales-report.live.spec.ts` (QA02-WEB-002, QA02-WEB-003).
+
+Validation: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run build` đạt; `npm run test:e2e:api` (49/49 Pass); `npm run test:e2e:demo` (14/14 Pass); repository policy và markdown links OK.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +67 -11
+- `apps/web/src/App.vue`: +259 -40
+- `apps/web/src/adapter.ts`: +10 -0
+- `apps/web/src/modules/sale/domain/sale.ts`: +134 -0
+- `apps/web/src/modules/sale/infrastructure/api-sale-adapter.ts`: +98 -0
+- `apps/web/src/modules/sale/infrastructure/demo-sale-adapter.ts`: +137 -0
+- `apps/web/tests/api-sale.spec.ts`: +385 -0
+- `CONTRIBUTION_LOG.md`: +25 -0
+
+---
+TV2 — nguyentrung01ute-ui - 2026-10-12 23:07:00
+
+S2-GAP-04: Checkout idempotency — header `Idempotency-Key` trên `POST /api/v1/sales/checkout` (commit `deb94a1`, refs #53, #34).
+
+Vấn đề: hệ thống chưa chống replay khi client gửi lại request checkout với cùng UUID key, dẫn đến tạo nhiều hóa đơn và trừ tồn nhiều lần. Thêm cột nullable `idempotency_key uuid` vào `sales.invoices` (migration V15) với unique partial index trên `(organization_id, store_id, idempotency_key) WHERE idempotency_key IS NOT NULL`. Bổ sung `findInvoiceByIdempotencyKey` vào port `SaleRepository`, JPA repository và adapter. Trong `SaleService.checkout`: nếu key đã tồn tại với cùng payload (payload fingerprint qua `changeAmount`) thì trả về invoice cũ; nếu key tồn tại với payload khác thì ném `SaleConflictException("IDEMPOTENCY_KEY_REUSED")` → HTTP 409; nếu không có key thì luồng không thay đổi (backward-compatible). Controller đọc header `Idempotency-Key` (optional UUID) và chuyển xuống service. Tốt nghiệp kịch bản `checkoutReplayWritesOneInvoiceAndRejectsKeyReuseWithAnotherPayload` vào root gate `Qa02E2eTest`; dọn `Qa02GapReproduction` — không còn GAP backend nào tồn đọng.
+
+Validation: `test-compile` exit 0; `verify -DskipTests` exit 0. Test E2E cần Docker Desktop (Testcontainers); môi trường hiện tại không có Docker nên chưa chạy được `Qa02E2eTest` trực tiếp — kết quả CI sẽ là bằng chứng Pass chính thức theo điều kiện tại #34.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +67 -3
+- `services/api/src/main/java/vn/simtim/api/sale/domain/Invoice.java`: +13 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpa.java`: +4 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpaRepository.java`: +7 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +6 -0
+- `services/api/src/main/resources/db/migration/V15__sales_checkout_idempotency.sql`: +14 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +39 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +3 -52
+- `CONTRIBUTION_LOG.md`: +22 -0
+
+---
+Nguyễn Văn Thi - 2026-10-12 17:45:00
+
+S2-GAP-03: Phân quyền xem hóa đơn bán hàng — SALES chỉ xem hóa đơn của chính mình (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa phân quyền truy cập hóa đơn (`sales.invoices`) theo người bán, dẫn đến nhân viên bán hàng (`SALES`) có thể đọc danh sách và chi tiết hóa đơn do người bán khác tạo trong cùng cửa hàng. Cập nhật `SaleController` để tự động gán bộ lọc người bán `filterSellerId = principal.userId()` đối với các vai trò không có quyền xem toàn cửa hàng (như `SALES`), trong khi `MANAGER` và `ADMIN` (hoặc có `sales.read.store`) được xem toàn bộ. Trong `SaleService`, hỗ trợ lọc theo `sellerId` ở `listInvoices` và `getInvoice`; ném `SaleNotFoundException` (HTTP 404) khi truy cập hóa đơn của người bán khác hoặc hóa đơn ngoài phạm vi cửa hàng. Bổ sung method và query `findByOrganizationIdAndStoreIdAndSoldBy` trong `InvoiceJpaRepository` và `SaleRepositoryAdapter`. Tốt nghiệp kịch bản `salesCannotReadAnotherSellerInvoiceInTheSameStore` vào root gate `Qa02E2eTest`; bổ sung 2 integration tests trong `SaleApiTest` xác nhận cách ly danh sách/chi tiết giữa hai nhân viên bán hàng cùng cửa hàng và chặn truy cập xuyên cửa hàng.
+
+Validation: compile đạt; `Qa02E2eTest` (9/9 tests Pass) và `SaleApiTest` (31/31 tests Pass) trên PostgreSQL 17 Testcontainers; `Qa02GapReproduction#gap03` Pass.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +10 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +19 -3
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleRepository.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/InvoiceJpaRepository.java`: +6 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +6 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +30 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +3 -28
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +120 -1
+- `CONTRIBUTION_LOG.md`: +20 -0
+
+---
+Nguyễn Văn Thi - 2026-10-12 17:25:00
+
+S2-GAP-02: Thống nhất expectedTotal và lỗi PRICE_CHANGED giữa provider/consumer khi giá thay đổi sau quote (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa kiểm tra biến động giá giữa thời điểm tạo quote và lúc checkout, dẫn đến nguy cơ khách hàng checkout với giá cũ hoặc hóa đơn bị tính sai so với tổng tiền đã quote. Bổ sung trường tùy chọn `expectedTotal` vào `CheckoutRequest`. Trong `SaleService.checkout`, tính toán lại tổng tiền `grandTotal` từ giá hiện hành (`catalog.product_prices`); nếu `expectedTotal` được cung cấp và khác `grandTotal`, ném `SaleConflictException` với mã lỗi `PRICE_CHANGED` trước khi thực hiện bất kỳ thao tác ghi nào (không tạo hóa đơn, thanh toán hay biến động tồn). Nâng cấp `SaleConflictException` hỗ trợ mã lỗi cụ thể để `SaleExceptionHandler` trả về HTTP 409 `PRICE_CHANGED`. Bổ sung test E2E `priceChangedAfterQuoteRejectsCheckoutAndRollsBack` vào root gate `Qa02E2eTest` xác thực rollback toàn bộ và dọn dẹp kịch bản gap02 đã tốt nghiệp trong `Qa02GapReproduction`.
+
+Validation: compile đạt; `Qa02E2eTest` (8/8 tests Pass) và `SaleApiTest` (29/29 tests Pass) trên PostgreSQL 17 Testcontainers.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +3 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +7 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleConflictException.java`: +16 -1
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +40 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +5 -44
+- `CONTRIBUTION_LOG.md`: +19 -0
+
+---
+Nguyễn Văn Thi - 2026-10-12 17:15:00
+
+S2-GAP-01: Ràng buộc precision số lượng EA/KG trong quote và checkout bán hàng (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa xác thực precision theo đơn vị tính của sản phẩm (`catalog.units.precision_scale`) trong luồng bán hàng, dẫn đến request quote và checkout với số lượng lẻ cho đơn vị nguyên EA (precision = 0) vẫn được xử lý. Bổ sung `precisionScale` vào `ProductSnapshot`, truy vấn `catalog.units.precision_scale` trong `SaleRepositoryAdapter.findProductSnapshot`, xác thực `isValidPrecision` trong `SaleService.validateItems()` cho cả `quote` và `checkout`, trả về HTTP 422 `QUANTITY_PRECISION` khi vi phạm. `SaleValidationException` hỗ trợ mang error code và được `SaleExceptionHandler` ánh xạ đúng wire code. Bổ sung 3 integration test trong `SaleApiTest` (từ chối EA lẻ ở quote và checkout kèm rollback, chấp nhận KG hợp lệ) và đưa kịch bản `fractionalEaSaleIsRejectedWithoutAnyWrite` vào root gate `Qa02E2eTest`.
+
+Validation: `git diff --check` đạt; `powershell -File scripts/verify.ps1 -SkipInstall` đạt toàn bộ (web lint/format/build/e2e và backend Maven verify 159/159 tests Pass trên PostgreSQL 17 Testcontainers).
+
+- `CHANGELOG.md`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleExceptionHandler.java`: +2 -1
+- `services/api/src/main/java/vn/simtim/api/sale/application/SaleService.java`: +20 -3
+- `services/api/src/main/java/vn/simtim/api/sale/domain/ProductSnapshot.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/SaleValidationException.java`: +15 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/SaleRepositoryAdapter.java`: +7 -3
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +28 -0
+- `services/api/src/test/java/vn/simtim/api/sale/SaleApiTest.java`: +58 -6
+- `CONTRIBUTION_LOG.md`: +19 -0
+
+---
+TV2 — nguyentrung01ute-ui - 2026-10-12 16:32:00
+
+S2-GAP-01: Xác thực precision số lượng EA/KG trong phiếu nhận hàng (PR #53, Refs #34).
+
+Vấn đề: hệ thống chưa kiểm tra `catalog.units.precision_scale` khi xác nhận phiếu nhận hàng, dẫn đến số lượng lẻ của đơn vị EA (precision = 0) vẫn được ghi vào DB. Thêm port `getPrecisionScale()` vào `ProductExistenceChecker`, triển khai bằng JDBC truy vấn `catalog.units`, gọi kiểm tra trước khi ghi trong `GoodsReceiptService.validateLines()`, trả 422 `QUANTITY_PRECISION` khi vi phạm và rollback toàn bộ. Đưa kịch bản `fractionalEaReceiptIsRejectedWithoutAnyWrite` vào root gate `Qa02E2eTest`; thêm 2 provider regression test (EA reject + KG accept) vào `InventoryReceiptApiTest`; chuẩn hóa `Qa02GapReproduction.gap01` thành wrapper của helper root gate.
+
+Validation: `git diff --check` đạt; compile không lỗi; 2 provider test mới và 1 E2E root-gate test xác nhận đúng hành vi 422 rollback và 201 KG hợp lệ.
+
+- `CHANGELOG.md`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/api/InventoryExceptionHandler.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/GoodsReceiptService.java`: +21 -0
+- `services/api/src/main/java/vn/simtim/api/inventory/application/ProductExistenceChecker.java`: +5 -1
+- `services/api/src/main/java/vn/simtim/api/inventory/infrastructure/JdbcProductExistenceChecker.java`: +14 -0
+- `services/api/src/test/java/vn/simtim/api/inventory/InventoryReceiptApiTest.java`: +60 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +41 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +0 -37
+
+---
+TV4 — Lê Văn Chiến - 2026-10-12 14:06:43
+
+Xử lý review của TV1 trên PR #53: tách ca live sales expected-red S2-GAP-05 khỏi lệnh live FE-02 mặc định bằng tag Playwright, đồng thời thêm runner riêng tạo API/PostgreSQL disposable để tái hiện có chủ đích. Cập nhật checkpoint #34 theo owner/reviewer và thứ tự triển khai đã chốt; không đổi kết quả QA-02 lịch sử và không đánh dấu GAP nào Pass.
+
+Validation: ESLint, Prettier và TypeScript đạt; hai PowerShell runner parse hợp lệ; Playwright `--list` xác nhận lệnh FE-02 mặc định không chọn GAP-05 và lệnh riêng chỉ chọn đúng một ca sales; live FE-02 mặc định chạy lại 2/2 Pass trên API/PostgreSQL disposable; repository policy, Markdown links và `git diff --check` đạt.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/README.md`: +2 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +3 -1
+- `apps/web/package.json`: +2 -1
+- `docs/testing/QA-02-gap-checkpoint-2026-10-11.md`: +11 -8
+- `docs/testing/QA-02-test-report.md`: +5 -0
+- `docs/testing/QA-02-traceability.md`: +1 -1
+- `scripts/test-fe02-live.ps1`: +8 -2
+- `scripts/test-qa02-gap05-live.ps1`: +4 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+
+---
+TV4 — Lê Văn Chiến - 2026-10-11 15:10:14
+
+Bắt đầu follow-up QA-02 theo quyết định của TV1 tại Issue #34: giữ sáu GAP trong một issue, không tự tạo lại issue con hoặc nhận sửa toàn bộ mã FE/BE. Bổ sung checkpoint ngày 11/10, cập nhật traceability nhưng giữ nguyên báo cáo lịch sử 17 Pass, 3 Fail, 3 Blocked; tạo bốn expected-red API specs với oracle PostgreSQL độc lập và hai live PWA specs cho sales/report.
+
+Đã chạy expected-red backend trên PostgreSQL 17.11 Testcontainers: 9 tests gồm 5 core Pass và 4 GAP Fail đúng hành vi cần sửa, 0 error/skipped. Root gate đạt repository policy, Markdown, web lint/format/typecheck/build, demo 14/14, API consumer 39/39 và backend 152/152. Live PWA mới compile đạt nhưng chưa chạy vì cần API local cùng tài khoản/password demo do người chạy cung cấp; chưa đổi GAP nào sang Pass và PR sau khi mở phải dùng `Refs #34`.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/live-tests/qa02-sales-report.live.spec.ts`: +66 -0
+- `docs/testing/QA-02-gap-checkpoint-2026-10-11.md`: +58 -0
+- `docs/testing/QA-02-test-plan.md`: +6 -0
+- `docs/testing/QA-02-test-report.md`: +4 -0
+- `docs/testing/QA-02-traceability.md`: +13 -6
+- `docs/testing/README.md`: +1 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +21 -21
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02GapReproduction.java`: +177 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
 ---
 
 ---
