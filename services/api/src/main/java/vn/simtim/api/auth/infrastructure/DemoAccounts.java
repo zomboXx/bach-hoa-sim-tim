@@ -40,8 +40,8 @@ public class DemoAccounts implements ApplicationRunner {
             UUID id = UUID.fromString("20000000-0000-0000-0000-000000000" + index++);
             if ("MANAGER".equals(role)) managerUserId = id;
             jdbc.update("""
-                    insert into iam.users(id,organization_id,username,password_hash,full_name,status)
-                    values(?,?,?,?,?,'ACTIVE') on conflict do nothing
+                    insert into iam.users(id,organization_id,username,password_hash,full_name,status,training_enabled)
+                    values(?,?,?,?,?,'ACTIVE',true) on conflict do nothing
                     """, id, org, role.toLowerCase(java.util.Locale.ROOT), passwords.hash(password), "Demo " + role);
             jdbc.update("""
                     insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)

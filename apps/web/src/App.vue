@@ -117,7 +117,8 @@ function onTrainingStart() {
     trainingStatus.value = "Đăng nhập trong ứng dụng để lưu kết quả đào tạo.";
     return;
   }
-  trainingRun = new TrainingRun(trainingApi, (message, result, failed) => {
+  const run = new TrainingRun(trainingApi, (message, result, failed) => {
+    if (trainingRun !== run) return;
     trainingStatus.value = message;
     trainingSaveError.value = !!failed;
     if (result) {
@@ -125,7 +126,8 @@ function onTrainingStart() {
       void loadTrainingHistory();
     }
   });
-  void trainingRun.start();
+  trainingRun = run;
+  void run.start();
 }
 
 function onTrainingAction(action: TrainingActionInput) {
@@ -133,8 +135,9 @@ function onTrainingAction(action: TrainingActionInput) {
 }
 
 function onTrainingReset() {
-  if (trainingRun) void trainingRun.abandon().catch(() => undefined);
+  const previousRun = trainingRun;
   trainingRun = undefined;
+  if (previousRun) void previousRun.abandon().catch(() => undefined);
   trainingSavedResult.value = undefined;
   trainingSaveError.value = false;
   trainingStatus.value = "";
@@ -837,6 +840,7 @@ async function approveCount(record: StocktakeRecord) {
     :employee-name="user?.name || 'Học viên Sim Tím'"
     :save-status="trainingStatus"
     :save-error="trainingSaveError"
+    :server-result-required="!isDemoMode"
     :saved-result="trainingSavedResult"
     :history="trainingHistory"
     @start="onTrainingStart"
@@ -940,6 +944,7 @@ async function approveCount(record: StocktakeRecord) {
     :employee-name="user.name"
     :save-status="trainingStatus"
     :save-error="trainingSaveError"
+    :server-result-required="!isDemoMode"
     :saved-result="trainingSavedResult"
     :history="trainingHistory"
     @start="onTrainingStart"
