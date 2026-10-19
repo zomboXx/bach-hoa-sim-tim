@@ -198,14 +198,22 @@ const apiSaleProducts = ref<
 async function loadSaleProducts() {
   if (isDemoMode) return;
   try {
-    const res = await authAdapter.fetchApi("/api/v1/products");
+    const [res, unitsRes] = await Promise.all([
+      authAdapter.fetchApi("/api/v1/products"),
+      authAdapter.fetchApi("/api/v1/units"),
+    ]);
     if (!res.ok) return;
     const raw = (await res.json()) as Array<{
       id: string;
       name: string;
       sku?: string;
       status?: string;
+      baseUnitId?: string;
     }>;
+    const units = unitsRes.ok
+      ? ((await unitsRes.json()) as Array<{ id: string; code: string }>)
+      : [];
+    const unitCode = new Map(units.map((unit) => [unit.id, unit.code]));
     apiSaleProducts.value = raw
       .filter((p) => !p.status || p.status === "ACTIVE")
       .map((p) => ({
@@ -213,7 +221,7 @@ async function loadSaleProducts() {
         name: p.name,
         sku: p.sku ?? p.id,
         category: "Sản phẩm",
-        unit: "Cái",
+        unit: unitCode.get(p.baseUnitId ?? "") ?? "—",
         emoji: "὎6",
       }));
   } catch {
@@ -424,8 +432,8 @@ function go(id: string) {
   if (id === "invoices") {
     void loadInvoices();
   }
-  if (id === "sale") {
-    restorePendingCheckout();
+  if (id === "sale" || id === "products") {
+    if (id === "sale") restorePendingCheckout();
     void loadSaleProducts();
   }
   if (id === "training") void loadTrainingHistory();
@@ -733,14 +741,37 @@ const categories = computed(() => [
 ]);
 const filtered = computed(() => {
   const products = isDemoMode
-    ? (state.value?.products ?? []).map((p) => ({ ...p }))
+    ? (state.value?.products ?? []).map((p) => ({ ...p, sku: "" }))
     : apiSaleProducts.value.map((p) => ({ ...p, price: 0, barcode: "" }));
   return products.filter(
     (p) =>
       (category.value === "Tất cả" || p.category === category.value) &&
-      `${p.name} ${p.id}`.toLocaleLowerCase("vi").includes(query.value.toLocaleLowerCase("vi")),
+      `${p.name} ${p.id} ${p.barcode} ${isDemoMode ? "" : p.sku}`
+        .toLocaleLowerCase("vi")
+        .includes(query.value.toLocaleLowerCase("vi")),
   );
 });
+async function addSearchMatch() {
+  if (filtered.value.length === 1) {
+    add(filtered.value[0].id);
+    return;
+  }
+  if (isDemoMode || !query.value.trim() || !connected.value) return;
+  try {
+    const res = await authAdapter.fetchApi(
+      `/api/v1/products/search?barcode=${encodeURIComponent(query.value.trim())}`,
+    );
+    if (!res.ok) throw new Error("Barcode lookup failed");
+    const matches = (await res.json()) as Array<{ id: string; status?: string }>;
+    const active = matches.filter((p) => !p.status || p.status === "ACTIVE");
+    if (active.length === 1) {
+      add(active[0].id);
+      query.value = "";
+    } else notify("Không tìm thấy một sản phẩm đang bán với mã vạch này.");
+  } catch {
+    notify("Không tra được mã vạch. Vui lòng thử lại.");
+  }
+}
 const cart = ref<{ id: string; quantity: number }[]>([]);
 const method = ref("Tiền mặt");
 const cash = ref(0);
@@ -1447,7 +1478,7 @@ async function approveCount(record: StocktakeRecord) {
                   v-model="query"
                   placeholder="Tìm tên hoặc nhập mã vạch…"
                   aria-label="Tìm sản phẩm bán hàng"
-                  @keydown.enter="filtered.length === 1 && add(filtered[0].id)"
+                  @keydown.enter="addSearchMatch"
                 />
               </div>
               <div class="filters">
@@ -1605,7 +1636,9 @@ async function approveCount(record: StocktakeRecord) {
             <span>⌕</span
             ><input
               v-model="query"
-              placeholder="Tìm theo tên, mã sản phẩm, mã vạch…"
+              :placeholder="
+                isDemoMode ? 'Tìm theo tên, mã sản phẩm, mã vạch…' : 'Tìm theo tên, mã sản phẩm…'
+              "
               aria-label="Tìm danh mục"
             />
           </div>
@@ -1631,11 +1664,13 @@ async function approveCount(record: StocktakeRecord) {
                       </div>
                     </div>
                   </td>
-                  <td class="mono">{{ p.barcode }}</td>
+                  <td class="mono">{{ p.barcode || "—" }}</td>
                   <td>{{ p.category }}</td>
-                  <td>{{ money(p.price) }}</td>
+                  <td>{{ isDemoMode ? money(p.price) : "Theo báo giá" }}</td>
                   <td>
-                    <span class="status">{{ available(state!, p.id) }} {{ p.unit }}</span>
+                    <span class="status">{{
+                      isDemoMode ? `${available(state!, p.id)} ${p.unit}` : "—"
+                    }}</span>
                   </td>
                 </tr>
               </tbody>

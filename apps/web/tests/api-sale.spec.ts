@@ -71,6 +71,7 @@ const sampleProduct = {
   sku: "GAO-001",
   name: "Gạo thơm 5kg",
   status: "ACTIVE",
+  baseUnitId: "10000000-0000-0000-0000-000000000032",
 };
 
 const sampleQuote = {
@@ -140,6 +141,11 @@ async function installLogin(page: Page, session = salesSession) {
 
 async function installCatalog(page: Page) {
   await page.route("**/api/v1/products", (route) => json(route, 200, [sampleProduct]));
+  await page.route("**/api/v1/units", (route) =>
+    json(route, 200, [
+      { id: sampleProduct.baseUnitId, code: "KG", name: "Kilôgam", precisionScale: 3 },
+    ]),
+  );
   await page.route("**/api/v1/suppliers", (route) => json(route, 200, []));
 }
 
@@ -156,6 +162,36 @@ async function openSale(page: Page) {
     .getByRole("button", { name: /Bán hàng/ })
     .click();
 }
+
+test("API sale finds a product by barcode on Enter", async ({ page }) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await page.route("**/api/v1/products/search?barcode=8930000000001", (route) =>
+    json(route, 200, [sampleProduct]),
+  );
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  await signIn(page);
+  await openSale(page);
+  const search = page.getByRole("textbox", { name: "Tìm sản phẩm bán hàng" });
+  await search.fill("8930000000001");
+  await search.press("Enter");
+  await expect(page.locator(".cart")).toContainText(sampleProduct.name);
+});
+
+test("API catalog shows the server unit without invented price or stock", async ({ page }) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await signIn(page);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Sản phẩm/ })
+    .click();
+  const row = page.locator("tbody tr").filter({ hasText: sampleProduct.name });
+  await expect(row).toContainText("KG");
+  await expect(row).toContainText("Theo báo giá");
+  await expect(row).not.toContainText("0 ₫");
+  await expect(row.locator(".status")).toHaveText("—");
+});
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
