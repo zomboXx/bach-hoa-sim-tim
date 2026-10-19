@@ -22,6 +22,29 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV2 — Nguyễn Văn Trung - 2026-10-18 20:15:00
+
+Cập nhật [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) đồng bộ từ `main` mới nhất (đã có TRN-01 #63 và QA-03 #65).
+
+Giải quyết xung đột merge với `main`. Bổ sung xử lý theo hai điểm review:
+1. Sửa `scripts/restore-db.ps1` và hướng dẫn `infra/README.md` bổ sung cờ `-v ON_ERROR_STOP=1` cho `psql`, ngăn script bỏ sót lỗi SQL; bổ sung ca kiểm thử tự động `restore_corruptedDump_failsWhenOnErrorStopEnabled` trong `Qa04RegressionSecurityTest` (nâng tổng số test lên 9/9 Pass).
+2. Làm rõ ca kiểm thử cô lập đào tạo end-to-end (NFR-TRN-01) ở trạng thái Blocked trong ma trận truy vết và tài liệu kiểm thử do TRN-03 (API đào tạo backend) chưa tích hợp lên `main`. Giữ nguyên test kiểm chứng cờ session `trainingEnabled` và tính bất biến của bảng vận hành; ca hành động thật sẽ được chạy lại sau khi TRN-03 lên main.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt toàn diện.
+
+- `.gitignore`: +3 -0
+- `CHANGELOG.md`: +1 -0
+- `docs/testing/DOC-01-traceability-working.md`: +22 -1
+- `docs/testing/QA-04-authorize.md`: +71 -0
+- `docs/testing/QA-04-test-plan.md`: +100 -0
+- `docs/testing/QA-04-test-report.md`: +193 -0
+- `docs/testing/QA-04-traceability.md`: +74 -0
+- `docs/testing/README.md`: +19 -0
+- `infra/README.md`: +49 -0
+- `scripts/backup-db.ps1`: +53 -0
+- `scripts/restore-db.ps1`: +43 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa04RegressionSecurityTest.java`: +751 -0
+---
 TV1 — Nguyễn Đức Phát - 2026-10-18 19:14:54
 
 Chuẩn bị provider TRN-03 trên nhánh local: migration V15 lưu kịch bản/lựa chọn/phiên/hành động/kết quả; API bắt đầu ca, gửi hành động, bỏ dở và đọc kết quả. Server tự chấm từ lựa chọn đã lưu, lấy quyền/phạm vi từ Bearer session, lưu response để retry không ghi hoặc cộng điểm hai lần. Project Owner duyệt phạm vi contract ở PR #61; #56 vẫn mở vì ca thật và PWA chưa được nối.

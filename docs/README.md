@@ -26,7 +26,7 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
 - [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Accepted contract session/RBAC và ma trận quyền của BE-02; FE-01 đã tích hợp qua PR #12.
-- [`../contracts/TRN-03_TRAINING_API_REVIEW.md`](../contracts/TRN-03_TRAINING_API_REVIEW.md): Project Owner đã duyệt phạm vi lưu phiên/kết quả; provider/migration đang làm trên nhánh riêng, còn chờ TV2 và TV3/TV4 duyệt kỹ thuật trước tích hợp.
+- [`../contracts/TRN-03_TRAINING_API_REVIEW.md`](../contracts/TRN-03_TRAINING_API_REVIEW.md): Project Owner đã duyệt phạm vi lưu phiên/kết quả; provider, migration và PWA adapter đã tích hợp qua PR #69, còn chờ xác nhận nghiệm thu Issue #56.
 - [Contract ranh giới Sprint 2](../contracts/SPRINT_2_BOUNDARY_DRAFT.md): Draft tên HTTP/DTO và public port để TV2/TV3/TV4 review.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
