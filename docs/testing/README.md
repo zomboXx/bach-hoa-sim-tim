@@ -33,11 +33,11 @@ Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 
 1. [Test plan](QA-04-test-plan.md): mục tiêu, phạm vi kiểm tra các sprint trước, ma trận quyền và kiểm chứng sao lưu/khôi phục trên môi trường sạch.
 2. [Ma trận quyền](QA-04-authorize.md): 4 vai trò SALES, STOCK, MANAGER, ADMIN, nguyên tắc deny-by-default, che giấu giá vốn và cô lập phạm vi cửa hàng.
 3. [Ma trận truy vết](QA-04-traceability.md): requirement/NFR → contract → automated test → oracle/actual → Pass/Fail/Blocked (21 Pass, 3 Fail, 3 Blocked).
-4. [Test report](QA-04-test-report.md): lệnh, runtime, 8/8 tests Pass của `Qa04RegressionSecurityTest`, kết quả backup/restore sạch và đối soát trung thực ngoại lệ #34.
+4. [Test report](QA-04-test-report.md): lệnh, runtime, 9/9 tests Pass của `Qa04RegressionSecurityTest` trên mã tích hợp, kết quả backup/restore sạch và đối soát trung thực ngoại lệ #34.
 
 Checkpoint ngày 15/10/2026: TV2 đã chạy suite QA-04 và đối soát CSDL độc lập trên PostgreSQL 17 Testcontainers; khôi phục CSDL demo sạch thành công; đối soát đầy đủ 6 GAP của Issue #34.
 
-Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi kết quả cục bộ sau khi ghép TRN-01/02/03: Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. Kết luận QA cuối vẫn chờ TV4 review, CI và mã tích hợp lên `main`.
+Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. PR #70 đã tích hợp, root gate và CI trên `main` đạt; kết luận QA cuối còn chờ TV4 kiểm bằng chứng.
 
 ## DOC-01 — Truy vết bản cuối kỳ
 

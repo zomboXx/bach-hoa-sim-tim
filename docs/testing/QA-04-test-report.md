@@ -2,7 +2,7 @@
 
 ## Lượt kiểm tra tích hợp ngày 19/10/2026
 
-Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi TRN-02/03 tích hợp. Lượt bổ sung của TV1 chạy trên nhánh cục bộ `codex/qa04-integration` ghép mã TRN-01/02/03 với QA-04; **chưa phải kết quả QA đã được TV4 review hoặc CI trên `main`**.
+Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi TRN-02/03 tích hợp. Lượt bổ sung của TV1 ghép mã TRN-01/02/03 với QA-04 và đã tích hợp qua [PR #70](https://github.com/zomboXx/bach-hoa-sim-tim/pull/70) vào `main` tại `4038abf` ngày 19/10/2026. Chưa có bằng chứng TV4 đã review lượt tích hợp này; Issue #57 còn mở để xác nhận nghiệm thu.
 
 | Kiểm tra | Lệnh và môi trường | Kết quả tại thời điểm ghi |
 |---|---|---|
@@ -13,12 +13,13 @@ Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi
 | Cách ly vận hành trên Compose | Tạo 1 hóa đơn CASH 22.500 VND rồi chạy thêm ca đào tạo; đối chiếu SQL trước/sau | Hóa đơn `1→1`, doanh thu `22.500→22.500`, tổng tồn `149→149`, movement `3→3` |
 | Backup/restore bằng script | `backup-db.ps1` trên project nguồn; `restore-db.ps1` trên PostgreSQL của project sạch `simtim-restore-20261019005043` | Dump 138.282 byte; nguồn/đích khớp 4 user, 2 sản phẩm, 1 hóa đơn, doanh thu 22.500, 2 phiên/20 action/2 kết quả; hash hóa đơn/kết quả và Flyway 16 bản ghi khớp |
 | SQL hỏng và rollback | `restore-db.ps1` với SQL tạo probe rồi cú pháp sai trên project khôi phục | Exit code `1`; bảng probe không tồn tại sau rollback |
+| Kiểm tra trên mã đã tích hợp | `pwsh -File scripts/verify.ps1` trên tree trùng `main` `4038abf` (Java 25, PostgreSQL 17 Testcontainers); [CI main](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39186532893) | Local: web demo 33/33, API consumer 43/43, backend 169/169 Pass, 0 fail/error/skip; CI main 4/4 job Pass |
 
 **Đối chiếu số liệu:** `Qa04RegressionSecurityTest` ở commit nội dung ban đầu có 8 test; head PR #64 thêm ca restore lỗi để thành 9. Mô tả PR và nhật ký đóng góp ghi “160 test cases” cho QA-04, nhưng đó là tổng root gate cũ, không phải số case trong class QA-04. TV2 cần xác nhận/sửa bản ghi trước khi dùng làm minh chứng đóng góp. Giữ phần lịch sử bên dưới để truy vết.
 
 - Sáu GAP tại [#34](https://github.com/zomboXx/bach-hoa-sim-tim/issues/34) chưa tự chuyển Pass từ test nhánh QA-04. PR #53 còn mở và cần QA chạy lại sau tích hợp.
 - Lệnh chạy Compose dùng env file và mật khẩu riêng nằm ngoài Git. Bản dump và log đối soát giữ cục bộ trong `.codex/`; không commit dữ liệu người dùng hoặc secret.
-- TV4 kiểm bằng chứng QA, TV1 xác nhận kết luận; không đóng #57 chỉ từ lượt chạy cục bộ. Cần CI trên commit tích hợp và review PR mới. Backend và root gate trên mã trước sửa adapter đã đạt; web gate chạy lại sau sửa adapter cũng đã đạt.
+- TV4 kiểm bằng chứng QA, TV1 xác nhận kết luận; chưa có xác nhận review của TV4 cho lượt tích hợp. Root gate cục bộ và CI trên `main` đã đạt; không đóng #57 chỉ từ kết quả kỹ thuật này.
 
 ---
 
