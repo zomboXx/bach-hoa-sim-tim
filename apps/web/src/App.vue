@@ -376,6 +376,7 @@ async function refreshStocktakeQueue() {
   queuedStocktakes.value = await stocktakeQueue.list();
 }
 async function sync() {
+  if (isTrainingRoute.value || route.value === "training") return;
   if (stocktakeSyncPromise) await stocktakeSyncPromise;
 
   const context = stocktakeRetryContext();
@@ -558,13 +559,15 @@ onMounted(async () => {
     }
   } else clearSessionMarkers();
   if (revision === authRevision) authPending.value = undefined;
-  try {
-    await refreshStocktakeQueue();
-    if (connected.value && user.value) await sync();
-  } catch (e) {
-    error.value =
-      (e as Error).message ||
-      "Không mở được hàng đợi kiểm kê. Hãy cho phép lưu trữ trong trình duyệt.";
+  if (!isTrainingRoute.value) {
+    try {
+      await refreshStocktakeQueue();
+      if (connected.value && user.value) await sync();
+    } catch (e) {
+      error.value =
+        (e as Error).message ||
+        "Không mở được hàng đợi kiểm kê. Hãy cho phép lưu trữ trong trình duyệt.";
+    }
   }
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
