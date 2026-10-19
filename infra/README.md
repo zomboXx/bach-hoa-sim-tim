@@ -73,6 +73,32 @@ docker compose --env-file infra/.env -f infra/compose.demo.yml logs --tail=100 a
 docker compose --env-file infra/.env -f infra/compose.demo.yml down
 ```
 
-`down` giữ named volume, nên lần sau `up` sẽ giữ hóa đơn và tồn. Đổi `SIMTIM_DEMO_PASSWORD` trong `.env` không đổi mật khẩu của tài khoản đã tạo. Nếu cần làm sạch dữ liệu thử nghiệm, sao lưu thứ cần giữ trước; xóa volume sẽ mất toàn bộ database demo. Compose dev PostgreSQL riêng ở `infra/compose.yml` vẫn có [hướng dẫn API](../services/api/README.md), không dùng chung volume với bản demo này.
-
 Nếu `up --wait` thất bại, kiểm tra `docker compose ... ps` và `logs --tail=100 api` hoặc `logs --tail=100 web`. Nếu Docker báo không kết nối được daemon, hãy khởi động Docker Engine/Desktop trước rồi chạy lại lệnh `up`.
+
+## 5. Sao lưu và khôi phục CSDL trên môi trường sạch (NFR-BAC-01)
+
+Theo [NFR-BAC-01](../docs/product/analysis/02-danh-sach-yeu-cau.md) và tiêu chí chấp nhận của [QA-04](../docs/testing/QA-04-test-report.md), quy trình sao lưu và khôi phục được kiểm chứng độc lập trên PostgreSQL sạch.
+
+### 5.1. Sao lưu đúng project đang chạy
+
+Chạy tại thư mục gốc repository. Truyền cùng tên project và env file đã dùng khi `up` để không chạm vào bản demo khác:
+
+```powershell
+$sourceProject = 'simtim-demo' # thay bằng giá trị sau -p lúc khởi động
+$envFile = 'infra/.env'
+$dump = 'infra/backups/demo_checkpoint.sql'
+pwsh -File scripts/backup-db.ps1 -ProjectName $sourceProject -EnvFile $envFile -OutFile $dump
+```
+
+### 5.2. Thử khôi phục trên project mới
+
+Tạo tên project riêng; chỉ khởi động PostgreSQL, không dùng lại volume của bản nguồn. Script restore dùng `ON_ERROR_STOP=1` và một transaction nên SQL lỗi trả mã khác 0 và rollback:
+
+```powershell
+$restoreProject = 'simtim-restore-' + (Get-Date -Format yyyyMMddHHmmss)
+docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml up -d --wait postgres
+pwsh -File scripts/restore-db.ps1 -ProjectName $restoreProject -EnvFile $envFile -BackupFile $dump
+docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml exec -T postgres psql -U simtim -d simtim -Atc 'select count(*) from sales.invoices'
+```
+
+Đối chiếu thêm số dư, `SUM(quantity_delta)`, hóa đơn/thanh toán và kết quả học trước/sau bằng SQL trên hai project. Khi đã lưu bằng chứng, dọn **chỉ project khôi phục vừa tạo** bằng `docker compose -p $restoreProject --env-file $envFile -f infra/compose.demo.yml down -v`. Không chạy `down -v` trên project nguồn.

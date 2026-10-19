@@ -30,9 +30,28 @@ Checkpoint hiện tại ngày 29/09/2026: TV4 đã chạy source `5f0b14c` có c
 
 Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 17.11 disposable và đã bắt lỗi query tồn REP-01 mà mock test bỏ sót. Bản sửa `840a82a` buộc dùng Testcontainers và tăng oracle revenue thành hóa đơn hai dòng; PR #33 đã merge vào `main`. Toàn QA-02 vẫn chưa có bằng chứng nghiệm thu P0 đầy đủ: ma trận còn 3 Fail và 3 Blocked về checkout price/replay, unit precision, invoice privacy và live PWA sales E2E.
 
+## QA-04 — Regression, bảo mật quyền và backup/restore
+
+Đọc theo thứ tự:
+
+1. [Test plan](QA-04-test-plan.md): mục tiêu, phạm vi kiểm tra các sprint trước, ma trận quyền và kiểm chứng sao lưu/khôi phục trên môi trường sạch.
+2. [Ma trận quyền](QA-04-authorize.md): 4 vai trò SALES, STOCK, MANAGER, ADMIN, nguyên tắc deny-by-default, che giấu giá vốn và cô lập phạm vi cửa hàng.
+3. [Ma trận truy vết](QA-04-traceability.md): requirement/NFR → contract → automated test → oracle/actual → Pass/Fail/Blocked (21 Pass, 3 Fail, 3 Blocked).
+4. [Test report](QA-04-test-report.md): lệnh, runtime, 9/9 tests Pass của `Qa04RegressionSecurityTest` trên mã tích hợp, kết quả backup/restore sạch và đối soát trung thực ngoại lệ #34.
+
+Checkpoint ngày 15/10/2026: TV2 đã chạy suite QA-04 và đối soát CSDL độc lập trên PostgreSQL 17 Testcontainers; khôi phục CSDL demo sạch thành công; đối soát đầy đủ 6 GAP của Issue #34.
+
+Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. PR #70 đã tích hợp, root gate và CI trên `main` đạt; kết luận QA cuối còn chờ TV4 kiểm bằng chứng.
+
 ## DOC-01 — Truy vết bản cuối kỳ
 
 [Ma trận truy vết bản làm việc](DOC-01-traceability-working.md) nối yêu cầu vận hành và đào tạo với thiết kế, code, test và phần bằng chứng còn thiếu tại `main` ngày 14/10/2026. Đây là đầu vào cho DOC-01 và QA-04, chưa phải kết quả Pass hay báo cáo cuối.
+
+## TRN-02 — Kịch bản đào tạo
+
+[Kịch bản kiểm thử thủ công TRN-02](TRN-02-manual-test-script.md) hướng dẫn TV4 kiểm luồng đúng, sai, đảo thứ tự, bỏ dở, chơi lại và cách ly hóa đơn/tồn; đồng thời ghi checklist để TV1 review luật chấm và TV2 review contract. Bảng kết quả khởi tạo là `Not run`/`Blocked`, không phải bằng chứng nghiệm thu.
+
+[Test report TRN-02](TRN-02-test-report.md) ghi kết quả local ngày 17/10/2026: M01–M07 đạt trên kết quả merge evidence `e855e74` với implementation `c56437c`, demo `25/25` và API consumer `39/39`; M08 còn `Blocked` chờ TRN-03. Đây chưa phải bằng chứng Done vì CI và review TV1/TV2 còn chờ.
 
 ## QA-03 — Desktop/mobile/offline kiểm kê
 

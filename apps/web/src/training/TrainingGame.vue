@@ -2,21 +2,48 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import PixelPerson from "./PixelPerson.vue";
 import { adjacent, blocked, pathTo, stations, type Point, type Station } from "./world";
-defineProps<{ employeeName: string }>();
-const emit = defineEmits<{ exit: [] }>();
-type Stage = "greet" | "milk" | "checkout" | "cooler" | "quarantine" | "mentor" | "complete";
-type Choice = {
-  text: string;
-  right: boolean;
-  feedback: string;
-  effect?: () => void;
-};
+import {
+  DEFAULT_GOALS,
+  evaluateLegacyBrowserSimulation,
+  SCENARIO_VERSION,
+  type TrainingActionRecord,
+  type TrainingActionType,
+  type TrainingChoice,
+  type TrainingChoiceKey,
+  type TrainingStage,
+  type TrainingTargetKey,
+} from "./scenario";
+import type {
+  TrainingActionInput,
+  TrainingHistoryItem,
+  TrainingSavedResult,
+} from "./api-training-adapter";
+
+const props = defineProps<{
+  employeeName: string;
+  saveStatus?: string;
+  saveError?: boolean;
+  serverResultRequired?: boolean;
+  savedResult?: TrainingSavedResult;
+  history?: TrainingHistoryItem[];
+}>();
+const emit = defineEmits<{
+  exit: [];
+  start: [];
+  action: [TrainingActionInput];
+  reset: [];
+  retrySave: [];
+}>();
+type Stage = TrainingStage;
+type Choice = TrainingChoice;
 type Conversation = {
   speaker: string;
   heading: string;
   text: string;
   choices: Choice[];
   type?: "scan";
+  actionType?: TrainingActionType | string;
+  targetKey?: TrainingTargetKey | string;
 };
 const stage = ref<Stage>("greet");
 const player = reactive({ x: 10, y: 11, direction: "down" });
@@ -40,66 +67,27 @@ const world = ref<HTMLElement>();
 const firstChoice = ref<HTMLButtonElement[]>();
 let ticker: ReturnType<typeof setInterval>;
 let noticeTimer: ReturnType<typeof setTimeout>;
-const goals: Record<
-  Stage,
-  {
-    station: string;
-    title: string;
-    detail: string;
-    verb: string;
-    chapter: number;
-  }
-> = {
-  greet: {
-    station: "customer",
-    title: "Đón vị khách đầu tiên",
-    detail: "Đến gặp khách Linh ở cửa ra vào. Lắng nghe trước khi tư vấn.",
-    verb: "Trò chuyện",
-    chapter: 0,
-  },
-  milk: {
-    station: "milk",
-    title: "Tìm đúng món khách cần",
-    detail: "Khách muốn 2 hộp sữa ít đường. Đến kệ sữa để chọn hàng.",
-    verb: "Chọn sản phẩm",
-    chapter: 1,
-  },
-  checkout: {
-    station: "checkout",
-    title: "Hoàn tất một đơn hàng",
-    detail: "Mang 2 hộp sữa tới quầy. Quét hàng, nhận tiền và trả tiền thừa.",
-    verb: "Dùng máy tính tiền",
-    chapter: 1,
-  },
-  cooler: {
-    station: "cooler",
-    title: "Chăm sóc hàng trên kệ",
-    detail: "Mai nhờ bạn kiểm tra tủ mát. Có một sản phẩm cần được xử lý.",
-    verb: "Kiểm tra hàng",
-    chapter: 2,
-  },
-  quarantine: {
-    station: "quarantine",
-    title: "Tách hàng không được bán",
-    detail: "Mang hộp sữa chua hết hạn tới khu hàng cần xử lý, tách khỏi hàng bán.",
-    verb: "Đặt vào khu xử lý",
-    chapter: 2,
-  },
-  mentor: {
-    station: "mentor",
-    title: "Báo lại với Mentor Mai",
-    detail: "Tới gặp Mai để bàn giao tình trạng hàng và kết thúc ca thực hành.",
-    verb: "Báo cáo cuối ca",
-    chapter: 2,
-  },
-  complete: {
-    station: "mentor",
-    title: "Bạn đã hoàn thành ca đầu tiên!",
-    detail: "Giao tiếp, bán hàng và xử lý hàng hóa — bạn đã thử cả ba.",
-    verb: "Trò chuyện",
-    chapter: 3,
-  },
-};
+const actionRecords = ref<TrainingActionRecord[]>([]);
+const completedStages = ref<TrainingStage[]>([]);
+const evaluation = computed(() => {
+  const preview = evaluateLegacyBrowserSimulation(actionRecords.value, completedStages.value);
+  const saved = props.savedResult;
+  if (!saved) return preview;
+  return {
+    ...preview,
+    score: saved.totalScore,
+    passed: saved.passed,
+    errors: saved.errorCount,
+    grade: saved.grade,
+    gradeLabel:
+      saved.grade === "EXCELLENT"
+        ? "Xuất sắc"
+        : saved.grade === "SATISFACTORY"
+          ? "Đạt yêu cầu"
+          : "Cần luyện tập thêm",
+  };
+});
+const goals = DEFAULT_GOALS;
 const goal = computed(() => goals[stage.value]);
 const nearby = computed(() => stations.find((s) => adjacent(player, s)));
 const locked = computed(
@@ -139,12 +127,50 @@ async function converse(c: Conversation) {
   await nextTick();
   firstChoice.value?.[0]?.focus({ preventScroll: true });
 }
-function choose(c: Choice) {
+function choose(c: Choice, actionType?: string, targetKey?: string) {
   if (correct.value) return;
   picked.value = c;
   feedback.value = c.feedback;
   correct.value = c.right;
   if (!c.right) errors.value++;
+  const effectiveActionType = actionType || dialogue.value?.actionType || stage.value;
+  const effectiveTargetKey =
+    targetKey ||
+    dialogue.value?.targetKey ||
+    (stage.value === "greet"
+      ? "customer_linh"
+      : stage.value === "milk"
+        ? "shelf_milk"
+        : stage.value === "checkout"
+          ? "pos_cash"
+          : stage.value === "cooler"
+            ? "cooler_display"
+            : stage.value === "quarantine"
+              ? "quarantine_bin"
+              : stage.value === "mentor"
+                ? "mentor_mai"
+                : "any");
+  const effectiveChoiceKey = (c.choiceKey || c.id) as TrainingChoiceKey | undefined;
+
+  actionRecords.value.push({
+    sequence: actionRecords.value.length + 1,
+    stage: stage.value,
+    actionType: effectiveActionType,
+    targetKey: effectiveTargetKey,
+    choiceKey: effectiveChoiceKey,
+    choiceText: c.text,
+    isRight: c.right,
+    feedback: c.feedback,
+    timestamp: Date.now(),
+    scenarioVersion: SCENARIO_VERSION,
+  });
+  if (effectiveChoiceKey && effectiveChoiceKey !== "hint_ack") {
+    emit("action", {
+      actionType: effectiveActionType,
+      targetKey: effectiveTargetKey,
+      choiceKey: effectiveChoiceKey,
+    });
+  }
 }
 function finishReply() {
   picked.value?.effect?.();
@@ -154,6 +180,9 @@ function finishReply() {
   void focusWorld();
 }
 function advance(s: Stage, entry: string) {
+  if (!completedStages.value.includes(stage.value)) {
+    completedStages.value.push(stage.value);
+  }
   stage.value = s;
   log.value.unshift(entry);
 }
@@ -169,7 +198,17 @@ function interact(s: Station) {
           : s.id === "mentor"
             ? "Chị ở đây nếu em cần hướng dẫn. " + goal.value.detail
             : "Mình sẽ quay lại đây khi cần. " + goal.value.detail,
-      choices: [{ text: "Mình hiểu rồi", right: true, feedback: goal.value.detail }],
+      actionType: "interact_hint",
+      targetKey: s.id as TrainingTargetKey,
+      choices: [
+        {
+          id: "hint_ack",
+          choiceKey: "hint_ack",
+          text: "Mình hiểu rồi",
+          right: true,
+          feedback: goal.value.detail,
+        },
+      ],
     });
     return;
   }
@@ -178,20 +217,28 @@ function interact(s: Station) {
       speaker: "Khách Linh",
       heading: "“Chào em, chị cần mua sữa…”",
       text: "Chị muốn mua hai hộp sữa, nhưng không thích ngọt lắm. Em giúp chị chọn được không?",
+      actionType: "greet_customer",
+      targetKey: "customer_linh",
       choices: [
         {
+          id: "greet_discount",
+          choiceKey: "greet_discount",
           text: "Chị cứ lấy loại đang giảm giá đi ạ.",
           right: false,
           feedback:
             "Mai: Khuyến mãi chưa chắc phù hợp. Hãy hỏi và xác nhận nhu cầu của khách trước nhé.",
         },
         {
+          id: "greet_confirm_need",
+          choiceKey: "greet_confirm_need",
           text: "Dạ, chị muốn 2 hộp sữa ít đường đúng không ạ? Em lấy giúp chị nhé.",
           right: true,
           feedback: "Linh: Đúng rồi, cảm ơn em! Chị chờ ở quầy nhé.",
           effect: () => advance("milk", "Đã lắng nghe và xác nhận nhu cầu của khách."),
         },
         {
+          id: "greet_self_service",
+          choiceKey: "greet_self_service",
           text: "Sữa ở trên kệ đó chị tự tìm nhé.",
           right: false,
           feedback:
@@ -204,8 +251,12 @@ function interact(s: Station) {
       speaker: employeeNameFallback(),
       heading: "Trước kệ sữa & đồ uống",
       text: "Hãy chọn hàng theo lời khách: 2 hộp sữa ít đường. Sản phẩm còn hạn, bao bì nguyên vẹn.",
+      actionType: "pick_product",
+      targetKey: "shelf_milk",
       choices: [
         {
+          id: "milk_pick_2_low_sugar",
+          choiceKey: "milk_pick_2_low_sugar",
           text: "Lấy 2 hộp sữa ít đường · 8.500đ / hộp",
           right: true,
           feedback:
@@ -216,11 +267,15 @@ function interact(s: Station) {
           },
         },
         {
+          id: "milk_pick_2_sweetened",
+          choiceKey: "milk_pick_2_sweetened",
           text: "Lấy 2 hộp sữa có đường · 8.000đ / hộp",
           right: false,
           feedback: "Mai: Loại này có đường, chưa đúng nhu cầu khách vừa xác nhận.",
         },
         {
+          id: "milk_pick_1_low_sugar",
+          choiceKey: "milk_pick_1_low_sugar",
           text: "Lấy 1 hộp sữa ít đường",
           right: false,
           feedback: "Mai: Khách cần hai hộp. Hãy kiểm tra cả loại hàng và số lượng nhé.",
@@ -234,6 +289,8 @@ function interact(s: Station) {
       heading: "Đưa hàng qua máy quét",
       text: "Hai hộp sữa ít đường đang ở trong giỏ của bạn. Quét đủ từng hộp để lên hóa đơn.",
       type: "scan",
+      actionType: "scan_item",
+      targetKey: "pos_scanner",
       choices: [],
     });
   } else if (stage.value === "cooler")
@@ -241,14 +298,20 @@ function interact(s: Station) {
       speaker: "Mentor Mai",
       heading: "Có gì không ổn trong tủ mát?",
       text: "Bạn thấy một hộp sữa chua hết hạn từ hôm qua. Bao bì vẫn nguyên vẹn. Bạn sẽ làm gì?",
+      actionType: "inspect_cooler",
+      targetKey: "cooler_display",
       choices: [
         {
+          id: "cooler_discount",
+          choiceKey: "cooler_discount",
           text: "Giảm giá để bán nhanh trong hôm nay.",
           right: false,
           feedback:
             "Mai: Hàng đã hết hạn không được tiếp tục bán, kể cả giảm giá. Phải tách khỏi hàng còn bán được.",
         },
         {
+          id: "cooler_quarantine_expired",
+          choiceKey: "cooler_quarantine_expired",
           text: "Lấy hộp hết hạn khỏi tủ và mang tới khu hàng cần xử lý.",
           right: true,
           feedback:
@@ -259,6 +322,8 @@ function interact(s: Station) {
           },
         },
         {
+          id: "cooler_push_inside",
+          choiceKey: "cooler_push_inside",
           text: "Đẩy hộp này vào phía trong tủ.",
           right: false,
           feedback:
@@ -271,8 +336,12 @@ function interact(s: Station) {
       speaker: "Bạn",
       heading: "Khu hàng cần xử lý",
       text: "Hộp sữa chua này cần được tách riêng và ghi rõ tình trạng để quản lý xử lý tiếp.",
+      actionType: "quarantine_product",
+      targetKey: "quarantine_bin",
       choices: [
         {
+          id: "quarantine_label_expired",
+          choiceKey: "quarantine_label_expired",
           text: "Đặt vào khay riêng, gắn nhãn “Hết hạn — không bán”.",
           right: true,
           feedback:
@@ -283,6 +352,8 @@ function interact(s: Station) {
           },
         },
         {
+          id: "quarantine_mixed_with_new",
+          choiceKey: "quarantine_mixed_with_new",
           text: "Đặt chung vào thùng hàng mới nhận.",
           right: false,
           feedback:
@@ -295,8 +366,12 @@ function interact(s: Station) {
       speaker: "Mentor Mai",
       heading: "“Ca đầu tiên thế nào rồi em?”",
       text: "Hãy báo lại đúng việc bạn đã làm, để chị tiếp tục xử lý sản phẩm hết hạn.",
+      actionType: "report_mentor",
+      targetKey: "mentor_mai",
       choices: [
         {
+          id: "mentor_full_report",
+          choiceKey: "mentor_full_report",
           text: "Em đã bán đúng hàng cho khách; có 1 hộp sữa chua hết hạn, đã tách và gắn nhãn ở khu xử lý.",
           right: true,
           feedback:
@@ -304,6 +379,8 @@ function interact(s: Station) {
           effect: () => advance("complete", "Đã báo cáo đầy đủ cho người phụ trách."),
         },
         {
+          id: "mentor_report_nothing",
+          choiceKey: "mentor_report_nothing",
           text: "Không có gì cần báo chị ạ.",
           right: false,
           feedback:
@@ -318,6 +395,20 @@ function employeeNameFallback() {
 function scan() {
   if (scans.value >= 2) return;
   scans.value++;
+  const choiceKey: TrainingChoiceKey = scans.value === 1 ? "scan_item_1" : "scan_item_2";
+  actionRecords.value.push({
+    sequence: actionRecords.value.length + 1,
+    stage: "checkout",
+    actionType: "scan_item",
+    targetKey: "pos_scanner",
+    choiceKey,
+    choiceText: `Quét hộp sữa ${scans.value}`,
+    isRight: true,
+    feedback: `Đã quét hộp sữa ${scans.value}`,
+    timestamp: Date.now(),
+    scenarioVersion: SCENARIO_VERSION,
+  });
+  emit("action", { actionType: "scan_item", targetKey: "pos_scanner", choiceKey });
 }
 function tender() {
   if (scans.value !== 2) return;
@@ -325,13 +416,19 @@ function tender() {
     speaker: "Khách Linh",
     heading: "“Chị gửi em 20.000 đồng.”",
     text: "Hóa đơn: 2 × 8.500đ = 17.000đ. Bạn trả lại khách bao nhiêu và nói gì?",
+    actionType: "tender_payment",
+    targetKey: "pos_cash",
     choices: [
       {
+        id: "tender_2k_change",
+        choiceKey: "tender_2k_change",
         text: "Trả 2.000đ, cảm ơn khách.",
         right: false,
         feedback: "Mai: Hãy tính lại: 20.000 − 17.000 = 3.000 đồng. Đếm lại trước khi đưa khách.",
       },
       {
+        id: "tender_3k_receipt",
+        choiceKey: "tender_3k_receipt",
         text: "“Em gửi chị 3.000đ tiền thừa và hóa đơn. Cảm ơn chị, hẹn gặp lại!”",
         right: true,
         feedback:
@@ -342,6 +439,8 @@ function tender() {
         },
       },
       {
+        id: "tender_5k_no_receipt",
+        choiceKey: "tender_5k_no_receipt",
         text: "Trả 5.000đ và bỏ qua hóa đơn.",
         right: false,
         feedback:
@@ -506,6 +605,7 @@ function directionPress(d: string, e: PointerEvent) {
 }
 function start() {
   intro.value = false;
+  emit("start");
   void focusWorld();
 }
 function leave() {
@@ -515,6 +615,7 @@ function leave() {
 }
 function reset() {
   stop();
+  emit("reset");
   stage.value = "greet";
   Object.assign(player, { x: 10, y: 11, direction: "down" });
   Object.assign(bag, { milk: 0, expired: 0 });
@@ -522,6 +623,8 @@ function reset() {
   steps.value = 0;
   errors.value = 0;
   log.value = [];
+  actionRecords.value = [];
+  completedStages.value = [];
   dialogue.value = null;
   intro.value = true;
 }
@@ -611,7 +714,9 @@ onUnmounted(() => {
     @keydown="keydown"
   >
     <header class="game-header" :inert="intro || exitPrompt || stage === 'complete'">
-      <button @click="leave" class="game-exit">← <span>Về cửa hàng</span></button>
+      <button @click="leave" class="game-exit" data-testid="btn-exit-shift">
+        ← <span>Về cửa hàng</span>
+      </button>
       <div class="game-wordmark">
         <img src="/icon.svg" alt="" />
         <div>SIM TÍM <small>HỌC VIỆC PHIÊU LƯU KÝ</small></div>
@@ -1066,13 +1171,20 @@ onUnmounted(() => {
               ><button :disabled="scans !== 2" @click="tender">Nhận tiền từ khách →</button>
             </div></template
           >
-          <div v-else class="dialogue-choices">
+          <div v-else class="dialogue-choices" data-testid="dialogue-choices">
             <button
               v-for="(c, i) in dialogue.choices"
               ref="firstChoice"
               :key="c.text"
+              :data-testid="'choice-' + i"
               :disabled="correct"
-              @click="choose(c)"
+              @click="
+                choose(
+                  c,
+                  dialogue.actionType || (stage === 'checkout' ? 'tender_payment' : undefined),
+                  dialogue.targetKey,
+                )
+              "
             >
               <span>{{ i + 1 }}</span
               >{{ c.text }}
@@ -1081,16 +1193,23 @@ onUnmounted(() => {
           <p
             v-if="feedback"
             :class="['choice-feedback', correct ? 'right' : 'retry']"
+            data-testid="choice-feedback"
             role="status"
           >
             {{ correct ? "✓" : "↺" }} {{ feedback }}
           </p>
-          <button v-if="correct" class="dialogue-next" @click="finishReply">
+          <button
+            v-if="correct"
+            class="dialogue-next"
+            data-testid="btn-dialogue-next"
+            @click="finishReply"
+          >
             {{ stage === "mentor" ? "Kết thúc ca" : "Tiếp tục trong cửa hàng" }}
             →</button
           ><button
             v-else
             class="conversation-back"
+            data-testid="btn-dialogue-back"
             @click="
               dialogue = null;
               focusWorld();
@@ -1100,9 +1219,9 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
-      <p class="game-footnote">
-        Bản chơi thử 2D trên trình duyệt · Dữ liệu phiên riêng · Lưu kết quả qua backend ở giai đoạn
-        sau.
+      <p class="game-footnote" role="status" data-testid="training-save-status">
+        {{ saveStatus || "Bản chơi thử trên trình duyệt; kết quả chưa lưu trên máy chủ." }}
+        <button v-if="saveError" type="button" @click="emit('retrySave')">Thử lưu lại</button>
       </p>
     </div>
     <div v-if="intro" class="game-overlay">
@@ -1120,6 +1239,13 @@ onUnmounted(() => {
         <div class="intro-skills">
           <span>♡ Giao tiếp</span><span>▤ Bán hàng</span><span>▦ Hàng hóa</span>
         </div>
+        <div v-if="history?.length" class="training-history" data-testid="training-history">
+          <b>Kết quả đã lưu gần đây</b>
+          <p v-for="item in history" :key="item.sessionId">
+            Lần {{ item.attemptNumber }} · {{ item.totalScore }}/100 ·
+            {{ item.passed ? "Đạt" : "Cần luyện tập thêm" }}
+          </p>
+        </div>
         <button class="start-shift" @click="start">Bắt đầu ca thực hành <span>→</span></button
         ><small
           >Di chuyển: WASD / phím mũi tên · Tương tác: E<br />Hoặc nhấp / chạm vào khách và đồ vật
@@ -1127,13 +1253,16 @@ onUnmounted(() => {
         ><button class="intro-back" @click="emit('exit')">Về giao diện quản lý</button>
       </section>
     </div>
-    <div v-if="exitPrompt" class="game-overlay">
+    <div v-if="exitPrompt" class="game-overlay" data-testid="modal-exit-prompt">
       <section class="leave-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-heading">
         <h2 id="exit-heading">Rời ca thực hành?</h2>
         <p>Tiến độ của lần chơi này sẽ được đặt lại. Dữ liệu cửa hàng không bị ảnh hưởng.</p>
-        <button class="start-shift" @click="emit('exit')">Rời ca</button
-        ><button
+        <button class="start-shift" data-testid="btn-confirm-exit" @click="emit('exit')">
+          Rời ca
+        </button>
+        <button
           class="intro-back"
+          data-testid="btn-cancel-exit"
           @click="
             exitPrompt = false;
             focusWorld();
@@ -1143,7 +1272,7 @@ onUnmounted(() => {
         </button>
       </section>
     </div>
-    <div v-if="stage === 'complete'" class="game-overlay">
+    <div v-if="stage === 'complete'" class="game-overlay" data-testid="modal-complete">
       <section
         class="shift-complete"
         role="dialog"
@@ -1154,21 +1283,44 @@ onUnmounted(() => {
         <span class="intro-kicker">CA THỰC HÀNH HOÀN TẤT</span>
         <h2 id="complete-heading">Một ca làm, ba kỹ năng.</h2>
         <p>Bạn đã trực tiếp chăm khách, bán hàng và xử lý hàng trên kệ trong cửa hàng 2D.</p>
+        <div class="evaluation-card" data-testid="shift-summary">
+          <div class="evaluation-score-pill" data-testid="evaluation-score">
+            <template v-if="serverResultRequired && !savedResult"
+              >Đang chờ điểm từ máy chủ</template
+            >
+            <template v-else
+              ><strong>{{ evaluation.score }}</strong> / 100 điểm</template
+            >
+          </div>
+          <div
+            :class="['evaluation-grade-pill', 'grade-' + evaluation.grade.toLowerCase()]"
+            data-testid="evaluation-grade"
+          >
+            {{
+              serverResultRequired && !savedResult
+                ? "Chưa có kết quả chính thức"
+                : evaluation.gradeLabel
+            }}
+          </div>
+        </div>
+        <p role="status" data-testid="training-result-save-status">
+          {{ saveStatus || "Điểm xem trước; kết quả chưa lưu trên máy chủ." }}
+          <button v-if="saveError" type="button" @click="emit('retrySave')">Thử lưu lại</button>
+        </p>
         <div class="complete-skills">
           <span>✓ Giao tiếp & tư vấn</span><span>✓ Thanh toán & tiền thừa</span
           ><span>✓ Hàng hết hạn & bàn giao</span>
         </div>
-        <p class="practice-summary">
-          {{ steps }} bước chân ·
-          {{
-            errors ? `${errors} lần được mentor hướng dẫn lại` : "Hoàn thành đúng ngay từ lần đầu"
-          }}
+        <p class="practice-summary" data-testid="evaluation-errors">
+          {{ steps }} bước chân · {{ evaluation.summaryText }}
         </p>
         <div class="complete-history">
           <p v-for="entry in [...log].reverse()" :key="entry">✓ {{ entry }}</p>
         </div>
-        <button class="start-shift" @click="emit('exit')">Trở về cửa hàng →</button
-        ><button class="intro-back" @click="reset">Chơi lại ca này</button>
+        <button class="start-shift" data-testid="btn-finish" @click="emit('exit')">
+          Trở về cửa hàng →
+        </button>
+        <button class="intro-back" data-testid="btn-replay" @click="reset">Chơi lại ca này</button>
       </section>
     </div>
   </section>

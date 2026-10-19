@@ -2,6 +2,13 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import TrainingGame from "./training/TrainingGame.vue";
 import {
+  TrainingApiAdapter,
+  TrainingRun,
+  type TrainingActionInput,
+  type TrainingHistoryItem,
+  type TrainingSavedResult,
+} from "./training/api-training-adapter";
+import {
   accounts,
   available,
   emptyOperationalState,
@@ -91,6 +98,66 @@ const online = ref(navigator.onLine);
 const simulateOffline = ref(false);
 const connected = computed(() => online.value && !simulateOffline.value);
 const isDemoMode = authAdapter.mode === "demo";
+const trainingApi = isDemoMode
+  ? undefined
+  : new TrainingApiAdapter((path, init) => authAdapter.fetchApi(path, init));
+let trainingRun: TrainingRun | undefined;
+const trainingStatus = ref("");
+const trainingSaveError = ref(false);
+const trainingSavedResult = ref<TrainingSavedResult>();
+const trainingHistory = ref<TrainingHistoryItem[]>([]);
+
+async function loadTrainingHistory() {
+  if (!trainingApi || !user.value) return;
+  try {
+    trainingHistory.value = await trainingApi.ownResults();
+  } catch {
+    // A history read must not prevent starting a new practice session.
+  }
+}
+
+function onTrainingStart() {
+  trainingSavedResult.value = undefined;
+  trainingSaveError.value = false;
+  if (!trainingApi) {
+    trainingStatus.value = "Bản chơi thử trên trình duyệt; kết quả chưa lưu trên máy chủ.";
+    return;
+  }
+  if (!user.value) {
+    trainingStatus.value = "Đăng nhập trong ứng dụng để lưu kết quả đào tạo.";
+    return;
+  }
+  const run = new TrainingRun(trainingApi, (message, result, failed) => {
+    if (trainingRun !== run) return;
+    trainingStatus.value = message;
+    trainingSaveError.value = !!failed;
+    if (result) {
+      trainingSavedResult.value = result;
+      void loadTrainingHistory();
+    }
+  });
+  trainingRun = run;
+  void run.start();
+}
+
+function onTrainingAction(action: TrainingActionInput) {
+  trainingRun?.append(action);
+}
+
+function onTrainingReset() {
+  const previousRun = trainingRun;
+  trainingRun = undefined;
+  if (previousRun) void previousRun.abandon().catch(() => undefined);
+  trainingSavedResult.value = undefined;
+  trainingSaveError.value = false;
+  trainingStatus.value = "";
+}
+
+function onTrainingExit() {
+  onTrainingReset();
+  if (isTrainingRoute.value) exitTrainingRoute();
+  else go("dashboard");
+}
 const inventoryAdapter: InventoryPort = isDemoMode
   ? new DemoInventoryAdapter(
       () => state.value!,
@@ -361,6 +428,7 @@ function go(id: string) {
     restorePendingCheckout();
     void loadSaleProducts();
   }
+  if (id === "training") void loadTrainingHistory();
 }
 async function signIn() {
   if (busy.value || authPending.value) return;
@@ -401,6 +469,7 @@ function clearSessionMarkers() {
   sessionStorage.removeItem("simtim-v2-auth-mode");
 }
 async function signOut() {
+  onTrainingReset();
   const revision = ++authRevision;
   authPending.value = "logout";
   user.value = undefined;
@@ -447,6 +516,7 @@ async function refreshStocktakeQueue() {
   queuedStocktakes.value = await stocktakeQueue.list();
 }
 async function sync() {
+  if (isTrainingRoute.value || route.value === "training") return;
   if (stocktakeSyncPromise) await stocktakeSyncPromise;
 
   const context = stocktakeRetryContext();
@@ -594,6 +664,7 @@ function connectionChanged() {
   if (connected.value && user.value) void sync().catch(() => undefined);
 }
 function requireLogin() {
+  onTrainingReset();
   authRevision++;
   user.value = undefined;
   route.value = "dashboard";
@@ -629,13 +700,15 @@ onMounted(async () => {
     }
   } else clearSessionMarkers();
   if (revision === authRevision) authPending.value = undefined;
-  try {
-    await refreshStocktakeQueue();
-    if (connected.value && user.value) await sync();
-  } catch (e) {
-    error.value =
-      (e as Error).message ||
-      "Không mở được hàng đợi kiểm kê. Hãy cho phép lưu trữ trong trình duyệt.";
+  if (!isTrainingRoute.value) {
+    try {
+      await refreshStocktakeQueue();
+      if (connected.value && user.value) await sync();
+    } catch (e) {
+      error.value =
+        (e as Error).message ||
+        "Không mở được hàng đợi kiểm kê. Hãy cho phép lưu trữ trong trình duyệt.";
+    }
   }
   window.addEventListener("online", connectionChanged);
   window.addEventListener("offline", connectionChanged);
@@ -1034,7 +1107,20 @@ async function approveCount(record: StocktakeRecord) {
 </script>
 
 <template>
-  <TrainingGame v-if="isTrainingRoute" employee-name="Học viên Sim Tím" @exit="exitTrainingRoute" />
+  <TrainingGame
+    v-if="isTrainingRoute"
+    :employee-name="user?.name || 'Học viên Sim Tím'"
+    :save-status="trainingStatus"
+    :save-error="trainingSaveError"
+    :server-result-required="!isDemoMode"
+    :saved-result="trainingSavedResult"
+    :history="trainingHistory"
+    @start="onTrainingStart"
+    @action="onTrainingAction"
+    @reset="onTrainingReset"
+    @retry-save="trainingRun?.retry()"
+    @exit="onTrainingExit"
+  />
   <div v-else-if="!state" class="loading">
     {{ error || "Đang mở không gian cửa hàng…" }}
   </div>
@@ -1105,12 +1191,21 @@ async function approveCount(record: StocktakeRecord) {
             này.
           </p>
           <p style="margin-top: 12px">
-            <a
-              href="/training"
-              style="color: var(--primary); font-weight: 600; text-decoration: none"
+            <button
+              type="button"
+              class="training-entry"
+              style="
+                color: var(--primary);
+                font-weight: 600;
+                background: none;
+                border: 0;
+                padding: 0;
+                cursor: pointer;
+              "
+              @click="go('training')"
             >
               ✦ Mở ca đào tạo nghiệp vụ (Sandbox) →
-            </a>
+            </button>
           </p>
         </div>
       </div>
@@ -1119,7 +1214,16 @@ async function approveCount(record: StocktakeRecord) {
   <TrainingGame
     v-else-if="route === 'training'"
     :employee-name="user.name"
-    @exit="go('dashboard')"
+    :save-status="trainingStatus"
+    :save-error="trainingSaveError"
+    :server-result-required="!isDemoMode"
+    :saved-result="trainingSavedResult"
+    :history="trainingHistory"
+    @start="onTrainingStart"
+    @action="onTrainingAction"
+    @reset="onTrainingReset"
+    @retry-save="trainingRun?.retry()"
+    @exit="onTrainingExit"
   />
   <div v-else class="workspace">
     <aside :class="['sidebar', { open: menu }]">

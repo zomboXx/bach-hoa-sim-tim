@@ -69,6 +69,109 @@ Validation trên JDK 24.0.2, Docker Desktop và PostgreSQL 17.11 disposable: pol
 - `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: resolve conflict, giữ oracle QA-02
 
 ---
+TV2 — Nguyễn Văn Trung - 2026-10-18 20:15:00
+
+Cập nhật [QA-04] Regression, bảo mật quyền và backup/restore (Issue #57, PR #64) đồng bộ từ `main` mới nhất (đã có TRN-01 #63 và QA-03 #65).
+
+Giải quyết xung đột merge với `main`. Bổ sung xử lý theo hai điểm review:
+1. Sửa `scripts/restore-db.ps1` và hướng dẫn `infra/README.md` bổ sung cờ `-v ON_ERROR_STOP=1` cho `psql`, ngăn script bỏ sót lỗi SQL; bổ sung ca kiểm thử tự động `restore_corruptedDump_failsWhenOnErrorStopEnabled` trong `Qa04RegressionSecurityTest` (nâng tổng số test lên 9/9 Pass).
+2. Làm rõ ca kiểm thử cô lập đào tạo end-to-end (NFR-TRN-01) ở trạng thái Blocked trong ma trận truy vết và tài liệu kiểm thử do TRN-03 (API đào tạo backend) chưa tích hợp lên `main`. Giữ nguyên test kiểm chứng cờ session `trainingEnabled` và tính bất biến của bảng vận hành; ca hành động thật sẽ được chạy lại sau khi TRN-03 lên main.
+
+Root gate `pwsh -File scripts/verify.ps1` đạt toàn diện.
+
+- `.gitignore`: +3 -0
+- `CHANGELOG.md`: +1 -0
+- `docs/testing/DOC-01-traceability-working.md`: +22 -1
+- `docs/testing/QA-04-authorize.md`: +71 -0
+- `docs/testing/QA-04-test-plan.md`: +100 -0
+- `docs/testing/QA-04-test-report.md`: +193 -0
+- `docs/testing/QA-04-traceability.md`: +74 -0
+- `docs/testing/README.md`: +19 -0
+- `infra/README.md`: +49 -0
+- `scripts/backup-db.ps1`: +53 -0
+- `scripts/restore-db.ps1`: +43 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa04RegressionSecurityTest.java`: +751 -0
+---
+TV1 — Nguyễn Đức Phát - 2026-10-18 19:14:54
+
+Chuẩn bị provider TRN-03 trên nhánh local: migration V15 lưu kịch bản/lựa chọn/phiên/hành động/kết quả; API bắt đầu ca, gửi hành động, bỏ dở và đọc kết quả. Server tự chấm từ lựa chọn đã lưu, lấy quyền/phạm vi từ Bearer session, lưu response để retry không ghi hoặc cộng điểm hai lần. Project Owner duyệt phạm vi contract ở PR #61; #56 vẫn mở vì ca thật và PWA chưa được nối.
+
+Kiểm thử tại thời điểm triển khai provider: 6/6 test TRN-03 và 153/153 API đạt trên PostgreSQL 18 tạm khi loại test QA-02 cần Docker; web demo 16/16 và web API consumer 39/39 đạt. Root gate chưa xanh do cổng 4174 bị ứng dụng khác chiếm và Docker daemon không sẵn có; PostgreSQL 17/CI còn chờ.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -1
+- `contracts/TRN-03_TRAINING_API_REVIEW.md`: +4 -2
+- `docs/README.md`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +4 -0
+- `services/api/src/main/java/vn/simtim/api/training/`: +569 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +8 -0
+- `services/api/src/main/resources/db/migration/V15__training_sessions.sql`: +106 -0
+- `services/api/src/test/java/vn/simtim/api/training/TrainingApiTest.java`: +418 -0
+- `CONTRIBUTION_LOG.md`: +19 -0
+---
+TV3 — Nguyễn Văn Thi - 2026-10-18 21:40:15
+
+Khắc phục triệt để hai lỗ hổng trong Training Oracle / Contract TRN-03 (#55) theo yêu cầu review:
+- Loại bỏ hoàn toàn sự phụ thuộc vào dữ liệu tự khai từ client (`isRight`, `stage`, `actionType`, `choiceText`, `completedStages`) trên đường chấm authoritative của server. Ném lỗi `TrainingCatalogValidationError` khi thiếu `choiceKey`, `choiceKey` lạ hoặc sai `catalogVersion`.
+- Các hàm `resolveActionRight()` và `deriveCompletedStages()` chỉ đọc định nghĩa từ catalog server, không fallback sang dữ liệu client.
+- Bắt buộc quét đủ cả hai mã khác nhau `REQUIRED_CHECKOUT_SCAN_KEYS = ['scan_item_1', 'scan_item_2']` cùng `REQUIRED_CHECKOUT_TENDER_KEY = 'tender_3k_receipt'` ở bước checkout (dùng `Set<string>` thay vì biến đếm `scanCount++` để ngăn việc quét trùng một mã).
+- Tách riêng đường mô phỏng `evaluateLegacyBrowserSimulation` (alias `evaluateLegacyBrowserTrainingSession`) phục vụ client preview và test giao diện người dùng mà không ảnh hưởng tới đường authoritative của server.
+- Bổ sung 4 unit tests kiểm thử TRN-03 authoritative oracle (từ chối chuỗi sự kiện giả mạo, từ chối thiếu key/sai version, từ chối quét trùng checkout, và happy path 100 điểm) tại `apps/web/tests/trn-02-training-scenario.spec.ts`.
+- Cập nhật hợp đồng `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và `CHANGELOG.md`.
+
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +70 -41
+- `apps/web/src/training/scenario.ts`: +358 -113
+- `apps/web/src/training/TrainingGame.vue`: +2 -2
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +175 -16
+- `CHANGELOG.md`: +1 -0
+- `CONTRIBUTION_LOG.md`: +18 -1
+---
+
+Hoàn thiện giao thức sự kiện đào tạo độc lập cho TRN-02 (#55) theo phản hồi review của TV1:
+- Bổ sung định danh ổn định (Vocabulary of Stable Identifiers) cho hành động (`actionType`), đích tương tác (`targetKey`) và lựa chọn (`choiceKey`).
+- Thiết lập bảng ánh xạ tĩnh lựa chọn đúng/sai theo phiên bản kịch bản (`SCENARIO_CHOICE_MAP_V1` cho `SCN-RETAIL-01` v1.0.0) và hàm `resolveActionRight()` tra cứu catalog độc lập ở cả client và server, loại bỏ sự phụ thuộc vào cờ boolean do client gửi và phát hiện client spoofing.
+- Xây dựng thuật toán suy diễn tiến trình hoàn thành từng bước (`deriveCompletedStages()`) trực tiếp từ chuỗi sự kiện `TrainingActionRecord[]` thay vì tin cờ `completedStages` của client; ca học chỉ được đánh giá hoàn thành khi chuỗi sự kiện thỏa mãn đủ 6 bước tuần tự.
+- Cập nhật hợp đồng `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`, tích hợp đầy đủ định danh vào `TrainingGame.vue` và bổ sung unit test xác thực độc lập tại `trn-02-training-scenario.spec.ts`. Toàn bộ 9/9 TRN-02 E2E tests, typecheck, build, lint và format check đều đạt Pass.
+
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +68 -12
+- `apps/web/src/training/scenario.ts`: +379 -8
+- `apps/web/src/training/TrainingGame.vue`: +98 -4
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +122 -0
+- `CHANGELOG.md`: +5 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+---
+
+---
+TV4 — Lê Văn Chiến - 2026-10-17 16:17:09
+
+Hoàn thành phần kịch bản và kiểm thử TRN-02 (#55): bổ sung Playwright acceptance tests cho chặn đảo/bỏ stage trên desktop/mobile, khóa nhận tiền khi chưa quét đủ hàng, sáu phản hồi sai và mức điểm 40/100, cùng chơi lại từ phiên 90 điểm sang phiên sạch 100 điểm. Mở rộng workflow test để chụp và so sánh snapshot hóa đơn, tồn lô `LO01`, movement và phiếu kiểm kê trước/sau ca học, đồng thời xác nhận không có request ghi vận hành.
+
+Cập nhật kịch bản test tay, nhật ký thực thi và test report theo kết quả chạy thật: build/lint/format/typecheck đạt, browser demo 25/25 Pass, API consumer 39/39 Pass, targeted TRN-02 và data isolation 5/5 Pass. M01–M07 đạt trên desktop 1280x720 và mobile 390x844; M08 giữ Blocked đúng dependency TRN-03. Không phát hiện lỗi sản phẩm; chưa chuyển Done cho tới khi CI đạt và TV1/TV2 xác nhận luật chấm/contract.
+
+- `apps/web/tests/trn-02-acceptance-gaps.spec.ts`: +147 -0
+- `apps/web/tests/workflows.spec.ts`: +46 -0
+- `docs/testing/`: +78 -85
+- `CHANGELOG.md`: +3 -0
+- `CONTRIBUTION_LOG.md`: +47 -0
+---
+
+---
+TV3 — Nguyễn Văn Thi - 2026-10-16 09:56:00
+
+Hoàn thiện kịch bản đào tạo nghiệp vụ PWA (SCN-RETAIL-01) cho hạng mục TRN-02 (#55). Chuẩn hóa 6 bước hành động nghiệp vụ (chào hỏi, nhặt hàng, quét mã & thanh toán, kiểm tra tủ mát, cách ly hàng hết hạn, báo cáo mentor). Tích hợp module kịch bản `scenario.ts` độc lập chứa deterministic evaluation oracle (`Score = max(0, 100 - errors * 10)`, xếp loại Xuất sắc, Đạt yêu cầu, Cần luyện tập thêm) chia sẻ chung giữa browser client, browser tests và API TRN-03; không tin điểm số client tự khai khi lưu kết quả. Cung cấp hộp thoại xác nhận rời ca an toàn bảo toàn trạng thái, cơ chế chơi lại (replay) đặt lại toàn bộ phiên thực hành, và thẻ tổng kết đánh giá chi tiết. Toàn bộ nghiệp vụ ca học được cách ly hoàn toàn khỏi dữ liệu hóa đơn và kho vận hành.
+
+Bổ sung contract Proposed `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md` và bộ Playwright E2E tests `apps/web/tests/trn-02-training-scenario.spec.ts` kiểm thử 5 ca: Oracle độc lập, luồng hoàn thành đúng hoàn hảo (Happy Path 100đ, 0 request ghi API), luồng phản hồi sai và sửa sai, luồng bỏ dở, luồng chơi lại ca học. Toàn bộ 21/21 web demo tests, 39/39 web API tests, linter, format check và build đều đạt 100%.
+
+- `CHANGELOG.md`: +1 -0
+- `contracts/README.md`: +1 -0
+- `contracts/TRN-02_TRAINING_SCENARIO_CONTRACT.md`: +106 -0
+- `apps/web/src/training/scenario.ts`: +169 -0
+- `apps/web/src/training/TrainingGame.vue`: +77 -83
+- `apps/web/src/training/training.css`: +39 -0
+- `apps/web/tests/trn-02-training-scenario.spec.ts`: +377 -0
+- `CONTRIBUTION_LOG.md`: +17 -0
+
+---
 TV4 — Lê Văn Chiến - 2026-10-15 17:23:43
 
 Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue kiểm kê offline của PWA với API SYN-02/INV-03, bổ sung `version`/`unitCode`, xử lý retry idempotent, conflict, quyền, duyệt và đối soát tồn/movement trên PostgreSQL; bàn giao plan, authorize matrix, traceability, report và ảnh viewport. Implementation/evidence ở commit `44b341b`; không gộp sáu ngoại lệ QA-02 của Issue #34.
@@ -82,6 +185,9 @@ Hoàn thành QA-03 trên branch riêng từ `origin/main` `19104cb`: nối queue
 - `docs/testing` (Markdown): +121 -0
 - `docs/testing/evidence/qa-03` (2 PNG): N/A
 - `CONTRIBUTION_LOG.md`: +16 -0
+---
+
+---
 TV3 — Nguyễn Văn Thi - 2026-10-15 00:25:00
 
 Hoàn thiện scene cửa hàng 2D Vue/SVG cho hạng mục TRN-01 (#54). Tích hợp đồng thời điều khiển bàn phím (WASD/phím mũi tên/E), chuột (click-to-move BFS và click trạm/NPC) và chạm cảm ứng (Touch D-Pad tức thời/nhấn giữ và nút E tương tác). Tối ưu va chạm sliding AABB và giới hạn di chuyển trong cửa hàng. Tích hợp bộ đo hiệu năng thời gian thực perf-telemetry (FPS, Frame Time ms, Viewport). Toàn bộ dữ liệu ca học được cô lập hoàn toàn (Sandbox) trong bộ nhớ phiên, tách rời các API bán, nhận và tồn kho vận hành.

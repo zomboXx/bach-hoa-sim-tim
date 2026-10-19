@@ -59,6 +59,10 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.POST, quotePaths).hasAuthority("sales.read")
                     .requestMatchers(HttpMethod.GET, sales).hasAuthority("sales.read")
                     .requestMatchers(HttpMethod.POST, sales).hasAuthority("sales.write")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/training/scenarios", "/api/v1/training/sessions/*",
+                            "/api/v1/training/results").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/training/sessions",
+                            "/api/v1/training/sessions/*/actions", "/api/v1/training/sessions/*/abandon").authenticated()
                     .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                     .authenticationEntryPoint((request, response, ex) -> bearer.writeError(response, 401, "UNAUTHENTICATED", "Valid bearer session required"))

@@ -6,7 +6,7 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 
 - [BE-02 session/RBAC](AUTH_SESSION_REVIEW.md): Accepted, ma trận quyền và bằng chứng provider/consumer review.
 - [Auth/session OpenAPI 3.1](auth-session.openapi.yaml): Accepted wire contract cho BE-02/FE-01.
-- [TRN-03 training API review](TRN-03_TRAINING_API_REVIEW.md): Proposed route/DTO, quyền xem kết quả, retry và cách ly; chờ TV2 và TV3/TV4 review trước migration/API.
+- [TRN-03 training API review](TRN-03_TRAINING_API_REVIEW.md): Project Owner đã duyệt phạm vi route/DTO, quyền xem, retry và cách ly; provider đang làm trên nhánh riêng, còn chờ TV2 và TV3/TV4 duyệt kỹ thuật trước tích hợp.
 - [Sprint 2 boundary](SPRINT_2_BOUNDARY_DRAFT.md): Draft tên route, field và public port cần provider/consumer review trước triển khai.
 - [INV-02 inventory read OpenAPI](inventory.openapi.yaml): Working Draft cho ba route tồn hiện tại; provider tests nằm trong API module, chờ TV4 review wire contract.
 - [MOB-01 stocktake consumer review](MOB-01_STOCKTAKE_CONSUMER_REVIEW.md): Proposed boundary cho giao diện kiểm kê; API write vẫn khóa đến khi SYN-02 chốt route, DTO, version, quyền và lỗi.
@@ -15,3 +15,4 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 - [Sales/invoices OpenAPI 3.1](sales-invoices.openapi.yaml): Working Draft wire contract cho SAL-01.
 - [PRO-01B promotions](SALES_PROMOTIONS_REVIEW.md): Working Draft cho Issue #23 / PR #25, wire `/api/v1/sales/promotions` và ma trận quyền `promotions.*`.
 - [Promotions OpenAPI 3.1](sales-promotions.openapi.yaml): Working Draft wire contract cho PRO-01B.
+- [TRN-02 training scenario contract](TRN-02_TRAINING_SCENARIO_CONTRACT.md): Proposed contract kịch bản đào tạo, sự kiện đánh giá và oracle chấm điểm thuần nhất cho Issue #55.
