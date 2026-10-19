@@ -6,7 +6,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Added
 
-- TRN-03 (#56): thêm provider và Flyway V15 cho kịch bản, lựa chọn, phiên, hành động, kết quả đào tạo; server chấm theo bản chụp lựa chọn, kiểm phạm vi từ Bearer session, chống ghi/đếm điểm lặp khi retry và giữ dữ liệu bán/tồn độc lập. Thêm seed demo `SCN-RETAIL-01`, adapter PWA giữ idempotency key/sequence khi retry, và hiển thị kết quả server cùng lịch sử của người học. Đây là mã trên nhánh cục bộ, chưa tích hợp `main`.
+- TRN-03 (#56): thêm provider và Flyway V15 cho kịch bản, lựa chọn, phiên, hành động, kết quả đào tạo; server chấm theo bản chụp lựa chọn, kiểm phạm vi từ Bearer session, chống ghi/đếm điểm lặp khi retry và giữ dữ liệu bán/tồn độc lập. Thêm seed demo `SCN-RETAIL-01`, adapter PWA giữ idempotency key/sequence khi retry, và hiển thị kết quả server cùng lịch sử của người học.
 - Quyết định chấm điểm 19/10/2026: kết quả lưu trên server dùng tỷ lệ lựa chọn đúng, đạt từ 80 điểm, Xuất sắc từ 95 điểm; thay thế dải điểm trừ dần đã ghi trong mô tả TRN-02 cũ. Điểm trong bản chơi thử trình duyệt chỉ là xem trước cho đến khi màn hình TRN-02 được đồng bộ.
 - Gate Playwright demo khởi động preview đúng cổng do cấu hình test chọn, cho phép dùng `SIMTIM_DEMO_TEST_PORT` khi cổng mặc định đang bận và tránh kiểm nhầm một server cũ.
 - **TRN-02 contract & oracle (TV3)** (#55): Chuẩn hóa giao thức sự kiện đào tạo độc lập client/server:
