@@ -26,13 +26,13 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 - [`architecture/adr/`](architecture/adr/): quyết định kiến trúc đã đánh số và trạng thái.
 - [`architecture/adr/0003-application-architecture.md`](architecture/adr/0003-application-architecture.md): kiến trúc code được chấp nhận cho Sprint 1.
 - [`../contracts/AUTH_SESSION_REVIEW.md`](../contracts/AUTH_SESSION_REVIEW.md): Accepted contract session/RBAC và ma trận quyền của BE-02; FE-01 đã tích hợp qua PR #12.
-- [`../contracts/TRN-03_TRAINING_API_REVIEW.md`](../contracts/TRN-03_TRAINING_API_REVIEW.md): Project Owner đã duyệt phạm vi lưu phiên/kết quả; provider, migration và PWA adapter đã tích hợp qua PR #69, còn chờ xác nhận nghiệm thu Issue #56.
+- [`../contracts/TRN-03_TRAINING_API_REVIEW.md`](../contracts/TRN-03_TRAINING_API_REVIEW.md): phạm vi được Project Owner duyệt, provider/migration/PWA adapter tích hợp qua PR #69; trạng thái kiểm chứng hiện hành và tình trạng review ghi ngay đầu contract.
 - [Contract ranh giới Sprint 2](../contracts/SPRINT_2_BOUNDARY_DRAFT.md): Draft tên HTTP/DTO và public port để TV2/TV3/TV4 review.
 - [`project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md`](project/meetings/2026-09-14-tong-hop-du-an-hop-nhom.md): biên bản tổng hợp cần nhóm xác nhận.
 
 ## Kiểm thử
 
-- [`testing/README.md`](testing/README.md): điểm vào hồ sơ QA-01/QA-02, gồm test plan, ma trận quyền, truy vết và test report; QA-02 chưa đạt đầy đủ P0.
+- [`testing/README.md`](testing/README.md): điểm vào hồ sơ QA-01/QA-02/QA-04; sáu GAP QA-02 được chạy lại trên mã tích hợp ngày 20/10, kết quả cũ giữ để truy vết.
 - [`testing/DOC-01-traceability-working.md`](testing/DOC-01-traceability-working.md): ma trận Working nối yêu cầu, thiết kế, code và test; chờ QA-04 và báo cáo cuối.
 
 ## Tài liệu lịch sử

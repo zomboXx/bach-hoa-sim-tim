@@ -1,5 +1,9 @@
 # QA-02 — Báo cáo kiểm thử E2E nhận–bán–báo cáo
 
+> **Kết quả hiện hành 20/10/2026:** sáu GAP đã được chạy lại trên `main`;
+> xem [bằng chứng đóng GAP và oracle DB](QA-02-closeout-2026-10-20.md).
+> Kết luận 3 Fail, 3 Blocked phía dưới là kết quả lịch sử ngày 07/10.
+
 - Kết luận: **Chưa đạt nghiệm thu P0 — automated core gate đạt, còn 3 Fail và 3 Blocked**
 - Ngày chạy: 2026-10-07 (Asia/Bangkok)
 - Owner chạy test: TV4 — Lê Văn Chiến
