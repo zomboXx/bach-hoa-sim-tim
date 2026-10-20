@@ -250,6 +250,8 @@ components:
           minItems: 1
           items: {$ref: '#/components/schemas/CheckoutItemRequest'}
         cashAmount: {type: integer, minimum: 0, description: 'Customer cash tendered in VND'}
+        expectedTotal: {type: integer, minimum: 0, description: 'Previously quoted total in integer VND; a mismatch rejects checkout'}
+        cartVersion: {type: integer, format: int64, minimum: 0, description: 'Optional shared POS cart version; requires Idempotency-Key and an exact cart snapshot match'}
 
     InvoiceLineBatchResponse:
       type: object
