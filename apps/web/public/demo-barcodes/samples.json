@@ -1,0 +1,26 @@
+[
+  {
+    "file": "api-rice",
+    "name": "Gạo gói 1 kg",
+    "value": "8930000000001",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-apple",
+    "name": "Táo cân ký",
+    "value": "ST-APPLE-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "demo-milk",
+    "name": "Sữa tươi ít đường",
+    "value": "8934673120010",
+    "mode": "Demo trình duyệt"
+  },
+  {
+    "file": "demo-cookies",
+    "name": "Bánh quy bơ",
+    "value": "8934673120027",
+    "mode": "Demo trình duyệt"
+  }
+]

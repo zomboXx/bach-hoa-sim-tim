@@ -47,6 +47,8 @@ export interface CheckoutRequest {
   cashAmount: number;
   /** Optional idempotency UUID for safe retry */
   idempotencyKey?: string;
+  /** Shared cart version confirmed by the cashier; omitted for legacy direct checkout. */
+  cartVersion?: number;
 }
 
 export interface InvoiceLine {

@@ -140,6 +140,30 @@ async function installLogin(page: Page, session = salesSession) {
 }
 
 async function installCatalog(page: Page) {
+  let version = 0;
+  let quantity = 0;
+  await page.route("**/api/v1/sales/cart", (route) =>
+    json(route, 200, {
+      id: "test-shared-cart",
+      version,
+      generation: 0,
+      items: quantity
+        ? [{ productId, productName: sampleProduct.name, quantity: String(quantity) }]
+        : [],
+    }),
+  );
+  await page.route("**/api/v1/sales/cart/operations", (route) => {
+    quantity = Math.max(0, quantity + Number(route.request().postDataJSON().delta));
+    version++;
+    return json(route, 200, {
+      id: "test-shared-cart",
+      version,
+      generation: 0,
+      items: quantity
+        ? [{ productId, productName: sampleProduct.name, quantity: String(quantity) }]
+        : [],
+    });
+  });
   await page.route("**/api/v1/products", (route) => json(route, 200, [sampleProduct]));
   await page.route("**/api/v1/units", (route) =>
     json(route, 200, [
@@ -147,6 +171,12 @@ async function installCatalog(page: Page) {
     ]),
   );
   await page.route("**/api/v1/suppliers", (route) => json(route, 200, []));
+  return {
+    setQuantity(value: number) {
+      quantity = value;
+      version++;
+    },
+  };
 }
 
 async function signIn(page: Page) {
@@ -486,4 +516,43 @@ test("invoices list shows multiple invoices returned by server", async ({ page }
   await expect(page.locator(".invoice-row")).toHaveCount(2);
   await expect(page.locator(".invoice-row").first()).toContainText("INV-ABCD1234");
   await expect(page.locator(".invoice-row").nth(1)).toContainText("INV-BBBB2222");
+});
+
+test("CART_CHANGED restores a newer snapshot received while checkout was pending", async ({
+  page,
+}) => {
+  await installLogin(page);
+  const remote = await installCatalog(page);
+  await page.route("**/api/v1/sales/quote", (route) => {
+    const quantity = Number(route.request().postDataJSON().items[0].quantity);
+    return json(route, 200, { ...sampleQuote, grandTotal: 22000 * quantity });
+  });
+  let release!: () => void;
+  const hold = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let checkoutStarted = false;
+  await page.route("**/api/v1/sales/checkout", async (route) => {
+    checkoutStarted = true;
+    await hold;
+    await json(route, 409, { code: "CART_CHANGED", message: "Cart changed" });
+  });
+  await signIn(page);
+  await openSale(page);
+  await page.locator(".product-card").first().click();
+  await page.getByLabel("Khách đưa").fill("1000000");
+  await page.getByRole("button", { name: /Xác nhận thanh toán/ }).click();
+  await expect.poll(() => checkoutStarted).toBe(true);
+  const changedRead = page.waitForResponse(
+    async (response) =>
+      new URL(response.url()).pathname === "/api/v1/sales/cart" &&
+      response.ok() &&
+      (await response.json()).version === 2,
+  );
+  remote.setQuantity(2);
+  await changedRead;
+  release();
+  await expect(page.locator(".cart-row .stepper span")).toHaveText("2");
+  await expect(page.locator(".toast")).toContainText("Giỏ đã thay đổi");
+  await expect(page.getByRole("button", { name: /Xác nhận thanh toán/ })).toBeEnabled();
 });

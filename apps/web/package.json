@@ -20,10 +20,12 @@
     "test:e2e:live": "playwright test --config=playwright.live.config.ts --grep-invert @qa02-gap05",
     "test:e2e:live:qa02-gap05": "playwright test --config=playwright.live.config.ts --grep @qa02-gap05",
     "test:e2e:live:qa02-gap06": "playwright test --config=playwright.live.config.ts --grep @qa02-gap06",
+    "test:e2e:live:pos": "playwright test --config=playwright.live.config.ts --grep @pos",
     "test:e2e:qa03-live": "playwright test --config=playwright.qa03.config.ts",
     "verify": "npm run lint && npm run format:check && npm run build && npm run test:e2e"
   },
   "dependencies": {
+    "@zxing/browser": "^0.2.1",
     "vue": "^3.5.0"
   },
   "devDependencies": {
