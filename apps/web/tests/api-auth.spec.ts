@@ -249,7 +249,7 @@ async function withFetch(stub: typeof fetch, check: () => Promise<void>) {
   }
 }
 
-test("hosting protection cookie reaches login and logout without replacing Bearer", async ({
+test("hosting protection cookie reaches login, module requests and logout without replacing Bearer", async ({
   page,
   context,
   baseURL,
@@ -259,7 +259,23 @@ test("hosting protection cookie reaches login and logout without replacing Beare
   await page.route("**/api/v1/auth/login", async (route) => {
     expect(route.request().headers().cookie).toContain("hosting-protection=fixture");
     received.push("login");
-    await fulfillJson(route, 200, grant());
+    await fulfillJson(
+      route,
+      200,
+      grant({ ...stockSession, permissions: ["catalog.read", "inventory.read"] }),
+    );
+  });
+  await page.route("**/api/v1/inventory/products**", async (route) => {
+    expect(route.request().headers().cookie).toContain("hosting-protection=fixture");
+    expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
+    received.push("inventory");
+    await fulfillJson(route, 200, {
+      items: [],
+      page: 0,
+      size: 100,
+      totalElements: 0,
+      totalPages: 0,
+    });
   });
   await page.route("**/api/v1/auth/logout", async (route) => {
     expect(route.request().headers().cookie).toContain("hosting-protection=fixture");
@@ -270,9 +286,15 @@ test("hosting protection cookie reaches login and logout without replacing Beare
   await page.goto("/");
   await signIn(page);
   await expect(page.locator("nav")).toBeVisible();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Tồn kho/ })
+    .click();
+  await expect.poll(() => received).toContain("inventory");
   await page.getByRole("button", { name: /Đăng xuất/ }).click();
   await expect(page.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
-  expect(received).toEqual(["login", "logout"]);
+  expect(received[0]).toBe("login");
+  expect(received.at(-1)).toBe("logout");
 });
 const jsonResponse = (body: unknown) =>
   new Response(JSON.stringify(body), {

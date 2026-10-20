@@ -188,7 +188,7 @@ export class ApiAuthAdapter implements AuthAdapter {
       headers.set("X-Organization-Id", this.session.organizationId);
       headers.set("X-Store-Id", this.session.storeId);
     }
-    const response = await fetch(path, { ...init, headers });
+    const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
     if (response.status === 401 && requestToken === this.accessToken) {
       this.accessToken = undefined;
       this.session = undefined;

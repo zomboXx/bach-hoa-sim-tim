@@ -22,6 +22,17 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:53:10
+
+Thống nhất cookie bảo vệ hosting ở lớp ApiAuthAdapter để các adapter tồn kho/khuyến mãi cũng đi qua được Vercel Preview. Hồi quy browser đi qua login → request tồn kho của module → logout đạt, cả cookie hosting và Bearer được giữ đúng ranh giới. CI tại commit 539e30d đạt 7/7 job; luồng POS trên Preview HTTPS đạt 1/1 với decoder thật, hai context, nhập tay, đồng thời thêm, HTTP 502/retry và checkout một lần. Tiếp tục chạy CI và Preview cho commit cuối; camera vật lý vẫn cần Project Owner thử.
+
+- `apps/web/src/adapter.ts`: +1 -1
+- `apps/web/tests/api-auth.spec.ts`: +25 -3
+- `CHANGELOG.md`: +1 -1
+
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-20 19:47:00
 
 Mở PR #75 và tạo Vercel Preview dùng database riêng theo phê duyệt. Kiểm thử HTTPS phát hiện request auth bỏ cookie bảo vệ hosting nên bị chặn trước API; sửa sang cookie cùng domain, giữ nguyên Bearer và không tắt Deployment Protection. Bổ sung hồi quy browser cho login/logout qua cookie hosting và server từ chối cookie thiếu Bearer. ApiBootstrapTest đạt 11/11; ca browser cookie hosting đạt. Preview xác nhận health UP, login và giỏ 200, cookie thiếu Bearer bị 401; V17 chỉ có trên database Preview, production vẫn V16. CI ban đầu đạt 7/7 job; kết quả cuối và link Preview được ghi tại PR.
