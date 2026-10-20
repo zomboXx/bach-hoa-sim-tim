@@ -31,3 +31,4 @@ services/api/target/
 apps/training-godot/.godot/
 apps/training-godot/assets/*.translation
 apps/web/public/training/
+.vercel/
