@@ -27,4 +27,3 @@ interface InvoiceJpaRepository extends JpaRepository<InvoiceJpa, UUID> {
             @Param("storeId") UUID storeId,
             @Param("key") UUID key);
 }
-
