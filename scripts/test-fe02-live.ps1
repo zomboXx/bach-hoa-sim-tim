@@ -1,5 +1,5 @@
 param(
-  [ValidateSet('Fe02', 'Qa02Gap05', 'Qa02Gap06')]
+  [ValidateSet('Fe02', 'Qa02Gap05', 'Qa02Gap06', 'Pos')]
   [string]$Suite = 'Fe02'
 )
 
@@ -11,6 +11,7 @@ $containerName = "simtim-fe02-live-$PID"
 $dbPassword = [Guid]::NewGuid().ToString('N')
 $demoPassword = "Live-$([Guid]::NewGuid().ToString('N'))"
 $apiProcess = $null
+$livePassed = $false
 $apiOut = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.out.log"
 $apiErr = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-api.err.log"
 $liveArtifacts = Join-Path ([System.IO.Path]::GetTempPath()) "$containerName-artifacts"
@@ -19,6 +20,7 @@ $webBuildOutput = Join-Path $liveArtifacts 'dist'
 $webTestScript = switch ($Suite) {
   'Qa02Gap05' { 'test:e2e:live:qa02-gap05' }
   'Qa02Gap06' { 'test:e2e:live:qa02-gap06' }
+  'Pos' { 'test:e2e:live:pos' }
   default { 'test:e2e:live' }
 }
 
@@ -104,7 +106,7 @@ try {
   }
 
   $qaBaseline = $null
-  if ($Suite -in @('Qa02Gap05', 'Qa02Gap06')) {
+  if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos')) {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
       $qaBaseline = Get-QaDatabaseSummary -ContainerName $containerName
       if ($qaBaseline.Receipts -ge 1) { break }
@@ -121,7 +123,7 @@ try {
     $env:SIMTIM_BUILD_OUT_DIR = $webBuildOutput
     & npm run $webTestScript
     if ($LASTEXITCODE -ne 0) { throw "$Suite live backend test failed." }
-    if ($Suite -in @('Qa02Gap05', 'Qa02Gap06')) {
+    if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos')) {
       $qaAfter = Get-QaDatabaseSummary -ContainerName $containerName
       $receiptDelta = $qaAfter.Receipts - $qaBaseline.Receipts
       $invoiceDelta = $qaAfter.Invoices - $qaBaseline.Invoices
@@ -129,7 +131,7 @@ try {
       $saleMovementDelta = $qaAfter.SaleMovements - $qaBaseline.SaleMovements
       $revenueDelta = $qaAfter.Revenue - $qaBaseline.Revenue
       $expectedReceiptDelta = if ($Suite -eq 'Qa02Gap06') { 1 } else { 0 }
-      $expectedSaleDelta = if ($Suite -eq 'Qa02Gap06') { 1 } else { 2 }
+      $expectedSaleDelta = if ($Suite -eq 'Qa02Gap05') { 2 } else { 1 }
       if ($receiptDelta -ne $expectedReceiptDelta) {
         throw "Expected receipt delta $expectedReceiptDelta, found $receiptDelta."
       }
@@ -148,6 +150,7 @@ try {
       }
       Write-Output "QA-02 $Suite DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; sale_movement_delta=$saleMovementDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
     }
+    $livePassed = $true
   } finally {
     Remove-Item Env:API_PROXY_TARGET -ErrorAction SilentlyContinue
     Remove-Item Env:SIMTIM_LIVE_PASSWORD -ErrorAction SilentlyContinue
@@ -160,10 +163,14 @@ try {
     & taskkill /PID $apiProcess.Id /T /F *> $null
   }
   & docker stop $containerName *> $null
-  Remove-Item -LiteralPath $apiOut, $apiErr -Force -ErrorAction SilentlyContinue
+  if ($livePassed) {
+    Remove-Item -LiteralPath $apiOut, $apiErr -Force -ErrorAction SilentlyContinue
+  } else {
+    Write-Output "Failure evidence: $liveArtifacts; API logs: $apiOut, $apiErr"
+  }
   $resolvedLiveArtifacts = [System.IO.Path]::GetFullPath($liveArtifacts)
   $resolvedTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-  if ($resolvedLiveArtifacts.StartsWith($resolvedTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+  if ($livePassed -and $resolvedLiveArtifacts.StartsWith($resolvedTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     Remove-Item -LiteralPath $resolvedLiveArtifacts -Recurse -Force -ErrorAction SilentlyContinue
   }
 }

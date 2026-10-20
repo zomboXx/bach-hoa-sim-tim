@@ -58,6 +58,14 @@ Gate kiểm tra policy, link, ESLint, Prettier, TypeScript, web build, Playwrigh
 - [Changelog](CHANGELOG.md)
 - [Nhật ký đóng góp](CONTRIBUTION_LOG.md)
 
+## Quét mã và dùng điện thoại cùng máy tính
+
+Trong **API mode**, đăng nhập cùng nhân viên và cửa hàng trên hai thiết bị, cùng địa chỉ ứng dụng. Vào **Bán hàng** trên cả hai: chọn hàng, nhập mã rồi Enter hoặc bấm **Quét mã bằng camera** đều cập nhật giỏ chung. Giỏ trên thiết bị còn lại cập nhật gần thời gian thực khi có mạng; trạng thái kết nối hiển thị ngay trong giỏ. Sau mỗi mã được nhận, bấm **Quét tiếp** để tránh tự cộng lặp khi giữ camera đứng yên. Chỉ checkout mới ghi hóa đơn và trừ tồn.
+
+Điện thoại cần **HTTPS** và quyền camera; địa chỉ HTTP qua IP nội bộ thường không được trình duyệt cấp camera. Demo mode dùng tài khoản NV001 lưu dữ liệu riêng trên từng trình duyệt, nên không đồng bộ sang thiết bị khác. [Bộ mã vạch mẫu](apps/web/public/demo-barcodes/index.html) có ảnh PNG/SVG kèm tên và ghi rõ bộ API hoặc demo; khi ứng dụng đang chạy, mở `/demo-barcodes/index.html` để tải ảnh. Xem [contract và hướng dẫn kiểm thử](contracts/POS_SHARED_CART.md).
+
+Bản seed API/PostgreSQL hiện có hai sản phẩm **gạo và táo**; demo trong trình duyệt có **bảy sản phẩm**. Hai môi trường dùng dữ liệu khác nhau. Dữ liệu tạo thêm ở local không tự chuyển sang database deploy; muốn đối chiếu, dùng cùng API mode và cùng database/cửa hàng. Không reset hoặc chép đè database deploy để làm giống demo trình duyệt.
+
 ## Giới hạn hiện hành
 
-Compose khởi động **API mode**: web nhận hàng, đọc tồn/lô/hạn, khuyến mãi và báo cáo từ server. Màn hình bán hàng/hóa đơn của web chưa nối checkout API; có thể thử endpoint checkout tiền mặt theo [kịch bản API trong hướng dẫn demo](infra/README.md). Dữ liệu giao dịch demo mode không đi vào PostgreSQL hoặc báo cáo server. Báo cáo QA-02 còn ghi các khoảng trống P0 về độ chính xác đơn vị EA, thay đổi giá giữa quote và checkout, quyền xem hóa đơn của SALES, checkout lặp lại và E2E web bán hàng. Không dùng bộ demo hoặc mật khẩu này cho môi trường thật.
+Compose khởi động **API mode**: nhận hàng, tồn/lô/hạn, khuyến mãi, bán tiền mặt, hóa đơn và báo cáo dùng server. Dữ liệu giao dịch demo mode không đi vào PostgreSQL hoặc báo cáo server. [Hồ sơ QA-02](docs/testing/QA-02-test-report.md) giữ kết quả ban đầu và bằng chứng chạy lại trên mã đã tích hợp. Không dùng bộ demo hoặc mật khẩu này cho môi trường thật.

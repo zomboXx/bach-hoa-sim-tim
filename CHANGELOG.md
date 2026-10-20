@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Thêm camera quét mã sản phẩm bằng ZXing và giỏ POS chung theo nhân viên/cửa hàng trên nhiều thiết bị; giữ mã dưới dạng chuỗi, retry cùng mã thao tác, kiểm phiên bản và khóa transaction khi checkout. Flyway V17 lưu giỏ/dòng/receipt thao tác; bổ sung mã táo demo, bốn ảnh Code 128 có tên sản phẩm, hướng dẫn phân biệt dữ liệu demo/API và kiểm thử camera, concurrency, quyền, rollback và live hai thiết bị.
+
 ### Added
 
 - Cấu hình Vercel Services cho bản thử nghiệm: Vite PWA và Spring API dùng cùng URL `/api`, backend đóng gói từ Dockerfile hiện có và nghe cổng `PORT` do nền tảng cấp; PostgreSQL là dịch vụ ngoài Vercel và secret chỉ đặt trong project environment.

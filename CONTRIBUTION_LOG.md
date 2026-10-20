@@ -22,6 +22,59 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:05:19
+
+Bổ sung camera quét mã sản phẩm và giỏ POS dùng chung cho các thiết bị đăng nhập cùng nhân viên/cửa hàng theo yêu cầu ngày 20/10/2026. Flyway V17 lưu giỏ/dòng/receipt thao tác; server tuần tự hóa delta và checkout, chống retry cộng hàng hoặc thanh toán hai lần. Camera giải mã tại thiết bị, dừng sau mỗi mã để nhân viên xác nhận quét tiếp. Bổ sung bốn ảnh Code 128 có tên sản phẩm, ghi rõ demo/API và giải thích hai bộ seed bảy/hai sản phẩm. Chuẩn bị CI live và contract bổ sung; Project Owner đồng ý push nhánh, mở PR và tạo Preview HTTPS.
+
+Verification local: gate gốc đạt policy/link/lint/format/build, demo 39/39, API consumer 58/58 và backend PostgreSQL 17.11 đạt 189/189; riêng Qa02E2eTest 18/18. Camera 5/5; live POS hai browser context đạt 1/1, oracle invoice/payment/SALE movement mỗi loại +1, revenue +112.500 VND, ledger mismatch 0. Live GAP-05 đạt 2/2, retry HTTP 502 sau commit giữ cùng key/payload và không ghi trùng. Camera vật lý qua HTTPS còn cần người dùng thử trên điện thoại.
+
+- `.github/workflows/ci.yml`: +11 -3
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +9 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +109 -0
+- `apps/web/package-lock.json`: +46 -0
+- `apps/web/package.json`: +2 -0
+- `apps/web/public/demo-barcodes/api-apple.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/api-apple.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-rice.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/api-rice.svg`: +1 -0
+- `apps/web/public/demo-barcodes/demo-cookies.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/demo-cookies.svg`: +1 -0
+- `apps/web/public/demo-barcodes/demo-milk.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/demo-milk.svg`: +1 -0
+- `apps/web/public/demo-barcodes/index.html`: +1 -0
+- `apps/web/public/demo-barcodes/sample-sheet.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/samples.json`: +26 -0
+- `apps/web/src/App.vue`: +138 -16
+- `apps/web/src/modules/sale/domain/sale.ts`: +2 -0
+- `apps/web/src/modules/sale/infrastructure/api-sale-adapter.ts`: +1 -0
+- `apps/web/src/modules/sale/infrastructure/shared-pos-cart.ts`: +188 -0
+- `apps/web/src/modules/sale/presentation/BarcodeScanner.vue`: +160 -0
+- `apps/web/tests/api-sale.spec.ts`: +69 -0
+- `apps/web/tests/barcode-camera.spec.ts`: +57 -0
+- `apps/web/tests/helpers/camera.ts`: +25 -0
+- `contracts/POS_SHARED_CART.md`: +58 -0
+- `contracts/README.md`: +1 -0
+- `contracts/sales-invoices.openapi.yaml`: +2 -0
+- `docs/project/governance/BACKLOG.md`: +4 -0
+- `scripts/generate-demo-barcodes.py`: +62 -0
+- `scripts/test-fe02-live.ps1`: +13 -6
+- `scripts/test-pos-live.ps1`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +4 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/PosCartController.java`: +51 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +8 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/PosCartService.java`: +121 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/PosCart.java`: +11 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/PosCartRepository.java`: +13 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/PosCartRepositoryAdapter.java`: +85 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +7 -0
+- `services/api/src/main/resources/db/migration/V17__shared_pos_carts.sql`: +27 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +150 -0
+- `CONTRIBUTION_LOG.md`: +53 -0
+
+
+---
 TV4 — Lê Văn Chiến - 2026-10-18 19:47:09
 
 Sửa P1 review PR #53 trên base `0972629`: checkout API không còn xóa pending payload và `Idempotency-Key` khi proxy trả HTTP 5xx sau lúc server có thể đã commit. PWA giữ nguyên operation cho kết quả chưa chắc chắn, chỉ bỏ operation khi giao dịch bị từ chối chắc chắn (4xx) hoặc đã hoàn tất. Bổ sung consumer test 502 và live browser test commit thật → proxy 502 → bấm lại cùng key/payload; cập nhật evidence GAP-05/06 nhưng chưa chuyển #34 sang Pass.

@@ -44,3 +44,15 @@ Checkout kiểm phiên bản và items, tính giá/tồn/FEFO ở server, tạo 
 - CI mở rộng live matrix để chạy cùng bài POS trên PostgreSQL sạch.
 
 Camera vật lý trên Android/iPhone và trải nghiệm qua mạng điện thoại vẫn cần người dùng thử trên HTTPS sau khi bản cập nhật được triển khai.
+
+## Bằng chứng local ngày 20/10/2026
+
+Windows, JDK 25 (biên dịch target Java 21), Docker Desktop, PostgreSQL 17.11 disposable:
+
+- Gate gốc `pwsh -File scripts/verify.ps1 -SkipInstall` đạt: policy/link/lint/format/build, demo 39/39, API consumer 58/58 và backend 189/189. `Qa02E2eTest` đạt 18/18, gồm bảy ca giỏ chung mới.
+- Camera giải mã đúng bốn PNG bằng decoder thật và ca từ chối quyền vẫn cho nhập tay: 5/5.
+- Live POS cuối đạt 1/1: hai session desktop/mobile, camera → giỏ máy khác quan sát sau 1.290 ms (gồm thời gian mở camera), nhập tay, concurrent delta, lost-response/retry và checkout. SQL oracle: receipt +0, invoice +1, payment +1, SALE movement +1, revenue +112.500 VND, balance mismatch 0.
+- Live GAP-05 chạy lại sau thay đổi checkout đạt 2/2, gồm HTTP 502 sau commit và retry cùng key/payload. Oracle: invoice/payment/SALE movement mỗi loại +2 cho hai lượt bán, revenue +80.000 VND, balance mismatch 0.
+- CI được cấu hình thêm suite `pos`; chưa có bằng chứng GitHub Actions cho nhánh chưa push.
+
+Chạy lại bộ ảnh bằng `python scripts/generate-demo-barcodes.py` (Pillow và ReportLab là công cụ sinh ảnh, không thuộc dependency production). Các PNG/SVG đã nằm trong `apps/web/public/demo-barcodes/`; ảnh được kiểm chứng đọc đúng chuỗi, không đổi checksum hay ép mã sang số.
