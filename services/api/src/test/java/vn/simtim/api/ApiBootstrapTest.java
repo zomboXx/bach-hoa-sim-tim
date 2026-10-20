@@ -158,6 +158,22 @@ class ApiBootstrapTest {
     }
 
     @Test @Transactional
+    void hostingCookiesCannotAuthenticateWithoutExplicitBearer() throws Exception {
+        accounts();
+        String token = login("SALES");
+        var cookies = new jakarta.servlet.http.Cookie[]{
+                new jakarta.servlet.http.Cookie("JSESSIONID", token),
+                new jakarta.servlet.http.Cookie("accessToken", token),
+                new jakarta.servlet.http.Cookie("_vercel_jwt", "hosting-fixture")};
+        mvc.perform(get("/api/v1/auth/session").cookie(cookies))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/logout").cookie(cookies))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/session").cookie(cookies).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test @Transactional
     void logoutAndExpiryInvalidateBearerSessions() throws Exception {
         accounts();
         String token = login("MANAGER");

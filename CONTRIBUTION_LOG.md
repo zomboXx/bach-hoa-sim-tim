@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:47:00
+
+Mở PR #75 và tạo Vercel Preview dùng database riêng theo phê duyệt. Kiểm thử HTTPS phát hiện request auth bỏ cookie bảo vệ hosting nên bị chặn trước API; sửa sang cookie cùng domain, giữ nguyên Bearer và không tắt Deployment Protection. Bổ sung hồi quy browser cho login/logout qua cookie hosting và server từ chối cookie thiếu Bearer. ApiBootstrapTest đạt 11/11; ca browser cookie hosting đạt. Preview xác nhận health UP, login và giỏ 200, cookie thiếu Bearer bị 401; V17 chỉ có trên database Preview, production vẫn V16. CI ban đầu đạt 7/7 job; kết quả cuối và link Preview được ghi tại PR.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/src/adapter.ts`: +4 -3
+- `apps/web/tests/api-auth.spec.ts`: +26 -0
+- `contracts/POS_SHARED_CART.md`: +3 -1
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +16 -0
+
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-20 19:05:19
 
 Bổ sung camera quét mã sản phẩm và giỏ POS dùng chung cho các thiết bị đăng nhập cùng nhân viên/cửa hàng theo yêu cầu ngày 20/10/2026. Flyway V17 lưu giỏ/dòng/receipt thao tác; server tuần tự hóa delta và checkout, chống retry cộng hàng hoặc thanh toán hai lần. Camera giải mã tại thiết bị, dừng sau mỗi mã để nhân viên xác nhận quét tiếp. Bổ sung bốn ảnh Code 128 có tên sản phẩm, ghi rõ demo/API và giải thích hai bộ seed bảy/hai sản phẩm. Chuẩn bị CI live và contract bổ sung; Project Owner đồng ý push nhánh, mở PR và tạo Preview HTTPS.

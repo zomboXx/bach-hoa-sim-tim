@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Cho phép cookie bảo vệ hosting đi cùng request đăng nhập/đăng xuất trong cùng domain để Vercel Preview dùng được; API vẫn chỉ xác thực bằng Bearer, có hồi quy từ chối cookie thiếu Bearer.
+
 - Thêm camera quét mã sản phẩm bằng ZXing và giỏ POS chung theo nhân viên/cửa hàng trên nhiều thiết bị; giữ mã dưới dạng chuỗi, retry cùng mã thao tác, kiểm phiên bản và khóa transaction khi checkout. Flyway V17 lưu giỏ/dòng/receipt thao tác; bổ sung mã táo demo, bốn ảnh Code 128 có tên sản phẩm, hướng dẫn phân biệt dữ liệu demo/API và kiểm thử camera, concurrency, quyền, rollback và live hai thiết bị.
 
 ### Added

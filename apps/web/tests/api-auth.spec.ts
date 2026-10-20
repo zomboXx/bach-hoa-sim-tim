@@ -248,6 +248,32 @@ async function withFetch(stub: typeof fetch, check: () => Promise<void>) {
     globalThis.fetch = original;
   }
 }
+
+test("hosting protection cookie reaches login and logout without replacing Bearer", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.addCookies([{ name: "hosting-protection", value: "fixture", url: baseURL! }]);
+  const received: string[] = [];
+  await page.route("**/api/v1/auth/login", async (route) => {
+    expect(route.request().headers().cookie).toContain("hosting-protection=fixture");
+    received.push("login");
+    await fulfillJson(route, 200, grant());
+  });
+  await page.route("**/api/v1/auth/logout", async (route) => {
+    expect(route.request().headers().cookie).toContain("hosting-protection=fixture");
+    expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
+    received.push("logout");
+    await route.fulfill({ status: 204 });
+  });
+  await page.goto("/");
+  await signIn(page);
+  await expect(page.locator("nav")).toBeVisible();
+  await page.getByRole("button", { name: /Đăng xuất/ }).click();
+  await expect(page.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+  expect(received).toEqual(["login", "logout"]);
+});
 const jsonResponse = (body: unknown) =>
   new Response(JSON.stringify(body), {
     headers: { "Content-Type": "application/json" },

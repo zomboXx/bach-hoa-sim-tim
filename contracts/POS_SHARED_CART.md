@@ -45,6 +45,8 @@ Checkout kiểm phiên bản và items, tính giá/tồn/FEFO ở server, tạo 
 
 Camera vật lý trên Android/iPhone và trải nghiệm qua mạng điện thoại vẫn cần người dùng thử trên HTTPS sau khi bản cập nhật được triển khai.
 
+Vercel Preview có lớp bảo vệ hosting dùng cookie cùng domain. Request auth của PWA dùng `credentials: same-origin` để đi qua lớp này; Spring API không dùng cookie để đăng nhập hay cấp quyền, vẫn yêu cầu Bearer trên mọi route bảo vệ. Không bật CORS hoặc cookie session và không tắt Deployment Protection.
+
 ## Bằng chứng local ngày 20/10/2026
 
 Windows, JDK 25 (biên dịch target Java 21), Docker Desktop, PostgreSQL 17.11 disposable:
@@ -53,6 +55,6 @@ Windows, JDK 25 (biên dịch target Java 21), Docker Desktop, PostgreSQL 17.11 
 - Camera giải mã đúng bốn PNG bằng decoder thật và ca từ chối quyền vẫn cho nhập tay: 5/5.
 - Live POS cuối đạt 1/1: hai session desktop/mobile, camera → giỏ máy khác quan sát sau 1.290 ms (gồm thời gian mở camera), nhập tay, concurrent delta, lost-response/retry và checkout. SQL oracle: receipt +0, invoice +1, payment +1, SALE movement +1, revenue +112.500 VND, balance mismatch 0.
 - Live GAP-05 chạy lại sau thay đổi checkout đạt 2/2, gồm HTTP 502 sau commit và retry cùng key/payload. Oracle: invoice/payment/SALE movement mỗi loại +2 cho hai lượt bán, revenue +80.000 VND, balance mismatch 0.
-- CI được cấu hình thêm suite `pos`; chưa có bằng chứng GitHub Actions cho nhánh chưa push.
+- CI đã đạt cả bảy job tại commit `5795210` trên [PR #75](https://github.com/zomboXx/bach-hoa-sim-tim/pull/75), gồm suite `pos` trên PostgreSQL sạch. Commit sửa tương thích lớp bảo vệ Preview cần lượt CI mới; bằng chứng cuối ghi tại PR.
 
 Chạy lại bộ ảnh bằng `python scripts/generate-demo-barcodes.py` (Pillow và ReportLab là công cụ sinh ảnh, không thuộc dependency production). Các PNG/SVG đã nằm trong `apps/web/public/demo-barcodes/`; ảnh được kiểm chứng đọc đúng chuỗi, không đổi checksum hay ép mã sang số.
