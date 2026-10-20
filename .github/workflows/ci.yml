@@ -76,9 +76,13 @@ jobs:
       - run: ./mvnw verify
 
   qa02-live:
-    name: QA-02 live receive-sale-report
+    name: QA-02 live ${{ matrix.suite }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [gap05, gap06]
     env:
       POSTGRES_PASSWORD: qa02-db-${{ github.run_id }}-${{ github.run_attempt }}
       SIMTIM_DEMO_PASSWORD: qa02-user-${{ github.run_id }}-${{ github.run_attempt }}
@@ -113,12 +117,12 @@ jobs:
             psql -U simtim -d simtim -At -F '|' \
             < scripts/qa02-gap06-db-summary.sql)
           echo "QA02_DB_BASELINE=$baseline" >> "$GITHUB_ENV"
-      - name: Run live receive-sale-report flow
+      - name: Run live QA-02 flow
         working-directory: apps/web
         env:
           API_PROXY_TARGET: http://127.0.0.1:8080
           SIMTIM_LIVE_PASSWORD: ${{ env.SIMTIM_DEMO_PASSWORD }}
-        run: npm run test:e2e:live:qa02-gap06
+        run: npm run test:e2e:live:qa02-${{ matrix.suite }}
       - name: Verify independent database oracle
         shell: bash
         run: |
@@ -129,14 +133,21 @@ jobs:
             <<< "$QA02_DB_BASELINE"
           IFS='|' read -r after_receipts after_invoices after_payments after_sale_movements mismatches after_revenue \
             <<< "$after"
-          test $((after_receipts - before_receipts)) -eq 1
-          test $((after_invoices - before_invoices)) -eq 1
-          test $((after_payments - before_payments)) -eq 1
-          test $((after_sale_movements - before_sale_movements)) -eq 1
+          if [ "${{ matrix.suite }}" = gap05 ]; then
+            expected_receipts=0
+            expected_sales=2
+          else
+            expected_receipts=1
+            expected_sales=1
+          fi
+          test $((after_receipts - before_receipts)) -eq "$expected_receipts"
+          test $((after_invoices - before_invoices)) -eq "$expected_sales"
+          test $((after_payments - before_payments)) -eq "$expected_sales"
+          test $((after_sale_movements - before_sale_movements)) -eq "$expected_sales"
           test $((after_revenue - before_revenue)) -gt 0
           test "$mismatches" -eq 0
-          printf 'QA-02 GAP-06 DB oracle: receipt_delta=1; invoice_delta=1; payment_delta=1; sale_movement_delta=1; revenue_delta=%s; balance_mismatches=0\n' \
-            "$((after_revenue - before_revenue))"
+          printf 'QA-02 %s DB oracle: receipt_delta=%s; invoice_delta=%s; payment_delta=%s; sale_movement_delta=%s; revenue_delta=%s; balance_mismatches=0\n' \
+            '${{ matrix.suite }}' "$expected_receipts" "$expected_sales" "$expected_sales" "$expected_sales" "$((after_revenue - before_revenue))"
       - name: Show logs on failure
         if: failure()
         run: docker compose -f infra/compose.demo.yml logs --tail=120 postgres api

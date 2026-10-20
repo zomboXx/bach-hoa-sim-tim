@@ -1,5 +1,13 @@
 # QA-04 — Báo cáo kiểm thử Regression, Bảo mật quyền và Backup/Restore
 
+> **Cập nhật 20/10/2026:** các dòng 3 Fail/3 Blocked ở báo cáo lịch sử ngày
+> 15/10 đã được kiểm lại trên mã tích hợp; xem
+> [QA-02 closeout](QA-02-closeout-2026-10-20.md). Bộ QA-04 có 9 ca provider
+> trong root gate; chứng cứ Compose backup/restore ngày 19/10 vẫn ở lượt kiểm
+> tra bên dưới. Root gate trên `main` `f2db3c6` đạt web 34/34, consumer
+> 57/57 và backend 182/182 (QA-04 9/9); không suy ra TV4 đã review lượt
+> tích hợp.
+
 ## Lượt kiểm tra tích hợp ngày 19/10/2026
 
 Phần báo cáo bên dưới là kết quả lịch sử của TV2 trước khi TRN-02/03 tích hợp. Lượt bổ sung của TV1 ghép mã TRN-01/02/03 với QA-04 và đã tích hợp qua [PR #70](https://github.com/zomboXx/bach-hoa-sim-tim/pull/70) vào `main` tại `4038abf` ngày 19/10/2026. Chưa có bằng chứng TV4 đã review lượt tích hợp này; Issue #57 còn mở để xác nhận nghiệm thu.

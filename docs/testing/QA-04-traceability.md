@@ -1,5 +1,11 @@
 # QA-04 — Ma trận truy vết yêu cầu, kiểm thử và bằng chứng
 
+> **Cập nhật 20/10/2026:** sáu dòng S2-GAP-01…06 trong bảng dưới đã được
+> kiểm tra lại trên mã tích hợp và chuyển thành Pass; xem
+> [QA-02 closeout](QA-02-closeout-2026-10-20.md). Bảng ngày 15/10 là
+> ảnh chụp lịch sử. Bảng thực tế có **28 dòng** (22 Pass, 3 Fail, 3 Blocked),
+> thay vì tổng 27 ghi nhầm ở tiêu đề cũ; hiện tại **28/28 có bằng chứng Pass**.
+
 - Trạng thái: **21 Pass, 3 Fail, 3 Blocked (Tổng cộng 27 ca truy vết)**
 - Ngày cập nhật: 2026-10-15
 - Chủ trì: TV2 — Nguyễn Văn Trung (`@nguyentrung01ute-ui`)

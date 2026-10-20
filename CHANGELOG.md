@@ -39,6 +39,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ### Changed
 
+- QA-02: chạy lại sáu GAP trên mã tích hợp với browser/API/PostgreSQL và oracle độc lập; giữ kết quả 07/10 làm lịch sử, cập nhật hồ sơ hiện hành và chạy cả GAP-05 lẫn GAP-06 trong CI.
 - Tách expected-red live sales S2-GAP-05 khỏi lệnh live FE-02 mặc định và thêm runner riêng dùng API/PostgreSQL disposable; cập nhật checkpoint #34 theo owner/reviewer cùng thứ tự triển khai TV1 đã chốt mà không đổi kết quả QA lịch sử.
 - Project Owner điều chỉnh tiếp TRN-02 ngày 14/10/2026: TV3 Thi và TV4 Chiến đồng sở hữu, TV1 review luật chấm, TV2 review contract; giữ nguyên tiêu chí và phụ thuộc.
 - Điều chỉnh phân công Sprint 4 ngày 14/10/2026 sau khi TV2 và TV3 nhận chia tải TV4: TV3 chủ trì TRN-01 và phần PWA TRN-02, TV2 chủ trì QA-04; TV4 tập trung QA-03/#34 và kiểm thử các điểm giao, giữ nguyên phạm vi, ưu tiên và phụ thuộc.

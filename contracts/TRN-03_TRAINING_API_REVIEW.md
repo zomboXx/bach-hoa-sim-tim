@@ -1,5 +1,7 @@
 # TRN-03 — Contract lưu phiên và kết quả đào tạo
 
+**Trạng thái hiện hành 20/10/2026:** provider, Flyway V15, demo seed và PWA adapter đã tích hợp vào `main` qua [PR #69](https://github.com/zomboXx/bach-hoa-sim-tim/pull/69). `TrainingApiTest` có 7 ca PostgreSQL kiểm chấm điểm server, quyền xem lịch sử theo gán cửa hàng hiện hành, retry/concurrency, rollback và cách ly bảng vận hành; browser consumer test và lượt Compose thật nằm trong [báo cáo QA-04](../docs/testing/QA-04-test-report.md). [CI `main` run 39365624618](https://github.com/zomboXx/bach-hoa-sim-tim/actions/runs/39365624618) đạt 5/5 job. Chưa có bằng chứng TV2 đã gửi review kỹ thuật; câu trạng thái ngày 18/10 bên dưới là ảnh chụp trước khi tích hợp, không còn mô tả vị trí code hiện tại.
+
 **Status:** Project Owner duyệt phạm vi ngày 18/10/2026 tại [PR #61](https://github.com/zomboXx/bach-hoa-sim-tim/pull/61#issuecomment-6249679679); còn chờ TV2 duyệt kỹ thuật head mới và TV3/TV4 chốt event/choice map ở TRN-02. Provider/migration đang triển khai trên nhánh riêng, chưa tích hợp vào `main`.
 
 **Owner:** TV1 — Nguyễn Đức Phát. **Reviewer:** TV2 — Nguyễn Văn Trung; TV3/TV4 kiểm consumer và luật kịch bản.

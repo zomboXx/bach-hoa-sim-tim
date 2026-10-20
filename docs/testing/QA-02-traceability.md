@@ -1,5 +1,9 @@
 # QA-02 — Ma trận backlog–contract–test–evidence
 
+> **Kết quả chạy lại 20/10/2026:** sáu ngoại lệ bên dưới đã đạt trên mã tích hợp;
+> hiện là **23/23 Pass**. Xem [bằng chứng đóng GAP](QA-02-closeout-2026-10-20.md).
+> Bảng và số liệu ngày 07/10 phía dưới được giữ nguyên như ảnh chụp lịch sử.
+
 - Trạng thái: **17 Pass, 3 Fail, 3 Blocked**
 - Ngày cập nhật: 2026-10-07
 - Source test sau independent review: `840a82a1101cbef5351407d498542c74b8ae237d`

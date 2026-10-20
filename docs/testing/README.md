@@ -27,8 +27,9 @@ Checkpoint hiện tại ngày 29/09/2026: TV4 đã chạy source `5f0b14c` có c
 6. [Bằng chứng GAP-06 ngày 13/10](QA-02-gap06-evidence-2026-10-13.md): live nhận–bán–báo cáo, DB oracle trước/sau, root gate và điều kiện cập nhật #34 sau merge.
 7. [Bằng chứng sửa review sales ngày 17/10](QA-02-sales-retry-evidence-2026-10-17.md): quote hiển thị trước checkout, retry cùng idempotency key và oracle invoice/payment/SALE movement độc lập.
 8. [Bằng chứng retry HTTP 502 ngày 18/10](QA-02-sales-502-evidence-2026-10-18.md): giữ operation khi kết quả checkout chưa chắc chắn, browser/live replay cùng key và DB oracle không ghi trùng.
+9. [Kết quả chạy lại trên mã tích hợp ngày 20/10](QA-02-closeout-2026-10-20.md): đối chiếu từng GAP, live browser và oracle PostgreSQL; kết quả hiện hành 23/23 Pass.
 
-Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 17.11 disposable và đã bắt lỗi query tồn REP-01 mà mock test bỏ sót. Bản sửa `840a82a` buộc dùng Testcontainers và tăng oracle revenue thành hóa đơn hai dòng; PR #33 đã merge vào `main`. Toàn QA-02 vẫn chưa có bằng chứng nghiệm thu P0 đầy đủ: ma trận còn 3 Fail và 3 Blocked về checkout price/replay, unit precision, invoice privacy và live PWA sales E2E.
+Checkpoint ngày 07/10/2026 (lịch sử): suite QA xuyên module đạt 5/5 trên PostgreSQL 17.11 disposable và đã bắt lỗi query tồn REP-01 mà mock test bỏ sót. Bản sửa `840a82a` buộc dùng Testcontainers và tăng oracle revenue thành hóa đơn hai dòng; PR #33 đã merge vào `main`. Sáu ngoại lệ khi đó gồm 3 Fail và 3 Blocked; kết quả sau khi sửa nằm ở bản chạy lại ngày 20/10 phía trên.
 
 ## QA-04 — Regression, bảo mật quyền và backup/restore
 
@@ -36,12 +37,12 @@ Checkpoint ngày 07/10/2026: suite QA xuyên module đạt 5/5 trên PostgreSQL 
 
 1. [Test plan](QA-04-test-plan.md): mục tiêu, phạm vi kiểm tra các sprint trước, ma trận quyền và kiểm chứng sao lưu/khôi phục trên môi trường sạch.
 2. [Ma trận quyền](QA-04-authorize.md): 4 vai trò SALES, STOCK, MANAGER, ADMIN, nguyên tắc deny-by-default, che giấu giá vốn và cô lập phạm vi cửa hàng.
-3. [Ma trận truy vết](QA-04-traceability.md): requirement/NFR → contract → automated test → oracle/actual → Pass/Fail/Blocked (21 Pass, 3 Fail, 3 Blocked).
+3. [Ma trận truy vết](QA-04-traceability.md): requirement/NFR → contract → automated test → oracle/actual → Pass/Fail/Blocked; ảnh chụp 15/10 có 22 Pass, 3 Fail, 3 Blocked trong 28 dòng, sáu ngoại lệ được cập nhật trong bản QA-02 ngày 20/10.
 4. [Test report](QA-04-test-report.md): lệnh, runtime, 9/9 tests Pass của `Qa04RegressionSecurityTest` trên mã tích hợp, kết quả backup/restore sạch và đối soát trung thực ngoại lệ #34.
 
 Checkpoint ngày 15/10/2026: TV2 đã chạy suite QA-04 và đối soát CSDL độc lập trên PostgreSQL 17 Testcontainers; khôi phục CSDL demo sạch thành công; đối soát đầy đủ 6 GAP của Issue #34.
 
-Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. PR #70 đã tích hợp, root gate và CI trên `main` đạt; kết luận QA cuối còn chờ TV4 kiểm bằng chứng.
+Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi Compose ba dịch vụ, ca đào tạo server, đối soát vận hành và backup/restore bằng script trên project riêng. PR #70 đã tích hợp, root gate và CI trên `main` đạt; chưa có bằng chứng TV4 đã review lượt tích hợp. Sáu ngoại lệ #34 được chạy lại riêng ngày 20/10.
 
 ## DOC-01 — Truy vết bản cuối kỳ
 
