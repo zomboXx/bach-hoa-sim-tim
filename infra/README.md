@@ -2,6 +2,8 @@
 
 Chạy các lệnh dưới đây tại thư mục gốc repository. Cần Docker Engine/Desktop đang chạy và Compose plugin. Cấu hình này chỉ dành cho máy local: web/API chỉ mở trên `127.0.0.1`, PostgreSQL không mở cổng ra host và dữ liệu nằm trong named volume riêng `simtim-demo_demo_postgres_data`.
 
+Nếu chỉ muốn dùng thử trực tuyến, mở [bản PWA trên Vercel](https://bach-hoa-sim-tim-demo.vercel.app/) theo [README gốc](../README.md#bản-demo-trực-tuyến). Bản đó dùng PostgreSQL Neon riêng; dữ liệu và mật khẩu demo không đồng bộ với Compose local.
+
 ## 1. Chuẩn bị và khởi động
 
 ```powershell
@@ -25,11 +27,11 @@ Mở **http://127.0.0.1:5174**. Trang web được build ở API mode và Nginx 
 
 Đăng nhập với `manager` hoặc `stock` và mật khẩu `SIMTIM_DEMO_PASSWORD`; `sales` và `admin` là hai tài khoản server khác. Mã tổ chức `SIMTIM`, cửa hàng `MAIN` đã nằm trong bản build web. Tài khoản `NV001`/`demo123` thuộc demo mode không dùng ở đây.
 
-1. Vào **Tồn kho & lô hàng**: kiểm tra dữ liệu seed gồm gạo và táo, lô táo hết hạn ngày 31/12/2026. Xem tồn khả dụng, hạn dùng và biến động nguồn.
+1. Vào **Tồn kho & lô hàng**: kiểm tra mười sản phẩm mẫu đã seed, lô, tồn khả dụng, hạn dùng và biến động nguồn.
 2. Với `stock` hoặc `manager`, vào **Nhận hàng**, chọn sản phẩm và nhà cung cấp còn hoạt động, nhập số lượng/giá/hạn hợp lệ, xác nhận phiếu. Đọc lại phiếu và tồn để kiểm tra lượng nhận được ghi một lần.
 3. Với `manager` hoặc `admin`, mở **Báo cáo**. Báo cáo này đọc dữ liệu server; doanh thu ban đầu có thể bằng 0 cho tới khi checkout qua API.
 
-Không dùng màn hình **Bán hàng** của web API mode làm bằng chứng checkout server: adapter bán hàng/hóa đơn chưa được nối. Nếu cần tự thử giao dịch thật, dùng mục tiếp theo. Kết quả không tự sửa các mục Fail/Blocked trong [QA-02](../docs/testing/QA-02-test-report.md).
+Màn hình **Bán hàng** ở API mode đã nối quote → checkout CASH → hóa đơn trên server; có thể dùng để thử cùng một database Compose. [QA-02 closeout](../docs/testing/QA-02-closeout-2026-10-20.md) ghi bằng chứng xử lý sáu GAP; [báo cáo ngày 07/10](../docs/testing/QA-02-test-report.md) được giữ làm lịch sử.
 
 ## 3. Thử quote và checkout tiền mặt qua API
 
@@ -55,12 +57,15 @@ $quote = Invoke-RestMethod "$base/api/v1/sales/quote" -Method Post -Headers $hea
 $quote | Format-List subtotal, discountTotal, grandTotal
 ```
 
-Nếu muốn tiếp tục, nhập số tiền khách trả bằng VND nguyên, ít nhất bằng `grandTotal` vừa thấy. API hiện chưa có `expectedTotal` để từ chối thay đổi giá giữa quote và checkout; kiểm tra lại số tiền ngay trước khi gửi. Không gửi lại checkout nếu response bị mất: API chưa có khóa idempotency cho giao dịch bán.
+Nếu muốn tiếp tục, nhập số tiền khách trả bằng VND nguyên, ít nhất bằng `grandTotal` vừa thấy. Gửi `expectedTotal` để API từ chối nếu giá đổi sau quote. Tạo một `Idempotency-Key` cho thao tác checkout; nếu mất phản hồi, tra hóa đơn hoặc gửi lại **cùng key và payload**, không tạo key mới cho cùng lượt bán.
 
 ```powershell
 $cash = [long]::Parse((Read-Host 'Tiền mặt khách trả (VND)'))
-$checkoutBody = @{ items = $items; cashAmount = $cash } | ConvertTo-Json -Depth 5
-$invoice = Invoke-RestMethod "$base/api/v1/sales/checkout" -Method Post -Headers $headers -ContentType 'application/json' -Body $checkoutBody
+$checkoutKey = [guid]::NewGuid().ToString()
+$checkoutBody = @{ items = $items; expectedTotal = [long]$quote.grandTotal; cashAmount = $cash } | ConvertTo-Json -Depth 5
+$checkoutHeaders = $headers.Clone()
+$checkoutHeaders['Idempotency-Key'] = $checkoutKey
+$invoice = Invoke-RestMethod "$base/api/v1/sales/checkout" -Method Post -Headers $checkoutHeaders -ContentType 'application/json' -Body $checkoutBody
 $invoice | Format-List id, grandTotal, changeAmount
 ```
 

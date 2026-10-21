@@ -1,6 +1,10 @@
 # Bách Hóa Sim Tím
 
-Hệ thống bán hàng và quản lý tồn kho với trải nghiệm đào tạo tách khỏi dữ liệu vận hành. `main` đã tích hợp API nhận hàng, tồn kho, bán hàng tiền mặt, khuyến mãi, báo cáo và PWA. Sprint 2 đã được [nghiệm thu có ngoại lệ](docs/project/SPRINT_2_ACCEPTANCE_2026-10-07.md): gate tự động đạt nhưng [QA-02](docs/testing/QA-02-test-report.md) vẫn còn 3 Fail và 3 Blocked P0. [Sprint 4](docs/project/SPRINT_4_KICKOFF.md) đã mở việc theo [ADR 0004](docs/architecture/adr/0004-training-2d-web.md); các Issue mới chưa phải tính năng đã hoàn tất.
+Hệ thống bán hàng và quản lý tồn kho với trải nghiệm đào tạo tách khỏi dữ liệu vận hành. `main` đã tích hợp API nhận hàng, tồn kho, bán hàng tiền mặt, khuyến mãi, báo cáo, PWA và ca đào tạo 2D. [Báo cáo QA-02 ban đầu](docs/testing/QA-02-test-report.md) ghi 3 Fail, 3 Blocked; [lượt xử lý sáu GAP ngày 20/10](docs/testing/QA-02-closeout-2026-10-20.md) ghi kết quả sau tích hợp. [DOC-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/58) và [REL-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/59) tiếp tục theo dõi hồ sơ và bản phát hành cuối.
+
+## Bản demo trực tuyến
+
+[Mở PWA trên Vercel](https://bach-hoa-sim-tim-demo.vercel.app/). Bản này dùng API mode và PostgreSQL Neon; dữ liệu giao dịch được lưu chung cho những người cùng thử, không đồng bộ với database Compose trên từng máy. Đăng nhập bằng một trong bốn tên tài khoản server `sales`, `stock`, `manager`, `admin` và mật khẩu demo được nhóm cấp riêng; `SIMTIM`/`MAIN` đã được cấu hình sẵn. Không dùng tài khoản demo mode `NV001`/`demo123` tại đây. Khi thử camera hoặc nhập mã, mở [bộ mã vạch mẫu trực tuyến](https://bach-hoa-sim-tim-demo.vercel.app/demo-barcodes/index.html).
 
 ## Bắt đầu nhanh: demo với Docker Compose
 
