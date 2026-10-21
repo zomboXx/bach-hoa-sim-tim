@@ -1,6 +1,6 @@
 # Catalog CRUD API
 
-Trạng thái: Working trên nhánh `feature/catalog-crud-completion`, xuất phát từ `main` tại `0aeb514`. Đây là mô tả phần backend theo yêu cầu hoàn thiện CRUD ngày 21/10/2026; chưa phải xác nhận nghiệm thu hay tích hợp `main`. Giao diện web không thuộc thay đổi này.
+Trạng thái: Working trên nhánh `feature/catalog-crud-completion`, xuất phát từ `main` tại `0aeb514`. Backend và giao diện API mode cho CRUD danh mục được hoàn thiện trên nhánh này; chưa phải xác nhận nghiệm thu hay tích hợp `main`.
 
 ## Xác thực và phạm vi
 

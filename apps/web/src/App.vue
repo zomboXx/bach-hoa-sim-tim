@@ -22,6 +22,8 @@ import {
   type User,
 } from "./api";
 import { authAdapter, routesFor, type AuthUser } from "./adapter";
+import CatalogWorkspace from "./modules/catalog/CatalogWorkspace.vue";
+import { ApiCatalogAdapter } from "./modules/catalog/api-catalog-adapter";
 import InventoryWorkspace from "./modules/inventory/presentation/InventoryWorkspace.vue";
 import StocktakeWorkspace from "./modules/inventory/presentation/StocktakeWorkspace.vue";
 import { ApiInventoryAdapter } from "./modules/inventory/infrastructure/api-inventory-adapter";
@@ -170,6 +172,7 @@ const inventoryAdapter: InventoryPort = isDemoMode
     )
   : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
 const promotionAdapter = new ApiPromotionAdapter((path, init) => authAdapter.fetchApi(path, init));
+const catalogAdapter = new ApiCatalogAdapter((path, init) => authAdapter.fetchApi(path, init));
 const saleAdapter: SalePort = isDemoMode
   ? new DemoSaleAdapter(
       () => state.value!,
@@ -444,8 +447,8 @@ function go(id: string) {
   if (id === "invoices") {
     void loadInvoices();
   }
-  if (id === "sale" || id === "products") {
-    if (id === "sale") restorePendingCheckout();
+  if (id === "sale") {
+    restorePendingCheckout();
     void loadSaleProducts();
   }
   if (id === "training") void loadTrainingHistory();
@@ -1748,6 +1751,14 @@ async function approveCount(record: StocktakeRecord) {
             </section>
           </div></template
         >
+
+        <CatalogWorkspace
+          v-else-if="!isDemoMode && (route === 'products' || route === 'suppliers')"
+          :entry="route === 'products' ? 'products' : 'suppliers'"
+          :adapter="catalogAdapter"
+          :can-write="!!user.session?.permissions.includes('catalog.write')"
+          :online="connected"
+        />
 
         <template v-else-if="route === 'products'"
           ><div class="page-head">

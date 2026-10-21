@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Hoàn thiện giao diện CRUD catalog ở API mode: quản lý sản phẩm, danh mục, đơn vị tính, nhà cung cấp và mã vạch từ màn hình hàng hóa; hiển thị quyền chỉ đọc, lỗi API và trạng thái mạng. Bổ sung Playwright kiểm tra tạo/sửa/xóa, xung đột dữ liệu, quyền và retry.
 - Hoàn thiện CRUD backend danh mục: thêm GET/PUT barcode theo sản phẩm, kiểm tra `precisionScale` từ 0 đến 3, chặn vòng lặp danh mục cha–con và trả lỗi `409` có cấu trúc khi vi phạm ràng buộc dữ liệu hoặc cập nhật đồng thời. Giữ dữ liệu đang được tham chiếu khi xóa bị từ chối; bổ sung kiểm thử API thật cho CRUD đơn vị tính/barcode, quyền, rollback và các trường hợp không tồn tại.
 - Viết lại README gốc theo luồng dùng thử trực tuyến, chạy Compose và kiểm thử local; chuyển chi tiết nghiệp vụ và lịch sử sang tài liệu chuyên biệt để người mới dễ bắt đầu.
 - Ghi URL bản PWA thử nghiệm trên Vercel và bộ mã vạch trực tuyến vào README; nêu rõ dữ liệu deploy dùng chung trên Neon, tách khỏi Compose local, và tài khoản demo server dùng mật khẩu cấp riêng. Cập nhật hướng dẫn Compose theo checkout API/idempotency và kết quả QA-02 đã tích hợp.
