@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -79,6 +80,239 @@ class CatalogApiTest {
     private static final String PASSWORD = "catalog-fixture-password-123";
     private String stockToken;
     private String salesToken;
+    private final List<String> crudFixtures = new ArrayList<>();
+
+    @AfterEach
+    void removeCrudFixtures() {
+        for (int i = crudFixtures.size() - 1; i >= 0; i--) {
+            var response = call(crudFixtures.get(i), HttpMethod.DELETE, null);
+            assertThat(response.getStatusCode().value()).isIn(204, 404);
+        }
+        crudFixtures.clear();
+    }
+
+    private ResponseEntity<Map> call(String path, HttpMethod method, Object body) {
+        return rest.exchange(path, method, new HttpEntity<>(body, orgHeaders()), Map.class);
+    }
+
+    private String createFixture(String path, Object body) {
+        var response = call(path, HttpMethod.POST, body);
+        assertThat(response.getStatusCode().value()).isEqualTo(201);
+        String url = path + "/" + response.getBody().get("id");
+        crudFixtures.add(url);
+        return url;
+    }
+
+    private String createProductFixture() {
+        return createFixture("/api/v1/products", Map.of(
+                "categoryId", CATEGORY_ID, "baseUnitId", UNIT_EA_ID,
+                "sku", "CRUD-" + UUID.randomUUID(), "name", "CRUD fixture", "tracksExpiry", false));
+    }
+
+    @Test
+    void unitsSupportFullCrudAndPersistChanges() {
+        String path = createFixture("/api/v1/units",
+                Map.of("code", "CRUD-UNIT", "name", "Original", "precisionScale", 0));
+        var list = rest.exchange("/api/v1/units", HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), List.class);
+        assertThat(list.getStatusCode().value()).isEqualTo(200);
+        assertThat(list.getBody()).contains(call(path, HttpMethod.GET, null).getBody());
+        assertThat(call(path, HttpMethod.PUT,
+                Map.of("code", "CRUD-EDIT", "name", "Edited", "precisionScale", 3))
+                .getStatusCode().value()).isEqualTo(200);
+        assertThat(call(path, HttpMethod.GET, null).getBody())
+                .containsEntry("code", "CRUD-EDIT").containsEntry("name", "Edited")
+                .containsEntry("precisionScale", 3);
+        assertThat(call(path, HttpMethod.DELETE, null).getStatusCode().value()).isEqualTo(204);
+        assertThat(call(path, HttpMethod.GET, null).getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void unitValidationAndDuplicatesNeverChangeStoredData() {
+        String path = createFixture("/api/v1/units",
+                Map.of("code", "CRUD-VALID", "name", "Original", "precisionScale", 0));
+        var before = call(path, HttpMethod.GET, null).getBody();
+        for (int scale : List.of(-1, 4)) {
+            var body = Map.of("code", "CRUD-INVALID", "name", "Invalid", "precisionScale", scale);
+            for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT)) {
+                var response = call(method == HttpMethod.POST ? "/api/v1/units" : path, method, body);
+                assertThat(response.getStatusCode().value()).isEqualTo(422);
+                assertThat(((Map<?, ?>) response.getBody().get("errors")).get("precisionScale")).isNotNull();
+            }
+        }
+        for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT)) {
+            assertThat(call(method == HttpMethod.POST ? "/api/v1/units" : path, method,
+                    Map.of("code", "ea", "name", "Duplicate", "precisionScale", 0))
+                    .getStatusCode().value()).isEqualTo(409);
+        }
+        assertThat(call(path, HttpMethod.GET, null).getBody()).isEqualTo(before);
+        assertThat(jdbc.queryForObject("select count(*) from catalog.units where code='CRUD-INVALID'", Long.class))
+                .isZero();
+    }
+
+    @Test
+    void barcodesSupportFullCrudAndSearchUsesUpdatedValue() {
+        String product = createProductFixture();
+        String path = createFixture(product + "/barcodes", Map.of("barcode", "000-CRUD-OLD", "isPrimary", true));
+        assertThat(call(path, HttpMethod.GET, null).getBody()).containsEntry("barcode", "000-CRUD-OLD");
+        var list = rest.exchange(product + "/barcodes", HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), List.class);
+        assertThat(list.getBody()).hasSize(1).contains(call(path, HttpMethod.GET, null).getBody());
+        var body = Map.of("barcode", "000-CRUD-NEW", "isPrimary", false);
+        // Repeating the same update must not report a duplicate of itself.
+        for (int i = 0; i < 2; i++) {
+            assertThat(call(path, HttpMethod.PUT, body).getStatusCode().value()).isEqualTo(200);
+        }
+        assertThat(call(path, HttpMethod.GET, null).getBody())
+                .containsEntry("barcode", "000-CRUD-NEW").containsEntry("isPrimary", false);
+        var oldSearch = rest.exchange("/api/v1/products/search?barcode=000-CRUD-OLD", HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), List.class);
+        var newSearch = rest.exchange("/api/v1/products/search?barcode=000-CRUD-NEW", HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), List.class);
+        assertThat(oldSearch.getBody()).isEmpty();
+        assertThat(newSearch.getBody()).hasSize(1);
+        assertThat(((Map<?, ?>) newSearch.getBody().get(0)).get("id"))
+                .isEqualTo(product.substring(product.lastIndexOf('/') + 1));
+        assertThat(call(path, HttpMethod.DELETE, null).getStatusCode().value()).isEqualTo(204);
+        assertThat(call(path, HttpMethod.GET, null).getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    void barcodeDuplicateAndPrimaryConflictsRollback() {
+        String product = createProductFixture();
+        String primary = createFixture(product + "/barcodes", Map.of("barcode", "CRUD-PRIMARY", "isPrimary", true));
+        String secondary = createFixture(product + "/barcodes", Map.of("barcode", "CRUD-SECONDARY", "isPrimary", false));
+        var before = call(secondary, HttpMethod.GET, null).getBody();
+        assertThat(call(secondary, HttpMethod.PUT, Map.of("barcode", "8930000000001", "isPrimary", false))
+                .getStatusCode().value()).isEqualTo(409);
+        for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT)) {
+            var response = call(method == HttpMethod.POST ? product + "/barcodes" : secondary,
+                    method, Map.of("barcode", "CRUD-ANOTHER-PRIMARY", "isPrimary", true));
+            assertThat(response.getStatusCode().value()).isEqualTo(409);
+            assertThat(response.getBody()).containsEntry("code", "CATALOG_CONSTRAINT_CONFLICT");
+        }
+        assertThat(call(secondary, HttpMethod.GET, null).getBody()).isEqualTo(before);
+        assertThat(call(primary, HttpMethod.GET, null).getBody()).containsEntry("isPrimary", true);
+        var list = rest.exchange(product + "/barcodes", HttpMethod.GET,
+                new HttpEntity<>(orgHeaders()), List.class);
+        assertThat(list.getBody()).hasSize(2);
+        // Explicitly demote the old primary before promoting another barcode.
+        assertThat(call(primary, HttpMethod.PUT, Map.of("barcode", "CRUD-PRIMARY", "isPrimary", false))
+                .getStatusCode().value()).isEqualTo(200);
+        assertThat(call(secondary, HttpMethod.PUT, Map.of("barcode", "CRUD-SECONDARY", "isPrimary", true))
+                .getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void barcodeWritesEnforcePermissionsScopeOwnershipAndValidation() {
+        String product = createProductFixture();
+        String path = createFixture(product + "/barcodes", Map.of("barcode", "CRUD-SECURE", "isPrimary", false));
+        var body = Map.of("barcode", "CRUD-REJECTED", "isPrimary", false);
+        var before = call(path, HttpMethod.GET, null).getBody();
+        assertThat(rest.exchange(path, HttpMethod.GET, new HttpEntity<>(sessionHeaders(salesToken)), Map.class)
+                .getStatusCode().value()).isEqualTo(200);
+        for (HttpMethod method : List.of(HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)) {
+            assertThat(rest.exchange(path, method, new HttpEntity<>(body, scopeHeaders()), Map.class)
+                    .getStatusCode().value()).isEqualTo(401);
+            var spoofed = orgHeaders();
+            spoofed.set("X-Organization-Id", UUID.randomUUID().toString());
+            assertThat(rest.exchange(path, method, new HttpEntity<>(body, spoofed), Map.class)
+                    .getStatusCode().value()).isEqualTo(403);
+            String wrongProduct = "/api/v1/products/" + PRODUCT_RICE_ID + "/barcodes/"
+                    + before.get("id");
+            assertThat(call(wrongProduct, method, body).getStatusCode().value()).isEqualTo(409);
+        }
+        for (HttpMethod method : List.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)) {
+            String target = method == HttpMethod.POST ? product + "/barcodes" : path;
+            assertThat(rest.exchange(target, method, new HttpEntity<>(body, sessionHeaders(salesToken)), Map.class)
+                    .getStatusCode().value()).isEqualTo(403);
+        }
+        for (String invalid : List.of(" ", "x".repeat(101))) {
+            assertThat(call(path, HttpMethod.PUT, Map.of("barcode", invalid, "isPrimary", false))
+                    .getStatusCode().value()).isEqualTo(422);
+        }
+        assertThat(call(path, HttpMethod.GET, null).getBody()).isEqualTo(before);
+    }
+
+    @Test
+    void missingCrudTargetsReturn404() {
+        for (String resource : List.of("categories", "units", "products", "suppliers")) {
+            String path = "/api/v1/" + resource + "/" + UUID.randomUUID();
+            Object body = resource.equals("products")
+                    ? Map.of("sku", "MISSING", "name", "Missing", "categoryId", CATEGORY_ID, "baseUnitId", UNIT_EA_ID)
+                    : Map.of("code", "MISSING", "name", "Missing");
+            for (HttpMethod method : List.of(HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)) {
+                assertThat(call(path, method, body).getStatusCode().value()).isEqualTo(404);
+            }
+        }
+        String path = "/api/v1/products/" + PRODUCT_RICE_ID + "/barcodes/" + UUID.randomUUID();
+        for (HttpMethod method : List.of(HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)) {
+            assertThat(call(path, method, Map.of("barcode", "MISSING", "isPrimary", false))
+                    .getStatusCode().value()).isEqualTo(404);
+        }
+    }
+
+    @Test
+    void referencedCatalogDeletesReturnConflictAndKeepData() {
+        // Seed product has a price/barcode; category and unit are used by products.
+        for (String path : List.of("/api/v1/categories/" + CATEGORY_ID,
+                "/api/v1/units/" + UNIT_EA_ID, "/api/v1/products/" + PRODUCT_RICE_ID)) {
+            var before = call(path, HttpMethod.GET, null).getBody();
+            var response = call(path, HttpMethod.DELETE, null);
+            assertThat(response.getStatusCode().value()).isEqualTo(409);
+            assertThat(response.getBody()).containsEntry("code", "CATALOG_CONSTRAINT_CONFLICT");
+            assertThat(response.getBody().get("detail").toString()).doesNotContain("SQL", "constraint [", "org.hibernate");
+            assertThat(call(path, HttpMethod.GET, null).getBody()).isEqualTo(before);
+        }
+        assertThat(jdbc.queryForObject("select count(*) from catalog.product_prices where product_id=?",
+                Long.class, UUID.fromString(PRODUCT_RICE_ID))).isPositive();
+    }
+
+    @Test
+    void referencedSupplierDeleteKeepsReceipt() {
+        String supplier = createFixture("/api/v1/suppliers", Map.of("code", "CRUD-RECEIPT", "name", "Referenced supplier"));
+        UUID supplierId = UUID.fromString(supplier.substring(supplier.lastIndexOf('/') + 1));
+        UUID receiptId = UUID.randomUUID();
+        jdbc.update("""
+                insert into inventory.goods_receipts(id,organization_id,store_id,supplier_id,status,
+                    received_at,confirmed_by,client_operation_id,idempotency_key,payload_hash)
+                values(?,?,?,?,'CONFIRMED',now(),?,?,?,?)
+                """, receiptId, UUID.fromString(ORG_ID), UUID.fromString(STORE_ID), supplierId,
+                fixtureUsers.get(0), UUID.randomUUID(), UUID.randomUUID(), new byte[]{1});
+        try {
+            var response = call(supplier, HttpMethod.DELETE, null);
+            assertThat(response.getStatusCode().value()).isEqualTo(409);
+            assertThat(response.getBody()).containsEntry("code", "CATALOG_CONSTRAINT_CONFLICT");
+            assertThat(call(supplier, HttpMethod.GET, null).getStatusCode().value()).isEqualTo(200);
+            assertThat(jdbc.queryForObject("select supplier_id from inventory.goods_receipts where id=?",
+                    UUID.class, receiptId)).isEqualTo(supplierId);
+        } finally {
+            jdbc.update("delete from inventory.goods_receipts where id=?", receiptId);
+        }
+    }
+
+    @Test
+    void categoryCyclesAndDeletingParentsAreRejected() {
+        String parent = createFixture("/api/v1/categories", Map.of("code", "CRUD-PARENT", "name", "Parent"));
+        String parentId = parent.substring(parent.lastIndexOf('/') + 1);
+        String child = createFixture("/api/v1/categories", Map.of("code", "CRUD-CHILD", "name", "Child", "parentId", parentId));
+        String childId = child.substring(child.lastIndexOf('/') + 1);
+        String grandchild = createFixture("/api/v1/categories",
+                Map.of("code", "CRUD-GRANDCHILD", "name", "Grandchild", "parentId", childId));
+        String grandchildId = grandchild.substring(grandchild.lastIndexOf('/') + 1);
+        for (String invalidParent : List.of(parentId, childId, grandchildId)) {
+            assertThat(call(parent, HttpMethod.PUT,
+                    Map.of("code", "CRUD-PARENT", "name", "Parent", "parentId", invalidParent))
+                    .getStatusCode().value()).isEqualTo(409);
+        }
+        assertThat(call(parent, HttpMethod.GET, null).getBody()).containsEntry("parentId", null);
+        assertThat(call(parent, HttpMethod.DELETE, null).getStatusCode().value()).isEqualTo(409);
+        assertThat(call(child, HttpMethod.GET, null).getBody()).containsEntry("parentId", parentId);
+        // Moving a descendant to the root remains a valid update.
+        assertThat(call(grandchild, HttpMethod.PUT, Map.of("code", "CRUD-GRANDCHILD", "name", "Root"))
+                .getStatusCode().value()).isEqualTo(200);
+        assertThat(call(grandchild, HttpMethod.GET, null).getBody()).containsEntry("parentId", null);
+    }
 
     @BeforeAll
     void authenticateFixtures() {

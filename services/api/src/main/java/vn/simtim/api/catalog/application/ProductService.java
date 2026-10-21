@@ -88,8 +88,6 @@ public class ProductService {
         repo.deleteById(organizationId, id);
     }
 
-
-
     public ProductBarcode addBarcode(UUID organizationId, UUID productId, String barcodeStr, boolean isPrimary) {
         repo.findById(organizationId, productId)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
@@ -100,18 +98,35 @@ public class ProductService {
         return barcodeRepo.save(barcode);
     }
 
+    @Transactional(readOnly = true)
     public List<ProductBarcode> listBarcodes(UUID organizationId, UUID productId) {
         repo.findById(organizationId, productId)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
         return barcodeRepo.findByProductId(organizationId, productId);
     }
 
-    public void deleteBarcode(UUID organizationId, UUID productId, UUID barcodeId) {
+    @Transactional(readOnly = true)
+    public ProductBarcode getBarcode(UUID organizationId, UUID productId, UUID barcodeId) {
+        getById(organizationId, productId);
         var barcode = barcodeRepo.findById(organizationId, barcodeId)
                 .orElseThrow(() -> new CatalogNotFoundException("Mã vạch không tồn tại: " + barcodeId));
         if (!barcode.productId().equals(productId)) {
             throw new CatalogConflictException("Mã vạch không thuộc sản phẩm này");
         }
+        return barcode;
+    }
+
+    public ProductBarcode updateBarcode(UUID organizationId, UUID productId, UUID barcodeId,
+                                        String barcode, boolean isPrimary) {
+        getBarcode(organizationId, productId, barcodeId);
+        if (barcodeRepo.existsByBarcodeExcluding(organizationId, barcode, barcodeId)) {
+            throw new CatalogConflictException("Mã vạch đã tồn tại: " + barcode);
+        }
+        return barcodeRepo.save(new ProductBarcode(barcodeId, organizationId, productId, barcode, isPrimary));
+    }
+
+    public void deleteBarcode(UUID organizationId, UUID productId, UUID barcodeId) {
+        getBarcode(organizationId, productId, barcodeId);
         barcodeRepo.deleteById(organizationId, barcodeId);
     }
 }

@@ -12,4 +12,6 @@ public record UnitRequest(
         @Size(max = 50, message = "name tối đa 50 ký tự")
         String name,
 
+        @Min(value = 0, message = "precisionScale phải từ 0 đến 3")
+        @Max(value = 3, message = "precisionScale phải từ 0 đến 3")
         short precisionScale) {}

@@ -1,5 +1,7 @@
 # API module
 
+Hướng dẫn CRUD danh mục, trường dữ liệu và quy tắc xóa nằm tại [Catalog CRUD](CATALOG.md). Phần bổ sung hiện nằm trên nhánh `feature/catalog-crud-completion`, chưa tích hợp vào `main`.
+
 BE-01, BE-02 và BE-03 đã tích hợp qua PR #11, #14 và #13. Sprint 2 đã tích hợp API inventory, checkout tiền mặt, promotions và reports theo [backlog](../../docs/project/governance/BACKLOG.md); các khoảng trống nghiệm thu P0 nằm trong [QA-02](../../docs/testing/QA-02-test-report.md). Runtime hỗ trợ Java 21; integration tests dùng PostgreSQL 17 qua Testcontainers.
 
 Flyway V1 tạo schema nền; V2/V3 thêm **14 bảng Sprint 1** theo [bản thiết kế đích 39 bảng](../../docs/architecture/database/DB-01_PHYSICAL_SCHEMA_DRAFT.md). V4 thêm quyền; V5/V6 thêm inventory/receipt; V7 thêm sales invoices; V8 thêm index đọc tồn; V9 thêm quyền báo cáo; V10/V11 thêm promotions và snapshot hóa đơn. Các bảng sync/training còn thuộc backlog sau.

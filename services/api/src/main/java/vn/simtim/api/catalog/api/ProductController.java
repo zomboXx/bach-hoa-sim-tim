@@ -84,6 +84,22 @@ public class ProductController {
                 .body(ProductBarcodeResponse.from(created));
     }
 
+    @GetMapping("/{id}/barcodes/{barcodeId}")
+    public ProductBarcodeResponse getBarcode(@RequestHeader("X-Organization-Id") UUID orgId,
+                                             @PathVariable UUID id,
+                                             @PathVariable UUID barcodeId) {
+        return ProductBarcodeResponse.from(service.getBarcode(orgId, id, barcodeId));
+    }
+
+    @PutMapping("/{id}/barcodes/{barcodeId}")
+    public ProductBarcodeResponse updateBarcode(@RequestHeader("X-Organization-Id") UUID orgId,
+                                                @PathVariable UUID id,
+                                                @PathVariable UUID barcodeId,
+                                                @Valid @RequestBody ProductBarcodeRequest req) {
+        return ProductBarcodeResponse.from(service.updateBarcode(orgId, id, barcodeId,
+                req.barcode(), req.isPrimary()));
+    }
+
     @DeleteMapping("/{id}/barcodes/{barcodeId}")
     public ResponseEntity<Void> deleteBarcode(@RequestHeader("X-Organization-Id") UUID orgId,
                                               @PathVariable UUID id,

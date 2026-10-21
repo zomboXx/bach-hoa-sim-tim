@@ -33,6 +33,11 @@ class ProductBarcodeRepositoryAdapter implements ProductBarcodeRepository {
     }
 
     @Override
+    public boolean existsByBarcodeExcluding(UUID organizationId, String barcode, UUID excludeId) {
+        return jpa.existsByOrganizationIdAndBarcodeAndIdNot(organizationId, barcode, excludeId);
+    }
+
+    @Override
     public ProductBarcode save(ProductBarcode barcode) {
         return jpa.save(new ProductBarcodeJpa(barcode)).toDomain();
     }
