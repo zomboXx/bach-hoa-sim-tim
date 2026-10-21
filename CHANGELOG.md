@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Viết lại README gốc theo luồng dùng thử trực tuyến, chạy Compose và kiểm thử local; chuyển chi tiết nghiệp vụ và lịch sử sang tài liệu chuyên biệt để người mới dễ bắt đầu.
 - Ghi URL bản PWA thử nghiệm trên Vercel và bộ mã vạch trực tuyến vào README; nêu rõ dữ liệu deploy dùng chung trên Neon, tách khỏi Compose local, và tài khoản demo server dùng mật khẩu cấp riêng. Cập nhật hướng dẫn Compose theo checkout API/idempotency và kết quả QA-02 đã tích hợp.
 - Mở rộng kho mẫu API từ 2 lên 10 mặt hàng khi chạy profile demo với mật khẩu được cung cấp: đủ giá, barcode chuỗi, phiếu nhận/lô/tồn/movement. Tám mặt hàng mới dùng phiếu nhận riêng và ID ổn định; khởi động lại không bù hàng đã bán hoặc ghi trùng. Bổ sung ảnh Code 128 cho đủ 10 mặt hàng API và kiểm thử bán rồi khởi động seed lại vẫn giữ tồn/giá và ledger khớp.
 
