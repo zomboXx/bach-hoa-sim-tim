@@ -148,6 +148,7 @@ test("catalog access is read-only and training uses its independent server flag"
       grant({
         ...stockSession,
         roles: ["ADMIN", "MANAGER"],
+        permissions: ["catalog.read"],
         trainingEnabled: true,
       }),
     ),

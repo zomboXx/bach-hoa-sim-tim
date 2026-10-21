@@ -165,6 +165,7 @@ async function installCatalog(page: Page) {
     });
   });
   await page.route("**/api/v1/products", (route) => json(route, 200, [sampleProduct]));
+  await page.route("**/api/v1/categories", (route) => json(route, 200, []));
   await page.route("**/api/v1/units", (route) =>
     json(route, 200, [
       { id: sampleProduct.baseUnitId, code: "KG", name: "Kilôgam", precisionScale: 3 },

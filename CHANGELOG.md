@@ -4,6 +4,9 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Khôi phục ảnh sản phẩm mẫu trong bảng catalog API mode sau khi tích hợp giao diện CRUD; dùng chung component ảnh với màn bán hàng để giữ ảnh local và placeholder khi không có ảnh.
+- Hoàn thiện giao diện CRUD catalog ở API mode: quản lý sản phẩm, danh mục, đơn vị tính, nhà cung cấp và mã vạch từ màn hình hàng hóa; hiển thị quyền chỉ đọc, lỗi API và trạng thái mạng. Bổ sung Playwright kiểm tra tạo/sửa/xóa, xung đột dữ liệu, quyền và retry.
+- Hoàn thiện CRUD backend danh mục: thêm GET/PUT barcode theo sản phẩm, kiểm tra `precisionScale` từ 0 đến 3, chặn vòng lặp danh mục cha–con và trả lỗi `409` có cấu trúc khi vi phạm ràng buộc dữ liệu hoặc cập nhật đồng thời. Giữ dữ liệu đang được tham chiếu khi xóa bị từ chối; bổ sung kiểm thử API thật cho CRUD đơn vị tính/barcode, quyền, rollback và các trường hợp không tồn tại.
 - Bổ sung ảnh minh họa chân thực cho 10 mặt hàng kho demo ở quầy bán hàng và danh mục; ảnh WebP được lưu cùng ứng dụng, tải theo nhu cầu và có biểu tượng dự phòng khi thiếu ảnh.
 - Đưa nút camera POS lên cạnh ô tìm sản phẩm, trước danh sách hàng; tăng vùng bấm trên điện thoại và giữ bố cục không tràn ngang ở màn hình nhỏ.
 - Viết lại README gốc theo luồng dùng thử trực tuyến, chạy Compose và kiểm thử local; chuyển chi tiết nghiệp vụ và lịch sử sang tài liệu chuyên biệt để người mới dễ bắt đầu.

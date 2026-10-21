@@ -1,5 +1,6 @@
 package vn.simtim.api.catalog.application;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -50,12 +51,14 @@ public class CategoryService {
         if (repo.existsByCodeExcluding(organizationId, code, id)) {
             throw new CatalogConflictException("Mã danh mục đã tồn tại: " + code);
         }
-        if (parentId != null) {
-            if (parentId.equals(id)) {
-                throw new CatalogConflictException("Danh mục không thể là cha của chính nó");
+        var visited = new HashSet<UUID>();
+        var ancestorId = parentId;
+        while (ancestorId != null) {
+            if (ancestorId.equals(id) || !visited.add(ancestorId)) {
+                throw new CatalogConflictException("Danh mục cha tạo vòng lặp trong cây danh mục");
             }
-            repo.findById(organizationId, parentId)
-                    .orElseThrow(() -> new CatalogNotFoundException("Danh mục cha không tồn tại: " + parentId));
+            var ancestor = getById(organizationId, ancestorId);
+            ancestorId = ancestor.parentId();
         }
         var updated = new Category(id, organizationId, parentId, code, name, status);
         return repo.save(updated);

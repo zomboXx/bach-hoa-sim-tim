@@ -44,6 +44,8 @@ API gửi `POST /api/v1/auth/login` với `{ organizationCode, storeCode, userna
 
 API mode hiển thị danh mục theo `catalog.read`, nhận hàng theo `receipts.read`/`receipts.write`, tồn kho theo `inventory.read`, báo cáo theo `reports.read` và đào tạo theo `trainingEnabled`; role chỉ dùng để hiển thị, không tự cấp quyền thao tác. Backend luôn kiểm tra quyền độc lập.
 
+Trong API mode, màn hình Hàng hóa có các tab Sản phẩm, Danh mục, Đơn vị tính và Nhà cung cấp. `catalog.read` cho phép xem, tìm kiếm và xem mã vạch; `catalog.write` cho phép tạo/sửa/xóa các bản ghi và mã vạch. Xóa bản ghi đang được tham chiếu có thể bị server từ chối với `409`; với sản phẩm, danh mục và nhà cung cấp, có thể sửa trạng thái thành Ngừng dùng để giữ lịch sử. Các thao tác ghi cần kết nối mạng và không được đưa vào hàng đợi offline. Chi tiết contract ở [CATALOG.md](../../services/api/CATALOG.md).
+
 ## FE-02 · Nhận hàng và tồn kho qua API
 
 FE-02 tách trong `src/modules/inventory/` theo ADR 0003: domain/validation thuần, API và demo adapter riêng, presentation không đọc trực tiếp IndexedDB hay tự gắn Bearer token. API mode khởi tạo trạng thái vận hành rỗng và chỉ hiển thị dữ liệu nhận/tồn do server trả về; lỗi API không fallback sang demo. Demo mode tiếp tục dùng IndexedDB và cùng giao diện mới để regression.

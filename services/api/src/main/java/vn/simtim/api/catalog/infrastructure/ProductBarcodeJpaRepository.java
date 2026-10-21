@@ -16,5 +16,6 @@ interface ProductBarcodeJpaRepository extends JpaRepository<ProductBarcodeJpa, U
 
     List<ProductBarcodeJpa> findByOrganizationIdAndProductId(UUID organizationId, UUID productId);
     boolean existsByOrganizationIdAndBarcode(UUID organizationId, String barcode);
+    boolean existsByOrganizationIdAndBarcodeAndIdNot(UUID organizationId, String barcode, UUID id);
     void deleteByOrganizationIdAndId(UUID organizationId, UUID id);
 }
