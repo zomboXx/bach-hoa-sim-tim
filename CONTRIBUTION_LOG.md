@@ -22,6 +22,29 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-21 15:41:26
+
+Bổ sung bộ ảnh minh họa chân thực cho 10 mặt hàng kho mẫu trong quầy POS và danh mục sản phẩm. Ảnh WebP 480×480 lưu cùng ứng dụng, tổng 171.278 byte, tải theo nhu cầu; sản phẩm thiếu hoặc lỗi ảnh vẫn hiện tên và chọn bán được. Đối chiếu giao diện mới với danh mục đang deploy ở 390/768/1440 px: đủ 10 ảnh, không tràn ngang.
+
+Policy, link, lint, format và build đạt; web demo 51/51, API consumer 61/61 đạt. Sau chỉnh khung ảnh, chạy lại hai ca tải đủ ảnh và lỗi ảnh đều đạt. Gate gốc dừng trước kiểm thử backend vì JAVA_HOME đang trỏ thư mục JDK không tồn tại; Docker daemon cũng chưa sẵn sàng, chưa có kết quả backend cho lượt này.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +7 -4
+- `apps/web/src/modules/sale/presentation/ProductImage.vue`: +62 -0
+- `apps/web/src/style.css`: +5 -0
+- `apps/web/tests/api-sale.spec.ts`: +60 -0
+- `apps/web/public/product-images/apple.webp`: N/A (WebP)
+- `apps/web/public/product-images/coffee.webp`: N/A (WebP)
+- `apps/web/public/product-images/cookies.webp`: N/A (WebP)
+- `apps/web/public/product-images/milk.webp`: N/A (WebP)
+- `apps/web/public/product-images/noodles.webp`: N/A (WebP)
+- `apps/web/public/product-images/oil.webp`: N/A (WebP)
+- `apps/web/public/product-images/rice.webp`: N/A (WebP)
+- `apps/web/public/product-images/salt.webp`: N/A (WebP)
+- `apps/web/public/product-images/sugar.webp`: N/A (WebP)
+- `apps/web/public/product-images/water.webp`: N/A (WebP)
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-21 15:30:02
 
 Đưa nút quét camera lên thanh tìm sản phẩm để nhân viên dùng điện thoại không phải cuộn qua danh sách hàng; thêm biểu tượng mã vạch, vùng bấm tối thiểu 46 px và sửa tràn ngang khu POS ở tablet. Đối chiếu hai phiên trên bản deploy nhận cùng giỏ; Project Owner xác nhận đồng bộ dùng được sau khi tải lại.

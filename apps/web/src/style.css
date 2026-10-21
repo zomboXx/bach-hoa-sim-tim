@@ -1026,7 +1026,9 @@ small {
   display: grid;
   place-items: center;
   position: relative;
+  overflow: hidden;
   margin-bottom: 13px;
+  font-size: 55px;
 }
 .product-card:nth-child(2n) .product-picture {
   background: #eef2ec;
@@ -1204,11 +1206,14 @@ small {
   gap: 13px;
 }
 .product-cell > span {
+  position: relative;
   font-size: 25px;
   background: #f6f2ed;
   border-radius: 8px;
   width: 43px;
   height: 43px;
+  flex: 0 0 43px;
+  overflow: hidden;
   display: grid;
   place-items: center;
 }

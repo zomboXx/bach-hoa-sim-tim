@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Bổ sung ảnh minh họa chân thực cho 10 mặt hàng kho demo ở quầy bán hàng và danh mục; ảnh WebP được lưu cùng ứng dụng, tải theo nhu cầu và có biểu tượng dự phòng khi thiếu ảnh.
 - Đưa nút camera POS lên cạnh ô tìm sản phẩm, trước danh sách hàng; tăng vùng bấm trên điện thoại và giữ bố cục không tràn ngang ở màn hình nhỏ.
 - Viết lại README gốc theo luồng dùng thử trực tuyến, chạy Compose và kiểm thử local; chuyển chi tiết nghiệp vụ và lịch sử sang tài liệu chuyên biệt để người mới dễ bắt đầu.
 - Ghi URL bản PWA thử nghiệm trên Vercel và bộ mã vạch trực tuyến vào README; nêu rõ dữ liệu deploy dùng chung trên Neon, tách khỏi Compose local, và tài khoản demo server dùng mật khẩu cấp riêng. Cập nhật hướng dẫn Compose theo checkout API/idempotency và kết quả QA-02 đã tích hợp.
