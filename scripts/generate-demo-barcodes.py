@@ -10,6 +10,14 @@ OUT = ROOT / "apps/web/public/demo-barcodes"
 SAMPLES = [
     ("api-rice", "Gạo gói 1 kg", "8930000000001", "API / PostgreSQL"),
     ("api-apple", "Táo cân ký", "ST-APPLE-01", "API / PostgreSQL"),
+    ("api-milk", "Sữa tươi ít đường 180 ml", "8934673120010", "API / PostgreSQL"),
+    ("api-cookies", "Bánh quy bơ 200 g", "8934673120027", "API / PostgreSQL"),
+    ("api-noodles", "Mì ăn liền 75 g", "ST-NOODLE-01", "API / PostgreSQL"),
+    ("api-oil", "Dầu ăn 1 lít", "ST-OIL-01", "API / PostgreSQL"),
+    ("api-sugar", "Đường trắng 1 kg", "ST-SUGAR-01", "API / PostgreSQL"),
+    ("api-salt", "Muối iốt 500 g", "001000000008", "API / PostgreSQL"),
+    ("api-water", "Nước suối 500 ml", "ST-WATER-01", "API / PostgreSQL"),
+    ("api-coffee", "Cà phê rang xay 250 g", "ST-COFFEE-01", "API / PostgreSQL"),
     ("demo-milk", "Sữa tươi ít đường", "8934673120010", "Demo trình duyệt"),
     ("demo-cookies", "Bánh quy bơ", "8934673120027", "Demo trình duyệt"),
 ]
@@ -51,12 +59,12 @@ for filename, name, value, mode in SAMPLES:
     svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420"><rect width="960" height="420" fill="white"/><g text-anchor="middle" font-family="sans-serif" fill="#20192f"><text x="480" y="65" font-size="34">{html.escape(name)}</text><text x="480" y="110" font-size="21">{html.escape(mode)} · CODE 128</text><text x="480" y="355" font-size="29">{value}</text></g><g fill="black" shape-rendering="crispEdges">{rects}</g></svg>'
     (OUT / (filename + ".svg")).write_text(svg, encoding="utf-8")
     metadata.append(dict(file=filename, name=name, value=value, mode=mode))
-sheet = Image.new("RGB", (1920, 840), "#ddd")
+sheet = Image.new("RGB", (1920, ((len(SAMPLES) + 1) // 2) * 420), "#ddd")
 for i, (filename, *_rest) in enumerate(SAMPLES):
     sheet.paste(Image.open(OUT / (filename + ".png")), ((i % 2) * 960, (i // 2) * 420))
 sheet.save(OUT / "sample-sheet.png")
 (OUT / "samples.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 cards = "".join(f'<article><img src="{item["file"]}.png" alt="{html.escape(item["name"])} — {item["value"]}"><a download href="{item["file"]}.png">Tải ảnh {html.escape(item["name"])}</a></article>' for item in metadata)
-page = '<!doctype html><html lang="vi"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mã vạch mẫu · Sim Tím</title><style>body{font-family:system-ui;max-width:1200px;margin:32px auto;padding:0 16px;background:#f6f3fa;color:#241b35}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px}article{background:white;border-radius:16px;overflow:hidden;padding:12px}img{width:100%;height:auto}a{display:inline-block;padding:12px;color:#653d9b}</style><h1>Mã vạch mẫu</h1><p>Mở ảnh trên máy tính hoặc in rõ trên giấy rồi quét bằng điện thoại. Chọn ảnh đúng chế độ ứng dụng đang dùng; mã mẫu chỉ tìm được khi sản phẩm tương ứng có trong danh mục.</p><p>Hai mã API dùng danh mục gạo và táo của bản demo server. Hai mã demo dùng dữ liệu riêng trong trình duyệt. Giữ nguyên toàn bộ chuỗi, kể cả số 0 ở đầu. Đây là mã CODE 128; không đổi sang EAN-13.</p><main>' + cards + '</main></html>'
+page = '<!doctype html><html lang="vi"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mã vạch mẫu · Sim Tím</title><style>body{font-family:system-ui;max-width:1200px;margin:32px auto;padding:0 16px;background:#f6f3fa;color:#241b35}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px}article{background:white;border-radius:16px;overflow:hidden;padding:12px}img{width:100%;height:auto}a{display:inline-block;padding:12px;color:#653d9b}</style><h1>Mã vạch mẫu</h1><p>Mở ảnh trên máy tính hoặc in rõ trên giấy rồi quét bằng điện thoại. Chọn ảnh đúng chế độ ứng dụng đang dùng; mã mẫu chỉ tìm được khi sản phẩm tương ứng có trong danh mục.</p><p>Mười mã API dùng kho mẫu của server (profile demo và mật khẩu được cung cấp). Hai mã demo dùng dữ liệu riêng trong trình duyệt. Giữ nguyên toàn bộ chuỗi, kể cả số 0 ở đầu. Đây là mã CODE 128; không đổi sang EAN-13.</p><main>' + cards + '</main></html>'
 (OUT / "index.html").write_text(page, encoding="utf-8")
 print(f"Generated {len(SAMPLES)} PNG/SVG labels and one sheet at {OUT}")

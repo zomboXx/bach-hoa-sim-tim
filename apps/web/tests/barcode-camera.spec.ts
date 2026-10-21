@@ -1,14 +1,9 @@
 import { expect, test } from "@playwright/test";
+import samples from "../public/demo-barcodes/samples.json" with { type: "json" };
 import { cameraFromImage } from "./helpers/camera";
 
-const samples = [
-  ["api-rice", "8930000000001"],
-  ["api-apple", "ST-APPLE-01"],
-  ["demo-milk", "8934673120010"],
-  ["demo-cookies", "8934673120027"],
-];
-for (const [file, code] of samples) {
-  test("camera decodes exact Code 128 string: " + code, async ({ page }) => {
+for (const { file, value: code } of samples) {
+  test("camera decodes exact Code 128 string: " + file + " / " + code, async ({ page }) => {
     await cameraFromImage(page, "/demo-barcodes/" + file + ".png");
     await page.goto("/");
     await page.getByRole("button", { name: "Vào không gian làm việc" }).click();

@@ -42,6 +42,7 @@ test("@pos phone camera and desktop share a cart, retry and checkout once", asyn
   }
   try {
     await Promise.all([signIn(phone), signIn(desk)]);
+    await expect(desk.locator(".product-grid .product-card")).toHaveCount(10);
     const started = Date.now();
     await phone.getByRole("button", { name: /Quét mã bằng camera/ }).click();
     await expect(phone.getByRole("dialog").locator("strong")).toHaveText("8930000000001");

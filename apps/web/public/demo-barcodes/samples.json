@@ -12,6 +12,54 @@
     "mode": "API / PostgreSQL"
   },
   {
+    "file": "api-milk",
+    "name": "Sữa tươi ít đường 180 ml",
+    "value": "8934673120010",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-cookies",
+    "name": "Bánh quy bơ 200 g",
+    "value": "8934673120027",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-noodles",
+    "name": "Mì ăn liền 75 g",
+    "value": "ST-NOODLE-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-oil",
+    "name": "Dầu ăn 1 lít",
+    "value": "ST-OIL-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-sugar",
+    "name": "Đường trắng 1 kg",
+    "value": "ST-SUGAR-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-salt",
+    "name": "Muối iốt 500 g",
+    "value": "001000000008",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-water",
+    "name": "Nước suối 500 ml",
+    "value": "ST-WATER-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
+    "file": "api-coffee",
+    "name": "Cà phê rang xay 250 g",
+    "value": "ST-COFFEE-01",
+    "mode": "API / PostgreSQL"
+  },
+  {
     "file": "demo-milk",
     "name": "Sữa tươi ít đường",
     "value": "8934673120010",
