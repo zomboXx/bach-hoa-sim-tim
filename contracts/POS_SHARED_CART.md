@@ -47,6 +47,10 @@ Camera vật lý trên Android/iPhone và trải nghiệm qua mạng điện tho
 
 Vercel Preview có lớp bảo vệ hosting dùng cookie cùng domain. Request auth của PWA dùng `credentials: same-origin` để đi qua lớp này; Spring API không dùng cookie để đăng nhập hay cấp quyền, vẫn yêu cầu Bearer trên mọi route bảo vệ. Không bật CORS hoặc cookie session và không tắt Deployment Protection.
 
+## Phạm vi bổ sung ngày 21/10/2026
+
+Phạm vi bổ sung ngày 21/10/2026: Project Owner yêu cầu tích hợp/deploy lên `main` và tối thiểu 10 mặt hàng có tồn. Demo server có mật khẩu được cung cấp sẽ tạo đủ 10 mặt hàng, giá, barcode và chuỗi phiếu nhận → lô → balance/movement; tám mặt hàng mới có phiếu nhận riêng, không đổi hai mặt hàng và giao dịch cũ. Seed lại không bù tồn đã bán hay đặt lại giá đã sửa. [README](../README.md#quét-mã-và-dùng-điện-thoại-cùng-máy-tính) liệt kê tên/mã/giá/tồn ban đầu, bộ ảnh có 10 mã API và 2 mã demo trình duyệt. Quyền triển khai đã được Project Owner cấp; approval GitHub và CI vẫn là điều kiện tích hợp theo ruleset. Các số liệu ngày 20/10 dưới đây được giữ làm bằng chứng lịch sử; kết quả cho commit cuối ghi tại PR #75.
+
 ## Bằng chứng local ngày 20/10/2026
 
 Windows, JDK 25 (biên dịch target Java 21), Docker Desktop, PostgreSQL 17.11 disposable:

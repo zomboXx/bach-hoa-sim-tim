@@ -64,7 +64,22 @@ Trong **API mode**, đăng nhập cùng nhân viên và cửa hàng trên hai th
 
 Điện thoại cần **HTTPS** và quyền camera; địa chỉ HTTP qua IP nội bộ thường không được trình duyệt cấp camera. Demo mode dùng tài khoản NV001 lưu dữ liệu riêng trên từng trình duyệt, nên không đồng bộ sang thiết bị khác. [Bộ mã vạch mẫu](apps/web/public/demo-barcodes/index.html) có ảnh PNG/SVG kèm tên và ghi rõ bộ API hoặc demo; khi ứng dụng đang chạy, mở `/demo-barcodes/index.html` để tải ảnh. Xem [contract và hướng dẫn kiểm thử](contracts/POS_SHARED_CART.md).
 
-Bản seed API/PostgreSQL hiện có hai sản phẩm **gạo và táo**; demo trong trình duyệt có **bảy sản phẩm**. Hai môi trường dùng dữ liệu khác nhau. Dữ liệu tạo thêm ở local không tự chuyển sang database deploy; muốn đối chiếu, dùng cùng API mode và cùng database/cửa hàng. Không reset hoặc chép đè database deploy để làm giống demo trình duyệt.
+Bản chạy với profile `demo` và `SIMTIM_DEMO_PASSWORD` có **10 sản phẩm có giá, mã vạch và tồn kho** tại cửa hàng MAIN. Demo trong trình duyệt vẫn dùng bộ bảy sản phẩm riêng. Dữ liệu tạo thêm ở local không tự chuyển sang database deploy; muốn đối chiếu, dùng cùng API mode và cùng database/cửa hàng.
+
+| Sản phẩm API | Mã quét | Giá bán ban đầu (VND) | Tồn ban đầu |
+|---|---|---:|---:|
+| Gạo gói 1 kg | `8930000000001` | 25.000 | 100 cái |
+| Táo cân ký | `ST-APPLE-01` | 40.000 | 50 kg |
+| Sữa tươi ít đường 180 ml | `8934673120010` | 8.000 | 120 cái |
+| Bánh quy bơ 200 g | `8934673120027` | 32.000 | 60 cái |
+| Mì ăn liền 75 g | `ST-NOODLE-01` | 5.000 | 150 cái |
+| Dầu ăn 1 lít | `ST-OIL-01` | 48.000 | 40 cái |
+| Đường trắng 1 kg | `ST-SUGAR-01` | 23.000 | 80 cái |
+| Muối iốt 500 g | `001000000008` | 6.000 | 60 cái |
+| Nước suối 500 ml | `ST-WATER-01` | 5.000 | 200 cái |
+| Cà phê rang xay 250 g | `ST-COFFEE-01` | 60.000 | 45 cái |
+
+Đây là lượng và giá seed, chưa tính khuyến mãi. Khi nâng cấp database demo cũ, tám mặt hàng bổ sung có phiếu nhận/lô/movement riêng; không sửa phiếu gạo/táo đã có. Khởi động lại không bù lại hàng đã bán, không đặt lại giá đã chỉnh và không tạo phiếu/movement trùng. Hạn của lô mới tính theo ngày Việt Nam khi tạo lần đầu, rồi giữ nguyên qua các lần khởi động. Ảnh quét có đủ mười mặt hàng API; mã muối giữ hai số 0 ở đầu. Bộ seed này phục vụ demo, không dùng cho cửa hàng vận hành thật.
 
 ## Giới hạn hiện hành
 

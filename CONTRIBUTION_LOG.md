@@ -22,6 +22,48 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-21 10:40:47
+
+Theo yêu cầu ngày 21/10/2026, bổ sung đủ 10 mặt hàng API có giá, barcode chuỗi và tồn; tám mặt hàng mới có phiếu nhận/lô/movement riêng. Seed dùng ID ổn định, không bù hàng đã bán, đặt lại giá đã sửa hoặc ghi trùng khi chạy lại. Bổ sung ảnh Code 128 cho 10 mặt hàng API và giữ 2 ảnh demo trình duyệt; kiểm thử decoder cả 12 ảnh, gồm mã giữ số 0 ở đầu.
+
+Gate gốc đạt: policy/link/lint/format/build, demo 47/47, API consumer 59/59, backend PostgreSQL 190/190. Bootstrap kiểm bán sữa rồi seed lại vẫn giữ tồn 119, giá đã sửa và ledger; live POS với danh mục 10 món đạt 1/1, oracle invoice/payment/SALE movement mỗi loại +1, ledger mismatch 0.
+
+Đã nạp thêm tám mặt hàng vào database Preview rồi bản chính trong transaction, dùng đúng seeder đã kiểm chứng. API bản chính xác nhận 10 mặt hàng còn tồn, quote được cả 10, tổng mẫu 249.500 VND và tìm được mã muối giữ số 0; không thực hiện checkout trên bản chính. Tồn gạo 99/táo 50, hóa đơn, thanh toán, doanh thu cũ không đổi, migration bản chính vẫn V16. Quyền merge/deploy đã được Project Owner cấp; code POS mới trên PR #75 vẫn cần approval GitHub theo ruleset trước khi tích hợp main.
+
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +16 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +1 -0
+- `apps/web/public/demo-barcodes/api-coffee.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-coffee.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-cookies.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-cookies.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-milk.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-milk.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-noodles.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-noodles.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-oil.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-oil.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-salt.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-salt.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-sugar.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-sugar.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-water.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-water.svg`: +1 -0
+- `apps/web/public/demo-barcodes/index.html`: +1 -1
+- `apps/web/public/demo-barcodes/sample-sheet.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/samples.json`: +48 -0
+- `apps/web/tests/barcode-camera.spec.ts`: +3 -8
+- `contracts/POS_SHARED_CART.md`: +4 -0
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `scripts/generate-demo-barcodes.py`: +10 -2
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoAccounts.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoStoreStock.java`: +98 -0
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +56 -2
+- `Dữ liệu kho demo SIMTIM/MAIN trên bản chính`: N/A (thêm 8 mặt hàng, tổng 10 có tồn)
+
+---
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-20 19:53:10
 
 Thống nhất cookie bảo vệ hosting ở lớp ApiAuthAdapter để các adapter tồn kho/khuyến mãi cũng đi qua được Vercel Preview. Hồi quy browser đi qua login → request tồn kho của module → logout đạt, cả cookie hosting và Bearer được giữ đúng ranh giới. CI tại commit 539e30d đạt 7/7 job; luồng POS trên Preview HTTPS đạt 1/1 với decoder thật, hai context, nhập tay, đồng thời thêm, HTTP 502/retry và checkout một lần. Tiếp tục chạy CI và Preview cho commit cuối; camera vật lý vẫn cần Project Owner thử.

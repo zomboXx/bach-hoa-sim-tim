@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Mở rộng kho mẫu API từ 2 lên 10 mặt hàng khi chạy profile demo với mật khẩu được cung cấp: đủ giá, barcode chuỗi, phiếu nhận/lô/tồn/movement. Tám mặt hàng mới dùng phiếu nhận riêng và ID ổn định; khởi động lại không bù hàng đã bán hoặc ghi trùng. Bổ sung ảnh Code 128 cho đủ 10 mặt hàng API và kiểm thử bán rồi khởi động seed lại vẫn giữ tồn/giá và ledger khớp.
+
 - Cho phép cookie bảo vệ hosting đi cùng request đăng nhập/đăng xuất và request module trong cùng domain để Vercel Preview dùng được; API vẫn chỉ xác thực bằng Bearer, có hồi quy từ chối cookie thiếu Bearer.
 
 - Thêm camera quét mã sản phẩm bằng ZXing và giỏ POS chung theo nhân viên/cửa hàng trên nhiều thiết bị; giữ mã dưới dạng chuỗi, retry cùng mã thao tác, kiểm phiên bản và khóa transaction khi checkout. Flyway V17 lưu giỏ/dòng/receipt thao tác; bổ sung mã táo demo, bốn ảnh Code 128 có tên sản phẩm, hướng dẫn phân biệt dữ liệu demo/API và kiểm thử camera, concurrency, quyền, rollback và live hai thiết bị.
