@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-21 15:30:02
+
+Đưa nút quét camera lên thanh tìm sản phẩm để nhân viên dùng điện thoại không phải cuộn qua danh sách hàng; thêm biểu tượng mã vạch, vùng bấm tối thiểu 46 px và sửa tràn ngang khu POS ở tablet. Đối chiếu hai phiên trên bản deploy nhận cùng giỏ; Project Owner xác nhận đồng bộ dùng được sau khi tải lại.
+
+Build, lint và format đạt; 17/17 kiểm thử camera đạt, gồm 12 mã mẫu, từ chối quyền/nhập tay và bố cục 360/390/768/1440 px.
+
+- `CHANGELOG.md`: +1 -0
+- `apps/web/src/App.vue`: +18 -16
+- `apps/web/src/modules/sale/presentation/BarcodeScanner.vue`: +36 -3
+- `apps/web/src/style.css`: +18 -0
+- `apps/web/tests/barcode-camera.spec.ts`: +25 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-21 10:40:47
 
 Theo yêu cầu ngày 21/10/2026, bổ sung đủ 10 mặt hàng API có giá, barcode chuỗi và tồn; tám mặt hàng mới có phiếu nhận/lô/movement riêng. Seed dùng ID ổn định, không bù hàng đã bán, đặt lại giá đã sửa hoặc ghi trùng khi chạy lại. Bổ sung ảnh Code 128 cho 10 mặt hàng API và giữ 2 ảnh demo trình duyệt; kiểm thử decoder cả 12 ảnh, gồm mã giữ số 0 ở đầu.

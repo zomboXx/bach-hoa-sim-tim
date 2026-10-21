@@ -1569,13 +1569,24 @@ async function approveCount(record: StocktakeRecord) {
           </div>
           <div class="pos-layout">
             <section>
-              <div class="search-bar">
-                <span>⌕</span
-                ><input
-                  v-model="query"
-                  placeholder="Tìm tên hoặc nhập mã vạch…"
-                  aria-label="Tìm sản phẩm bán hàng"
-                  @keydown.enter="addSearchMatch"
+              <div class="sale-toolbar">
+                <div class="search-bar">
+                  <span>⌕</span
+                  ><input
+                    v-model="query"
+                    placeholder="Tìm tên hoặc nhập mã vạch…"
+                    aria-label="Tìm sản phẩm bán hàng"
+                    @keydown.enter="addSearchMatch"
+                  />
+                </div>
+                <BarcodeScanner
+                  :feedback="scanFeedback"
+                  :disabled="
+                    !connected ||
+                    apiCheckoutPending ||
+                    (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                  "
+                  @scanned="scanBarcode"
                 />
               </div>
               <div class="filters">
@@ -1626,15 +1637,6 @@ async function approveCount(record: StocktakeRecord) {
                 <h2>Đơn hàng hiện tại</h2>
                 <span>▤</span>
               </div>
-              <BarcodeScanner
-                :feedback="scanFeedback"
-                :disabled="
-                  !connected ||
-                  apiCheckoutPending ||
-                  (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
-                "
-                @scanned="scanBarcode"
-              />
               <p v-if="!isDemoMode" role="status" class="pos-sync-status">
                 {{
                   posCartSaving
