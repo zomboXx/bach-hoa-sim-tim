@@ -46,6 +46,7 @@ import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 import { ApiSaleAdapter } from "./modules/sale/infrastructure/api-sale-adapter";
 import { useSharedPosCart } from "./modules/sale/infrastructure/shared-pos-cart";
 import BarcodeScanner from "./modules/sale/presentation/BarcodeScanner.vue";
+import ProductImage from "./modules/sale/presentation/ProductImage.vue";
 import { DemoSaleAdapter } from "./modules/sale/infrastructure/demo-sale-adapter";
 import {
   SaleApiError,
@@ -224,7 +225,7 @@ async function loadSaleProducts() {
         sku: p.sku ?? p.id,
         category: "Sản phẩm",
         unit: unitCode.get(p.baseUnitId ?? "") ?? "—",
-        emoji: "὎6",
+        emoji: "📦",
       }));
   } catch {
     // silently ignore — sale page will show empty grid
@@ -1569,13 +1570,24 @@ async function approveCount(record: StocktakeRecord) {
           </div>
           <div class="pos-layout">
             <section>
-              <div class="search-bar">
-                <span>⌕</span
-                ><input
-                  v-model="query"
-                  placeholder="Tìm tên hoặc nhập mã vạch…"
-                  aria-label="Tìm sản phẩm bán hàng"
-                  @keydown.enter="addSearchMatch"
+              <div class="sale-toolbar">
+                <div class="search-bar">
+                  <span>⌕</span
+                  ><input
+                    v-model="query"
+                    placeholder="Tìm tên hoặc nhập mã vạch…"
+                    aria-label="Tìm sản phẩm bán hàng"
+                    @keydown.enter="addSearchMatch"
+                  />
+                </div>
+                <BarcodeScanner
+                  :feedback="scanFeedback"
+                  :disabled="
+                    !connected ||
+                    apiCheckoutPending ||
+                    (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                  "
+                  @scanned="scanBarcode"
                 />
               </div>
               <div class="filters">
@@ -1602,8 +1614,8 @@ async function approveCount(record: StocktakeRecord) {
                   @click="add(p.id)"
                 >
                   <div class="product-picture">
-                    <span>{{ p.emoji }}</span
-                    ><i v-if="isDemoMode && price(state, p) < p.price">Ưu đãi</i>
+                    <ProductImage :sku="p.sku || p.id" :name="p.name" :emoji="p.emoji" />
+                    <i v-if="isDemoMode && price(state, p) < p.price">Ưu đãi</i>
                   </div>
                   <small>{{ p.category }}</small>
                   <h3>{{ p.name }}</h3>
@@ -1626,15 +1638,6 @@ async function approveCount(record: StocktakeRecord) {
                 <h2>Đơn hàng hiện tại</h2>
                 <span>▤</span>
               </div>
-              <BarcodeScanner
-                :feedback="scanFeedback"
-                :disabled="
-                  !connected ||
-                  apiCheckoutPending ||
-                  (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
-                "
-                @scanned="scanBarcode"
-              />
               <p v-if="!isDemoMode" role="status" class="pos-sync-status">
                 {{
                   posCartSaving
@@ -1789,7 +1792,9 @@ async function approveCount(record: StocktakeRecord) {
                 <tr v-for="p in filtered" :key="p.id">
                   <td>
                     <div class="product-cell">
-                      <span>{{ p.emoji }}</span>
+                      <span
+                        ><ProductImage :sku="p.sku || p.id" :name="p.name" :emoji="p.emoji"
+                      /></span>
                       <div>
                         <b>{{ p.name }}</b
                         ><small>{{ p.id }} · {{ p.unit }}</small>
