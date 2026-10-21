@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
+import ProductImage from "../sale/presentation/ProductImage.vue";
 import {
   type Barcode,
   type CatalogKind,
@@ -452,7 +453,10 @@ async function removeBarcode(barcode: Barcode) {
           <tr v-for="record in rows" :key="record.id">
             <template v-if="section === 'products'">
               <td>
-                <b>{{ record.name }}</b>
+                <div class="product-cell">
+                  <span><ProductImage :sku="(record as Product).sku" :name="record.name" /></span>
+                  <b>{{ record.name }}</b>
+                </div>
               </td>
               <td class="catalog-code">{{ (record as Product).sku }}</td>
               <td>{{ categoryName((record as Product).categoryId) }}</td>
