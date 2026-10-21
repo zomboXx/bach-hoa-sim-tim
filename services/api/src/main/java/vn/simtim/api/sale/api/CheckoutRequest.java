@@ -1,5 +1,6 @@
 package vn.simtim.api.sale.api;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -10,9 +11,10 @@ import java.util.UUID;
 /** Body của POST /api/v1/sales/checkout (hoặc /invoices). */
 public record CheckoutRequest(
         UUID storeId,
-        @NotEmpty List<ItemRequest> items,
+        @NotEmpty List<@Valid ItemRequest> items,
         Long expectedTotal,
-        @NotNull @Min(0) Long cashAmount) {
+        @NotNull @Min(0) Long cashAmount,
+        @Min(0) Long cartVersion) {
 
     public record ItemRequest(
             @NotNull UUID productId,

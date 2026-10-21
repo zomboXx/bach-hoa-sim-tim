@@ -89,7 +89,8 @@ export class ApiAuthAdapter implements AuthAdapter {
       const res = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "omit",
+        // Hosting protection may use a same-origin cookie; the API still requires Bearer.
+        credentials: "same-origin",
         cache: "no-store",
         body: JSON.stringify({
           organizationCode: this.organizationCode,
@@ -133,7 +134,7 @@ export class ApiAuthAdapter implements AuthAdapter {
     try {
       const res = await fetch("/api/v1/auth/session", {
         headers: { Authorization: `Bearer ${token}` },
-        credentials: "omit",
+        credentials: "same-origin",
         cache: "no-store",
       });
       if (token !== this.accessToken) return undefined;
@@ -163,7 +164,7 @@ export class ApiAuthAdapter implements AuthAdapter {
       const res = await fetch("/api/v1/auth/logout", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-        credentials: "omit",
+        credentials: "same-origin",
         cache: "no-store",
       });
       if (!res.ok && res.status !== 401) {
@@ -187,7 +188,7 @@ export class ApiAuthAdapter implements AuthAdapter {
       headers.set("X-Organization-Id", this.session.organizationId);
       headers.set("X-Store-Id", this.session.storeId);
     }
-    const response = await fetch(path, { ...init, headers });
+    const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
     if (response.status === 401 && requestToken === this.accessToken) {
       this.accessToken = undefined;
       this.session = undefined;

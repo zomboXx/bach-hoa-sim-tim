@@ -86,6 +86,7 @@ class Qa02E2eTest {
 
     @BeforeEach
     void resetBusinessData() {
+        jdbc.update("delete from sales.pos_carts where organization_id=?", ORG_ID);
         jdbc.update("delete from inventory.stock_movements where organization_id=?", ORG_ID);
         jdbc.update("delete from sales.payments where organization_id=?", ORG_ID);
         jdbc.update("delete from sales.invoice_line_batches where organization_id=?", ORG_ID);
@@ -508,6 +509,155 @@ class Qa02E2eTest {
                 "/api/v1/sales/checkout", HttpMethod.POST,
                 new HttpEntity<>(request, requestHeaders), Object.class);
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sharedCartTwoSessionsUseSameCartAndRetryDoesNotAddTwice() {
+        var actor = body(get("/api/v1/auth/session", salesToken));
+        String username = jdbc.queryForObject("select username from iam.users where id=?",
+                String.class, UUID.fromString(actor.get("userId").toString()));
+        var login = http.postForEntity("/api/v1/auth/login", Map.of("organizationCode", "SIMTIM",
+                "storeCode", "MAIN", "username", username, "password", PASSWORD), Map.class);
+        String secondToken = login.getBody().get("accessToken").toString();
+        var adjustment = Map.of("operationId", UUID.randomUUID(), "generation", 0,
+                "productId", RICE_ID, "delta", "1");
+        assertThat(post("/api/v1/sales/cart/operations", adjustment, salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(post("/api/v1/sales/cart/operations", adjustment, secondToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        var read = get("/api/v1/sales/cart", secondToken);
+        var items = (List<Map<String, Object>>) body(read).get("items");
+        assertThat(items).hasSize(1);
+        assertThat(decimal(items.get(0).get("quantity"))).isEqualByComparingTo("1");
+        assertThat(((Number) body(read).get("version")).longValue()).isEqualTo(1);
+        var conditional = headers(secondToken);
+        conditional.set("If-None-Match", read.getHeaders().getETag());
+        assertThat(http.exchange("/api/v1/sales/cart", HttpMethod.GET,
+                new HttpEntity<>(conditional), Object.class).getStatusCode()).isEqualTo(HttpStatus.NOT_MODIFIED);
+        var changed = new java.util.LinkedHashMap<String, Object>(adjustment);
+        changed.put("delta", "2");
+        assertThat(body(post("/api/v1/sales/cart/operations", changed, salesToken)))
+                .containsEntry("code", "IDEMPOTENCY_KEY_REUSED");
+        var other = body(get("/api/v1/sales/cart", managerToken));
+        assertThat((List<?>) other.get("items")).isEmpty();
+        assertThat(other.get("id")).isNotEqualTo(body(read).get("id"));
+    }
+
+    @Test
+    void sharedCartConcurrentScansAreSerializedWithoutLostUpdates() throws Exception {
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var a = workers.submit(() -> { start.await(); return adjustCart(RICE_ID, "1", 0); });
+            var b = workers.submit(() -> { start.await(); return adjustCart(RICE_ID, "1", 0); });
+            start.countDown();
+            assertThat(a.get(15, TimeUnit.SECONDS).getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(b.get(15, TimeUnit.SECONDS).getStatusCode()).isEqualTo(HttpStatus.OK);
+        }
+        assertThat(cartQuantity(RICE_ID)).isEqualByComparingTo("2");
+        assertThat(((Number) body(get("/api/v1/sales/cart", salesToken)).get("version")).longValue()).isEqualTo(2);
+    }
+
+    @Test
+    void sharedCartRejectsInvalidPrecisionBeforeWriting() {
+        assertThat(body(adjustCart(RICE_ID, "0.5", 0))).containsEntry("code", "QUANTITY_PRECISION");
+        assertThat(body(adjustCart(APPLE_ID, "0.0001", 0))).containsEntry("code", "QUANTITY_PRECISION");
+        assertThat(adjustCart(APPLE_ID, "0.001", 0).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cartQuantity(APPLE_ID)).isEqualByComparingTo("0.001");
+        assertThat(count("select count(*) from sales.pos_cart_operations")).isEqualTo(1);
+        assertThat(count("select count(*) from sales.invoices")).isZero();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sharedCartCheckoutChecksVersionAndReplayDoesNotClearNewCart() {
+        receive(RICE_ID, "4", "4", "0", null);
+        adjustCart(RICE_ID, "1", 0);
+        Map<String, Object> stale = Map.of("items", List.of(Map.of("productId", RICE_ID, "quantity", "1")),
+                "expectedTotal", 25000, "cashAmount", 100000, "cartVersion", 1);
+        adjustCart(RICE_ID, "1", 0);
+        assertThat(body(checkoutWithKey(stale, UUID.randomUUID()))).containsEntry("code", "CART_CHANGED");
+        assertThat(count("select count(*) from sales.invoices")).isZero();
+        Map<String, Object> request = Map.of("items", List.of(Map.of("productId", RICE_ID, "quantity", "2")),
+                "expectedTotal", 50000, "cashAmount", 100000, "cartVersion", 2);
+        UUID key = UUID.randomUUID();
+        var first = checkoutWithKey(request, key);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(body(checkoutWithKey(request, key)).get("id")).isEqualTo(body(first).get("id"));
+        assertThat((List<?>) body(get("/api/v1/sales/cart", salesToken)).get("items")).isEmpty();
+        assertThat(body(adjustCart(RICE_ID, "1", 0))).containsEntry("code", "CART_CHANGED");
+        assertThat(adjustCart(RICE_ID, "1", 1).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body(checkoutWithKey(request, key)).get("id")).isEqualTo(body(first).get("id"));
+        assertThat(cartQuantity(RICE_ID)).isEqualByComparingTo("1");
+        assertThat(count("select count(*) from sales.invoices")).isEqualTo(1);
+        assertThat(count("select count(*) from sales.payments")).isEqualTo(1);
+        assertThat(productBalance(RICE_ID)).isEqualByComparingTo("2");
+    }
+
+    @Test
+    void sharedCartConcurrentCheckoutCreatesOnlyOneInvoice() throws Exception {
+        receive(RICE_ID, "4", "4", "0", null);
+        adjustCart(RICE_ID, "1", 0);
+        Map<String, Object> request = Map.of("items", List.of(Map.of("productId", RICE_ID, "quantity", "1")),
+                "expectedTotal", 25000, "cashAmount", 100000, "cartVersion", 1);
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var a = workers.submit(() -> { start.await(); return checkoutWithKey(request, UUID.randomUUID()); });
+            var b = workers.submit(() -> { start.await(); return checkoutWithKey(request, UUID.randomUUID()); });
+            start.countDown();
+            assertThat(List.of(a.get(15, TimeUnit.SECONDS).getStatusCode().value(),
+                    b.get(15, TimeUnit.SECONDS).getStatusCode().value())).containsExactlyInAnyOrder(201, 409);
+        }
+        assertThat(count("select count(*) from sales.invoices")).isEqualTo(1);
+        assertThat(count("select count(*) from sales.payments")).isEqualTo(1);
+        assertThat(productBalance(RICE_ID)).isEqualByComparingTo("3");
+    }
+
+    @Test
+    void sharedCartRejectedCheckoutRollsBackAndKeepsCart() {
+        receive(RICE_ID, "4", "4", "0", null);
+        adjustCart(RICE_ID, "1", 0);
+        Map<String, Object> request = Map.of("items", List.of(Map.of("productId", RICE_ID, "quantity", "1")),
+                "expectedTotal", 1, "cashAmount", 100000, "cartVersion", 1);
+        assertThat(body(checkoutWithKey(request, UUID.randomUUID()))).containsEntry("code", "PRICE_CHANGED");
+        assertThat(cartQuantity(RICE_ID)).isEqualByComparingTo("1");
+        assertThat(count("select count(*) from sales.invoices")).isZero();
+        assertThat(count("select count(*) from sales.pos_cart_operations")).isEqualTo(1);
+        assertThat(productBalance(RICE_ID)).isEqualByComparingTo("4");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sharedCartEnforcesPermissionAndStoreFromEachSession() {
+        assertThat(get("/api/v1/sales/cart", null).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(get("/api/v1/sales/cart", stockToken).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        var userId = UUID.fromString(body(get("/api/v1/auth/session", salesToken)).get("userId").toString());
+        UUID secondStore = UUID.randomUUID();
+        jdbc.update("insert into core.stores(id,organization_id,code,name,status) values(?,?,'POS_B','POS B','ACTIVE')",
+                secondStore, ORG_ID);
+        jdbc.update("""
+                insert into iam.user_roles(organization_id,user_id,role_id,store_id,assigned_at,assigned_by)
+                select organization_id,?,id,?,now(),? from iam.roles where organization_id=? and code='SALES'
+                """, userId, secondStore, userId, ORG_ID);
+        String username = jdbc.queryForObject("select username from iam.users where id=?", String.class, userId);
+        var login = http.postForEntity("/api/v1/auth/login", Map.of("organizationCode", "SIMTIM",
+                "storeCode", "POS_B", "username", username, "password", PASSWORD), Map.class);
+        String secondToken = login.getBody().get("accessToken").toString();
+        adjustCart(RICE_ID, "1", 0);
+        assertThat((List<?>) body(get("/api/v1/sales/cart", secondToken)).get("items")).isEmpty();
+        var wrongScope = headers(salesToken);
+        wrongScope.set("X-Store-Id", secondStore.toString());
+        assertThat(http.exchange("/api/v1/sales/cart", HttpMethod.GET,
+                new HttpEntity<>(wrongScope), Object.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    private ResponseEntity<Object> adjustCart(UUID productId, String delta, long generation) {
+        return post("/api/v1/sales/cart/operations", Map.of("operationId", UUID.randomUUID(),
+                "generation", generation, "productId", productId, "delta", delta), salesToken);
+    }
+
+    private BigDecimal cartQuantity(UUID productId) {
+        return jdbc.queryForObject("select coalesce(sum(quantity),0) from sales.pos_cart_lines where product_id=?",
+                BigDecimal.class, productId);
+    }
+
 
     protected UUID receive(UUID productId, String delivered, String accepted, String rejected, String reason) {
         UUID clientOperationId = UUID.randomUUID();

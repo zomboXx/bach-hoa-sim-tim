@@ -13,6 +13,7 @@ Sprint 1 bắt đầu bằng contract nhỏ cho health, session và catalog. M�
 - [SYN-01 offline stocktake queue review](SYN-01_OFFLINE_QUEUE_REVIEW.md): Proposed client contract cho IndexedDB queue, `clientOperationId` ổn định và guard actor/organization/store/quyền trước retry; không tự chốt wire SYN-02.
 - [SAL-01 sales/invoices](SALES_INVOICE_REVIEW.md): Working Draft cho Issue #21 / PR #26, wire `/api/v1/sales/...`, ma trận quyền `sales.*` và public `InventoryPort`.
 - [Sales/invoices OpenAPI 3.1](sales-invoices.openapi.yaml): Working Draft wire contract cho SAL-01.
+- [Camera và giỏ POS dùng chung](POS_SHARED_CART.md): Draft bổ sung ngày 20/10/2026; scope theo session, delta/retry, phiên bản checkout và camera trên HTTPS, đang kiểm thử cục bộ.
 - [PRO-01B promotions](SALES_PROMOTIONS_REVIEW.md): Working Draft cho Issue #23 / PR #25, wire `/api/v1/sales/promotions` và ma trận quyền `promotions.*`.
 - [Promotions OpenAPI 3.1](sales-promotions.openapi.yaml): Working Draft wire contract cho PRO-01B.
 - [TRN-02 training scenario contract](TRN-02_TRAINING_SCENARIO_CONTRACT.md): Proposed contract kịch bản đào tạo, sự kiện đánh giá và oracle chấm điểm thuần nhất cho Issue #55.

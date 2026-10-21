@@ -82,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [gap05, gap06]
+        suite: [gap05, gap06, pos]
     env:
       POSTGRES_PASSWORD: qa02-db-${{ github.run_id }}-${{ github.run_attempt }}
       SIMTIM_DEMO_PASSWORD: qa02-user-${{ github.run_id }}-${{ github.run_attempt }}
@@ -122,7 +122,12 @@ jobs:
         env:
           API_PROXY_TARGET: http://127.0.0.1:8080
           SIMTIM_LIVE_PASSWORD: ${{ env.SIMTIM_DEMO_PASSWORD }}
-        run: npm run test:e2e:live:qa02-${{ matrix.suite }}
+        run: |
+          if [ "${{ matrix.suite }}" = pos ]; then
+            npm run test:e2e:live:pos
+          else
+            npm run test:e2e:live:qa02-${{ matrix.suite }}
+          fi
       - name: Verify independent database oracle
         shell: bash
         run: |
@@ -136,8 +141,11 @@ jobs:
           if [ "${{ matrix.suite }}" = gap05 ]; then
             expected_receipts=0
             expected_sales=2
-          else
+          elif [ "${{ matrix.suite }}" = gap06 ]; then
             expected_receipts=1
+            expected_sales=1
+          else
+            expected_receipts=0
             expected_sales=1
           fi
           test $((after_receipts - before_receipts)) -eq "$expected_receipts"

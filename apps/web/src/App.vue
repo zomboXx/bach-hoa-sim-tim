@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import TrainingGame from "./training/TrainingGame.vue";
 import {
   TrainingApiAdapter,
@@ -44,6 +44,8 @@ import { IndexedDbStocktakeOperationQueue } from "./modules/inventory/infrastruc
 import PromotionWorkspace from "./modules/promotion/PromotionWorkspace.vue";
 import { ApiPromotionAdapter } from "./modules/promotion/api-promotion-adapter";
 import { ApiSaleAdapter } from "./modules/sale/infrastructure/api-sale-adapter";
+import { useSharedPosCart } from "./modules/sale/infrastructure/shared-pos-cart";
+import BarcodeScanner from "./modules/sale/presentation/BarcodeScanner.vue";
 import { DemoSaleAdapter } from "./modules/sale/infrastructure/demo-sale-adapter";
 import {
   SaleApiError,
@@ -761,26 +763,50 @@ const filtered = computed(() => {
         .includes(query.value.toLocaleLowerCase("vi")),
   );
 });
+const scanFeedback = ref("");
+function notifyScan(message: string) {
+  scanFeedback.value = message;
+  notify(message);
+}
+async function scanBarcode(value: string) {
+  scanFeedback.value = "Đang tìm sản phẩm…";
+  if (pendingApiCheckout.value || posCartPending.value || posCartSaving.value) {
+    notifyScan("Giỏ đang chờ xác nhận. Hãy xử lý thao tác đang chờ trước khi quét tiếp.");
+    return;
+  }
+  if (isDemoMode) {
+    const match = state.value?.products.find((p) => p.barcode === value || p.id === value);
+    if (match) {
+      if (await add(match.id)) notifyScan("Đã thêm " + match.name + " vào giỏ.");
+      else notifyScan("Chưa thêm được hàng. Hãy kiểm tra tồn và kết nối.");
+    } else notifyScan("Mã này chưa có trong danh mục demo trên trình duyệt.");
+    return;
+  }
+  if (!connected.value || !posCartReady.value)
+    return notifyScan("Đợi kết nối giỏ chung trước khi quét.");
+  try {
+    const res = await authAdapter.fetchApi(
+      `/api/v1/products/search?barcode=${encodeURIComponent(value)}`,
+    );
+    if (!res.ok) throw new Error("Barcode lookup failed");
+    const matches = (await res.json()) as Array<{ id: string; name: string; status?: string }>;
+    const active = matches.filter((p) => !p.status || p.status === "ACTIVE");
+    if (active.length === 1) {
+      if (await add(active[0].id)) notifyScan("Đã thêm " + active[0].name + " vào giỏ chung.");
+      else notifyScan("Chưa xác nhận thêm hàng. Hãy kiểm tra trạng thái đồng bộ giỏ.");
+      query.value = "";
+    } else notifyScan("Không tìm thấy một sản phẩm đang bán với mã vạch này.");
+  } catch {
+    notifyScan("Không tra được mã vạch. Vui lòng thử lại.");
+  }
+}
 async function addSearchMatch() {
   if (filtered.value.length === 1) {
-    add(filtered.value[0].id);
+    await add(filtered.value[0].id);
     return;
   }
   if (isDemoMode || !query.value.trim() || !connected.value) return;
-  try {
-    const res = await authAdapter.fetchApi(
-      `/api/v1/products/search?barcode=${encodeURIComponent(query.value.trim())}`,
-    );
-    if (!res.ok) throw new Error("Barcode lookup failed");
-    const matches = (await res.json()) as Array<{ id: string; status?: string }>;
-    const active = matches.filter((p) => !p.status || p.status === "ACTIVE");
-    if (active.length === 1) {
-      add(active[0].id);
-      query.value = "";
-    } else notify("Không tìm thấy một sản phẩm đang bán với mã vạch này.");
-  } catch {
-    notify("Không tra được mã vạch. Vui lòng thử lại.");
-  }
+  await scanBarcode(query.value.trim());
 }
 const cart = ref<{ id: string; quantity: number }[]>([]);
 const method = ref("Tiền mặt");
@@ -802,6 +828,41 @@ function saleScope() {
   const session = user.value?.session;
   return session ? `${session.organizationId}:${session.storeId}:${session.userId}` : "";
 }
+
+const sharedCart = useSharedPosCart(
+  (path, init) => authAdapter.fetchApi(path, init),
+  (snapshot) => {
+    if (pendingApiCheckout.value) return;
+    cart.value = snapshot.items.map((item) => ({
+      id: item.productId,
+      quantity: Number(item.quantity),
+    }));
+    void refreshApiQuote();
+  },
+  notify,
+);
+const posCartReady = sharedCart.ready;
+const posCartSaving = sharedCart.saving;
+const posCartError = sharedCart.error;
+const posCartPending = sharedCart.pending;
+let activeCartScope = "";
+watch(
+  () => [saleScope(), route.value, isTrainingRoute.value],
+  () => {
+    if (!isDemoMode && activeCartScope !== saleScope()) {
+      activeCartScope = saleScope();
+      cart.value = [];
+      pendingApiCheckout.value = undefined;
+      apiQuote.value = undefined;
+      apiQuoteStatus.value = "idle";
+      apiQuoteRevision++;
+    }
+    if (!isDemoMode && saleScope() && route.value === "sale" && !isTrainingRoute.value) {
+      sharedCart.start(saleScope());
+    } else sharedCart.stop();
+  },
+);
+onUnmounted(sharedCart.stop);
 
 function currentCartItems(): CartLine[] {
   return cart.value.map((line) => ({
@@ -889,10 +950,15 @@ const total = computed(() => {
     0,
   );
 });
-function add(id: string) {
+async function add(id: string) {
   if (!connected.value) return notify("Bán hàng cần kết nối.");
   if (pendingApiCheckout.value)
     return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
+  if (!isDemoMode) {
+    if (!posCartReady.value || posCartPending.value || posCartSaving.value)
+      return notify("Đợi giỏ chung đồng bộ xong trước khi thêm hàng.");
+    return sharedCart.adjust(id, 1);
+  }
   if (isDemoMode) {
     const row = cart.value.find((l) => l.id === id);
     if (available(state.value!, id) < (row?.quantity || 0) + 1)
@@ -901,21 +967,26 @@ function add(id: string) {
   const row = cart.value.find((l) => l.id === id);
   if (row) row.quantity++;
   else cart.value.push({ id, quantity: 1 });
-  if (!isDemoMode) void refreshApiQuote();
+  return true;
 }
-function quantity(id: string, delta: number) {
+async function quantity(id: string, delta: number) {
   if (pendingApiCheckout.value)
     return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
+  if (!isDemoMode) {
+    await sharedCart.adjust(id, delta);
+    return;
+  }
   const row = cart.value.find((l) => l.id === id)!;
   if (delta > 0) add(id);
   else {
     if (row.quantity > 1) row.quantity--;
     else cart.value = cart.value.filter((l) => l.id !== id);
-    if (!isDemoMode) void refreshApiQuote();
   }
 }
 async function pay() {
   if (!user.value || user.value.role === "admin") return;
+  if (!isDemoMode && (posCartSaving.value || posCartPending.value || !posCartReady.value))
+    return notify("Đợi giỏ chung đồng bộ xong trước khi thanh toán.");
   if (!isDemoMode && method.value !== "Tiền mặt")
     return notify("API bán hàng hiện chỉ hỗ trợ thanh toán CASH.");
   if (!isDemoMode && !pendingApiCheckout.value && apiQuoteStatus.value !== "ready")
@@ -962,6 +1033,7 @@ async function pay() {
       expectedTotal: apiQuote.value!.grandTotal,
       cashAmount: cash.value,
       idempotencyKey: crypto.randomUUID(),
+      cartVersion: sharedCart.snapshot.value?.version,
     } satisfies PendingApiCheckout);
   if (!pendingApiCheckout.value) storePendingCheckout(operation);
   try {
@@ -979,6 +1051,21 @@ async function pay() {
         // A 4xx response definitively rejected this operation, so the cashier
         // may correct the cart/quote and start a new checkout with a new key.
         storePendingCheckout();
+        if (e.code === "CART_CHANGED") {
+          await sharedCart.refresh();
+          const latest = sharedCart.snapshot.value;
+          if (latest) {
+            cart.value = latest.items.map((item) => ({
+              id: item.productId,
+              quantity: Number(item.quantity),
+            }));
+            void refreshApiQuote();
+          }
+          throw new Error(
+            "Giỏ đã thay đổi trên thiết bị khác. Hãy kiểm tra lại và xác nhận tổng mới.",
+            { cause: e },
+          );
+        }
         if (e.code === "PRICE_CHANGED") {
           void refreshApiQuote();
           throw new Error(
@@ -1509,6 +1596,7 @@ async function approveCount(record: StocktakeRecord) {
                   :disabled="
                     !connected ||
                     apiCheckoutPending ||
+                    (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending)) ||
                     (isDemoMode && available(state!, p.id) === 0)
                   "
                   @click="add(p.id)"
@@ -1538,6 +1626,33 @@ async function approveCount(record: StocktakeRecord) {
                 <h2>Đơn hàng hiện tại</h2>
                 <span>▤</span>
               </div>
+              <BarcodeScanner
+                :feedback="scanFeedback"
+                :disabled="
+                  !connected ||
+                  apiCheckoutPending ||
+                  (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                "
+                @scanned="scanBarcode"
+              />
+              <p v-if="!isDemoMode" role="status" class="pos-sync-status">
+                {{
+                  posCartSaving
+                    ? "Đang lưu giỏ chung…"
+                    : posCartReady
+                      ? "Giỏ chung đã kết nối · Cùng nhân viên và cửa hàng"
+                      : "Đang kết nối giỏ chung…"
+                }}
+              </p>
+              <p v-else class="pos-sync-status">Demo trình duyệt: giỏ chỉ nằm trên thiết bị này.</p>
+              <p v-if="posCartError" class="error" role="alert">{{ posCartError }}</p>
+              <button
+                v-if="!isDemoMode && (posCartPending || posCartError)"
+                :disabled="posCartSaving"
+                @click="sharedCart.retry"
+              >
+                Thử đồng bộ lại
+              </button>
               <div v-if="!cart.length" class="empty">
                 <div class="empty-icon">＋</div>
                 <p>Chọn sản phẩm để bắt đầu.</p>
@@ -1561,14 +1676,20 @@ async function approveCount(record: StocktakeRecord) {
                 <div class="stepper">
                   <button
                     :aria-label="'Giảm ' + name(l.id)"
-                    :disabled="apiCheckoutPending"
+                    :disabled="
+                      apiCheckoutPending ||
+                      (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                    "
                     @click="quantity(l.id, -1)"
                   >
                     −</button
                   ><span>{{ l.quantity }}</span
                   ><button
                     :aria-label="'Tăng ' + name(l.id)"
-                    :disabled="apiCheckoutPending"
+                    :disabled="
+                      apiCheckoutPending ||
+                      (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                    "
                     @click="quantity(l.id, 1)"
                   >
                     +
@@ -1616,6 +1737,7 @@ async function approveCount(record: StocktakeRecord) {
                     !cart.length ||
                     !connected ||
                     busy ||
+                    (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending)) ||
                     (!isDemoMode && !apiCheckoutPending && apiQuoteStatus !== 'ready')
                   "
                   @click="pay"

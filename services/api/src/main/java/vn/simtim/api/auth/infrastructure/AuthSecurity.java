@@ -57,6 +57,7 @@ public class AuthSecurity {
                     .requestMatchers(HttpMethod.PUT, promotions).hasAuthority("promotions.write")
                     .requestMatchers(HttpMethod.DELETE, promotions).hasAuthority("promotions.write")
                     .requestMatchers(HttpMethod.POST, quotePaths).hasAuthority("sales.read")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/sales/cart").hasAuthority("sales.write")
                     .requestMatchers(HttpMethod.GET, sales).hasAuthority("sales.read")
                     .requestMatchers(HttpMethod.POST, sales).hasAuthority("sales.write")
                     .requestMatchers(HttpMethod.GET, "/api/v1/training/scenarios", "/api/v1/training/sessions/*",

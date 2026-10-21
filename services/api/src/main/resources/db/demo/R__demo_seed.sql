@@ -42,6 +42,13 @@ VALUES ('10000000-0000-0000-0000-000000000051',
         '10000000-0000-0000-0000-000000000041', '8930000000001', true)
 ON CONFLICT DO NOTHING;
 
+-- Code 128 can encode this exact SKU without an EAN checksum conversion.
+INSERT INTO catalog.product_barcodes (id, organization_id, product_id, barcode, is_primary)
+VALUES ('10000000-0000-0000-0000-000000000052',
+        '10000000-0000-0000-0000-000000000001',
+        '10000000-0000-0000-0000-000000000042', 'ST-APPLE-01', true)
+ON CONFLICT DO NOTHING;
+
 INSERT INTO catalog.suppliers (id, organization_id, code, name, status)
 VALUES ('10000000-0000-0000-0000-000000000061',
         '10000000-0000-0000-0000-000000000001', 'SUP-001', 'Nhà cung cấp mẫu', 'ACTIVE')

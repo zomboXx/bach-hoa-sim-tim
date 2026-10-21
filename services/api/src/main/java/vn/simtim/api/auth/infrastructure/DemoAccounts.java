@@ -17,11 +17,13 @@ import vn.simtim.api.auth.domain.PasswordHasher;
 public class DemoAccounts implements ApplicationRunner {
     private final JdbcTemplate jdbc;
     private final PasswordHasher passwords;
+    private final DemoStoreStock stock;
     private final String password;
     public DemoAccounts(JdbcTemplate jdbc, PasswordHasher passwords,
             @Value("${SIMTIM_DEMO_PASSWORD:}") String password) {
         this.jdbc = jdbc;
         this.passwords = passwords;
+        this.stock = new DemoStoreStock(jdbc);
         this.password = password;
     }
 
@@ -50,6 +52,7 @@ public class DemoAccounts implements ApplicationRunner {
                     """, org, store, id, org, role);
         }
         seedInventory(org, store, managerUserId);
+        stock.seed(org, store, managerUserId);
     }
 
     /** Seed demo inventory: goods receipt → batches → balances → movements.

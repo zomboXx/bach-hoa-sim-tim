@@ -158,6 +158,22 @@ class ApiBootstrapTest {
     }
 
     @Test @Transactional
+    void hostingCookiesCannotAuthenticateWithoutExplicitBearer() throws Exception {
+        accounts();
+        String token = login("SALES");
+        var cookies = new jakarta.servlet.http.Cookie[]{
+                new jakarta.servlet.http.Cookie("JSESSIONID", token),
+                new jakarta.servlet.http.Cookie("accessToken", token),
+                new jakarta.servlet.http.Cookie("_vercel_jwt", "hosting-fixture")};
+        mvc.perform(get("/api/v1/auth/session").cookie(cookies))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/logout").cookie(cookies))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/session").cookie(cookies).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test @Transactional
     void logoutAndExpiryInvalidateBearerSessions() throws Exception {
         accounts();
         String token = login("MANAGER");
@@ -221,6 +237,7 @@ class ApiBootstrapTest {
         var empty = new vn.simtim.api.auth.infrastructure.DemoAccounts(jdbcTemplate, passwords, "");
         empty.run(null);
         assertThat(jdbcTemplate.queryForObject("select count(*) from iam.users", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from catalog.products", Integer.class)).isEqualTo(2);
         var seeder = new vn.simtim.api.auth.infrastructure.DemoAccounts(jdbcTemplate, passwords, PASSWORD);
         seeder.run(null);
         String hash = jdbcTemplate.queryForObject("select password_hash from iam.users where username='sales'", String.class);
@@ -228,10 +245,63 @@ class ApiBootstrapTest {
         seeder.run(null);
         assertThat(jdbcTemplate.queryForObject("select count(*) from iam.users", Integer.class)).isEqualTo(4);
         assertThat(jdbcTemplate.queryForObject("select password_hash from iam.users where username='sales'", String.class)).isEqualTo(hash);
-        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+        String grant = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(Map.of("organizationCode", "SIMTIM", "storeCode", "MAIN",
                         "username", "sales", "password", PASSWORD))))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String bearer = "Bearer " + mapper.readTree(grant).get("accessToken").asText();
+        String org = "10000000-0000-0000-0000-000000000001";
+        mvc.perform(get("/api/v1/inventory/products?size=100").header("Authorization", bearer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(10));
+        assertThat(jdbcTemplate.queryForObject("""
+                select count(distinct b.product_id) from inventory.inventory_balances b
+                join inventory.product_batches pb on pb.id=b.batch_id
+                join catalog.products p on p.id=b.product_id
+                where b.on_hand_quantity>0 and pb.status='AVAILABLE' and p.status='ACTIVE'
+                  and (pb.expiry_date is null or pb.expiry_date >= (now() at time zone 'Asia/Ho_Chi_Minh')::date)
+                  and exists(select 1 from catalog.product_prices pp where pp.product_id=p.id
+                      and pp.store_id=b.store_id and pp.sale_price>0 and pp.effective_to is null)
+                  and exists(select 1 from catalog.product_barcodes bc where bc.product_id=p.id)
+                """, Integer.class)).isEqualTo(10);
+        mvc.perform(get("/api/v1/products/search?barcode=001000000008")
+                        .header("Authorization", bearer).header("X-Organization-Id", org))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].sku").value("ST-SALT-01"));
+        UUID milk = jdbcTemplate.queryForObject("select id from catalog.products where sku='ST-MILK-01'", UUID.class);
+        mvc.perform(post("/api/v1/sales/checkout").header("Authorization", bearer)
+                        .header("X-Organization-Id", org).header("Idempotency-Key", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(Map.of(
+                                "items", java.util.List.of(Map.of("productId", milk, "quantity", "1")),
+                                "expectedTotal", 8000, "cashAmount", 10000))))
+                .andExpect(status().isCreated());
+        jdbcTemplate.update("update catalog.product_prices set sale_price=9000 where product_id=?", milk);
+        var before = jdbcTemplate.queryForMap("""
+                select (select count(*) from catalog.products) as products,
+                       (select count(*) from catalog.product_prices) as prices,
+                       (select count(*) from catalog.product_barcodes) as barcodes,
+                       (select count(*) from inventory.goods_receipts) as receipts,
+                       (select count(*) from inventory.goods_receipt_lines) as lines,
+                       (select count(*) from inventory.product_batches) as batches,
+                       (select count(*) from inventory.stock_movements) as movements
+                """);
+        seeder.run(null);
+        assertThat(jdbcTemplate.queryForMap("""
+                select (select count(*) from catalog.products) as products,
+                       (select count(*) from catalog.product_prices) as prices,
+                       (select count(*) from catalog.product_barcodes) as barcodes,
+                       (select count(*) from inventory.goods_receipts) as receipts,
+                       (select count(*) from inventory.goods_receipt_lines) as lines,
+                       (select count(*) from inventory.product_batches) as batches,
+                       (select count(*) from inventory.stock_movements) as movements
+                """)).isEqualTo(before);
+        assertThat(jdbcTemplate.queryForObject("select on_hand_quantity from inventory.inventory_balances where product_id=?",
+                java.math.BigDecimal.class, milk)).isEqualByComparingTo("119");
+        assertThat(jdbcTemplate.queryForObject("select sale_price from catalog.product_prices where product_id=?",
+                Long.class, milk)).isEqualTo(9000);
+        assertThat(jdbcTemplate.queryForObject("""
+                select count(*) from inventory.inventory_balances b where b.on_hand_quantity <>
+                    (select coalesce(sum(m.quantity_delta),0) from inventory.stock_movements m
+                     where m.organization_id=b.organization_id and m.store_id=b.store_id and m.batch_id=b.batch_id)
+                """, Integer.class)).isZero();
     }
 
     @Test

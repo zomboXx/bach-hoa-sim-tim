@@ -97,6 +97,12 @@ Theo [ADR 0004 đã quyết định từ 30/09/2026](../../architecture/adr/0004
 | [DOC-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/58) | Hoàn thiện báo cáo và traceability | P0 | TV1 điều phối | Cả nhóm | QA-04 | Yêu cầu–thiết kế–code–test có liên kết và minh chứng |
 | [REL-01](https://github.com/zomboXx/bach-hoa-sim-tim/issues/59) | Release candidate và kịch bản vấn đáp | P0 | TV1 | Cả nhóm | DOC-01 | Bản chạy sạch, dữ liệu demo, hướng dẫn và video dự phòng |
 
+## Mở rộng POS theo yêu cầu ngày 20/10/2026
+
+Project Owner yêu cầu bổ sung camera điện thoại để quét mã sản phẩm và đồng bộ giỏ bán hàng giữa hai thiết bị đăng nhập cùng nhân viên/cửa hàng, bao gồm cả thao tác nhập tay. Phạm vi này được chuẩn bị cục bộ sau Sprint 4; chưa tự tạo mã issue, gán owner/reviewer hoặc thay cam kết của các sprint cũ. [Contract bổ sung](../../../contracts/POS_SHARED_CART.md) ghi đường API tương thích, phiên bản giỏ, retry và ranh giới camera. Việc tích hợp/triển khai và thử camera vật lý còn chờ review.
+
+Ngày 21/10/2026, Project Owner yêu cầu tích hợp lên `main`, triển khai bản chính thức và chuẩn bị tối thiểu 10 mặt hàng có tồn trong kho demo. [PR #75](https://github.com/zomboXx/bach-hoa-sim-tim/pull/75) gom phần POS và mở rộng seed tương ứng; vẫn cần approval trên GitHub theo ruleset trước khi merge. Không coi yêu cầu triển khai là bằng chứng đã merge/deploy; tình trạng cuối ghi tại PR. Dữ liệu bổ sung không đặt lại tồn, giá hoặc giao dịch đã có.
+
 ## Icebox — Không cam kết cuối kỳ
 
 - Bán hàng offline hoàn chỉnh trên nhiều thiết bị.

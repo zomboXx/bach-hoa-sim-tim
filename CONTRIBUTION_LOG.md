@@ -22,6 +22,125 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-21 10:40:47
+
+Theo yêu cầu ngày 21/10/2026, bổ sung đủ 10 mặt hàng API có giá, barcode chuỗi và tồn; tám mặt hàng mới có phiếu nhận/lô/movement riêng. Seed dùng ID ổn định, không bù hàng đã bán, đặt lại giá đã sửa hoặc ghi trùng khi chạy lại. Bổ sung ảnh Code 128 cho 10 mặt hàng API và giữ 2 ảnh demo trình duyệt; kiểm thử decoder cả 12 ảnh, gồm mã giữ số 0 ở đầu.
+
+Gate gốc đạt: policy/link/lint/format/build, demo 47/47, API consumer 59/59, backend PostgreSQL 190/190. Bootstrap kiểm bán sữa rồi seed lại vẫn giữ tồn 119, giá đã sửa và ledger; live POS với danh mục 10 món đạt 1/1, oracle invoice/payment/SALE movement mỗi loại +1, ledger mismatch 0.
+
+Đã nạp thêm tám mặt hàng vào database Preview rồi bản chính trong transaction, dùng đúng seeder đã kiểm chứng. API bản chính xác nhận 10 mặt hàng còn tồn, quote được cả 10, tổng mẫu 249.500 VND và tìm được mã muối giữ số 0; không thực hiện checkout trên bản chính. Tồn gạo 99/táo 50, hóa đơn, thanh toán, doanh thu cũ không đổi, migration bản chính vẫn V16. Quyền merge/deploy đã được Project Owner cấp; code POS mới trên PR #75 vẫn cần approval GitHub theo ruleset trước khi tích hợp main.
+
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +16 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +1 -0
+- `apps/web/public/demo-barcodes/api-coffee.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-coffee.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-cookies.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-cookies.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-milk.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-milk.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-noodles.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-noodles.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-oil.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-oil.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-salt.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-salt.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-sugar.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-sugar.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-water.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/api-water.svg`: +1 -0
+- `apps/web/public/demo-barcodes/index.html`: +1 -1
+- `apps/web/public/demo-barcodes/sample-sheet.png`: N/A (PNG)
+- `apps/web/public/demo-barcodes/samples.json`: +48 -0
+- `apps/web/tests/barcode-camera.spec.ts`: +3 -8
+- `contracts/POS_SHARED_CART.md`: +4 -0
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `scripts/generate-demo-barcodes.py`: +10 -2
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoAccounts.java`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/DemoStoreStock.java`: +98 -0
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +56 -2
+- `Dữ liệu kho demo SIMTIM/MAIN trên bản chính`: N/A (thêm 8 mặt hàng, tổng 10 có tồn)
+
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:53:10
+
+Thống nhất cookie bảo vệ hosting ở lớp ApiAuthAdapter để các adapter tồn kho/khuyến mãi cũng đi qua được Vercel Preview. Hồi quy browser đi qua login → request tồn kho của module → logout đạt, cả cookie hosting và Bearer được giữ đúng ranh giới. CI tại commit 539e30d đạt 7/7 job; luồng POS trên Preview HTTPS đạt 1/1 với decoder thật, hai context, nhập tay, đồng thời thêm, HTTP 502/retry và checkout một lần. Tiếp tục chạy CI và Preview cho commit cuối; camera vật lý vẫn cần Project Owner thử.
+
+- `apps/web/src/adapter.ts`: +1 -1
+- `apps/web/tests/api-auth.spec.ts`: +25 -3
+- `CHANGELOG.md`: +1 -1
+
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:47:00
+
+Mở PR #75 và tạo Vercel Preview dùng database riêng theo phê duyệt. Kiểm thử HTTPS phát hiện request auth bỏ cookie bảo vệ hosting nên bị chặn trước API; sửa sang cookie cùng domain, giữ nguyên Bearer và không tắt Deployment Protection. Bổ sung hồi quy browser cho login/logout qua cookie hosting và server từ chối cookie thiếu Bearer. ApiBootstrapTest đạt 11/11; ca browser cookie hosting đạt. Preview xác nhận health UP, login và giỏ 200, cookie thiếu Bearer bị 401; V17 chỉ có trên database Preview, production vẫn V16. CI ban đầu đạt 7/7 job; kết quả cuối và link Preview được ghi tại PR.
+
+- `CHANGELOG.md`: +2 -0
+- `apps/web/src/adapter.ts`: +4 -3
+- `apps/web/tests/api-auth.spec.ts`: +26 -0
+- `contracts/POS_SHARED_CART.md`: +3 -1
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +16 -0
+
+---
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-20 19:05:19
+
+Bổ sung camera quét mã sản phẩm và giỏ POS dùng chung cho các thiết bị đăng nhập cùng nhân viên/cửa hàng theo yêu cầu ngày 20/10/2026. Flyway V17 lưu giỏ/dòng/receipt thao tác; server tuần tự hóa delta và checkout, chống retry cộng hàng hoặc thanh toán hai lần. Camera giải mã tại thiết bị, dừng sau mỗi mã để nhân viên xác nhận quét tiếp. Bổ sung bốn ảnh Code 128 có tên sản phẩm, ghi rõ demo/API và giải thích hai bộ seed bảy/hai sản phẩm. Chuẩn bị CI live và contract bổ sung; Project Owner đồng ý push nhánh, mở PR và tạo Preview HTTPS.
+
+Verification local: gate gốc đạt policy/link/lint/format/build, demo 39/39, API consumer 58/58 và backend PostgreSQL 17.11 đạt 189/189; riêng Qa02E2eTest 18/18. Camera 5/5; live POS hai browser context đạt 1/1, oracle invoice/payment/SALE movement mỗi loại +1, revenue +112.500 VND, ledger mismatch 0. Live GAP-05 đạt 2/2, retry HTTP 502 sau commit giữ cùng key/payload và không ghi trùng. Camera vật lý qua HTTPS còn cần người dùng thử trên điện thoại.
+
+- `.github/workflows/ci.yml`: +11 -3
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +9 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +109 -0
+- `apps/web/package-lock.json`: +46 -0
+- `apps/web/package.json`: +2 -0
+- `apps/web/public/demo-barcodes/api-apple.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/api-apple.svg`: +1 -0
+- `apps/web/public/demo-barcodes/api-rice.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/api-rice.svg`: +1 -0
+- `apps/web/public/demo-barcodes/demo-cookies.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/demo-cookies.svg`: +1 -0
+- `apps/web/public/demo-barcodes/demo-milk.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/demo-milk.svg`: +1 -0
+- `apps/web/public/demo-barcodes/index.html`: +1 -0
+- `apps/web/public/demo-barcodes/sample-sheet.png`: N/A (ảnh PNG)
+- `apps/web/public/demo-barcodes/samples.json`: +26 -0
+- `apps/web/src/App.vue`: +138 -16
+- `apps/web/src/modules/sale/domain/sale.ts`: +2 -0
+- `apps/web/src/modules/sale/infrastructure/api-sale-adapter.ts`: +1 -0
+- `apps/web/src/modules/sale/infrastructure/shared-pos-cart.ts`: +188 -0
+- `apps/web/src/modules/sale/presentation/BarcodeScanner.vue`: +160 -0
+- `apps/web/tests/api-sale.spec.ts`: +69 -0
+- `apps/web/tests/barcode-camera.spec.ts`: +57 -0
+- `apps/web/tests/helpers/camera.ts`: +25 -0
+- `contracts/POS_SHARED_CART.md`: +58 -0
+- `contracts/README.md`: +1 -0
+- `contracts/sales-invoices.openapi.yaml`: +2 -0
+- `docs/project/governance/BACKLOG.md`: +4 -0
+- `scripts/generate-demo-barcodes.py`: +62 -0
+- `scripts/test-fe02-live.ps1`: +13 -6
+- `scripts/test-pos-live.ps1`: +3 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +1 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/CheckoutRequest.java`: +4 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/PosCartController.java`: +51 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/SaleController.java`: +8 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/PosCartService.java`: +121 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/PosCart.java`: +11 -0
+- `services/api/src/main/java/vn/simtim/api/sale/domain/PosCartRepository.java`: +13 -0
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/PosCartRepositoryAdapter.java`: +85 -0
+- `services/api/src/main/resources/db/demo/R__demo_seed.sql`: +7 -0
+- `services/api/src/main/resources/db/migration/V17__shared_pos_carts.sql`: +27 -0
+- `services/api/src/test/java/vn/simtim/api/qa/Qa02E2eTest.java`: +150 -0
+- `CONTRIBUTION_LOG.md`: +53 -0
+
+
+---
 TV4 — Lê Văn Chiến - 2026-10-18 19:47:09
 
 Sửa P1 review PR #53 trên base `0972629`: checkout API không còn xóa pending payload và `Idempotency-Key` khi proxy trả HTTP 5xx sau lúc server có thể đã commit. PWA giữ nguyên operation cho kết quả chưa chắc chắn, chỉ bỏ operation khi giao dịch bị từ chối chắc chắn (4xx) hoặc đã hoàn tất. Bổ sung consumer test 502 và live browser test commit thật → proxy 502 → bấm lại cùng key/payload; cập nhật evidence GAP-05/06 nhưng chưa chuyển #34 sang Pass.

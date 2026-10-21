@@ -65,6 +65,7 @@ export class ApiSaleAdapter implements SalePort {
           items: req.items,
           expectedTotal: req.expectedTotal,
           cashAmount: req.cashAmount,
+          ...(req.cartVersion === undefined ? {} : { cartVersion: req.cartVersion }),
         }),
       });
     } catch (e) {

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.simtim.api.auth.domain.SessionPrincipal;
 import vn.simtim.api.sale.application.CheckoutItem;
 import vn.simtim.api.sale.application.SaleService;
+import vn.simtim.api.sale.application.PosCartService;
 
 /**
  * HTTP adapter cho SAL-01: Quote, Checkout CASH, xem hóa đơn theo wire contract /api/v1/sales/...
@@ -25,9 +26,11 @@ import vn.simtim.api.sale.application.SaleService;
 public class SaleController {
 
     private final SaleService service;
+    private final PosCartService carts;
 
-    public SaleController(SaleService service) {
+    public SaleController(SaleService service, PosCartService carts) {
         this.service = service;
+        this.carts = carts;
     }
 
     /** Preview giá trước khi checkout. Yêu cầu quyền sales.read. */
@@ -62,7 +65,10 @@ public class SaleController {
         var items = req.items().stream()
                 .map(i -> new CheckoutItem(i.productId(), i.quantity()))
                 .toList();
-        var invoice = service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount(), idempotencyKey);
+        var invoice = req.cartVersion() == null
+                ? service.checkout(orgId, storeId, soldBy, items, req.expectedTotal(), req.cashAmount(), idempotencyKey)
+                : carts.checkout(PosCartController.scope(auth), req.cartVersion(), items,
+                        req.expectedTotal(), req.cashAmount(), idempotencyKey);
         return ResponseEntity
                 .created(URI.create("/api/v1/sales/invoices/" + invoice.id()))
                 .body(InvoiceResponse.from(invoice));
