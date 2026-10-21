@@ -224,6 +224,66 @@ test("API catalog shows the server unit without invented price or stock", async 
   await expect(row.locator(".status")).toHaveText("—");
 });
 
+test("sample catalog loads ten local product photos in sale and catalog views", async ({
+  page,
+}) => {
+  await installLogin(page);
+  await installCatalog(page);
+  const skus = [
+    "RICE",
+    "APPLE",
+    "MILK",
+    "COOKIE",
+    "NOODLE",
+    "OIL",
+    "SUGAR",
+    "SALT",
+    "WATER",
+    "COFFEE",
+  ];
+  const products = skus.map((sku, index) => ({
+    ...sampleProduct,
+    id: `10000000-0000-0000-0000-${String(41 + index).padStart(12, "0")}`,
+    sku: `ST-${sku}-01`,
+    name: `Mặt hàng ${sku}`,
+  }));
+  await page.route("**/api/v1/products", (route) => json(route, 200, products));
+  await signIn(page);
+  await openSale(page);
+  await expect(page.locator(".product-grid img")).toHaveCount(10);
+  for (const product of products) {
+    const image = page.locator(".product-grid").getByAltText(product.name, { exact: true });
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toHaveJSProperty("naturalWidth", 480);
+    expect(new URL((await image.getAttribute("src")) ?? "", page.url()).origin).toBe(
+      new URL(page.url()).origin,
+    );
+  }
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Sản phẩm/ })
+    .click();
+  await expect(page.locator(".product-cell img")).toHaveCount(10);
+  await expect(page.locator(".product-cell img").first()).toHaveJSProperty("naturalWidth", 480);
+});
+
+test("a failed product photo preserves the product name and add action", async ({ page }) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await page.route("**/api/v1/products", (route) =>
+    json(route, 200, [{ ...sampleProduct, sku: "ST-RICE-01" }]),
+  );
+  await page.route("**/product-images/rice.webp", (route) => route.abort());
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  await signIn(page);
+  await openSale(page);
+  const card = page.locator(".product-card").first();
+  await expect(card.locator(".product-image-fallback")).toBeVisible();
+  await expect(card).toContainText(sampleProduct.name);
+  await card.click();
+  await expect(page.locator(".cart-row .stepper span")).toHaveText("1");
+});
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 test("SALES user with sales.write sees Bán hàng and Hóa đơn navigation routes", async ({

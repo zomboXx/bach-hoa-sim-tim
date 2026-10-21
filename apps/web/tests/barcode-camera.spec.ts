@@ -2,6 +2,31 @@ import { expect, test } from "@playwright/test";
 import samples from "../public/demo-barcodes/samples.json" with { type: "json" };
 import { cameraFromImage } from "./helpers/camera";
 
+for (const width of [360, 390, 768, 1440]) {
+  test(`camera launcher is beside search and above products at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
+    await page.locator("aside.sidebar").waitFor({ state: "attached" });
+    const menu = page.getByRole("button", { name: "Mở menu" });
+    if (await menu.isVisible()) await menu.click();
+    await page
+      .locator("nav")
+      .getByRole("button", { name: /Bán hàng/ })
+      .click();
+    const launcher = page.getByRole("button", { name: "Quét mã bằng camera" });
+    await expect(launcher).toBeInViewport();
+    const bounds = await launcher.boundingBox();
+    const product = await page.locator(".product-card").first().boundingBox();
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(product!.y);
+    expect(bounds!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.locator(".sale-toolbar").getByLabel("Tìm sản phẩm bán hàng")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+}
+
 for (const { file, value: code } of samples) {
   test("camera decodes exact Code 128 string: " + file + " / " + code, async ({ page }) => {
     await cameraFromImage(page, "/demo-barcodes/" + file + ".png");

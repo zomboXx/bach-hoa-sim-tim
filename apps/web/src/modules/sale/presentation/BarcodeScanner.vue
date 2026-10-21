@@ -81,7 +81,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <button class="scanner-launch" :disabled="disabled" @click="start">▣ Quét mã bằng camera</button>
+  <button class="scanner-launch" :disabled="disabled" @click="start">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 8V5h3m10 0h3v3M4 16v3h3m10 0h3v-3M8 8v8m3-8v8m3-8v8m3-8v8"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+    </svg>
+    Quét mã bằng camera
+  </button>
   <dialog
     v-if="open"
     ref="dialog"
@@ -118,8 +128,31 @@ onUnmounted(() => {
 
 <style scoped>
 .scanner-launch {
-  margin: 10px 0;
-  padding: 12px 16px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid #765487;
+  border-radius: 9px;
+  background: #57356e;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scanner-launch:hover:not(:disabled) {
+  background: #684180;
+}
+.scanner-launch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 600px) {
+  .scanner-launch {
+    width: 100%;
+  }
 }
 .scanner-panel::backdrop {
   background: #181325bc;
