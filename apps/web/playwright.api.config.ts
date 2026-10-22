@@ -12,7 +12,11 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run build && npm run preview -- --port 4175",
-    env: { VITE_USE_API: "true", VITE_INVENTORY_TIMEOUT_MS: "300" },
+    env: {
+      VITE_USE_API: "true",
+      VITE_INVENTORY_TIMEOUT_MS: "300",
+      API_PROXY_TARGET: "http://127.0.0.1:4179",
+    },
     url: "http://127.0.0.1:4175",
     reuseExistingServer: false,
   },

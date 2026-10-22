@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import ProductImage from "../sale/presentation/ProductImage.vue";
 import {
   type Barcode,
@@ -93,15 +93,62 @@ function clearMessages() {
   success.value = "";
 }
 
-function resetEditor() {
+function closeFormModal() {
   editingId.value = undefined;
   formOpen.value = false;
+  resetImageState();
+  clearMessages();
+}
+
+function closeBarcodeModal() {
+  productForBarcodes.value = undefined;
   barcodeEditingId.value = undefined;
   barcodeFormOpen.value = false;
-  productForBarcodes.value = undefined;
   barcodes.value = [];
-  resetImageState();
+  clearMessages();
 }
+
+function resetEditor() {
+  closeFormModal();
+  closeBarcodeModal();
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    if (barcodeFormOpen.value) {
+      barcodeFormOpen.value = false;
+    } else if (productForBarcodes.value) {
+      closeBarcodeModal();
+    } else if (formOpen.value) {
+      closeFormModal();
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", onKeydown);
+  if (typeof document !== "undefined") {
+    document.body.classList.remove("modal-open");
+  }
+});
+
+watch(
+  [formOpen, productForBarcodes],
+  ([isFormOpen, isBarcodeOpen]) => {
+    if (typeof document !== "undefined") {
+      if (isFormOpen || isBarcodeOpen) {
+        document.body.classList.add("modal-open");
+      } else {
+        document.body.classList.remove("modal-open");
+      }
+    }
+  },
+  { immediate: true },
+);
 
 function resetImageState() {
   if (imagePreview.value && imagePreview.value.startsWith("blob:")) {
@@ -210,6 +257,7 @@ watch(
 
 function startCreate() {
   if (!canAct.value) return;
+  closeBarcodeModal();
   Object.assign(form, {
     code: "",
     sku: "",
@@ -231,6 +279,7 @@ function startCreate() {
 
 async function startEdit(id: string) {
   if (!canAct.value) return;
+  closeBarcodeModal();
   saving.value = true;
   clearMessages();
   try {
@@ -367,6 +416,7 @@ async function remove(id: string, name: string) {
 }
 
 async function showBarcodes(product: Product) {
+  closeFormModal();
   productForBarcodes.value = product;
   barcodes.value = [];
   barcodeFormOpen.value = false;
@@ -614,203 +664,270 @@ async function removeBarcode(barcode: Barcode) {
       </div>
     </div>
 
-    <form v-if="formOpen && canWrite" class="catalog-editor card" @submit.prevent="save">
-      <div class="catalog-panel-head">
-        <div>
-          <h2>{{ editingId ? "Sửa" : "Thêm" }} {{ sectionMeta.singular }}</h2>
-          <p>Những trường bắt buộc được đánh dấu *.</p>
-        </div>
-        <button type="button" class="text-button" @click="formOpen = false">Đóng</button>
-      </div>
-      <div class="catalog-fields">
-        <label v-if="section !== 'products'"
-          >Mã *<input v-model="form.code" required :maxlength="section === 'units' ? 20 : 40"
-        /></label>
-        <label v-if="section === 'products'"
-          >SKU *<input v-model="form.sku" required maxlength="80"
-        /></label>
-        <label
-          >Tên *<input v-model="form.name" required :maxlength="section === 'units' ? 50 : 200"
-        /></label>
-        <label v-if="section === 'products'"
-          >Danh mục *
-          <select v-model="form.categoryId" required>
-            <option value="" disabled>Chọn danh mục</option>
-            <option v-for="item in categories" :key="item.id" :value="item.id">
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <label v-if="section === 'products'"
-          >Đơn vị tính *
-          <select v-model="form.baseUnitId" required>
-            <option value="" disabled>Chọn đơn vị</option>
-            <option v-for="item in units" :key="item.id" :value="item.id">
-              {{ item.code }} · {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <label v-if="section === 'categories'"
-          >Danh mục cha
-          <select v-model="form.parentId">
-            <option value="">Không có</option>
-            <option
-              v-for="item in categories.filter((value) => value.id !== editingId)"
-              :key="item.id"
-              :value="item.id"
-            >
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <label v-if="section === 'units'"
-          >Chữ số thập phân *<input
-            v-model.number="form.precisionScale"
-            type="number"
-            min="0"
-            max="3"
-            step="1"
-            required
-        /></label>
-        <label v-if="section === 'suppliers'"
-          >Điện thoại<input v-model="form.phone" type="tel" maxlength="40"
-        /></label>
-        <label v-if="section === 'suppliers'"
-          >Email<input v-model="form.email" type="email" maxlength="255"
-        /></label>
-        <label v-if="section !== 'units'"
-          >Trạng thái
-          <select v-model="form.status">
-            <option value="ACTIVE">Đang dùng</option>
-            <option value="INACTIVE">Ngừng dùng</option>
-          </select>
-        </label>
-        <label v-if="section === 'products'" class="catalog-check"
-          ><input v-model="form.tracksExpiry" type="checkbox" /> Theo dõi hạn sử dụng</label
-        >
-      </div>
-
-      <!-- ===== Khu vực upload ảnh (chỉ hiển thị khi thêm/sửa sản phẩm) ===== -->
-      <div v-if="section === 'products'" class="catalog-image-upload">
-        <p class="catalog-image-label">
-          Ảnh sản phẩm
-          <span class="catalog-image-hint">(tuỳ chọn · JPEG, PNG, WebP · tối đa 5 MB)</span>
-        </p>
-        <div class="catalog-image-preview-wrap">
-          <div class="catalog-image-preview">
-            <img
-              v-if="imagePreview"
-              :src="imagePreview"
-              alt="Xem trước ảnh sản phẩm"
-              class="catalog-image-thumb"
-            />
-            <span v-else class="catalog-image-placeholder" aria-hidden="true">📷</span>
-          </div>
-          <div class="catalog-image-controls">
-            <label class="catalog-image-pick secondary">
-              <input
-                id="product-image-input"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                class="sr-only"
-                :disabled="!canAct"
-                @change="onImagePicked"
-              />
-              {{ imagePreview ? "Đổi ảnh" : "Chọn ảnh" }}
-            </label>
+    <!-- ===== Modal Thêm / Sửa Hàng Hóa ===== -->
+    <Teleport to="body">
+      <div
+        v-if="formOpen && canWrite"
+        class="catalog-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="'catalog-modal-title-' + (editingId || 'new')"
+        @click.self="closeFormModal"
+      >
+        <form class="catalog-modal-window catalog-editor card" @submit.prevent="save">
+          <div class="catalog-modal-header">
+            <div>
+              <h2 :id="'catalog-modal-title-' + (editingId || 'new')">
+                {{ editingId ? "Sửa" : "Thêm" }} {{ sectionMeta.singular }}
+              </h2>
+              <p>Những trường bắt buộc được đánh dấu *.</p>
+            </div>
             <button
-              v-if="imagePreview"
               type="button"
-              class="catalog-image-remove"
-              :disabled="!canAct"
-              @click="removeSelectedImage"
+              class="catalog-modal-close"
+              aria-label="Tắt"
+              title="Đóng (Esc)"
+              @click="closeFormModal"
             >
-              Xóa ảnh
+              ×
             </button>
           </div>
-        </div>
-        <p v-if="imageUploading" class="catalog-notice">Đang tải ảnh lên máy chủ…</p>
-      </div>
-      <!-- ===== Kết thúc upload ảnh ===== -->
 
-      <p
-        v-if="section === 'products' && (!categories.length || !units.length)"
-        class="catalog-notice"
-      >
-        Tạo ít nhất một danh mục và đơn vị tính trước khi thêm sản phẩm.
-      </p>
-      <div class="catalog-form-actions">
-        <button type="button" class="secondary" @click="formOpen = false">Hủy</button>
-        <button
-          class="primary"
-          type="submit"
-          :disabled="
-            !canAct ||
-            imageUploading ||
-            (section === 'products' && (!categories.length || !units.length))
-          "
-        >
-          {{ saving || imageUploading ? "Đang lưu…" : "Lưu thay đổi" }}
-        </button>
-      </div>
-    </form>
+          <div class="catalog-modal-body">
+            <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
 
-    <section
-      v-if="section === 'products' && productForBarcodes"
-      class="catalog-barcodes card"
-      aria-label="Mã vạch sản phẩm"
-    >
-      <div class="catalog-panel-head">
-        <div>
-          <h2>Mã vạch · {{ productForBarcodes.name }}</h2>
-          <p>Mỗi sản phẩm chỉ có một mã vạch chính.</p>
-        </div>
-        <button type="button" class="text-button" @click="productForBarcodes = undefined">
-          Đóng
-        </button>
-      </div>
-      <p v-if="barcodeLoading" role="status">Đang tải mã vạch…</p>
-      <ul v-else class="catalog-barcode-list">
-        <li v-for="item in barcodes" :key="item.id">
-          <span class="catalog-code"
-            >{{ item.barcode }} <small v-if="item.isPrimary">Chính</small></span
-          >
-          <div v-if="canWrite" class="catalog-actions">
-            <button type="button" :disabled="!canAct" @click="startBarcodeEdit(item.id)">
-              Sửa
-            </button>
-            <button type="button" :disabled="!canAct" @click="removeBarcode(item)">Xóa</button>
+            <div class="catalog-fields">
+              <label v-if="section !== 'products'"
+                >Mã *<input
+                  v-model="form.code"
+                  required
+                  :maxlength="section === 'units' ? 20 : 40"
+                  autofocus
+              /></label>
+              <label v-if="section === 'products'"
+                >SKU *<input v-model="form.sku" required maxlength="80" autofocus
+              /></label>
+              <label
+                >Tên *<input
+                  v-model="form.name"
+                  required
+                  :maxlength="section === 'units' ? 50 : 200"
+              /></label>
+              <label v-if="section === 'products'"
+                >Danh mục *
+                <select v-model="form.categoryId" required>
+                  <option value="" disabled>Chọn danh mục</option>
+                  <option v-for="item in categories" :key="item.id" :value="item.id">
+                    {{ item.name }}
+                  </option>
+                </select>
+              </label>
+              <label v-if="section === 'products'"
+                >Đơn vị tính *
+                <select v-model="form.baseUnitId" required>
+                  <option value="" disabled>Chọn đơn vị</option>
+                  <option v-for="item in units" :key="item.id" :value="item.id">
+                    {{ item.code }} · {{ item.name }}
+                  </option>
+                </select>
+              </label>
+              <label v-if="section === 'categories'"
+                >Danh mục cha
+                <select v-model="form.parentId">
+                  <option value="">Không có</option>
+                  <option
+                    v-for="item in categories.filter((value) => value.id !== editingId)"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.name }}
+                  </option>
+                </select>
+              </label>
+              <label v-if="section === 'units'"
+                >Chữ số thập phân *<input
+                  v-model.number="form.precisionScale"
+                  type="number"
+                  min="0"
+                  max="3"
+                  step="1"
+                  required
+              /></label>
+              <label v-if="section === 'suppliers'"
+                >Điện thoại<input v-model="form.phone" type="tel" maxlength="40"
+              /></label>
+              <label v-if="section === 'suppliers'"
+                >Email<input v-model="form.email" type="email" maxlength="255"
+              /></label>
+              <label v-if="section !== 'units'"
+                >Trạng thái
+                <select v-model="form.status">
+                  <option value="ACTIVE">Đang dùng</option>
+                  <option value="INACTIVE">Ngừng dùng</option>
+                </select>
+              </label>
+              <label v-if="section === 'products'" class="catalog-check"
+                ><input v-model="form.tracksExpiry" type="checkbox" /> Theo dõi hạn sử dụng</label
+              >
+            </div>
+
+            <!-- ===== Khu vực upload ảnh (chỉ hiển thị khi thêm/sửa sản phẩm) ===== -->
+            <div v-if="section === 'products'" class="catalog-image-upload">
+              <p class="catalog-image-label">
+                Ảnh sản phẩm
+                <span class="catalog-image-hint">(tuỳ chọn · JPEG, PNG, WebP · tối đa 5 MB)</span>
+              </p>
+              <div class="catalog-image-preview-wrap">
+                <div class="catalog-image-preview">
+                  <img
+                    v-if="imagePreview"
+                    :src="imagePreview"
+                    alt="Xem trước ảnh sản phẩm"
+                    class="catalog-image-thumb"
+                  />
+                  <span v-else class="catalog-image-placeholder" aria-hidden="true">📷</span>
+                </div>
+                <div class="catalog-image-controls">
+                  <label class="catalog-image-pick secondary">
+                    <input
+                      id="product-image-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      class="sr-only"
+                      :disabled="!canAct"
+                      @change="onImagePicked"
+                    />
+                    {{ imagePreview ? "Đổi ảnh" : "Chọn ảnh" }}
+                  </label>
+                  <button
+                    v-if="imagePreview"
+                    type="button"
+                    class="catalog-image-remove"
+                    :disabled="!canAct"
+                    @click="removeSelectedImage"
+                  >
+                    Xóa ảnh
+                  </button>
+                </div>
+              </div>
+              <p v-if="imageUploading" class="catalog-notice">Đang tải ảnh lên máy chủ…</p>
+            </div>
+            <!-- ===== Kết thúc upload ảnh ===== -->
+
+            <p
+              v-if="section === 'products' && (!categories.length || !units.length)"
+              class="catalog-notice"
+            >
+              Tạo ít nhất một danh mục và đơn vị tính trước khi thêm sản phẩm.
+            </p>
           </div>
-        </li>
-        <li v-if="!barcodes.length">Sản phẩm chưa có mã vạch.</li>
-      </ul>
-      <button
-        v-if="canWrite && !barcodeFormOpen"
-        type="button"
-        class="secondary"
-        :disabled="!canAct"
-        @click="startBarcodeCreate"
+
+          <div class="catalog-modal-footer">
+            <button type="button" class="secondary" @click="closeFormModal">Hủy</button>
+            <button
+              class="primary"
+              type="submit"
+              :disabled="
+                !canAct ||
+                imageUploading ||
+                (section === 'products' && (!categories.length || !units.length))
+              "
+            >
+              {{ saving || imageUploading ? "Đang lưu…" : "Lưu thay đổi" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Teleport>
+
+    <!-- ===== Modal Quản lý Mã vạch ===== -->
+    <Teleport to="body">
+      <div
+        v-if="section === 'products' && productForBarcodes"
+        class="catalog-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="barcode-modal-title"
+        @click.self="closeBarcodeModal"
       >
-        Thêm mã vạch
-      </button>
-      <form
-        v-if="canWrite && barcodeFormOpen"
-        class="catalog-barcode-form"
-        @submit.prevent="saveBarcode"
-      >
-        <label>Mã vạch *<input v-model="barcodeForm.barcode" required maxlength="100" /></label>
-        <label class="catalog-check"
-          ><input v-model="barcodeForm.isPrimary" type="checkbox" /> Mã vạch chính</label
-        >
-        <p>Nếu đã có mã chính, hãy bỏ chọn mã cũ trước khi đặt mã mới làm chính.</p>
-        <div class="catalog-form-actions">
-          <button type="button" class="secondary" @click="barcodeFormOpen = false">Hủy</button>
-          <button type="submit" class="primary" :disabled="!canAct">
-            {{ saving ? "Đang lưu…" : "Lưu mã vạch" }}
-          </button>
-        </div>
-      </form>
-    </section>
+        <section class="catalog-modal-window catalog-barcodes card" aria-label="Mã vạch sản phẩm">
+          <div class="catalog-modal-header">
+            <div>
+              <h2 id="barcode-modal-title">Mã vạch · {{ productForBarcodes.name }}</h2>
+              <p>Mỗi sản phẩm chỉ có một mã vạch chính.</p>
+            </div>
+            <button
+              type="button"
+              class="catalog-modal-close"
+              aria-label="Tắt"
+              title="Đóng (Esc)"
+              @click="closeBarcodeModal"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="catalog-modal-body">
+            <p v-if="error" class="catalog-error" role="alert">{{ error }}</p>
+            <p v-if="success" class="catalog-success" role="status">{{ success }}</p>
+
+            <p v-if="barcodeLoading" role="status">Đang tải mã vạch…</p>
+            <ul v-else class="catalog-barcode-list">
+              <li v-for="item in barcodes" :key="item.id">
+                <span class="catalog-code"
+                  >{{ item.barcode }} <small v-if="item.isPrimary">Chính</small></span
+                >
+                <div v-if="canWrite" class="catalog-actions">
+                  <button type="button" :disabled="!canAct" @click="startBarcodeEdit(item.id)">
+                    Sửa
+                  </button>
+                  <button type="button" :disabled="!canAct" @click="removeBarcode(item)">
+                    Xóa
+                  </button>
+                </div>
+              </li>
+              <li v-if="!barcodes.length">Sản phẩm chưa có mã vạch.</li>
+            </ul>
+
+            <button
+              v-if="canWrite && !barcodeFormOpen"
+              type="button"
+              class="secondary"
+              :disabled="!canAct"
+              @click="startBarcodeCreate"
+            >
+              Thêm mã vạch
+            </button>
+
+            <form
+              v-if="canWrite && barcodeFormOpen"
+              class="catalog-barcode-form"
+              @submit.prevent="saveBarcode"
+            >
+              <label
+                >Mã vạch *<input v-model="barcodeForm.barcode" required maxlength="100"
+              /></label>
+              <label class="catalog-check"
+                ><input v-model="barcodeForm.isPrimary" type="checkbox" /> Mã vạch chính</label
+              >
+              <p>Nếu đã có mã chính, hãy bỏ chọn mã cũ trước khi đặt mã mới làm chính.</p>
+              <div class="catalog-form-actions">
+                <button type="button" class="secondary" @click="barcodeFormOpen = false">
+                  Hủy
+                </button>
+                <button type="submit" class="primary" :disabled="!canAct">
+                  {{ saving ? "Đang lưu…" : "Lưu mã vạch" }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="catalog-modal-footer">
+            <button type="button" class="secondary" @click="closeBarcodeModal">Đóng</button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -899,7 +1016,134 @@ async function removeBarcode(barcode: Barcode) {
 }
 .catalog-editor,
 .catalog-barcodes {
-  padding: 24px;
+  padding: 0;
+}
+:global(body.modal-open) {
+  overflow: hidden;
+}
+.catalog-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(30, 16, 42, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  animation: catalogBackdropFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.catalog-modal-window {
+  width: min(680px, 100%);
+  max-height: min(90vh, 840px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #ebdff2;
+  box-shadow:
+    0 24px 64px -12px rgba(45, 15, 65, 0.32),
+    0 8px 24px -4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin: auto;
+  animation: catalogModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+.catalog-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  background: #faf7fc;
+  border-bottom: 1px solid #f0e6f5;
+  flex-shrink: 0;
+}
+.catalog-modal-header h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #281836;
+}
+.catalog-modal-header p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.catalog-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: #927e9e;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.catalog-modal-close:hover {
+  background: #ede6f5;
+  color: var(--purple);
+}
+.catalog-modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.catalog-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 24px;
+  background: #faf7fc;
+  border-top: 1px solid #f0e6f5;
+  flex-shrink: 0;
+}
+@keyframes catalogBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes catalogModalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@media (max-width: 640px) {
+  .catalog-modal-backdrop {
+    padding: 8px;
+    align-items: flex-end;
+  }
+  .catalog-modal-window {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+  }
+  .catalog-modal-header,
+  .catalog-modal-body,
+  .catalog-modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 .catalog-panel-head {
   align-items: flex-start;
