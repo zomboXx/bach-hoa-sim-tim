@@ -28,8 +28,8 @@ public record InvoiceResponse(
     public record LineResponse(
             UUID id,
             UUID productId,
-            String skuSnapshot,
-            String productNameSnapshot,
+            String sku,
+            String productName,
             BigDecimal quantity,
             long unitPrice,
             long discountAmount,
