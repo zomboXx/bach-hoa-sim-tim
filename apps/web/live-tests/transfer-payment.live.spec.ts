@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { BinaryBitmap, HybridBinarizer, QRCodeReader, RGBLuminanceSource } from "@zxing/library";
+import { createRequire } from "node:module";
+
+// ZXing publishes CommonJS; load its named classes consistently on Node 22 CI and Windows.
+const { BinaryBitmap, HybridBinarizer, QRCodeReader, RGBLuminanceSource } = createRequire(
+  import.meta.url,
+)("@zxing/library") as typeof import("@zxing/library");
 
 test("@transfer QR survives reload and two devices complete one persisted sale after response loss", async ({
   browser,

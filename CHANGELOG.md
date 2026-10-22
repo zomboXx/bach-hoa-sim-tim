@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Sửa nạp bộ giải mã QR trong kiểm thử live để tương thích CommonJS trên Node.js 22/Linux; giữ các bài POS, bán hàng và chuyển khoản chạy được cùng nhau trên CI.
+
 - Chuyển đổi biểu mẫu thêm/chỉnh sửa sản phẩm và quản lý mã vạch trong Danh mục hàng hóa (`CatalogWorkspace.vue`) từ dạng form chèn cuối trang sang cửa sổ nổi (modal dialog) trên lớp nền làm mờ (backdrop blur), hỗ trợ đóng bằng phím Escape, click ra ngoài hoặc nút đóng, khóa cuộn trang nền khi mở dialog và tương thích hiển thị responsive (dạng bottom-sheet trên màn hình nhỏ dưới 640px).
 - **IMG-01** Upload ảnh đại diện sản phẩm: hoàn thiện toàn diện Frontend và Backend. Thêm Flyway migration `V18__product_images.sql` lưu `image_url`, `image_data` (bytea), `image_content_type` vào `catalog.products`; bổ sung endpoint `PUT /api/v1/products/{id}/image` (multipart upload lên đến 5MB), `GET /api/v1/products/{id}/image` (phục vụ ảnh công khai kèm ETag và Cache-Control revalidation), `DELETE /api/v1/products/{id}/image`; tách riêng entity `ProductImageJpa` cô lập dữ liệu BLOB ảnh khỏi các truy vấn danh mục thông thường; cấu hình Spring Security cho phép dispatcher ERROR và public GET image; Frontend hỗ trợ chọn, xem trước, upload, xóa ảnh với `ApiCatalogAdapter`, xử lý lỗi xóa/tải ảnh chính xác và giữ form mở khi lỗi để người dùng thử lại.
 - Bổ sung QR chuyển khoản với xác nhận tiền về thủ công: lưu lịch sử PostgreSQL, giữ hàng/khóa giỏ hai thiết bị, ghi người và mã ngân hàng, hoàn tất hóa đơn/xuất tồn một lần; hủy/hết hạn giải phóng hàng giữ. Có cấu hình tài khoản riêng cho cửa hàng và bài thử live với PostgreSQL sạch, không cần merchant hoặc thư viện production mới.

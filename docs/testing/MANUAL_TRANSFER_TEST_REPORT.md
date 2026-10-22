@@ -30,6 +30,8 @@ Hình giao diện được lưu trong thư mục tạm do script in ra; job live
 
 ## Giới hạn và bước còn lại
 
+Lượt GitHub CI đầu của [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84) gặp lỗi nạp named export của ZXing CommonJS trên Node 22/Linux, làm cả bốn suite live dừng trước khi chạy. Đã đổi riêng test loader sang `createRequire`; không đổi quy tắc hoặc API thanh toán. Project Owner đã review và duyệt bốn commit triển khai tại `17f8afc` ngày 23/10/2026; trạng thái CI sau sửa xem trực tiếp tại PR.
+
 - Không gọi ngân hàng, không chuyển tiền thật. Tài khoản bài live ghi `TEST ONLY - DO NOT TRANSFER`; thống kê là giao dịch do ứng dụng ghi nhận thủ công.
 - Đã kiểm tra tải lại/đăng nhập và dữ liệu PostgreSQL qua các request độc lập; chưa chạy ca riêng khởi động lại server giữa một giao dịch.
 - Cần cho phép push/PR, chạy CI và review trước khi triển khai. Sau triển khai, Project Owner quét QR bằng ứng dụng ngân hàng để kiểm tra người nhận, tiền và nội dung; có thể thoát trước bước chuyển tiền.

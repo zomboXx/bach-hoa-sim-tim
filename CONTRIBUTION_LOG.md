@@ -22,6 +22,15 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:36:28
+
+Sửa loader bộ giải mã QR của bài live sau khi CI PR #84 phát hiện Node 22/Linux không cung cấp named export CommonJS. Dùng `createRequire` trong test, giữ nguyên nghiệp vụ thanh toán và API đã được review. Lint/build đạt; Node 22 khám phá đủ 7 bài live trong 5 file; bài chuyển khoản hai thiết bị và đối soát PostgreSQL chạy lại đạt. Ghi nhận Project Owner đã review và duyệt bốn commit triển khai tại 17f8afc ngày 23/10/2026; chờ CI chạy lại trước merge/deploy.
+
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +6 -1
+- `CHANGELOG.md`: +2 -0
+- `docs/testing/MANUAL_TRANSFER_TEST_REPORT.md`: +2 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-22 23:48:50
 
 Bổ sung QR chuyển khoản với xác nhận tiền về thủ công: lưu giao dịch/lịch sử trên PostgreSQL, giữ hàng và khóa giỏ giữa hai thiết bị, chụp giá/khuyến mãi/FEFO, ghi người xác nhận và mã giao dịch ngân hàng; retry không trừ hàng hoặc ghi tiền hai lần. Hủy/hết hạn trả hàng giữ, chặn kiểm kê thấp hơn số giữ và rollback toàn bộ nếu lô không hợp lệ. Cập nhật từ main 5f1b086, giữ V18 ảnh sản phẩm và dùng V19 cho chuyển khoản.
