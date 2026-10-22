@@ -371,14 +371,21 @@ async function save() {
       } catch (uploadErr) {
         success.value = "";
         error.value = `Đã lưu thông tin sản phẩm nhưng không thể tải ảnh lên: ${(uploadErr as Error).message}`;
+        return;
       } finally {
         imageUploading.value = false;
       }
     } else if (imageRemoved.value && savedProductId) {
       try {
         await props.adapter.deleteImage(savedProductId);
-      } catch {
-        // Bỏ qua nếu server chưa có ảnh hoặc lỗi xóa ảnh
+      } catch (delErr) {
+        const msg = (delErr as Error).message || "";
+        // 404 nghĩa là trên server vốn chưa có ảnh hoặc đã bị xóa trước đó, không coi là lỗi
+        if (!msg.includes("404")) {
+          success.value = "";
+          error.value = `Đã lưu thông tin sản phẩm nhưng không thể xóa ảnh: ${msg}`;
+          return;
+        }
       }
     }
 

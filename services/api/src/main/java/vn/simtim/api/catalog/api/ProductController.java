@@ -69,13 +69,19 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/image")
-    public ResponseEntity<byte[]> getImage(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID id,
+                                           org.springframework.web.context.request.WebRequest webRequest) {
         var img = service.getImage(id);
+        String eTag = "\"" + org.springframework.util.DigestUtils.md5DigestAsHex(img.data()) + "\"";
+        if (webRequest.checkNotModified(eTag)) {
+            return null;
+        }
         org.springframework.http.MediaType mediaType = org.springframework.http.MediaType.parseMediaType(
                 img.contentType() != null ? img.contentType() : "image/jpeg");
         return ResponseEntity.ok()
                 .contentType(mediaType)
-                .header(org.springframework.http.HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .cacheControl(org.springframework.http.CacheControl.noCache().mustRevalidate())
+                .eTag(eTag)
                 .body(img.data());
     }
 
