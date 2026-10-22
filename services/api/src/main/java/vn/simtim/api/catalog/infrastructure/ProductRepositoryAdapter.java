@@ -14,10 +14,14 @@ class ProductRepositoryAdapter implements ProductRepository {
 
     private final ProductJpaRepository jpa;
     private final ProductBarcodeJpaRepository barcodeJpa;
+    private final ProductImageJpaRepository imageJpa;
 
-    ProductRepositoryAdapter(ProductJpaRepository jpa, ProductBarcodeJpaRepository barcodeJpa) {
+    ProductRepositoryAdapter(ProductJpaRepository jpa,
+                             ProductBarcodeJpaRepository barcodeJpa,
+                             ProductImageJpaRepository imageJpa) {
         this.jpa = jpa;
         this.barcodeJpa = barcodeJpa;
+        this.imageJpa = imageJpa;
     }
 
     @Override
@@ -63,8 +67,6 @@ class ProductRepositoryAdapter implements ProductRepository {
         ProductJpa jpaEntity = new ProductJpa(product);
         if (existing.isPresent()) {
             ProductJpa old = existing.get();
-            jpaEntity.imageData = old.imageData;
-            jpaEntity.imageContentType = old.imageContentType;
             if (product.imageUrl() == null) {
                 jpaEntity.imageUrl = old.imageUrl;
             }
@@ -80,7 +82,7 @@ class ProductRepositoryAdapter implements ProductRepository {
 
     @Override
     public Optional<ProductImage> findImageById(UUID id) {
-        return jpa.findById(id)
+        return imageJpa.findById(id)
                 .filter(p -> p.imageData != null && p.imageData.length > 0)
                 .map(p -> new ProductImage(p.imageData, p.imageContentType != null ? p.imageContentType : "image/jpeg"));
     }
@@ -89,8 +91,13 @@ class ProductRepositoryAdapter implements ProductRepository {
     public Product saveImage(UUID organizationId, UUID productId, byte[] data, String contentType, String imageUrl) {
         var entity = jpa.findByOrganizationIdAndId(organizationId, productId)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
-        entity.imageData = data;
-        entity.imageContentType = contentType;
+        var imageEntity = imageJpa.findById(productId)
+                .orElseGet(() -> new ProductImageJpa(productId, organizationId, null, null, null));
+        imageEntity.imageData = data;
+        imageEntity.imageContentType = contentType;
+        imageEntity.imageUrl = imageUrl;
+        imageJpa.save(imageEntity);
+
         entity.imageUrl = imageUrl;
         return jpa.save(entity).toDomain();
     }
@@ -99,8 +106,12 @@ class ProductRepositoryAdapter implements ProductRepository {
     public Product removeImage(UUID organizationId, UUID productId) {
         var entity = jpa.findByOrganizationIdAndId(organizationId, productId)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
-        entity.imageData = null;
-        entity.imageContentType = null;
+        imageJpa.findById(productId).ifPresent(img -> {
+            img.imageData = null;
+            img.imageContentType = null;
+            img.imageUrl = null;
+            imageJpa.save(img);
+        });
         entity.imageUrl = null;
         return jpa.save(entity).toDomain();
     }

@@ -662,7 +662,32 @@ class CatalogApiTest {
         var getResp = rest.getForEntity("/api/v1/products/" + productId + "/image", byte[].class);
         assertThat(getResp.getStatusCode().value()).isEqualTo(200);
         assertThat(getResp.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+        assertThat(getResp.getHeaders().getETag()).isNotNull();
+        assertThat(getResp.getHeaders().getCacheControl()).contains("no-cache");
         assertThat(getResp.getBody()).isEqualTo(imageBytes);
+
+        // Upload 2 MB image (verifies spring.servlet.multipart.max-file-size=5MB allows files > 1MB)
+        byte[] largeImageBytes = new byte[2 * 1024 * 1024];
+        largeImageBytes[0] = (byte) 0x89;
+        largeImageBytes[1] = 0x50;
+        largeImageBytes[2] = 0x4E;
+        largeImageBytes[3] = 0x47;
+        org.springframework.util.MultiValueMap<String, Object> largeParts = new org.springframework.util.LinkedMultiValueMap<>();
+        org.springframework.core.io.ByteArrayResource largeRes = new org.springframework.core.io.ByteArrayResource(largeImageBytes) {
+            @Override
+            public String getFilename() { return "large.png"; }
+        };
+        var largePartHeaders = new HttpHeaders();
+        largePartHeaders.setContentType(MediaType.IMAGE_PNG);
+        largeParts.add("image", new HttpEntity<>(largeRes, largePartHeaders));
+
+        var largeUploadResp = rest.exchange("/api/v1/products/" + productId + "/image", HttpMethod.PUT,
+                new HttpEntity<>(largeParts, uploadHeaders), Map.class);
+        assertThat(largeUploadResp.getStatusCode().value()).isEqualTo(200);
+
+        var largeGetResp = rest.getForEntity("/api/v1/products/" + productId + "/image", byte[].class);
+        assertThat(largeGetResp.getStatusCode().value()).isEqualTo(200);
+        assertThat(largeGetResp.getBody()).hasSize(2 * 1024 * 1024);
 
         // Delete image
         var delHeaders = new HttpHeaders();
