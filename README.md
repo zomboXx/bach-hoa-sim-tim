@@ -24,6 +24,8 @@ Trong `infra/.env`, đặt hai mật khẩu **khác nhau** cho `POSTGRES_PASSWOR
 
 Compose chạy web, API và PostgreSQL cùng nhau. Xem [hướng dẫn Docker chi tiết](infra/README.md) để thử các luồng nghiệp vụ, xem log, đổi cổng và dừng dịch vụ. Lần chạy đầu cần thêm thời gian tải image và build.
 
+QR chuyển khoản cần [cấu hình tài khoản nhận trên backend](docs/testing/MANUAL_TRANSFER_SETUP.md). Trong **Bán hàng**, chọn **Chuyển khoản QR → Tạo QR và giữ hàng**; nhân viên kiểm tra tiền về rồi xác nhận thủ công. Giao dịch được lưu cùng hóa đơn; lịch sử chuyển khoản cho biết số giao dịch và tổng tiền đã xác nhận. Tính năng được bật theo cấu hình riêng của từng môi trường.
+
 ## Phát triển và kiểm thử
 
 Để chạy riêng giao diện với dữ liệu mẫu trong trình duyệt, cần PowerShell 7 và Node.js 22:

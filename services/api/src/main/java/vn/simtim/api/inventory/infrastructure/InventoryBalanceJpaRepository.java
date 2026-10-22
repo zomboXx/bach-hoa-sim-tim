@@ -26,15 +26,15 @@ public interface InventoryBalanceJpaRepository extends JpaRepository<InventoryBa
      * Chỉ trả về lô AVAILABLE còn tồn dương.
      */
     @Query(value = """
-            SELECT ib.batch_id, pb.product_id, ib.on_hand_quantity, pb.expiry_date
+            SELECT ib.batch_id, pb.product_id, ib.on_hand_quantity - ib.reserved_quantity, pb.expiry_date
             FROM inventory.inventory_balances ib
             JOIN inventory.product_batches pb ON pb.id = ib.batch_id
             WHERE ib.organization_id = :orgId
               AND ib.store_id = :storeId
               AND pb.product_id = :productId
               AND pb.status = 'AVAILABLE'
-              AND ib.on_hand_quantity > 0
-              AND (pb.expiry_date IS NULL OR pb.expiry_date >= CURRENT_DATE)
+              AND ib.on_hand_quantity - ib.reserved_quantity > 0
+              AND (pb.expiry_date IS NULL OR pb.expiry_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)
             ORDER BY pb.expiry_date ASC NULLS LAST, pb.received_date ASC, pb.id ASC
             """, nativeQuery = true)
     List<Object[]> findAvailableBatchesFEFO(@Param("orgId") UUID orgId,

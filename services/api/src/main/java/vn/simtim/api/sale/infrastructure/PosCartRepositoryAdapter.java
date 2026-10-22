@@ -42,7 +42,9 @@ public class PosCartRepositoryAdapter implements PosCartRepository {
                             join catalog.products p on p.id=l.product_id where l.cart_id=? order by p.id
                             """, (line, index) -> new PosCart.Line(line.getObject(1, UUID.class),
                                     line.getString(2), line.getBigDecimal(3)), id);
-                    return new PosCart(id, rs.getLong("version"), rs.getLong("generation"), lines);
+                    var transfers = jdbc.queryForList("select id from sales.transfer_orders where cart_id=? and status='PENDING'", UUID.class,id);
+                    return new PosCart(id, rs.getLong("version"), rs.getLong("generation"), lines,
+                            transfers.isEmpty()?null:transfers.getFirst());
                 }, scope.organizationId(), scope.storeId(), scope.ownerId());
     }
 

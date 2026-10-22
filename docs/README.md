@@ -32,6 +32,8 @@ Tài liệu được phân loại theo mục đích để tránh dùng nhầm đ
 
 ## Kiểm thử
 
+- [QR chuyển khoản xác nhận thủ công](../contracts/MANUAL_TRANSFER.md) và [cấu hình/thử](testing/MANUAL_TRANSFER_SETUP.md): phạm vi duyệt ngày 22/10, mã nguồn được Project Owner review ngày 23/10; [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84) theo dõi CI/tích hợp, giữ hàng và lịch sử trên PostgreSQL.
+
 - [`testing/README.md`](testing/README.md): điểm vào hồ sơ QA-01/QA-02/QA-04; sáu GAP QA-02 được chạy lại trên mã tích hợp ngày 20/10, kết quả cũ giữ để truy vết.
 - [`testing/DOC-01-traceability-working.md`](testing/DOC-01-traceability-working.md): ma trận Working nối yêu cầu, thiết kế, code và test; chờ QA-04 và báo cáo cuối.
 

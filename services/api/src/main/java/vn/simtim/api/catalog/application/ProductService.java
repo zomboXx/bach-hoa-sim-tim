@@ -129,4 +129,27 @@ public class ProductService {
         getBarcode(organizationId, productId, barcodeId);
         barcodeRepo.deleteById(organizationId, barcodeId);
     }
+
+    public Product uploadImage(UUID organizationId, UUID productId, byte[] data, String contentType) {
+        getById(organizationId, productId);
+        if (data == null || data.length == 0) {
+            throw new IllegalArgumentException("Tệp hình ảnh không được để trống");
+        }
+        if (data.length > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Dung lượng hình ảnh không được vượt quá 5MB");
+        }
+        String imageUrl = "/api/v1/products/" + productId + "/image";
+        return repo.saveImage(organizationId, productId, data, contentType, imageUrl);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductImage getImage(UUID productId) {
+        return repo.findImageById(productId)
+                .orElseThrow(() -> new CatalogNotFoundException("Hình ảnh không tồn tại cho sản phẩm: " + productId));
+    }
+
+    public Product deleteImage(UUID organizationId, UUID productId) {
+        getById(organizationId, productId);
+        return repo.removeImage(organizationId, productId);
+    }
 }
