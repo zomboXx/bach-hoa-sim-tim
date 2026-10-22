@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- CI dùng Ubuntu archive qua HTTPS và giới hạn thời gian chờ/retry khi cài phụ thuộc trình duyệt, tránh treo ở mirror Azure trước khi chạy kiểm thử.
+
 - Sửa nạp bộ giải mã QR trong kiểm thử live để tương thích CommonJS trên Node.js 22/Linux; giữ các bài POS, bán hàng và chuyển khoản chạy được cùng nhau trên CI.
 
 - Chuyển đổi biểu mẫu thêm/chỉnh sửa sản phẩm và quản lý mã vạch trong Danh mục hàng hóa (`CatalogWorkspace.vue`) từ dạng form chèn cuối trang sang cửa sổ nổi (modal dialog) trên lớp nền làm mờ (backdrop blur), hỗ trợ đóng bằng phím Escape, click ra ngoài hoặc nút đóng, khóa cuộn trang nền khi mở dialog và tương thích hiển thị responsive (dạng bottom-sheet trên màn hình nhỏ dưới 640px).

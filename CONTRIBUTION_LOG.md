@@ -22,6 +22,14 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:56:46
+
+Điều chỉnh tải phụ thuộc trình duyệt trong CI PR #84 sau khi hai runner chậm ở mirror Azure và job chuyển khoản lặp lại tình trạng này sau rerun. Chuyển nguồn Ubuntu sang archive qua HTTPS, đặt timeout 30 giây và retry ba lần; giữ nguyên toàn bộ bài kiểm thử và mã thanh toán đã duyệt. YAML, cú pháp Bash, policy, liên kết và whitespace đạt; kết quả thực thi trên runner theo PR.
+
+- `.github/workflows/ci.yml`: +16 -0
+- `CHANGELOG.md`: +2 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 02:41:10
 
 Đồng bộ README, backlog, contract và hồ sơ kiểm thử với PR #84 sau khi Project Owner cho phép push/triển khai và review bốn commit triển khai. Giữ kết quả cục bộ ngày 22/10 như bằng chứng lịch sử; dùng PR làm nguồn trạng thái CI/tích hợp hiện hành, bổ sung cách chọn QR tại quầy. Không đổi mã nguồn nghiệp vụ. Kiểm tra liên kết và whitespace đạt.
