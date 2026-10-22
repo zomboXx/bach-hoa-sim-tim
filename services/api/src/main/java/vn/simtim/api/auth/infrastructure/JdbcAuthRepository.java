@@ -2,6 +2,9 @@ package vn.simtim.api.auth.infrastructure;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +14,19 @@ import vn.simtim.api.auth.domain.*;
 
 @Repository
 public class JdbcAuthRepository implements AuthRepository {
+    private static final String PRINCIPAL_SELECT = """
+            select u.id, u.organization_id, s.id as store_id, u.full_name, u.training_enabled,
+              array_remove(array_agg(distinct r.code),null) as roles,
+              array_remove(array_agg(distinct p.code),null) as permissions
+            from iam.users u join core.organizations o on o.id=u.organization_id
+            join core.stores s on s.organization_id=u.organization_id
+            left join iam.user_roles ur on ur.user_id=u.id and ur.store_id=s.id
+            left join iam.roles r on r.id=ur.role_id
+            left join iam.role_permissions rp on rp.role_id=ur.role_id
+            left join iam.permissions p on p.id=rp.permission_id
+            """;
+    private static final String ACTIVE = " and u.status='ACTIVE' and s.status='ACTIVE' and o.status='ACTIVE' ";
+    private static final String GROUP = " group by u.id,s.id ";
     private final JdbcTemplate jdbc;
     public JdbcAuthRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
@@ -27,25 +43,8 @@ public class JdbcAuthRepository implements AuthRepository {
     }
 
     public Optional<SessionPrincipal> principal(UUID userId, UUID storeId) {
-        var users = jdbc.query("""
-                select u.id, u.organization_id, s.id as store_id, u.full_name, u.training_enabled
-                from iam.users u join core.stores s on s.organization_id=u.organization_id
-                join core.organizations o on o.id=u.organization_id
-                where u.id=? and s.id=? and u.status='ACTIVE' and s.status='ACTIVE' and o.status='ACTIVE'
-                """, (rs, n) -> new SessionPrincipal(rs.getObject("id", UUID.class),
-                        rs.getObject("organization_id", UUID.class), rs.getObject("store_id", UUID.class),
-                        rs.getString("full_name"), rs.getBoolean("training_enabled"),
-                        new HashSet<>(jdbc.queryForList("""
-                            select r.code from iam.user_roles ur join iam.roles r on r.id=ur.role_id
-                            where ur.user_id=? and ur.store_id=?
-                            """, String.class, userId, storeId)),
-                        new HashSet<>(jdbc.queryForList("""
-                            select distinct p.code from iam.user_roles ur
-                            join iam.role_permissions rp on rp.role_id=ur.role_id
-                            join iam.permissions p on p.id=rp.permission_id
-                            where ur.user_id=? and ur.store_id=?
-                            """, String.class, userId, storeId))), userId, storeId);
-        return users.stream().findFirst();
+        return jdbc.query(PRINCIPAL_SELECT + " where u.id=? and s.id=? " + ACTIVE + GROUP,
+                (rs, n) -> principalRow(rs), userId, storeId).stream().findFirst();
     }
 
     public void createSession(UUID id, SessionPrincipal p, byte[] hash, Instant issued, Instant expires) {
@@ -56,12 +55,24 @@ public class JdbcAuthRepository implements AuthRepository {
     }
 
     public Optional<SessionPrincipal> resolveSession(byte[] hash, Instant now) {
-        return jdbc.query("""
-                select user_id,store_id from iam.auth_sessions
-                where token_hash=? and revoked_at is null and expires_at>? and issued_at<=?
-                """, (rs, n) -> new UUID[]{rs.getObject("user_id", UUID.class), rs.getObject("store_id", UUID.class)},
-                hash, Timestamp.from(now), Timestamp.from(now)).stream().findFirst()
-                .flatMap(ids -> principal(ids[0], ids[1]));
+        return session(hash, now).map(SessionRecord::principal);
+    }
+
+    @Override
+    public Optional<SessionRecord> session(byte[] hash, Instant now) {
+        String sql = PRINCIPAL_SELECT.replace("select u.id,", "select auth.expires_at, u.id,")
+                + " join iam.auth_sessions auth on auth.user_id=u.id and auth.store_id=s.id "
+                + " where auth.token_hash=? and auth.revoked_at is null and auth.expires_at>? and auth.issued_at<=? "
+                + ACTIVE + GROUP + ",auth.expires_at";
+        return jdbc.query(sql, (rs, n) -> new SessionRecord(principalRow(rs), rs.getTimestamp("expires_at").toInstant()),
+                hash, Timestamp.from(now), Timestamp.from(now)).stream().findFirst();
+    }
+
+    private static SessionPrincipal principalRow(ResultSet rs) throws SQLException {
+        return new SessionPrincipal(rs.getObject("id", UUID.class), rs.getObject("organization_id", UUID.class),
+                rs.getObject("store_id", UUID.class), rs.getString("full_name"), rs.getBoolean("training_enabled"),
+                new HashSet<>(Arrays.asList((String[]) rs.getArray("roles").getArray())),
+                new HashSet<>(Arrays.asList((String[]) rs.getArray("permissions").getArray())));
     }
 
     public void revokeSession(byte[] hash, Instant now) {

@@ -22,6 +22,15 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:15:06
+
+Giảm số lượt đọc CSDL của xác thực Bearer từ bốn xuống một bằng truy vấn gộp phiên, tài khoản, vai trò và quyền. Không cache quyền; tiếp tục từ chối tài khoản khóa, phiên hết hạn/thu hồi và quyền đã gỡ ngay ở request tiếp theo. Chạy `mvnw.cmd -Dtest=ApiBootstrapTest test` trên PostgreSQL sạch: 11/11 đạt. Phép đo public production trước sửa: trang tĩnh 0,21 giây, API không đăng nhập 0,27–1,06 giây; chưa đo thời gian đăng nhập production bằng tài khoản người dùng.
+
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/domain/AuthRepository.java`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/JdbcAuthRepository.java`: +36 -25
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 02:56:46
 
 Điều chỉnh tải phụ thuộc trình duyệt trong CI PR #84 sau khi hai runner chậm ở mirror Azure và job chuyển khoản lặp lại tình trạng này sau rerun. Chuyển nguồn Ubuntu sang archive qua HTTPS, đặt timeout 30 giây và retry ba lần; giữ nguyên toàn bộ bài kiểm thử và mã thanh toán đã duyệt. YAML, cú pháp Bash, policy, liên kết và whitespace đạt; kết quả thực thi trên runner theo PR.
