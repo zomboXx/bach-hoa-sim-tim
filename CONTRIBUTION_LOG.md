@@ -22,6 +22,31 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-22 23:48:50
+
+Bổ sung QR chuyển khoản với xác nhận tiền về thủ công: lưu giao dịch/lịch sử trên PostgreSQL, giữ hàng và khóa giỏ giữa hai thiết bị, chụp giá/khuyến mãi/FEFO, ghi người xác nhận và mã giao dịch ngân hàng; retry không trừ hàng hoặc ghi tiền hai lần. Hủy/hết hạn trả hàng giữ, chặn kiểm kê thấp hơn số giữ và rollback toàn bộ nếu lô không hợp lệ. Cập nhật từ main 5f1b086, giữ V18 ảnh sản phẩm và dùng V19 cho chuyển khoản.
+
+Gate gốc đạt: demo 51/51, API consumer 66/66, backend 210/210. Backend đã chạy lại sau khi tách chu kỳ nền của test khỏi CSDL disposable; bài live hai thiết bị giải mã QR, khôi phục sau reload/đăng nhập, mất response xác nhận và đối soát đúng một hóa đơn/payment/movement, 22.500 VND doanh thu, không lệch ledger hoặc còn hàng giữ. Tài khoản nhận tiền nằm trong cấu hình riêng, không commit; chưa thử chuyển tiền thật, chưa push/deploy. Có hướng dẫn, test report và job CI cho luồng mới.
+
+- `.github/workflows/ci.yml`: +21 -1
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +2 -0
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +130 -0
+- `apps/web/package.json`: +1 -0
+- `apps/web/src/App.vue`: +66 -9
+- `apps/web/src/modules/sale/`: +601 -0
+- `apps/web/tests/api-transfer.spec.ts`: +179 -0
+- `contracts/`: +44 -0
+- `docs/`: +93 -0
+- `infra/`: +14 -0
+- `scripts/`: +23 -4
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +124 -10
+- `services/api/src/main/java/vn/simtim/api/sale/`: +461 -14
+- `services/api/src/main/resources/db/migration/`: +40 -0
+- `services/api/src/test/java/`: +409 -0
+- `services/api/src/test/resources/`: +4 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-21 15:41:26
 
 Bổ sung bộ ảnh minh họa chân thực cho 10 mặt hàng kho mẫu trong quầy POS và danh mục sản phẩm. Ảnh WebP 480×480 lưu cùng ứng dụng, tổng 171.278 byte, tải theo nhu cầu; sản phẩm thiếu hoặc lỗi ảnh vẫn hiện tên và chọn bán được. Đối chiếu giao diện mới với danh mục đang deploy ở 390/768/1440 px: đủ 10 ảnh, không tràn ngang.
