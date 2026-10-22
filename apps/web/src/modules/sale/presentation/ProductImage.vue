@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-const props = defineProps<{ sku: string; name: string; emoji?: string }>();
+const props = defineProps<{
+  sku: string;
+  name: string;
+  emoji?: string;
+  /** URL ảnh đại diện do người dùng upload; ưu tiên hơn ảnh tĩnh mặc định. */
+  imageUrl?: string | null;
+}>();
+
 // Illustrations for the bundled sample catalog; unknown products keep their own placeholder.
 const photos: Record<string, string> = {
   "ST-RICE-01": "rice",
@@ -19,7 +26,9 @@ const photos: Record<string, string> = {
   SP004: "noodles",
   SP007: "rice",
 };
+
 const source = computed(() => {
+  if (props.imageUrl) return props.imageUrl;
   const photo = photos[props.sku];
   return photo ? `/product-images/${photo}.webp` : undefined;
 });

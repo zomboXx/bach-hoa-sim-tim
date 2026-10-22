@@ -14,4 +14,7 @@ public interface ProductRepository {
     boolean existsBySkuExcluding(UUID organizationId, String sku, UUID excludeId);
     Product save(Product product);
     void deleteById(UUID organizationId, UUID id);
+    Optional<ProductImage> findImageById(UUID id);
+    Product saveImage(UUID organizationId, UUID productId, byte[] data, String contentType, String imageUrl);
+    Product removeImage(UUID organizationId, UUID productId);
 }

@@ -24,6 +24,8 @@ export interface Product {
   name: string;
   tracksExpiry: boolean;
   status: CatalogStatus;
+  /** URL ảnh đại diện sản phẩm; undefined nếu chưa có ảnh. */
+  imageUrl?: string | null;
 }
 
 export interface Supplier {
@@ -49,7 +51,7 @@ export interface CatalogRecords {
 }
 
 export interface CatalogDrafts {
-  products: Omit<Product, "id">;
+  products: Omit<Product, "id" | "imageUrl">;
   categories: Omit<Category, "id">;
   units: Omit<Unit, "id">;
   suppliers: Omit<Supplier, "id">;
@@ -58,7 +60,15 @@ export interface CatalogDrafts {
 type AuthorizedFetch = (path: string, init?: RequestInit) => Promise<Response>;
 
 export class ApiCatalogAdapter {
-  constructor(private readonly authorizedFetch: AuthorizedFetch) {}
+  constructor(
+    private readonly authorizedFetch: AuthorizedFetch,
+    /**
+     * Fetch không fire sự kiện logout khi nhận 401.
+     * Dùng cho upload ảnh — khi endpoint chưa có trên server thì không đăng xuất.
+     * Nếu không cung cấp, dùng authorizedFetch (giữ hành vi cũ).
+     */
+    private readonly silentFetch: AuthorizedFetch = authorizedFetch,
+  ) {}
 
   list<K extends CatalogKind>(kind: K): Promise<CatalogRecords[K][]> {
     return this.request<CatalogRecords[K][]>(`/api/v1/${kind}`);
@@ -105,6 +115,38 @@ export class ApiCatalogAdapter {
     );
   }
 
+  /**
+   * Upload ảnh đại diện cho sản phẩm.
+   * Gửi multipart/form-data — browser tự đặt Content-Type với boundary.
+   * Trả về Product đã được cập nhật imageUrl.
+   *
+   * @param silentFetch - Nếu cung cấp, dùng fetch này thay vì authorizedFetch để
+   *   tránh 401 gây ra sự kiện logout toàn cục (ví dụ khi endpoint chưa tồn tại trên server).
+   */
+  uploadImage(
+    productId: string,
+    file: File,
+    silentFetch?: (path: string, init?: RequestInit) => Promise<Response>,
+  ): Promise<Product> {
+    const body = new FormData();
+    body.append("image", file);
+    const fetchFn = silentFetch ?? this.silentFetch;
+    return this.requestMultipartWith<Product>(
+      fetchFn,
+      `/api/v1/products/${encodeURIComponent(productId)}/image`,
+      { method: "PUT", body },
+    );
+  }
+
+  /**
+   * Xóa ảnh đại diện của sản phẩm.
+   */
+  deleteImage(productId: string): Promise<Product> {
+    return this.request<Product>(`/api/v1/products/${encodeURIComponent(productId)}/image`, {
+      method: "DELETE",
+    });
+  }
+
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await this.authorizedFetch(path, {
       ...init,
@@ -114,6 +156,28 @@ export class ApiCatalogAdapter {
         "Content-Type": "application/json",
       },
     });
+    return this.handleResponse<T>(response);
+  }
+
+  /** Gửi multipart/form-data (không đặt Content-Type để browser tự thêm boundary). */
+  private async requestMultipart<T>(path: string, init: RequestInit = {}): Promise<T> {
+    return this.requestMultipartWith<T>(this.authorizedFetch, path, init);
+  }
+
+  /** Giống requestMultipart nhưng dùng bất kỳ fetch function nào được truyền vào. */
+  private async requestMultipartWith<T>(
+    fetchFn: (path: string, init?: RequestInit) => Promise<Response>,
+    path: string,
+    init: RequestInit = {},
+  ): Promise<T> {
+    const response = await fetchFn(path, {
+      ...init,
+      cache: "no-store",
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let detail = `Yêu cầu không thành công (${response.status}).`;
       try {
