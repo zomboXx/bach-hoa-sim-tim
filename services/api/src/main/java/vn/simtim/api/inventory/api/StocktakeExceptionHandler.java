@@ -36,7 +36,7 @@ public class StocktakeExceptionHandler {
         HttpStatus status = switch (ex.getCode()) {
             case "NOT_FOUND"                                          -> HttpStatus.NOT_FOUND;
             case "IDEMPOTENCY_KEY_REUSED", "ALREADY_APPROVED",
-                 "BALANCE_VERSION_MISMATCH", "UNRESOLVED_CONFLICT"    -> HttpStatus.CONFLICT;
+                 "BALANCE_VERSION_MISMATCH", "UNRESOLVED_CONFLICT", "STOCK_RESERVED" -> HttpStatus.CONFLICT;
             case "SCOPE_MISMATCH"                                     -> HttpStatus.FORBIDDEN;
             case "SESSION_CLOSED", "SESSION_CANCELLED",
                  "EMPTY_STOCKTAKE", "NEGATIVE_BALANCE",
