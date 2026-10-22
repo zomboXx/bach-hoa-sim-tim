@@ -66,3 +66,7 @@ Lượt bổ sung 19/10/2026 ở đầu [test report](QA-04-test-report.md) ghi 
 4. [Test report](QA-03-test-report.md): SHA, lệnh chạy thật, ảnh viewport và ngoại lệ còn chờ review.
 
 QA-03 không cập nhật kết luận QA-02 hoặc sáu GAP tại Issue #34.
+
+## Khôi phục phiên sau F5
+
+[Bằng chứng và giới hạn đo ngày 23/10/2026](SESSION_RESTORE_TEST_REPORT.md): giảm lượt đọc xác thực, bootstrap cookie an toàn, và kiểm thử reload/logout; nhánh local, chưa triển khai production.

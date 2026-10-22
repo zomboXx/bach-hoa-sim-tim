@@ -123,6 +123,7 @@ async function json(route: Route, status: number, body?: unknown) {
 
 async function installLogin(page: Page, session = stockSession) {
   await page.route("**/api/v1/auth/login", (route) => json(route, 200, grant(session)));
+  await page.route("**/api/v1/auth/restore", (route) => json(route, 200, grant(session)));
 }
 
 async function installCatalog(page: Page) {
@@ -374,9 +375,6 @@ test("timeout survives reload; empty recovery GET never resends and manual retry
   expect(posts).toBe(1);
 
   await page.reload();
-  await page.getByLabel("Mã nhân viên", { exact: true }).fill("stock");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("server-pass");
-  await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
   await openReceive(page);
   await expect(page.getByText("Chưa tìm thấy phiếu cho thao tác trước")).toBeVisible();
   expect(posts).toBe(1);
@@ -416,9 +414,6 @@ test("a saved receipt followed by HTTP 502 is recovered without a second POST", 
   expect(posts).toBe(1);
 
   await page.reload();
-  await page.getByLabel("Mã nhân viên", { exact: true }).fill("stock");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill("server-pass");
-  await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
   await openReceive(page);
   await expect(page.getByRole("status")).toContainText("Máy chủ đã ghi phiếu");
   expect(posts).toBe(1);

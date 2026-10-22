@@ -22,6 +22,24 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:30:37
+
+Nối PWA với bootstrap cookie để F5 giữ phiên trong cùng tab, không lưu token vào web storage; chặn phản hồi cũ ghi đè phiên mới, cho phép thử lại sau lỗi mạng và giới hạn chờ auth 15 giây. Cập nhật kiểm thử nhận hàng/chuyển khoản để khôi phục phiên thay vì nhập lại mật khẩu. Gate gốc đạt demo 51/51, consumer 70/70, backend PostgreSQL 213/213. Bài live hai thiết bị đạt: cookie thật bảo mật, F5 giữ giao dịch, logout/F5 không hồi sinh phiên và không đăng xuất thiết bị khác; SQL đối soát đúng một hóa đơn/payment/movement, +22.500 VND, không còn giữ hàng hoặc lệch ledger. Lượt live đầu vướng cổng 4176 đang dùng; thêm cổng tùy chọn/strictPort và chạy lại đạt, không dừng tiến trình có sẵn. Ghi hồ sơ kiểm chứng và giới hạn: chưa đo latency sau sửa trên production, chưa push/deploy.
+
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +2 -0
+- `apps/web/live-tests/inventory-recovery.live.spec.ts`: +0 -3
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +21 -2
+- `apps/web/playwright.live.config.ts`: +6 -3
+- `apps/web/src/App.vue`: +6 -2
+- `apps/web/src/adapter.ts`: +60 -21
+- `apps/web/tests/api-auth.spec.ts`: +77 -2
+- `apps/web/tests/api-inventory.spec.ts`: +1 -6
+- `apps/web/tests/api-transfer.spec.ts`: +5 -2
+- `docs/testing/README.md`: +4 -0
+- `docs/testing/SESSION_RESTORE_TEST_REPORT.md`: +30 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 06:25:37
 
 Bổ sung bootstrap trình duyệt để giữ đăng nhập sau F5 theo yêu cầu Project Owner: cookie host-only HttpOnly/Secure/SameSite Strict, path riêng; header chống request đơn giản và kiểm Fetch Metadata, không mở CORS. API nghiệp vụ vẫn chỉ dùng Bearer; restore đọc quyền mới nhất, không gia hạn phiên; logout thu hồi phiên và xóa cookie. Giữ nguyên endpoint/payload Bearer cũ, không migration hoặc dependency mới. Cập nhật contract với quyết định thay thế giới hạn reload ngày 29/09. Backend auth PostgreSQL đạt 14/14, gồm cookie, CSRF, logout, expiry và role removal; gate toàn bộ đang tiếp tục.

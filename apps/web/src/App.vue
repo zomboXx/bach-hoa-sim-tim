@@ -568,7 +568,11 @@ async function signIn() {
     if (isDemoMode) {
       sessionStorage.setItem("simtim-v2-user", signedIn.id);
       sessionStorage.setItem("simtim-v2-auth-mode", "demo");
-    } else clearSessionMarkers();
+    } else {
+      clearSessionMarkers();
+      // Only a hint to try restoring; the HttpOnly cookie and server decide authentication.
+      sessionStorage.setItem("simtim-v2-auth-mode", "api");
+    }
     credentials.password = "";
     go("dashboard");
     error.value = "";
@@ -819,7 +823,7 @@ onMounted(async () => {
       }
     } catch (e) {
       if (revision === authRevision) {
-        clearSessionMarkers();
+        if (isDemoMode) clearSessionMarkers();
         error.value = (e as Error).message;
       }
     }

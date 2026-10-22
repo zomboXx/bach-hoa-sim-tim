@@ -46,6 +46,16 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
   }
   try {
     await Promise.all([login(phone), login(desktop)]);
+    const restoreCookie = (await phoneContext.cookies()).find(
+      (c) => c.name === "__Secure-simtim-restore",
+    );
+    expect(restoreCookie).toMatchObject({
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      path: "/api/v1/auth/restore",
+    });
+    expect(await phone.evaluate(() => document.cookie)).not.toContain("simtim-restore");
     await phone.getByLabel("Tìm sản phẩm bán hàng").fill("8930000000001");
     await phone.getByLabel("Tìm sản phẩm bán hàng").press("Enter");
     await expect(desktop.locator(".cart-row .stepper span")).toHaveText("1");
@@ -85,8 +95,7 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
     expect(decoded.getText()).toContain(order.reference);
     expect(decoded.getText()).toContain("540522500");
     await phone.reload();
-    // Bearer tokens intentionally stay in memory; authenticate again after a full reload.
-    await login(phone);
+    await openSale(phone);
     await expect(phone.locator(".transfer-detail")).toContainText(order.reference);
     await expect(phone.getByLabel("Phương thức")).toHaveValue("Chuyển khoản QR");
     await expect(phone.getByLabel("Khách đưa")).toHaveCount(0);
@@ -124,6 +133,16 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
     await expect(desktop.locator(".transfer-history")).toContainText("1 đã nhận");
     await expect(desktop.locator(".transfer-history")).toContainText("22.500");
     expect(confirmations).toBe(1);
+    await desktop.getByRole("button", { name: /Đăng xuất/ }).click();
+    await expect(desktop.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+    expect((await desktopContext.cookies()).some((c) => c.name === "__Secure-simtim-restore")).toBe(
+      false,
+    );
+    await desktop.reload();
+    await expect(desktop.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+    await expect(desktop.locator("nav")).toHaveCount(0);
+    await phone.reload();
+    await openSale(phone);
     console.log(
       "Manual transfer",
       order.id,

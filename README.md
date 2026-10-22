@@ -10,6 +10,8 @@ Bạn có thể [mở bộ mã vạch mẫu](https://bach-hoa-sim-tim-demo.verce
 
 **Lưu ý:** Bản trực tuyến dùng chung một cơ sở dữ liệu Neon cho người thử nghiệm. Giao dịch có thể làm thay đổi dữ liệu demo và không đồng bộ với dữ liệu chạy trên máy bạn. Không nhập thông tin khách hàng thật.
 
+PWA hỗ trợ giữ phiên khi F5 trong cùng tab, tối đa theo thời hạn đăng nhập (mặc định 8 giờ); đăng xuất hoặc phiên hết hạn cần đăng nhập lại. Khi bản cập nhật được triển khai, hãy đăng nhập lại một lần để kích hoạt khôi phục phiên cho tab đang dùng.
+
 ## Chạy trên máy bằng Docker
 
 Cần Docker Desktop hoặc Docker Engine có Compose. Tại thư mục gốc của dự án, chạy:

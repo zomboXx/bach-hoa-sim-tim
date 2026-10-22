@@ -34,10 +34,11 @@ async function fulfillJson(route: Route, status: number, body?: unknown) {
   });
 }
 
-test("API login sends BE-02 scope and keeps credentials out of persistent storage", async ({
+test("API reload restores the browser session and keeps tokens out of web storage", async ({
   page,
 }) => {
   await page.route("**/api/v1/auth/login", async (route) => {
+    expect(route.request().headers()["x-simtim-browser"]).toBe("1");
     expect(route.request().postDataJSON()).toEqual({
       organizationCode: "SIMTIM",
       storeCode: "MAIN",
@@ -46,6 +47,13 @@ test("API login sends BE-02 scope and keeps credentials out of persistent storag
     });
     await fulfillJson(route, 200, grant());
   });
+  await page.route("**/api/v1/auth/restore", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    expect(route.request().headers()["x-simtim-browser"]).toBe("1");
+    expect(route.request().headers().authorization).toBeUndefined();
+    await fulfillJson(route, 200, grant());
+  });
+  await page.route("**/api/v1/auth/logout", (route) => route.fulfill({ status: 204 }));
   await page.goto("/");
   await signIn(page);
   await expect(page.locator(".user-name")).toContainText(stockSession.fullName);
@@ -58,9 +66,46 @@ test("API login sends BE-02 scope and keeps credentials out of persistent storag
   expect(JSON.stringify(stored)).not.toContain("server-pass");
   expect(stored.session).not.toHaveProperty("simtim-v2-user");
   await page.reload();
+  await expect(page.locator(".user-name")).toContainText(stockSession.fullName);
+  await expect(page.locator("nav")).toBeVisible();
+  expect(
+    await page.evaluate(() => JSON.stringify({ ...sessionStorage, ...localStorage })),
+  ).not.toContain(token);
+  await page.getByRole("button", { name: /Đăng xuất/ }).click();
+  await expect(page.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+  await page.reload();
   await expect(page.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
   await expect(page.locator("nav")).toHaveCount(0);
-  await expect(page.getByLabel("Mật khẩu", { exact: true })).toHaveValue("");
+});
+
+test("expired browser cookie cannot restore the workspace from a client marker", async ({
+  page,
+}) => {
+  await page.addInitScript(() => sessionStorage.setItem("simtim-v2-auth-mode", "api"));
+  await page.route("**/api/v1/auth/restore", (route) => fulfillJson(route, 401));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+  await expect(page.locator("nav")).toHaveCount(0);
+  expect(await page.evaluate(() => sessionStorage.getItem("simtim-v2-auth-mode"))).toBeNull();
+});
+
+test("a temporary restore failure preserves the hint so another reload can retry", async ({
+  page,
+}) => {
+  let fail = true;
+  await page.route("**/api/v1/auth/login", (route) => fulfillJson(route, 200, grant()));
+  await page.route("**/api/v1/auth/restore", (route) =>
+    fail ? route.abort("failed") : fulfillJson(route, 200, grant()),
+  );
+  await page.goto("/");
+  await signIn(page);
+  await expect(page.locator("nav")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("alert")).toContainText("khôi phục phiên");
+  expect(await page.evaluate(() => sessionStorage.getItem("simtim-v2-auth-mode"))).toBe("api");
+  fail = false;
+  await page.reload();
+  await expect(page.locator(".user-name")).toContainText(stockSession.fullName);
 });
 
 test("legacy API markers cannot restore a demo role or resurrect a logged-out workspace", async ({
@@ -75,6 +120,7 @@ test("legacy API markers cannot restore a demo role or resurrect a logged-out wo
     restores++;
     await fulfillJson(route, 200, { ...stockSession, roles: ["MANAGER"] });
   });
+  await page.route("**/api/v1/auth/restore", (route) => fulfillJson(route, 401));
   await page.route("**/api/v1/auth/login", (route) => fulfillJson(route, 200, grant()));
   await page.route("**/api/v1/auth/logout", (route) => route.fulfill({ status: 204 }));
   await page.goto("/");
@@ -391,3 +437,32 @@ test("late API 401 cannot discard a newer in-memory session", async () => {
     },
   );
 });
+
+for (const action of ["new login", "logout"] as const) {
+  test(`late browser bootstrap cannot override ${action}`, async () => {
+    let release: ((response: Response) => void) | undefined;
+    let authorization: string | null = null;
+    await withFetch(
+      async (input, init) => {
+        if (String(input).endsWith("/restore"))
+          return new Promise<Response>((resolve) => {
+            release = resolve;
+          });
+        if (String(input).endsWith("/login"))
+          return jsonResponse(grant(stockSession, "b".repeat(43)));
+        authorization = new Headers(init?.headers).get("Authorization");
+        return jsonResponse({ ok: true });
+      },
+      async () => {
+        const adapter = new ApiAuthAdapter();
+        const pending = adapter.restoreSession();
+        if (action === "new login") await adapter.login("stock", "server-pass");
+        else await adapter.logout();
+        release?.(jsonResponse(grant()));
+        expect(await pending).toBeUndefined();
+        await adapter.fetchApi("/probe");
+        expect(authorization).toBe(action === "new login" ? `Bearer ${"b".repeat(43)}` : null);
+      },
+    );
+  });
+}
