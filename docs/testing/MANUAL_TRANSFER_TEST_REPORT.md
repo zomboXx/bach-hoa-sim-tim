@@ -1,6 +1,6 @@
 # Kiểm thử QR chuyển khoản thủ công — 22/10/2026
 
-Trạng thái: kiểm chứng kỹ thuật cục bộ, cập nhật từ `main` tại `5f1b086`. Chưa push, chưa có kết quả CI từ GitHub và chưa triển khai tài khoản nhận tiền thật.
+Bản ghi bằng chứng cục bộ ngày 22/10/2026, cập nhật từ `main` tại `5f1b086`. Ở thời điểm chạy các lệnh bên dưới, thay đổi chưa push và chưa triển khai. Ngày 23/10/2026, Project Owner cho phép push/PR/triển khai sau CI/review và đã review bốn commit triển khai; kết quả GitHub CI và tích hợp hiện hành xem tại [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84).
 
 ## Kết quả
 
@@ -34,4 +34,4 @@ Lượt GitHub CI đầu của [PR #84](https://github.com/zomboXx/bach-hoa-sim-
 
 - Không gọi ngân hàng, không chuyển tiền thật. Tài khoản bài live ghi `TEST ONLY - DO NOT TRANSFER`; thống kê là giao dịch do ứng dụng ghi nhận thủ công.
 - Đã kiểm tra tải lại/đăng nhập và dữ liệu PostgreSQL qua các request độc lập; chưa chạy ca riêng khởi động lại server giữa một giao dịch.
-- Cần cho phép push/PR, chạy CI và review trước khi triển khai. Sau triển khai, Project Owner quét QR bằng ứng dụng ngân hàng để kiểm tra người nhận, tiền và nội dung; có thể thoát trước bước chuyển tiền.
+- Project Owner cho phép push/PR/triển khai và review bốn commit triển khai ngày 23/10/2026; trạng thái CI/triển khai theo PR. Sau triển khai, Project Owner quét QR bằng ứng dụng ngân hàng để kiểm tra người nhận, tiền và nội dung; có thể thoát trước bước chuyển tiền.

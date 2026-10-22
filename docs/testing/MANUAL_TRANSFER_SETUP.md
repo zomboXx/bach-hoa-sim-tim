@@ -1,6 +1,6 @@
 # Chạy thử QR chuyển khoản
 
-Trạng thái: hướng dẫn cho thay đổi cục bộ ngày 22/10/2026. Không dùng kết quả mô phỏng như bằng chứng đã nhận tiền từ ngân hàng.
+Trạng thái: hướng dẫn cho tính năng trong [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84), được Project Owner review và duyệt ngày 23/10/2026. Không dùng kết quả mô phỏng như bằng chứng đã nhận tiền từ ngân hàng.
 
 [Kết quả kiểm thử cục bộ](MANUAL_TRANSFER_TEST_REPORT.md) ghi lệnh, số ca và đối soát tồn/doanh thu; chưa phải kết quả ngân hàng thật.
 

@@ -1,6 +1,6 @@
 # QR chuyển khoản và xác nhận thủ công
 
-Trạng thái: phạm vi được Project Owner Nguyễn Đức Phát duyệt ngày 22/10/2026; triển khai cục bộ, chưa tích hợp hoặc triển khai lên môi trường dùng chung.
+Trạng thái: phạm vi được Project Owner Nguyễn Đức Phát duyệt ngày 22/10/2026; bốn commit triển khai tại `17f8afc` được review và duyệt ngày 23/10/2026. Mã nguồn, kiểm thử và trạng thái tích hợp/triển khai được theo dõi tại [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84). Cấu hình tài khoản nhận được đặt riêng trên backend của từng môi trường.
 
 Quyết định hiện hành thay phần chuẩn bị payOS: không cần tài khoản merchant, API Key hay xác thực NFC để tạo QR chuyển khoản. Server không kết nối ngân hàng và không tự xác nhận tiền về. Phạm vi CASH của các sprint trước là lịch sử; bổ sung này không thay kết quả nghiệm thu cũ.
 

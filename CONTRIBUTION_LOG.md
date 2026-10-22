@@ -22,6 +22,18 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:41:10
+
+Đồng bộ README, backlog, contract và hồ sơ kiểm thử với PR #84 sau khi Project Owner cho phép push/triển khai và review bốn commit triển khai. Giữ kết quả cục bộ ngày 22/10 như bằng chứng lịch sử; dùng PR làm nguồn trạng thái CI/tích hợp hiện hành, bổ sung cách chọn QR tại quầy. Không đổi mã nguồn nghiệp vụ. Kiểm tra liên kết và whitespace đạt.
+
+- `README.md`: +1 -1
+- `contracts/MANUAL_TRANSFER.md`: +1 -1
+- `docs/README.md`: +1 -1
+- `docs/project/governance/BACKLOG.md`: +1 -1
+- `docs/testing/MANUAL_TRANSFER_SETUP.md`: +1 -1
+- `docs/testing/MANUAL_TRANSFER_TEST_REPORT.md`: +2 -2
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 02:36:28
 
 Sửa loader bộ giải mã QR của bài live sau khi CI PR #84 phát hiện Node 22/Linux không cung cấp named export CommonJS. Dùng `createRequire` trong test, giữ nguyên nghiệp vụ thanh toán và API đã được review. Lint/build đạt; Node 22 khám phá đủ 7 bài live trong 5 file; bài chuyển khoản hai thiết bị và đối soát PostgreSQL chạy lại đạt. Ghi nhận Project Owner đã review và duyệt bốn commit triển khai tại 17f8afc ngày 23/10/2026; chờ CI chạy lại trước merge/deploy.
