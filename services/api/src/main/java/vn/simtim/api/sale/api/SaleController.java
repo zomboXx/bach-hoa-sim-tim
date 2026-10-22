@@ -62,6 +62,7 @@ public class SaleController {
             throw new vn.simtim.api.sale.domain.SaleValidationException("Cửa hàng không thuộc phiên làm việc");
         }
         UUID soldBy = principal.userId();
+        if (req.cartVersion()==null) carts.assertUnlocked(PosCartController.scope(auth));
         var items = req.items().stream()
                 .map(i -> new CheckoutItem(i.productId(), i.quantity()))
                 .toList();

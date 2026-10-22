@@ -21,16 +21,26 @@ public class PosCartService {
     private final ProductRepository products;
     private final UnitRepository units;
     private final SaleService sales;
+    private final TransferService transfers;
 
-    public PosCartService(PosCartRepository carts, ProductRepository products, UnitRepository units, SaleService sales) {
+    public PosCartService(PosCartRepository carts, ProductRepository products, UnitRepository units, SaleService sales, TransferService transfers) {
         this.carts = carts;
         this.products = products;
         this.units = units;
         this.sales = sales;
+        this.transfers = transfers;
     }
 
     public PosCart read(PosCart.Scope scope) {
+        transfers.expireCart(scope);
         return carts.read(scope, false);
+    }
+
+    public void assertUnlocked(PosCart.Scope scope) { requireUnlocked(read(scope)); }
+
+    private static void requireUnlocked(PosCart cart) {
+        if (cart.pendingTransferId()!=null) throw new SaleConflictException("TRANSFER_PENDING",
+                "Giỏ đang chờ chuyển khoản; hãy xác nhận hoặc hủy giao dịch trước.");
     }
 
     public PosCart adjust(PosCart.Scope scope, UUID operationId, long generation, UUID productId, BigDecimal delta) {
@@ -44,6 +54,7 @@ public class PosCartService {
             requireSameHash(previous.get(), hash);
             return cart;
         }
+        requireUnlocked(cart);
         if (generation != cart.generation()) {
             throw new SaleConflictException("CART_CHANGED", "Đơn cũ đã thanh toán trên thiết bị khác. Hãy kiểm tra giỏ mới.");
         }
@@ -85,6 +96,7 @@ public class PosCartService {
             return sales.getInvoice(scope.organizationId(), scope.storeId(), previous.get().invoiceId(), scope.ownerId());
         }
         var items = cart.items().stream().map(l -> new CheckoutItem(l.productId(), l.quantity())).toList();
+        requireUnlocked(cart);
         if (cart.version() != expectedVersion || !itemsKey(items).equals(itemsKey(requestedItems))) {
             throw new SaleConflictException("CART_CHANGED", "Giỏ đã thay đổi trên thiết bị khác. Hãy xác nhận lại báo giá.");
         }
