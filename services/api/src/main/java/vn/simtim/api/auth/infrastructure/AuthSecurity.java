@@ -31,7 +31,7 @@ public class AuthSecurity {
         String[] sales = {"/api/v1/sales", "/api/v1/sales/**"};
         String[] quotePaths = {"/api/v1/sales/quote", "/api/v1/sales/invoices/quote"};
         return http
-                // Credentials are only accepted in an explicit Authorization header, never cookies or Basic auth.
+                // Operational APIs only accept Bearer. Browser restore has its own CSRF guard.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable()).logout(logout -> logout.disable())
@@ -40,6 +40,7 @@ public class AuthSecurity {
                     .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR, jakarta.servlet.DispatcherType.FORWARD).permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/restore").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/products/*/image").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/auth/session").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()

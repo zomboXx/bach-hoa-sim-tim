@@ -174,6 +174,71 @@ class ApiBootstrapTest {
     }
 
     @Test @Transactional
+    void browserCookieRestoresSameGrantWithoutExtendingExpiryAndLogoutRevokesIt() throws Exception {
+        accounts();
+        var login = mvc.perform(post("/api/v1/auth/login").header("X-SimTim-Browser", "1")
+                .header("Sec-Fetch-Site", "same-origin").contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("organizationCode", "SIMTIM", "storeCode", "MAIN",
+                        "username", "be02_SALES", "password", PASSWORD))))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        var grant = mapper.readTree(login.getContentAsString());
+        String token = grant.get("accessToken").asText();
+        assertThat(login.getHeader("Set-Cookie")).contains("__Secure-simtim-restore=" + token,
+                "HttpOnly", "Secure", "SameSite=Strict", "Path=/api/v1/auth/restore", "Max-Age=")
+                .doesNotContain("Domain=");
+        var cookie = new jakarta.servlet.http.Cookie("__Secure-simtim-restore", token);
+        var restored = mvc.perform(post("/api/v1/auth/restore").cookie(cookie).header("X-SimTim-Browser", "1")
+                .header("Sec-Fetch-Site", "same-origin"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andReturn().getResponse();
+        var body = mapper.readTree(restored.getContentAsString());
+        assertThat(body.get("accessToken")).isEqualTo(grant.get("accessToken"));
+        assertThat(java.time.Instant.parse(body.get("expiresAt").asText()))
+                .isCloseTo(java.time.Instant.parse(grant.get("expiresAt").asText()),
+                        org.assertj.core.api.Assertions.within(1, java.time.temporal.ChronoUnit.MILLIS));
+        mvc.perform(get(CATALOG_PERMISSION_PROBE).cookie(cookie)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent()).andExpect(header().string("Set-Cookie",
+                        org.hamcrest.Matchers.containsString("Max-Age=0")));
+        mvc.perform(post("/api/v1/auth/restore").cookie(cookie).header("X-SimTim-Browser", "1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test @Transactional
+    void restoreRejectsCrossOriginMissingHeaderDuplicateCookieAndCrossOriginPreflight() throws Exception {
+        accounts();
+        String token = login("SALES");
+        var cookie = new jakarta.servlet.http.Cookie("__Secure-simtim-restore", token);
+        mvc.perform(post("/api/v1/auth/restore").cookie(cookie)).andExpect(status().isForbidden());
+        for (String site : new String[]{"cross-site", "same-site"}) {
+            mvc.perform(post("/api/v1/auth/restore").cookie(cookie).header("X-SimTim-Browser", "1")
+                    .header("Sec-Fetch-Site", site)).andExpect(status().isForbidden());
+        }
+        mvc.perform(options("/api/v1/auth/restore").header("Origin", "https://other.example")
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "X-SimTim-Browser"))
+                .andExpect(status().isUnauthorized()).andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+        mvc.perform(post("/api/v1/auth/restore").cookie(cookie, cookie).header("X-SimTim-Browser", "1"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/restore").header("X-SimTim-Browser", "1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test @Transactional
+    void browserRestoreRechecksExpiryAndCurrentRoles() throws Exception {
+        accounts();
+        String token = login("STOCK");
+        var cookie = new jakarta.servlet.http.Cookie("__Secure-simtim-restore", token);
+        jdbcTemplate.update("delete from iam.user_roles where user_id='30000000-0000-0000-0000-000000000102'");
+        mvc.perform(post("/api/v1/auth/restore").cookie(cookie).header("X-SimTim-Browser", "1"))
+                .andExpect(status().isUnauthorized());
+        token = login("SALES");
+        jdbcTemplate.update("update iam.auth_sessions set issued_at=now()-interval '2 hours', expires_at=now()-interval '1 hour' where user_id='30000000-0000-0000-0000-000000000101'");
+        mvc.perform(post("/api/v1/auth/restore").cookie(new jakarta.servlet.http.Cookie("__Secure-simtim-restore", token))
+                .header("X-SimTim-Browser", "1")).andExpect(status().isUnauthorized());
+    }
+
+    @Test @Transactional
     void logoutAndExpiryInvalidateBearerSessions() throws Exception {
         accounts();
         String token = login("MANAGER");

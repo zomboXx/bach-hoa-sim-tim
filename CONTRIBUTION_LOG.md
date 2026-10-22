@@ -22,6 +22,19 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:25:37
+
+Bổ sung bootstrap trình duyệt để giữ đăng nhập sau F5 theo yêu cầu Project Owner: cookie host-only HttpOnly/Secure/SameSite Strict, path riêng; header chống request đơn giản và kiểm Fetch Metadata, không mở CORS. API nghiệp vụ vẫn chỉ dùng Bearer; restore đọc quyền mới nhất, không gia hạn phiên; logout thu hồi phiên và xóa cookie. Giữ nguyên endpoint/payload Bearer cũ, không migration hoặc dependency mới. Cập nhật contract với quyết định thay thế giới hạn reload ngày 29/09. Backend auth PostgreSQL đạt 14/14, gồm cookie, CSRF, logout, expiry và role removal; gate toàn bộ đang tiếp tục.
+
+- `CHANGELOG.md`: +2 -0
+- `contracts/AUTH_SESSION_REVIEW.md`: +13 -1
+- `contracts/auth-session.openapi.yaml`: +44 -2
+- `services/api/src/main/java/vn/simtim/api/auth/api/AuthController.java`: +57 -4
+- `services/api/src/main/java/vn/simtim/api/auth/application/AuthService.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +2 -1
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +65 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 06:15:06
 
 Giảm số lượt đọc CSDL của xác thực Bearer từ bốn xuống một bằng truy vấn gộp phiên, tài khoản, vai trò và quyền. Không cache quyền; tiếp tục từ chối tài khoản khóa, phiên hết hạn/thu hồi và quyền đã gỡ ngay ở request tiếp theo. Chạy `mvnw.cmd -Dtest=ApiBootstrapTest test` trên PostgreSQL sạch: 11/11 đạt. Phép đo public production trước sửa: trang tĩnh 0,21 giây, API không đăng nhập 0,27–1,06 giây; chưa đo thời gian đăng nhập production bằng tài khoản người dùng.
