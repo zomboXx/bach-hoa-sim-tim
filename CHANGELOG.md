@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Loại bỏ kho lưu trữ phụ bên ngoài (`packages.microsoft.com`) bị lỗi 403 Forbidden trên GitHub Actions runner Ubuntu 24.04 trước khi cài đặt phụ thuộc Playwright; đồng thời dọn cache apt để `playwright install --with-deps` tải gói trơn tru.
 - CI dùng Ubuntu archive qua HTTPS và giới hạn thời gian chờ/retry khi cài phụ thuộc trình duyệt, tránh treo ở mirror Azure trước khi chạy kiểm thử.
 
 - Sửa nạp bộ giải mã QR trong kiểm thử live để tương thích CommonJS trên Node.js 22/Linux; giữ các bài POS, bán hàng và chuyển khoản chạy được cùng nhau trên CI.
