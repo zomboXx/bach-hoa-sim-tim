@@ -279,7 +279,16 @@ test("catalog read permission shows data without write controls and recovers fro
   page,
 }) => {
   const api = await setup(page, false);
+   const dashboardCatalogLoaded = Promise.all(
+    ["/api/v1/products", "/api/v1/units"].map((path) =>
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === path && response.request().method() === "GET",
+      ),
+    ),
+  );
   await signIn(page);
+  await dashboardCatalogLoaded;
   api.failList();
   await openCatalog(page);
   await expect(page.getByRole("alert")).toContainText("Máy chủ tạm thời không phản hồi");
