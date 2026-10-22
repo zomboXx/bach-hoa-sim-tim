@@ -47,6 +47,14 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
+      - name: Configure browser dependency downloads
+        run: |
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-browser-ci-network >/dev/null
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
       - uses: actions/upload-artifact@v4
@@ -82,10 +90,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [gap05, gap06, pos]
+        suite: [gap05, gap06, pos, transfer]
     env:
       POSTGRES_PASSWORD: qa02-db-${{ github.run_id }}-${{ github.run_attempt }}
       SIMTIM_DEMO_PASSWORD: qa02-user-${{ github.run_id }}-${{ github.run_attempt }}
+      TRANSFER_ENABLED: ${{ matrix.suite == 'transfer' && 'true' || 'false' }}
+      TRANSFER_ORGANIZATION_ID: 10000000-0000-0000-0000-000000000001
+      TRANSFER_STORE_ID: 10000000-0000-0000-0000-000000000002
+      TRANSFER_BANK_BIN: '970436'
+      TRANSFER_ACCOUNT_NUMBER: '0000000000'
+      TRANSFER_ACCOUNT_NAME: TEST ONLY - DO NOT TRANSFER
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -93,6 +107,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
+      - name: Configure browser dependency downloads
+        run: |
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-browser-ci-network >/dev/null
       - name: Install web and browser dependencies
         working-directory: apps/web
         run: |
@@ -125,6 +147,8 @@ jobs:
         run: |
           if [ "${{ matrix.suite }}" = pos ]; then
             npm run test:e2e:live:pos
+          elif [ "${{ matrix.suite }}" = transfer ]; then
+            npm run test:e2e:live:transfer
           else
             npm run test:e2e:live:qa02-${{ matrix.suite }}
           fi
@@ -154,8 +178,20 @@ jobs:
           test $((after_sale_movements - before_sale_movements)) -eq "$expected_sales"
           test $((after_revenue - before_revenue)) -gt 0
           test "$mismatches" -eq 0
+          if [ "${{ matrix.suite }}" = transfer ]; then
+            transfer_oracle=$(docker compose -f infra/compose.demo.yml exec -T postgres \
+              psql -U simtim -d simtim -Atc "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and bank_reference='LIVE-TRANSFER-001') from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;")
+            test "$transfer_oracle" = $'t\nt'
+          fi
           printf 'QA-02 %s DB oracle: receipt_delta=%s; invoice_delta=%s; payment_delta=%s; sale_movement_delta=%s; revenue_delta=%s; balance_mismatches=0\n' \
             '${{ matrix.suite }}' "$expected_receipts" "$expected_sales" "$expected_sales" "$expected_sales" "$((after_revenue - before_revenue))"
+      - name: Upload transfer browser evidence
+        if: always() && matrix.suite == 'transfer'
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-transfer-browser
+          path: apps/web/test-results/live
+          if-no-files-found: ignore
       - name: Show logs on failure
         if: failure()
         run: docker compose -f infra/compose.demo.yml logs --tail=120 postgres api

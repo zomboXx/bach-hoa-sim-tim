@@ -22,6 +22,60 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:56:46
+
+Điều chỉnh tải phụ thuộc trình duyệt trong CI PR #84 sau khi hai runner chậm ở mirror Azure và job chuyển khoản lặp lại tình trạng này sau rerun. Chuyển nguồn Ubuntu sang archive qua HTTPS, đặt timeout 30 giây và retry ba lần; giữ nguyên toàn bộ bài kiểm thử và mã thanh toán đã duyệt. YAML, cú pháp Bash, policy, liên kết và whitespace đạt; kết quả thực thi trên runner theo PR.
+
+- `.github/workflows/ci.yml`: +16 -0
+- `CHANGELOG.md`: +2 -0
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:41:10
+
+Đồng bộ README, backlog, contract và hồ sơ kiểm thử với PR #84 sau khi Project Owner cho phép push/triển khai và review bốn commit triển khai. Giữ kết quả cục bộ ngày 22/10 như bằng chứng lịch sử; dùng PR làm nguồn trạng thái CI/tích hợp hiện hành, bổ sung cách chọn QR tại quầy. Không đổi mã nguồn nghiệp vụ. Kiểm tra liên kết và whitespace đạt.
+
+- `README.md`: +1 -1
+- `contracts/MANUAL_TRANSFER.md`: +1 -1
+- `docs/README.md`: +1 -1
+- `docs/project/governance/BACKLOG.md`: +1 -1
+- `docs/testing/MANUAL_TRANSFER_SETUP.md`: +1 -1
+- `docs/testing/MANUAL_TRANSFER_TEST_REPORT.md`: +2 -2
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 02:36:28
+
+Sửa loader bộ giải mã QR của bài live sau khi CI PR #84 phát hiện Node 22/Linux không cung cấp named export CommonJS. Dùng `createRequire` trong test, giữ nguyên nghiệp vụ thanh toán và API đã được review. Lint/build đạt; Node 22 khám phá đủ 7 bài live trong 5 file; bài chuyển khoản hai thiết bị và đối soát PostgreSQL chạy lại đạt. Ghi nhận Project Owner đã review và duyệt bốn commit triển khai tại 17f8afc ngày 23/10/2026; chờ CI chạy lại trước merge/deploy.
+
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +6 -1
+- `CHANGELOG.md`: +2 -0
+- `docs/testing/MANUAL_TRANSFER_TEST_REPORT.md`: +2 -0
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-22 23:48:50
+
+Bổ sung QR chuyển khoản với xác nhận tiền về thủ công: lưu giao dịch/lịch sử trên PostgreSQL, giữ hàng và khóa giỏ giữa hai thiết bị, chụp giá/khuyến mãi/FEFO, ghi người xác nhận và mã giao dịch ngân hàng; retry không trừ hàng hoặc ghi tiền hai lần. Hủy/hết hạn trả hàng giữ, chặn kiểm kê thấp hơn số giữ và rollback toàn bộ nếu lô không hợp lệ. Cập nhật từ main 5f1b086, giữ V18 ảnh sản phẩm và dùng V19 cho chuyển khoản.
+
+Gate gốc đạt: demo 51/51, API consumer 66/66, backend 210/210. Backend đã chạy lại sau khi tách chu kỳ nền của test khỏi CSDL disposable; bài live hai thiết bị giải mã QR, khôi phục sau reload/đăng nhập, mất response xác nhận và đối soát đúng một hóa đơn/payment/movement, 22.500 VND doanh thu, không lệch ledger hoặc còn hàng giữ. Tài khoản nhận tiền nằm trong cấu hình riêng, không commit; chưa thử chuyển tiền thật, chưa push/deploy. Có hướng dẫn, test report và job CI cho luồng mới.
+
+- `.github/workflows/ci.yml`: +21 -1
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +2 -0
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +130 -0
+- `apps/web/package.json`: +1 -0
+- `apps/web/src/App.vue`: +66 -9
+- `apps/web/src/modules/sale/`: +601 -0
+- `apps/web/tests/api-transfer.spec.ts`: +179 -0
+- `contracts/`: +44 -0
+- `docs/`: +93 -0
+- `infra/`: +14 -0
+- `scripts/`: +23 -4
+- `services/api/src/main/java/vn/simtim/api/inventory/`: +124 -10
+- `services/api/src/main/java/vn/simtim/api/sale/`: +461 -14
+- `services/api/src/main/resources/db/migration/`: +40 -0
+- `services/api/src/test/java/`: +409 -0
+- `services/api/src/test/resources/`: +4 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-21 15:41:26
 
 Bổ sung bộ ảnh minh họa chân thực cho 10 mặt hàng kho mẫu trong quầy POS và danh mục sản phẩm. Ảnh WebP 480×480 lưu cùng ứng dụng, tổng 171.278 byte, tải theo nhu cầu; sản phẩm thiếu hoặc lỗi ảnh vẫn hiện tên và chọn bán được. Đối chiếu giao diện mới với danh mục đang deploy ở 390/768/1440 px: đủ 10 ảnh, không tràn ngang.

@@ -103,7 +103,7 @@ class JdbcInventorySaleAdapter implements InventorySalePort {
                       AND store_id = :storeId
                       AND product_id = :productId
                       AND batch_id = :batchId
-                      AND on_hand_quantity >= :quantity
+                      AND on_hand_quantity - reserved_quantity >= :quantity
                     """, params);
             if (updated != 1) {
                 throw new InventorySaleException(
@@ -165,7 +165,7 @@ class JdbcInventorySaleAdapter implements InventorySalePort {
                 "productIds", productIds,
                 "businessDate", businessDate);
         List<Candidate> rows = jdbc.query("""
-                SELECT pb.product_id, pb.id AS batch_id, ib.on_hand_quantity,
+                SELECT pb.product_id, pb.id AS batch_id, ib.on_hand_quantity - ib.reserved_quantity AS on_hand_quantity,
                        pb.expiry_date, pb.received_date
                 FROM inventory.inventory_balances ib
                 JOIN inventory.product_batches pb
@@ -176,7 +176,7 @@ class JdbcInventorySaleAdapter implements InventorySalePort {
                 WHERE ib.organization_id = :organizationId
                   AND ib.store_id = :storeId
                   AND ib.product_id IN (:productIds)
-                  AND ib.on_hand_quantity > 0
+                  AND ib.on_hand_quantity - ib.reserved_quantity > 0
                   AND pb.status = 'AVAILABLE'
                   AND (pb.expiry_date IS NULL OR pb.expiry_date >= :businessDate)
                 ORDER BY pb.product_id, pb.expiry_date ASC NULLS LAST,

@@ -44,7 +44,9 @@ public class InventoryPortAdapter implements InventoryPort {
                 .orElseThrow(() -> new InventoryConflictException(
                         "Không tìm thấy số dư tồn kho cho lô: " + batchId));
         BigDecimal newQty = balance.getQuantityOnHand().subtract(quantity);
-        if (newQty.compareTo(BigDecimal.ZERO) < 0) {
+        BigDecimal held = jdbc.queryForObject("select reserved_quantity from inventory.inventory_balances where id=?",
+                BigDecimal.class, balance.id);
+        if (newQty.compareTo(held == null ? BigDecimal.ZERO : held) < 0) {
             throw new InventoryConflictException(
                     "Tồn kho không đủ cho lô " + batchId + " (còn " + balance.getQuantityOnHand() + ", cần " + quantity + ")");
         }

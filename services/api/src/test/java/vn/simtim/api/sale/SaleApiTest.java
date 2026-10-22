@@ -176,6 +176,7 @@ class SaleApiTest {
     void teardown() {
         try {
             // Clean up test data in FK-safe order
+            jdbc.update("DELETE FROM sales.pos_carts WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM inventory.stock_movements WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.payments WHERE organization_id = ?::uuid", ORG_ID);
             jdbc.update("DELETE FROM sales.invoice_line_batches WHERE organization_id = ?::uuid", ORG_ID);

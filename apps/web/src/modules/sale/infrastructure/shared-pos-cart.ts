@@ -5,6 +5,7 @@ export interface SharedCart {
   id: string;
   version: number;
   generation: number;
+  pendingTransferId?: string | null;
   items: Array<{ productId: string; productName: string; quantity: string }>;
 }
 interface Adjustment {

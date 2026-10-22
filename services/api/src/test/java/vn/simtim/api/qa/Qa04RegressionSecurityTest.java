@@ -114,6 +114,7 @@ public class Qa04RegressionSecurityTest {
 
     @BeforeEach
     void resetBusinessData() {
+        jdbc.update("delete from sales.pos_carts where organization_id=?", ORG_ID);
         jdbc.update("delete from audit.audit_logs where organization_id=?", ORG_ID);
         jdbc.update("delete from inventory.stock_movements where organization_id=?", ORG_ID);
         jdbc.update("delete from sales.payments where organization_id=?", ORG_ID);

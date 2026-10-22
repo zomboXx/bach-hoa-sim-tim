@@ -49,6 +49,7 @@ import { ApiSaleAdapter } from "./modules/sale/infrastructure/api-sale-adapter";
 import { useSharedPosCart } from "./modules/sale/infrastructure/shared-pos-cart";
 import BarcodeScanner from "./modules/sale/presentation/BarcodeScanner.vue";
 import ProductImage from "./modules/sale/presentation/ProductImage.vue";
+import TransferPayment from "./modules/sale/presentation/TransferPayment.vue";
 import { DemoSaleAdapter } from "./modules/sale/infrastructure/demo-sale-adapter";
 import {
   SaleApiError,
@@ -818,6 +819,8 @@ async function addSearchMatch() {
 const cart = ref<{ id: string; quantity: number }[]>([]);
 const method = ref("Tiền mặt");
 const cash = ref(0);
+const transferWorking = ref(false);
+const transferAmount = ref<number>();
 const apiQuote = ref<QuoteResult>();
 const apiQuoteStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
 let apiQuoteRevision = 0;
@@ -844,7 +847,7 @@ const sharedCart = useSharedPosCart(
       id: item.productId,
       quantity: Number(item.quantity),
     }));
-    void refreshApiQuote();
+    if (!snapshot.pendingTransferId) void refreshApiQuote();
   },
   notify,
 );
@@ -852,6 +855,22 @@ const posCartReady = sharedCart.ready;
 const posCartSaving = sharedCart.saving;
 const posCartError = sharedCart.error;
 const posCartPending = sharedCart.pending;
+const posTransferId = computed(() => sharedCart.snapshot.value?.pendingTransferId);
+watch(posTransferId, (id) => {
+  if (id) method.value = "Chuyển khoản QR";
+});
+const transferLocked = computed(
+  () => !isDemoMode && (!!posTransferId.value || transferWorking.value),
+);
+async function onTransferChanged() {
+  await sharedCart.refresh();
+  if (!posTransferId.value) void refreshApiQuote();
+}
+async function onTransferCompleted() {
+  await onTransferChanged();
+  await loadInvoices();
+  notify("Đã ghi nhận chuyển khoản và hoàn tất hóa đơn.");
+}
 let activeCartScope = "";
 watch(
   () => [saleScope(), route.value, isTrainingRoute.value],
@@ -863,6 +882,8 @@ watch(
       apiQuote.value = undefined;
       apiQuoteStatus.value = "idle";
       apiQuoteRevision++;
+      transferWorking.value = false;
+      transferAmount.value = undefined;
     }
     if (!isDemoMode && saleScope() && route.value === "sale" && !isTrainingRoute.value) {
       sharedCart.start(saleScope());
@@ -914,7 +935,7 @@ function checkoutOutcomeIsUncertain(error: SaleApiError) {
 }
 
 async function refreshApiQuote() {
-  if (isDemoMode || pendingApiCheckout.value) return;
+  if (isDemoMode || pendingApiCheckout.value || posTransferId.value) return;
   const revision = ++apiQuoteRevision;
   if (!cart.value.length) {
     apiQuote.value = undefined;
@@ -945,7 +966,12 @@ function apiUnitPrice(productId: string) {
 
 const total = computed(() => {
   if (!isDemoMode)
-    return pendingApiCheckout.value?.expectedTotal ?? apiQuote.value?.grandTotal ?? 0;
+    return (
+      (posTransferId.value ? transferAmount.value : undefined) ??
+      pendingApiCheckout.value?.expectedTotal ??
+      apiQuote.value?.grandTotal ??
+      0
+    );
   return cart.value.reduce(
     (n, l) =>
       n +
@@ -958,6 +984,7 @@ const total = computed(() => {
   );
 });
 async function add(id: string) {
+  if (transferLocked.value) return notify("Giỏ đang chờ chuyển khoản. Hãy xử lý giao dịch trước.");
   if (!connected.value) return notify("Bán hàng cần kết nối.");
   if (pendingApiCheckout.value)
     return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
@@ -977,6 +1004,7 @@ async function add(id: string) {
   return true;
 }
 async function quantity(id: string, delta: number) {
+  if (transferLocked.value) return notify("Giỏ đang chờ chuyển khoản. Hãy xử lý giao dịch trước.");
   if (pendingApiCheckout.value)
     return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
   if (!isDemoMode) {
@@ -991,6 +1019,7 @@ async function quantity(id: string, delta: number) {
   }
 }
 async function pay() {
+  if (transferLocked.value) return notify("Giỏ đang chờ chuyển khoản. Hãy xử lý giao dịch trước.");
   if (!user.value || user.value.role === "admin") return;
   if (!isDemoMode && (posCartSaving.value || posCartPending.value || !posCartReady.value))
     return notify("Đợi giỏ chung đồng bộ xong trước khi thanh toán.");
@@ -1591,6 +1620,7 @@ async function approveCount(record: StocktakeRecord) {
                   :disabled="
                     !connected ||
                     apiCheckoutPending ||
+                    transferLocked ||
                     (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
                   "
                   @scanned="scanBarcode"
@@ -1614,6 +1644,7 @@ async function approveCount(record: StocktakeRecord) {
                   :disabled="
                     !connected ||
                     apiCheckoutPending ||
+                    transferLocked ||
                     (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending)) ||
                     (isDemoMode && available(state!, p.id) === 0)
                   "
@@ -1680,6 +1711,7 @@ async function approveCount(record: StocktakeRecord) {
                   ><small v-else-if="apiUnitPrice(l.id) !== undefined">{{
                     money(apiUnitPrice(l.id)!)
                   }}</small
+                  ><small v-else-if="posTransferId">Giá đã khóa theo giao dịch QR</small
                   ><small v-else>Đang lấy báo giá…</small>
                 </div>
                 <div class="stepper">
@@ -1687,6 +1719,7 @@ async function approveCount(record: StocktakeRecord) {
                     :aria-label="'Giảm ' + name(l.id)"
                     :disabled="
                       apiCheckoutPending ||
+                      transferLocked ||
                       (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
                     "
                     @click="quantity(l.id, -1)"
@@ -1697,6 +1730,7 @@ async function approveCount(record: StocktakeRecord) {
                     :aria-label="'Tăng ' + name(l.id)"
                     :disabled="
                       apiCheckoutPending ||
+                      transferLocked ||
                       (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
                     "
                     @click="quantity(l.id, 1)"
@@ -1722,12 +1756,12 @@ async function approveCount(record: StocktakeRecord) {
                 <label
                   >Phương thức<select
                     v-model="method"
-                    :disabled="!isDemoMode || apiCheckoutPending"
+                    :disabled="apiCheckoutPending || transferLocked"
                   >
                     <option>Tiền mặt</option>
+                    <option v-if="!isDemoMode">Chuyển khoản QR</option>
                     <option v-if="isDemoMode">Chuyển khoản (mô phỏng)</option>
                   </select></label
-                ><small v-if="!isDemoMode">API hiện chỉ hỗ trợ thanh toán CASH.</small
                 ><label v-if="method === 'Tiền mặt'"
                   >Khách đưa<input
                     v-model.number="cash"
@@ -1735,12 +1769,13 @@ async function approveCount(record: StocktakeRecord) {
                     min="0"
                     step="500"
                     placeholder="0"
-                    :disabled="apiCheckoutPending"
+                    :disabled="apiCheckoutPending || transferLocked"
                 /></label>
                 <p v-if="method === 'Tiền mặt'" class="change">
                   Tiền thừa <b>{{ money(Math.max(0, cash - total)) }}</b>
                 </p>
                 <button
+                  v-if="isDemoMode || (method === 'Tiền mặt' && !transferLocked)"
                   class="primary wide"
                   :disabled="
                     !cart.length ||
@@ -1753,10 +1788,32 @@ async function approveCount(record: StocktakeRecord) {
                 >
                   {{ apiCheckoutPending ? "Thử lại cùng mã giao dịch →" : "Xác nhận thanh toán →" }}
                 </button>
+                <TransferPayment
+                  v-if="!isDemoMode"
+                  :key="saleScope()"
+                  :fetch-api="(path, init) => authAdapter.fetchApi(path, init)"
+                  :scope="saleScope()"
+                  :selected="method === 'Chuyển khoản QR'"
+                  :cart-version="sharedCart.snapshot.value?.version"
+                  :expected-total="apiQuote?.grandTotal ?? 0"
+                  :can-create="
+                    !!cart.length &&
+                    connected &&
+                    posCartReady &&
+                    !posCartSaving &&
+                    !posCartPending &&
+                    !apiCheckoutPending &&
+                    apiQuoteStatus === 'ready'
+                  "
+                  :pending-transfer-id="posTransferId"
+                  @lock="transferWorking = $event"
+                  @amount="transferAmount = $event"
+                  @changed="onTransferChanged"
+                  @completed="onTransferCompleted"
+                />
               </div>
-            </section>
-          </div></template
-        >
+            </section></div
+        ></template>
 
         <CatalogWorkspace
           v-else-if="!isDemoMode && (route === 'products' || route === 'suppliers')"
