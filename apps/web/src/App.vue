@@ -431,7 +431,9 @@ const dashboardInvoiceCount = computed(() =>
     : (apiReport.value?.invoiceCount ?? apiTodayInvoices.value.length),
 );
 const dashboardProductCount = computed(() =>
-  isDemoMode ? state.value?.products.length || 0 : apiSaleProducts.value.length,
+  isDemoMode
+    ? state.value?.products.length || 0
+    : apiSaleProducts.value.length || apiReport.value?.inventory.length || 0,
 );
 const dashboardBatchCount = computed(() =>
   isDemoMode ? state.value?.batches.length || 0 : apiReport.value?.inventory.length || 0,
@@ -512,7 +514,7 @@ async function loadDashboard() {
   if (canGo("reports")) tasks.push(loadReports());
   if (canGo("invoices")) tasks.push(loadInvoices());
   if (canGo("products")) tasks.push(loadSaleProducts());
-  await Promise.all(tasks);
+  await Promise.allSettled(tasks);
 }
 function go(id: string) {
   if (!canGo(id)) return;

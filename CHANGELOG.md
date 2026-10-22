@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Định dạng hiển thị số lượng tồn kho (on-hand, available, lô và biến động): không hiển thị chữ số thập phân thừa đối với các giá trị nguyên và đơn vị kiểu dữ liệu nguyên (precision = 0).
 - Sửa Tổng quan ở chế độ API để tải doanh thu, số hóa đơn, giao dịch gần nhất, sản phẩm và lô cần chú ý từ dữ liệu máy chủ; đồng thời trả đúng trường `sku`/`productName` theo contract để chi tiết hóa đơn hiển thị tên sản phẩm.
 - Khôi phục ảnh sản phẩm mẫu trong bảng catalog API mode sau khi tích hợp giao diện CRUD; dùng chung component ảnh với màn bán hàng để giữ ảnh local và placeholder khi không có ảnh.
 - Hoàn thiện giao diện CRUD catalog ở API mode: quản lý sản phẩm, danh mục, đơn vị tính, nhà cung cấp và mã vạch từ màn hình hàng hóa; hiển thị quyền chỉ đọc, lỗi API và trạng thái mạng. Bổ sung Playwright kiểm tra tạo/sửa/xóa, xung đột dữ liệu, quyền và retry.

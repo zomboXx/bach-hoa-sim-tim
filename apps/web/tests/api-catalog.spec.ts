@@ -279,7 +279,7 @@ test("catalog read permission shows data without write controls and recovers fro
   page,
 }) => {
   const api = await setup(page, false);
-   const dashboardCatalogLoaded = Promise.all(
+  const dashboardCatalogLoaded = Promise.all(
     ["/api/v1/products", "/api/v1/units"].map((path) =>
       page.waitForResponse(
         (response) =>
