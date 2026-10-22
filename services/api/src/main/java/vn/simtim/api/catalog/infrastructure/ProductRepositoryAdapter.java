@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
+import vn.simtim.api.catalog.domain.CatalogNotFoundException;
 import vn.simtim.api.catalog.domain.Product;
+import vn.simtim.api.catalog.domain.ProductImage;
 import vn.simtim.api.catalog.domain.ProductRepository;
 
 @Repository
@@ -57,12 +59,49 @@ class ProductRepositoryAdapter implements ProductRepository {
 
     @Override
     public Product save(Product product) {
-        return jpa.save(new ProductJpa(product)).toDomain();
+        var existing = jpa.findById(product.id());
+        ProductJpa jpaEntity = new ProductJpa(product);
+        if (existing.isPresent()) {
+            ProductJpa old = existing.get();
+            jpaEntity.imageData = old.imageData;
+            jpaEntity.imageContentType = old.imageContentType;
+            if (product.imageUrl() == null) {
+                jpaEntity.imageUrl = old.imageUrl;
+            }
+        }
+        return jpa.save(jpaEntity).toDomain();
     }
 
     @Override
     public void deleteById(UUID organizationId, UUID id) {
         jpa.findByOrganizationIdAndId(organizationId, id)
                 .ifPresent(e -> jpa.deleteById(e.id));
+    }
+
+    @Override
+    public Optional<ProductImage> findImageById(UUID id) {
+        return jpa.findById(id)
+                .filter(p -> p.imageData != null && p.imageData.length > 0)
+                .map(p -> new ProductImage(p.imageData, p.imageContentType != null ? p.imageContentType : "image/jpeg"));
+    }
+
+    @Override
+    public Product saveImage(UUID organizationId, UUID productId, byte[] data, String contentType, String imageUrl) {
+        var entity = jpa.findByOrganizationIdAndId(organizationId, productId)
+                .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
+        entity.imageData = data;
+        entity.imageContentType = contentType;
+        entity.imageUrl = imageUrl;
+        return jpa.save(entity).toDomain();
+    }
+
+    @Override
+    public Product removeImage(UUID organizationId, UUID productId) {
+        var entity = jpa.findByOrganizationIdAndId(organizationId, productId)
+                .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + productId));
+        entity.imageData = null;
+        entity.imageContentType = null;
+        entity.imageUrl = null;
+        return jpa.save(entity).toDomain();
     }
 }

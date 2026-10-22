@@ -13,10 +13,11 @@ public record ProductResponse(
         String name,
         boolean tracksExpiry,
         String status,
-        long version) {
+        long version,
+        String imageUrl) {
 
     public static ProductResponse from(Product p) {
         return new ProductResponse(p.id(), p.organizationId(), p.categoryId(), p.baseUnitId(),
-                p.sku(), p.name(), p.tracksExpiry(), p.status(), p.version());
+                p.sku(), p.name(), p.tracksExpiry(), p.status(), p.version(), p.imageUrl());
     }
 }

@@ -4,6 +4,7 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- **IMG-01** Upload ảnh đại diện sản phẩm: hoàn thiện toàn diện Frontend và Backend. Thêm Flyway migration `V18__product_images.sql` lưu `image_url`, `image_data` (bytea), `image_content_type` vào `catalog.products`; bổ sung endpoint `PUT /api/v1/products/{id}/image` (multipart upload), `GET /api/v1/products/{id}/image` (phục vụ ảnh công khai không cần auth header cho thẻ img), `DELETE /api/v1/products/{id}/image`; cấu hình Spring Security cho phép dispatcher ERROR và public GET image; Frontend hỗ trợ chọn, xem trước, upload, xóa ảnh với `ApiCatalogAdapter`, và xử lý an toàn không gây logout ngoài ý muốn khi có lỗi mạng.
 - Khôi phục ảnh sản phẩm mẫu trong bảng catalog API mode sau khi tích hợp giao diện CRUD; dùng chung component ảnh với màn bán hàng để giữ ảnh local và placeholder khi không có ảnh.
 - Hoàn thiện giao diện CRUD catalog ở API mode: quản lý sản phẩm, danh mục, đơn vị tính, nhà cung cấp và mã vạch từ màn hình hàng hóa; hiển thị quyền chỉ đọc, lỗi API và trạng thái mạng. Bổ sung Playwright kiểm tra tạo/sửa/xóa, xung đột dữ liệu, quyền và retry.
 - Hoàn thiện CRUD backend danh mục: thêm GET/PUT barcode theo sản phẩm, kiểm tra `precisionScale` từ 0 đến 3, chặn vòng lặp danh mục cha–con và trả lỗi `409` có cấu trúc khi vi phạm ràng buộc dữ liệu hoặc cập nhật đồng thời. Giữ dữ liệu đang được tham chiếu khi xóa bị từ chối; bổ sung kiểm thử API thật cho CRUD đơn vị tính/barcode, quyền, rollback và các trường hợp không tồn tại.

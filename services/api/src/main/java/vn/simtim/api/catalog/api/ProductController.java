@@ -68,6 +68,41 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID id) {
+        var img = service.getImage(id);
+        org.springframework.http.MediaType mediaType = org.springframework.http.MediaType.parseMediaType(
+                img.contentType() != null ? img.contentType() : "image/jpeg");
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(org.springframework.http.HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .body(img.data());
+    }
+
+    @PutMapping(value = "/{id}/image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponse uploadImage(
+            @RequestHeader("X-Organization-Id") UUID orgId,
+            @PathVariable UUID id,
+            @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Tệp hình ảnh không được để trống");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Tệp tải lên phải là định dạng hình ảnh (JPEG, PNG, WEBP...)");
+        }
+        var updated = service.uploadImage(orgId, id, file.getBytes(), contentType);
+        return ProductResponse.from(updated);
+    }
+
+    @DeleteMapping("/{id}/image")
+    public ProductResponse deleteImage(
+            @RequestHeader("X-Organization-Id") UUID orgId,
+            @PathVariable UUID id) {
+        var updated = service.deleteImage(orgId, id);
+        return ProductResponse.from(updated);
+    }
+
     @GetMapping("/{id}/barcodes")
     public List<ProductBarcodeResponse> listBarcodes(@RequestHeader("X-Organization-Id") UUID orgId,
                                                      @PathVariable UUID id) {

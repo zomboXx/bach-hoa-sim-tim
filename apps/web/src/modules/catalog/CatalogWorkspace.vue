@@ -44,6 +44,12 @@ const barcodeLoading = ref(false);
 const barcodeEditingId = ref<string>();
 const barcodeFormOpen = ref(false);
 const barcodeForm = reactive({ barcode: "", isPrimary: false });
+/** File ảnh mới được chọn, chờ upload sau khi lưu sản phẩm. */
+const imageFile = ref<File | null>(null);
+/** URL preview cục bộ (ObjectURL) hoặc URL từ máy chủ của ảnh hiện tại. */
+const imagePreview = ref<string | null>(null);
+const imageUploading = ref(false);
+const imageRemoved = ref(false);
 const form = reactive({
   code: "",
   sku: "",
@@ -94,6 +100,44 @@ function resetEditor() {
   barcodeFormOpen.value = false;
   productForBarcodes.value = undefined;
   barcodes.value = [];
+  resetImageState();
+}
+
+function resetImageState() {
+  if (imagePreview.value && imagePreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(imagePreview.value);
+  }
+  imageFile.value = null;
+  imagePreview.value = null;
+  imageRemoved.value = false;
+}
+
+function onImagePicked(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    error.value = "Ảnh không được vượt quá 5 MB.";
+    input.value = "";
+    return;
+  }
+  // Giải phóng ObjectURL cũ nếu có.
+  if (imagePreview.value && imagePreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(imagePreview.value);
+  }
+  imageFile.value = file;
+  imagePreview.value = URL.createObjectURL(file);
+  imageRemoved.value = false;
+  error.value = "";
+}
+
+function removeSelectedImage() {
+  if (imagePreview.value && imagePreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(imagePreview.value);
+  }
+  imageFile.value = null;
+  imagePreview.value = null;
+  imageRemoved.value = true;
 }
 
 async function load() {
@@ -181,6 +225,7 @@ function startCreate() {
   });
   editingId.value = undefined;
   formOpen.value = true;
+  resetImageState();
   clearMessages();
 }
 
@@ -207,6 +252,11 @@ async function startEdit(id: string) {
     form.parentId = "parentId" in record ? record.parentId || "" : "";
     form.phone = "phone" in record ? record.phone || "" : "";
     form.email = "email" in record ? record.email || "" : "";
+    // Hiển thị ảnh hiện tại của sản phẩm (nếu có) để người dùng biết.
+    resetImageState();
+    if (section.value === "products") {
+      imagePreview.value = (record as import("./api-catalog-adapter").Product).imageUrl ?? null;
+    }
     editingId.value = id;
     formOpen.value = true;
   } catch (cause) {
@@ -223,9 +273,10 @@ async function save() {
   try {
     const code = form.code.trim();
     const name = form.name.trim();
+    let savedProductId: string | undefined;
     switch (section.value) {
-      case "products":
-        await props.adapter.save("products", editingId.value, {
+      case "products": {
+        const saved = await props.adapter.save("products", editingId.value, {
           sku: form.sku.trim(),
           name,
           categoryId: form.categoryId,
@@ -233,7 +284,11 @@ async function save() {
           tracksExpiry: form.tracksExpiry,
           status: form.status,
         });
+        // Khi tạo mới: dùng id trả về từ server.
+        // Khi sửa: fallback về editingId.value nếu server trả 204.
+        savedProductId = saved?.id ?? editingId.value;
         break;
+      }
       case "categories":
         await props.adapter.save("categories", editingId.value, {
           code,
@@ -259,14 +314,35 @@ async function save() {
         });
         break;
     }
+    // Xử lý ảnh sản phẩm: upload ảnh mới hoặc xóa ảnh cũ nếu người dùng đã gỡ bỏ.
+    if (imageFile.value && savedProductId) {
+      imageUploading.value = true;
+      try {
+        await props.adapter.uploadImage(savedProductId, imageFile.value);
+      } catch (uploadErr) {
+        success.value = "";
+        error.value = `Đã lưu thông tin sản phẩm nhưng không thể tải ảnh lên: ${(uploadErr as Error).message}`;
+      } finally {
+        imageUploading.value = false;
+      }
+    } else if (imageRemoved.value && savedProductId) {
+      try {
+        await props.adapter.deleteImage(savedProductId);
+      } catch {
+        // Bỏ qua nếu server chưa có ảnh hoặc lỗi xóa ảnh
+      }
+    }
+
     formOpen.value = false;
     editingId.value = undefined;
+    resetImageState();
     await load();
     if (!error.value) success.value = "Đã lưu thay đổi vào máy chủ.";
   } catch (cause) {
     error.value = (cause as Error).message;
   } finally {
     saving.value = false;
+    imageUploading.value = false;
   }
 }
 
@@ -454,7 +530,13 @@ async function removeBarcode(barcode: Barcode) {
             <template v-if="section === 'products'">
               <td>
                 <div class="product-cell">
-                  <span><ProductImage :sku="(record as Product).sku" :name="record.name" /></span>
+                  <span>
+                    <ProductImage
+                      :sku="(record as Product).sku"
+                      :name="record.name"
+                      :image-url="(record as Product).imageUrl"
+                    />
+                  </span>
                   <b>{{ record.name }}</b>
                 </div>
               </td>
@@ -607,6 +689,50 @@ async function removeBarcode(barcode: Barcode) {
           ><input v-model="form.tracksExpiry" type="checkbox" /> Theo dõi hạn sử dụng</label
         >
       </div>
+
+      <!-- ===== Khu vực upload ảnh (chỉ hiển thị khi thêm/sửa sản phẩm) ===== -->
+      <div v-if="section === 'products'" class="catalog-image-upload">
+        <p class="catalog-image-label">
+          Ảnh sản phẩm
+          <span class="catalog-image-hint">(tuỳ chọn · JPEG, PNG, WebP · tối đa 5 MB)</span>
+        </p>
+        <div class="catalog-image-preview-wrap">
+          <div class="catalog-image-preview">
+            <img
+              v-if="imagePreview"
+              :src="imagePreview"
+              alt="Xem trước ảnh sản phẩm"
+              class="catalog-image-thumb"
+            />
+            <span v-else class="catalog-image-placeholder" aria-hidden="true">📷</span>
+          </div>
+          <div class="catalog-image-controls">
+            <label class="catalog-image-pick secondary">
+              <input
+                id="product-image-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="sr-only"
+                :disabled="!canAct"
+                @change="onImagePicked"
+              />
+              {{ imagePreview ? "Đổi ảnh" : "Chọn ảnh" }}
+            </label>
+            <button
+              v-if="imagePreview"
+              type="button"
+              class="catalog-image-remove"
+              :disabled="!canAct"
+              @click="removeSelectedImage"
+            >
+              Xóa ảnh
+            </button>
+          </div>
+        </div>
+        <p v-if="imageUploading" class="catalog-notice">Đang tải ảnh lên máy chủ…</p>
+      </div>
+      <!-- ===== Kết thúc upload ảnh ===== -->
+
       <p
         v-if="section === 'products' && (!categories.length || !units.length)"
         class="catalog-notice"
@@ -618,9 +744,13 @@ async function removeBarcode(barcode: Barcode) {
         <button
           class="primary"
           type="submit"
-          :disabled="!canAct || (section === 'products' && (!categories.length || !units.length))"
+          :disabled="
+            !canAct ||
+            imageUploading ||
+            (section === 'products' && (!categories.length || !units.length))
+          "
         >
-          {{ saving ? "Đang lưu…" : "Lưu thay đổi" }}
+          {{ saving || imageUploading ? "Đang lưu…" : "Lưu thay đổi" }}
         </button>
       </div>
     </form>
@@ -893,5 +1023,92 @@ async function removeBarcode(barcode: Barcode) {
   .catalog-panel-head {
     gap: 8px;
   }
+}
+
+/* ===== Image upload ===== */
+.catalog-image-upload {
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.catalog-image-label {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #303036;
+}
+.catalog-image-hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+.catalog-image-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.catalog-image-preview {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #f6f2ed;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.catalog-image-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.catalog-image-placeholder {
+  font-size: 32px;
+  line-height: 1;
+}
+.catalog-image-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.catalog-image-pick {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #f8f4fa;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--purple);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+.catalog-image-pick:hover {
+  background: #ede8f5;
+}
+.catalog-image-pick:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.catalog-image-remove {
+  border: 0;
+  background: none;
+  color: #a32b22;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 0;
+  text-align: left;
+  cursor: pointer;
+}
+.catalog-image-remove:hover {
+  text-decoration: underline;
+}
+.catalog-image-remove:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 </style>

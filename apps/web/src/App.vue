@@ -173,7 +173,10 @@ const inventoryAdapter: InventoryPort = isDemoMode
     )
   : new ApiInventoryAdapter((path, init) => authAdapter.fetchApi(path, init));
 const promotionAdapter = new ApiPromotionAdapter((path, init) => authAdapter.fetchApi(path, init));
-const catalogAdapter = new ApiCatalogAdapter((path, init) => authAdapter.fetchApi(path, init));
+const catalogAdapter = new ApiCatalogAdapter(
+  (path, init) => authAdapter.fetchApi(path, init),
+  (path, init) => authAdapter.fetchApi(path, init, { silentAuth: true }),
+);
 const saleAdapter: SalePort = isDemoMode
   ? new DemoSaleAdapter(
       () => state.value!,

@@ -36,6 +36,15 @@ class ProductJpa {
     @Column(nullable = false)
     long version;
 
+    @Column(name = "image_url")
+    String imageUrl;
+
+    @Column(name = "image_data")
+    byte[] imageData;
+
+    @Column(name = "image_content_type", length = 100)
+    String imageContentType;
+
     ProductJpa() {}
 
     ProductJpa(Product p) {
@@ -48,9 +57,10 @@ class ProductJpa {
         this.tracksExpiry = p.tracksExpiry();
         this.status = p.status();
         this.version = p.version();
+        this.imageUrl = p.imageUrl();
     }
 
     Product toDomain() {
-        return new Product(id, organizationId, categoryId, baseUnitId, sku, name, tracksExpiry, status, version);
+        return new Product(id, organizationId, categoryId, baseUnitId, sku, name, tracksExpiry, status, version, imageUrl);
     }
 }

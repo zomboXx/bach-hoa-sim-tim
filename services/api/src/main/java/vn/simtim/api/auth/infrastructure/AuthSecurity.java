@@ -37,8 +37,10 @@ public class AuthSecurity {
                 .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable()).logout(logout -> logout.disable())
                 .requestCache(cache -> cache.disable())
                 .authorizeHttpRequests(auth -> auth
+                    .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR, jakarta.servlet.DispatcherType.FORWARD).permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/products/*/image").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/auth/session").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                     .requestMatchers(HttpMethod.GET, catalog).hasAuthority("catalog.read")

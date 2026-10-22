@@ -631,4 +631,50 @@ class CatalogApiTest {
                 new HttpEntity<>(orgHeaders()), Void.class);
         assertThat(del.getStatusCode().value()).isEqualTo(204);
     }
+
+    @Test
+    void uploadProductImage_and_getImage_succeeds() {
+        String productUrl = createProductFixture();
+        String productId = productUrl.substring(productUrl.lastIndexOf('/') + 1);
+
+        // Multipart upload
+        byte[] imageBytes = new byte[] { (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }; // PNG header
+        org.springframework.util.MultiValueMap<String, Object> parts = new org.springframework.util.LinkedMultiValueMap<>();
+        org.springframework.core.io.ByteArrayResource res = new org.springframework.core.io.ByteArrayResource(imageBytes) {
+            @Override
+            public String getFilename() { return "sample.png"; }
+        };
+        var partHeaders = new HttpHeaders();
+        partHeaders.setContentType(MediaType.IMAGE_PNG);
+        parts.add("image", new HttpEntity<>(res, partHeaders));
+
+        var uploadHeaders = new HttpHeaders();
+        uploadHeaders.set("X-Organization-Id", ORG_ID);
+        uploadHeaders.setBearerAuth(stockToken);
+        uploadHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var uploadResp = rest.exchange("/api/v1/products/" + productId + "/image", HttpMethod.PUT,
+                new HttpEntity<>(parts, uploadHeaders), Map.class);
+        assertThat(uploadResp.getStatusCode().value()).isEqualTo(200);
+        assertThat(uploadResp.getBody()).containsEntry("imageUrl", "/api/v1/products/" + productId + "/image");
+
+        // Public GET without auth headers
+        var getResp = rest.getForEntity("/api/v1/products/" + productId + "/image", byte[].class);
+        assertThat(getResp.getStatusCode().value()).isEqualTo(200);
+        assertThat(getResp.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+        assertThat(getResp.getBody()).isEqualTo(imageBytes);
+
+        // Delete image
+        var delHeaders = new HttpHeaders();
+        delHeaders.set("X-Organization-Id", ORG_ID);
+        delHeaders.setBearerAuth(stockToken);
+        var delResp = rest.exchange("/api/v1/products/" + productId + "/image", HttpMethod.DELETE,
+                new HttpEntity<>(delHeaders), Map.class);
+        assertThat(delResp.getStatusCode().value()).isEqualTo(200);
+        assertThat(delResp.getBody().get("imageUrl")).isNull();
+
+        // GET after delete should return 404
+        var getAfterDel = rest.getForEntity("/api/v1/products/" + productId + "/image", byte[].class);
+        assertThat(getAfterDel.getStatusCode().value()).isEqualTo(404);
+    }
 }
