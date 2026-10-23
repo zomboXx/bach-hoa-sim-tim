@@ -1,6 +1,6 @@
 # Khôi phục phiên và giảm truy vấn xác thực — 23/10/2026
 
-Owner: TV1 — Nguyễn Đức Phát. Project Owner yêu cầu sửa thao tác online chậm và phải đăng nhập lại khi F5. Thay đổi đang ở nhánh local `codex/session-performance`, chưa triển khai production.
+Owner: TV1 — Nguyễn Đức Phát. Project Owner yêu cầu sửa thao tác online chậm và phải đăng nhập lại khi F5. Bản ghi dưới đây chụp kết quả cục bộ trước push trên `codex/session-performance`; sau đó Project Owner cho phép push/merge/triển khai khi CI đạt. Trạng thái tích hợp/production theo PR, không suy từ thời điểm chạy cục bộ.
 
 ## Đối chiếu trước sửa
 

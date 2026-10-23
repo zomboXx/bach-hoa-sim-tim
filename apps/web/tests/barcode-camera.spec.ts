@@ -43,7 +43,7 @@ for (const { file, value: code } of samples) {
     await expect(dialog.getByRole("button", { name: "Quét tiếp" })).toBeVisible();
     if (file === "demo-milk" || file === "demo-cookies") {
       await expect(page.locator(".cart-row")).toHaveCount(1);
-      await expect(page.locator(".cart-row .stepper span")).toHaveText("1");
+      await expect(page.locator(".cart-row .stepper input")).toHaveValue("1");
     }
     await dialog.getByRole("button", { name: "Đóng camera" }).click();
     await expect(dialog).toHaveCount(0);

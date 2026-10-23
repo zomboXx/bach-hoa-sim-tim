@@ -170,7 +170,7 @@ test("API transfer preserves its creation operation across reload and unlocks ca
   await page.getByRole("button", { name: "Hủy QR và trả hàng giữ" }).click();
   await expect(page.locator(".transfer-detail h3")).toHaveText("Đã hủy");
   await expect(page.getByRole("button", { name: "Tăng Hàng thử" })).toBeEnabled();
-  await expect(page.locator(".cart-row .stepper span")).toHaveText("1");
+  await expect(page.locator(".cart-row .stepper input")).toHaveValue("1");
   await expect(page.locator(".transfer-qr svg")).toHaveCount(0);
 });
 

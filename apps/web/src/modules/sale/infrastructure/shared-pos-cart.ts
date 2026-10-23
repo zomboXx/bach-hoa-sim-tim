@@ -14,6 +14,14 @@ interface Adjustment {
   productId: string;
   delta: string;
 }
+interface Replacement {
+  operationId: string;
+  generation: number;
+  productId: string;
+  expectedVersion: number;
+  quantity: string;
+}
+type CartOperation = Adjustment | Replacement;
 type FetchApi = (path: string, init?: RequestInit) => Promise<Response>;
 
 /** Each request is authorized by the API; no bearer tokens or carts in shared browser storage. */
@@ -25,7 +33,7 @@ export function useSharedPosCart(
   const ready = ref(false);
   const saving = ref(false);
   const error = ref("");
-  const pending = ref<Adjustment>();
+  const pending = ref<CartOperation>();
   const snapshot = ref<SharedCart>();
   let scope = "";
   let active = false;
@@ -116,7 +124,7 @@ export function useSharedPosCart(
     error.value = "";
     try {
       const saved = sessionStorage.getItem(key());
-      if (saved) pending.value = JSON.parse(saved) as Adjustment;
+      if (saved) pending.value = JSON.parse(saved) as CartOperation;
     } catch {
       sessionStorage.removeItem(key());
     }
@@ -124,7 +132,7 @@ export function useSharedPosCart(
     void poll();
   }
 
-  async function send(adjustment: Adjustment) {
+  async function send(adjustment: CartOperation) {
     if (!active || saving.value) return false;
     const captured = revision;
     saving.value = true;
@@ -139,12 +147,17 @@ export function useSharedPosCart(
       return false;
     }
     try {
-      const res = await fetchApi("/api/v1/sales/cart/operations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(adjustment),
-        signal: AbortSignal.timeout(6000),
-      });
+      const res = await fetchApi(
+        "quantity" in adjustment
+          ? "/api/v1/sales/cart/quantities"
+          : "/api/v1/sales/cart/operations",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(adjustment),
+          signal: AbortSignal.timeout(6000),
+        },
+      );
       if (captured !== revision) return false;
       if (!res.ok) await failure(res);
       const cart = (await res.json()) as SharedCart;
@@ -181,9 +194,31 @@ export function useSharedPosCart(
       delta: String(delta),
     });
   }
+  async function setQuantity(productId: string, quantity: number, expectedVersion: number) {
+    if (!ready.value || !snapshot.value || pending.value || saving.value) return false;
+    return send({
+      operationId: crypto.randomUUID(),
+      generation: snapshot.value.generation,
+      productId,
+      quantity: String(quantity),
+      expectedVersion,
+    });
+  }
   async function retry() {
     if (pending.value) await send(pending.value);
     else await refresh();
   }
-  return { ready, saving, error, pending, snapshot, start, stop, refresh, adjust, retry };
+  return {
+    ready,
+    saving,
+    error,
+    pending,
+    snapshot,
+    start,
+    stop,
+    refresh,
+    adjust,
+    setQuantity,
+    retry,
+  };
 }

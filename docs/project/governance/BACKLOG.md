@@ -107,6 +107,8 @@ Ngày 21/10/2026, Project Owner yêu cầu tích hợp lên `main`, triển khai
 
 Project Owner Nguyễn Đức Phát duyệt QR chuyển khoản với xác nhận tiền về thủ công: mã giao dịch riêng, lịch sử/trạng thái trên PostgreSQL, giữ hàng và khóa giỏ khi chờ, ghi người/thời gian/mã chứng từ khi xác nhận; chỉ hoàn tất hóa đơn, xuất tồn và doanh thu một lần. Không chờ đăng ký merchant payOS/VNPAY; không tự xác nhận ngân hàng và không tự hoàn tiền. Đây là quyết định bổ sung sau phạm vi CASH lịch sử, chưa tự gán mã issue hoặc sprint. [Contract](../../../contracts/MANUAL_TRANSFER.md) và [hướng dẫn thử](../../testing/MANUAL_TRANSFER_SETUP.md) ghi ranh giới, cấu hình và bằng chứng. Project Owner đã review và duyệt bốn commit triển khai ngày 23/10/2026; trạng thái CI/tích hợp/triển khai theo dõi tại [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84).
 
+Điều chỉnh quầy ngày 23/10/2026 do Project Owner yêu cầu: lịch sử chuyển khoản ở Hóa đơn, đơn đang bán cho nhập số lượng trực tiếp theo precision đơn vị, xác nhận tiền về bằng một nút. Server vẫn lưu người/thời gian, chống hoàn tất trùng và giữ số tiền đã chốt; không yêu cầu hoặc tự tạo mã chứng từ ngân hàng cho xác nhận nhanh. Xem cập nhật trong contract chuyển khoản; quyết định này thay yêu cầu nhập mã chứng từ của luồng PWA ngày 22/10, giữ dữ liệu/chứng từ cũ và endpoint cũ.
+
 ## Icebox — Không cam kết cuối kỳ
 
 - Bán hàng offline hoàn chỉnh trên nhiều thiết bị.

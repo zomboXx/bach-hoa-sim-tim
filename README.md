@@ -26,7 +26,7 @@ Trong `infra/.env`, đặt hai mật khẩu **khác nhau** cho `POSTGRES_PASSWOR
 
 Compose chạy web, API và PostgreSQL cùng nhau. Xem [hướng dẫn Docker chi tiết](infra/README.md) để thử các luồng nghiệp vụ, xem log, đổi cổng và dừng dịch vụ. Lần chạy đầu cần thêm thời gian tải image và build.
 
-QR chuyển khoản cần [cấu hình tài khoản nhận trên backend](docs/testing/MANUAL_TRANSFER_SETUP.md). Trong **Bán hàng**, chọn **Chuyển khoản QR → Tạo QR và giữ hàng**; nhân viên kiểm tra tiền về rồi xác nhận thủ công. Giao dịch được lưu cùng hóa đơn; lịch sử chuyển khoản cho biết số giao dịch và tổng tiền đã xác nhận. Tính năng được bật theo cấu hình riêng của từng môi trường.
+QR chuyển khoản cần [cấu hình tài khoản nhận trên backend](docs/testing/MANUAL_TRANSFER_SETUP.md). Trong **Bán hàng**, chọn **Chuyển khoản QR → Tạo QR và giữ hàng**; kiểm tra đã nhận đủ tiền rồi bấm **Xác nhận đã nhận tiền**. Không cần nhập lại số tiền/mã ngân hàng. Lịch sử chuyển khoản nằm ở **Hóa đơn**, cho biết số giao dịch và tổng tiền đã xác nhận. Có thể nhập số lượng trực tiếp giữa nút +/-; số lẻ theo đơn vị hàng. Tính năng được bật theo cấu hình riêng của từng môi trường.
 
 ## Phát triển và kiểm thử
 

@@ -24,7 +24,7 @@ Roles and permission grants live in IAM tables; every request reloads them for t
 
 ### Browser reload decision — 23/10/2026
 
-Project Owner Nguyễn Đức Phát requested preserving login after F5 and reducing online request latency. This supersedes the reload-only limitation of the 29/09 acceptance below; the original Bearer endpoints and authorization boundaries remain compatible. The extension is implemented locally, pending publication/review.
+Project Owner Nguyễn Đức Phát requested preserving login after F5 and reducing online request latency, and authorized publication/integration after CI on 23/10/2026. This supersedes the reload-only limitation of the 29/09 acceptance below; the original Bearer endpoints and authorization boundaries remain compatible. Local verification is recorded in [the test report](../docs/testing/SESSION_RESTORE_TEST_REPORT.md); PR records track integration/deployment.
 
 - The PWA opts in at login with `X-SimTim-Browser: 1`. The server sets a host-only `__Secure-simtim-restore` cookie: `HttpOnly`, `Secure`, `SameSite=Strict`, path `/api/v1/auth/restore`, lifetime bounded by the existing session expiry (8 hours by default).
 - `POST /api/v1/auth/restore` requires that same non-simple header and rejects Fetch Metadata other than `same-origin` when present. CORS/preflight remains denied. The cookie is accepted only by this bootstrap endpoint; operational APIs still require explicit Bearer credentials. Its no-store response returns the existing grant after checking current session/account/store/role state; it does not rotate or extend the session.

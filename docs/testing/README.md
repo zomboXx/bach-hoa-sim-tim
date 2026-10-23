@@ -1,5 +1,6 @@
 # Hồ sơ kiểm thử
 
+- [Nhập số lượng và xác nhận tiền về ngày 23/10](CHECKOUT_FLOW_TEST_REPORT.md): kiểm thử giao diện, API, migration V20 và đồng bộ hai thiết bị.
 - [QR chuyển khoản xác nhận thủ công](MANUAL_TRANSFER_SETUP.md): cấu hình tài khoản riêng, thử hai thiết bị và lệnh PostgreSQL/API/web disposable. Không chuyển tiền trong bài kiểm thử tự động.
 
 Thư mục này lưu test plan, ma trận truy vết, ma trận quyền và test report đã được review. Không commit token, secret, database dump, Playwright report, ảnh test hàng loạt hoặc output build.

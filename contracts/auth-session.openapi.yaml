@@ -9,7 +9,7 @@ info:
     in PR 12. Owner API TV1; reviewers API TV2 and web TV1 for TV3's implementation.
     Provider is integrated; consumer awaits PR 12 integration. Bearer tokens are opaque, not JWTs.
     Browser reload extension requested by Project Owner on 2026-10-23 is implemented locally,
-    pending publication/review. Existing Bearer endpoints remain compatible.
+    with publication/integration authorized after CI. Existing Bearer endpoints remain compatible.
 servers:
   - url: /
 security:

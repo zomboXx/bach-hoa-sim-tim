@@ -22,6 +22,32 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 08:14:28
+
+Chuyển lịch sử chuyển khoản sang Hóa đơn; cho nhập số lượng trực tiếp với precision đơn vị, kiểm xung đột thiết bị và giữ retry. Rút biểu mẫu tiền về thành một nút xác nhận. Cập nhật CI/live oracle và hồ sơ hướng dẫn theo quyết định mới. Gate đạt demo 51/51, consumer 73/73, backend 216/216; live hai thiết bị đạt, gồm F5, logout và mất phản hồi xác nhận; DB đúng +1 hóa đơn/payment/SALE movement, +22.500 VND, không tồn giữ hàng hoặc lệch ledger. Project Owner đã cho phép push/merge/triển khai sau CI; trạng thái tích hợp theo PR.
+
+- `.github/workflows/ci.yml`: +1 -1
+- `README.md`: +1 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +1 -1
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +18 -5
+- `apps/web/src/App.vue`: +52 -6
+- `apps/web/src/modules/sale/infrastructure/api-transfer-adapter.ts`: +6 -0
+- `apps/web/src/modules/sale/infrastructure/shared-pos-cart.ts`: +45 -10
+- `apps/web/src/modules/sale/presentation/CartQuantityInput.vue`: +85 -0
+- `apps/web/src/modules/sale/presentation/TransferPayment.vue`: +24 -48
+- `apps/web/tests/api-sale.spec.ts`: +81 -2
+- `apps/web/tests/api-transfer.spec.ts`: +1 -1
+- `apps/web/tests/barcode-camera.spec.ts`: +1 -1
+- `contracts/AUTH_SESSION_REVIEW.md`: +1 -1
+- `contracts/auth-session.openapi.yaml`: +1 -1
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `docs/testing/CHECKOUT_FLOW_TEST_REPORT.md`: +24 -0
+- `docs/testing/MANUAL_TRANSFER_SETUP.md`: +6 -5
+- `docs/testing/README.md`: +1 -0
+- `docs/testing/SESSION_RESTORE_TEST_REPORT.md`: +1 -1
+- `scripts/test-fe02-live.ps1`: +2 -2
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 08:13:43
 
 Bổ sung API đặt số lượng tuyệt đối có kiểm phiên bản và retry; xác nhận chuyển khoản bằng quyết định của nhân viên, lưu đúng người/thời gian và phương thức EMPLOYEE, không tạo mã ngân hàng giả. V20 giữ chứng từ cũ và tương thích API cũ trong rollout. Gate PostgreSQL đạt 216/216, gồm nâng cấp V19/V20, quyền, xác nhận đồng thời và rollback; endpoint chứng từ cũ tiếp tục được kiểm thử.

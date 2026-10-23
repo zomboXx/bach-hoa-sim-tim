@@ -143,6 +143,23 @@ async function installLogin(page: Page, session = salesSession) {
 async function installCatalog(page: Page) {
   let version = 0;
   let quantity = 0;
+  const quantityRequests: unknown[] = [];
+  await page.route("**/api/v1/sales/cart/quantities", (route) => {
+    const request = route.request().postDataJSON();
+    quantityRequests.push(request);
+    if (request.expectedVersion !== version)
+      return json(route, 409, { code: "CART_CHANGED", message: "Giỏ đã thay đổi" });
+    quantity = Number(request.quantity);
+    version++;
+    return json(route, 200, {
+      id: "test-shared-cart",
+      version,
+      generation: 0,
+      items: quantity
+        ? [{ productId, productName: sampleProduct.name, quantity: String(quantity) }]
+        : [],
+    });
+  });
   await page.route("**/api/v1/sales/cart", (route) =>
     json(route, 200, {
       id: "test-shared-cart",
@@ -174,6 +191,7 @@ async function installCatalog(page: Page) {
   );
   await page.route("**/api/v1/suppliers", (route) => json(route, 200, []));
   return {
+    quantityRequests,
     setQuantity(value: number) {
       quantity = value;
       version++;
@@ -194,6 +212,67 @@ async function openSale(page: Page) {
     .getByRole("button", { name: /Bán hàng/ })
     .click();
 }
+
+test("quantity input rejects non-numeric paste, accepts fractional units, and commits once on Enter", async ({
+  page,
+}) => {
+  await installLogin(page);
+  const catalog = await installCatalog(page);
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  await signIn(page);
+  await openSale(page);
+  await page.locator(".product-card").click();
+  const input = page.getByLabel("Số lượng " + sampleProduct.name, { exact: true });
+  await expect(input).toHaveValue("1");
+  await input.fill("1e3");
+  await expect(input).toHaveValue("1");
+  await input.fill("-2");
+  await expect(input).toHaveValue("1");
+  await input.fill("2,125");
+  await input.press("Enter");
+  await expect(input).toHaveValue("2.125");
+  expect(catalog.quantityRequests).toHaveLength(1);
+  await input.fill("0");
+  await input.press("Enter");
+  await expect(page.locator(".cart-row")).toHaveCount(0);
+});
+
+test("quantity edit reports a concurrent cart change instead of overwriting it", async ({
+  page,
+}) => {
+  await installLogin(page);
+  const catalog = await installCatalog(page);
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  await signIn(page);
+  await openSale(page);
+  await page.locator(".product-card").click();
+  const input = page.getByLabel("Số lượng " + sampleProduct.name, { exact: true });
+  await input.fill("8");
+  catalog.setQuantity(3);
+  await input.press("Enter");
+  await expect(input).toHaveValue("3");
+  expect(catalog.quantityRequests).toHaveLength(1);
+});
+
+test("counted units reject fractional and signed quantity input", async ({ page }) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await page.route("**/api/v1/units", (route) =>
+    json(route, 200, [{ id: sampleProduct.baseUnitId, code: "CAI", precisionScale: 0 }]),
+  );
+  await page.route("**/api/v1/sales/quote", (route) => json(route, 200, sampleQuote));
+  await signIn(page);
+  await openSale(page);
+  await page.locator(".product-card").click();
+  const input = page.getByLabel("Số lượng " + sampleProduct.name, { exact: true });
+  await expect(input).toHaveValue("1");
+  await input.fill("1.5");
+  await expect(input).toHaveValue("1");
+  await input.fill("+3");
+  await expect(input).toHaveValue("1");
+  await input.fill("abc");
+  await expect(input).toHaveValue("1");
+});
 
 test("API sale finds a product by barcode on Enter", async ({ page }) => {
   await installLogin(page);
@@ -297,7 +376,7 @@ test("a failed product photo preserves the product name and add action", async (
   await expect(card.locator(".product-image-fallback")).toBeVisible();
   await expect(card).toContainText(sampleProduct.name);
   await card.click();
-  await expect(page.locator(".cart-row .stepper span")).toHaveText("1");
+  await expect(page.locator(".cart-row .stepper input")).toHaveValue("1");
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -631,7 +710,7 @@ test("CART_CHANGED restores a newer snapshot received while checkout was pending
   remote.setQuantity(2);
   await changedRead;
   release();
-  await expect(page.locator(".cart-row .stepper span")).toHaveText("2");
+  await expect(page.locator(".cart-row .stepper input")).toHaveValue("2");
   await expect(page.locator(".toast")).toContainText("Giỏ đã thay đổi");
   await expect(page.getByRole("button", { name: /Xác nhận thanh toán/ })).toBeEnabled();
 });

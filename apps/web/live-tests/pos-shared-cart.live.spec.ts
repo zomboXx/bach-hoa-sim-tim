@@ -38,7 +38,7 @@ test("@pos phone camera and desktop share a cart, retry and checkout once", asyn
     ).toBeVisible();
   }
   async function expectQuantity(page: Page, value: string) {
-    await expect(page.locator(".cart-row .stepper span")).toHaveText(value, { timeout: 5000 });
+    await expect(page.locator(".cart-row .stepper input")).toHaveValue(value, { timeout: 5000 });
   }
   try {
     await Promise.all([signIn(phone), signIn(desk)]);
