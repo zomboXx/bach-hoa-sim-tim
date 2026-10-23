@@ -6,9 +6,15 @@ Quyết định hiện hành thay phần chuẩn bị payOS: không cần tài k
 
 ## Dữ liệu và vòng đời
 
+### Điều chỉnh quầy bán hàng — 23/10/2026
+
+Project Owner yêu cầu bỏ lịch sử khỏi đơn đang bán, nhập số lượng trực tiếp và xác nhận tiền về bằng một nút. Lịch sử được xem ở trang Hóa đơn. PWA gọi endpoint xác nhận nhân viên bên dưới; nhân viên tự kiểm tra đã nhận đủ tiền trước khi bấm, không phải nhập lại số tiền/mã ngân hàng hoặc checkbox.
+
+V20 bổ sung `confirmation_method`: giao dịch hoàn tất trước đó giữ nguyên bằng chứng và được đánh dấu `BANK_RECEIPT`; xác nhận nhanh mới ghi `EMPLOYEE`, người/thời gian xử lý, số tiền snapshot. `bank_reference` và payment `reference_code` để NULL khi không có chứng từ, không tự sinh mã ngân hàng giả. Retry/đồng thời vẫn chỉ hoàn tất mỗi đơn một lần. Không có mã chứng từ thì ứng dụng không thể phát hiện cùng một khoản tiền ngân hàng bị nhân viên gán cho hai đơn khác nhau; đây vẫn là xác nhận thủ công.
+
 - Một giao dịch gắn một giỏ của nhân viên/cửa hàng, một hóa đơn `DRAFT`, số tiền VND nguyên dương, mã nội dung riêng, thông tin người nhận tại lúc tạo và hạn 10 phút.
 - Server khóa giỏ, xác nhận phiên bản/tổng tiền và chụp giá, khuyến mãi, phân bổ FEFO. `reserved_quantity` tăng; tồn vật lý, movement và doanh thu chưa thay đổi.
-- `PENDING → COMPLETED`: nhân viên kiểm tra thực nhận, nhập số tiền bằng đúng tổng và mã giao dịch ngân hàng, đánh dấu đã kiểm tra. Server ghi người/thời gian xác nhận, tạo payment `TRANSFER`, hoàn tất hóa đơn, chuyển giữ hàng thành xuất bán và xóa giỏ trong cùng transaction.
+- `PENDING → COMPLETED`: nhân viên bấm xác nhận đã nhận đủ tiền. Server lấy số tiền đã khóa, ghi người/thời gian/phương thức xác nhận, tạo payment `TRANSFER`, hoàn tất hóa đơn, chuyển giữ hàng thành xuất bán và xóa giỏ trong cùng transaction. Endpoint nhập chứng từ cũ vẫn được giữ cho client cũ.
 - `PENDING → CANCELLED/EXPIRED`: giải phóng giữ hàng, hóa đơn `VOIDED`; giữ lại sản phẩm trong giỏ và lịch sử giao dịch. Không ghi payment hoàn tất, movement bán hay doanh thu.
 - Trạng thái kết thúc không mở lại. Không cộng tiền, trừ hàng hoặc xóa một giỏ mới khi retry giao dịch cũ.
 - Lô bị khóa/hết hạn hoặc sản phẩm ngừng bán sẽ chặn xác nhận và rollback toàn bộ. Nhân viên cần đối chiếu khoản tiền và xử lý nghiệp vụ trước, không tự đổi lô sau khi QR đã chốt giá.
@@ -26,6 +32,7 @@ Mọi đường dưới đây dùng session Bearer và phạm vi tổ chức/c�
 | `POST /api/v1/sales/transfers` | `{operationId: UUID, cartVersion, expectedTotal}`; lấy sản phẩm từ giỏ server |
 | `GET /api/v1/sales/transfers/{id}` | Chi tiết, trạng thái và `qrPayload` chỉ khi còn chờ |
 | `POST /api/v1/sales/transfers/{id}/confirm` | `{receivedAmount, bankReference, checkedBankReceipt:true}` |
+| `POST /api/v1/sales/transfers/{id}/confirm-manual` | `{confirmed:true}`; số tiền/actor do server quyết định, không yêu cầu chứng từ ngân hàng |
 | `POST /api/v1/sales/transfers/{id}/cancel` | `{reason}` |
 | `GET /api/v1/sales/transfers?page=0&size=20` | Lịch sử phân trang và tổng số chờ/đã nhận/hủy/hết hạn, tổng VND đã nhận của toàn bộ phạm vi được xem |
 
@@ -33,7 +40,9 @@ Thu ngân chỉ đọc/xử lý giao dịch của mình. MANAGER/ADMIN được 
 
 Tạo QR dùng `operationId` cố định qua mất kết nối/reload; đổi version/tổng khi dùng lại mã trả 409. Xác nhận lặp cùng số tiền/mã ngân hàng trả giao dịch cũ; mã ngân hàng được chuẩn hóa chữ hoa/khoảng trắng, không dùng cho hai đơn cùng tổ chức/tài khoản nhận. Cơ sở dữ liệu và khóa transaction bảo vệ cả yêu cầu đồng thời. API trả `Cache-Control: no-store`.
 
-Giỏ chung thêm `pendingTransferId`; version tăng khi tạo hoặc xử lý QR. Thiết bị khác đọc được khóa giỏ qua polling hiện có. Tải lại trang cần đăng nhập lại theo cơ chế session hiện hành; giao dịch vẫn khôi phục từ server. Đơn 0 VND dùng CASH, không tạo QR.
+Giỏ chung thêm `pendingTransferId`; version tăng khi tạo hoặc xử lý QR. Thiết bị khác đọc được khóa giỏ qua polling hiện có. PWA hỗ trợ khôi phục phiên sau F5 theo [quyết định ngày 23/10](AUTH_SESSION_REVIEW.md); giao dịch đọc lại từ server. Đơn 0 VND dùng CASH, không tạo QR.
+
+Nhập số lượng trực tiếp dùng `POST /api/v1/sales/cart/quantities` với `{operationId,generation,expectedVersion,productId,quantity}`. Số lượng không âm, đúng độ chính xác đơn vị (tối đa 3 số lẻ); 0 bỏ dòng khỏi giỏ. Server khóa giỏ và kiểm version trước khi đặt số lượng tuyệt đối; xung đột thiết bị trả 409, retry cùng operation không áp dụng lần hai. Nút +/- và thao tác quét vẫn dùng delta qua `/cart/operations`.
 
 ## QR và giới hạn
 

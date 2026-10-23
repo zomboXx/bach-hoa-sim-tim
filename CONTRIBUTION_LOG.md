@@ -22,6 +22,23 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 08:13:43
+
+Bổ sung API đặt số lượng tuyệt đối có kiểm phiên bản và retry; xác nhận chuyển khoản bằng quyết định của nhân viên, lưu đúng người/thời gian và phương thức EMPLOYEE, không tạo mã ngân hàng giả. V20 giữ chứng từ cũ và tương thích API cũ trong rollout. Gate PostgreSQL đạt 216/216, gồm nâng cấp V19/V20, quyền, xác nhận đồng thời và rollback; endpoint chứng từ cũ tiếp tục được kiểm thử.
+
+- `CHANGELOG.md`: +2 -0
+- `contracts/MANUAL_TRANSFER.md`: +11 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/PosCartController.java`: +8 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/TransferController.java`: +8 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/PosCartService.java`: +31 -0
+- `services/api/src/main/java/vn/simtim/api/sale/application/TransferService.java`: +10 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/TransferOrder.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/TransferRepositoryAdapter.java`: +7 -4
+- `services/api/src/main/resources/db/migration/V20__employee_transfer_confirmation.sql`: +37 -0
+- `services/api/src/test/java/vn/simtim/api/qa/ManualTransferE2eTest.java`: +47 -0
+- `services/api/src/test/java/vn/simtim/api/qa/TransferMigrationTest.java`: +44 -0
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 06:30:37
 
 Nối PWA với bootstrap cookie để F5 giữ phiên trong cùng tab, không lưu token vào web storage; chặn phản hồi cũ ghi đè phiên mới, cho phép thử lại sau lỗi mạng và giới hạn chờ auth 15 giây. Cập nhật kiểm thử nhận hàng/chuyển khoản để khôi phục phiên thay vì nhập lại mật khẩu. Gate gốc đạt demo 51/51, consumer 70/70, backend PostgreSQL 213/213. Bài live hai thiết bị đạt: cookie thật bảo mật, F5 giữ giao dịch, logout/F5 không hồi sinh phiên và không đăng xuất thiết bị khác; SQL đối soát đúng một hóa đơn/payment/movement, +22.500 VND, không còn giữ hàng hoặc lệch ledger. Lượt live đầu vướng cổng 4176 đang dùng; thêm cổng tùy chọn/strictPort và chạy lại đạt, không dừng tiến trình có sẵn. Ghi hồ sơ kiểm chứng và giới hạn: chưa đo latency sau sửa trên production, chưa push/deploy.

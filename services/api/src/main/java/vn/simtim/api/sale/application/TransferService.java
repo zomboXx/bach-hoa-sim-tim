@@ -48,7 +48,7 @@ public class TransferService {
         var order=new TransferOrder(id,scope.organizationId(),scope.storeId(),scope.ownerId(),cart.id(),invoice.id(),
                 operation,version,"ST"+id.toString().replace("-","").substring(0,20).toUpperCase(Locale.ROOT),
                 invoice.grandTotal(),"PENDING",config.bankBin(),config.accountNumber(),config.accountName(),
-                now,now.plus(config.expiresInMinutes(),ChronoUnit.MINUTES),null,null,null,null);
+                now,now.plus(config.expiresInMinutes(),ChronoUnit.MINUTES),null,null,null,null,null);
         orders.save(order);
         carts.advance(cart.id(),false);
         return order;
@@ -72,6 +72,15 @@ public class TransferService {
         if (orders.receiptUsed(order,ref)) throw new SaleConflictException("BANK_REFERENCE_REUSED","Mã giao dịch ngân hàng đã ghi nhận cho đơn khác.");
         holds.complete(new StoreScope(order.organizationId(),order.storeId()),orders.allocations(order,actor.userId()));
         orders.complete(order,actor.userId(),ref,clock.instant());
+        carts.advance(order.cartId(),true);
+        return orders.find(id,false).orElseThrow();
+    }
+    public TransferOrder confirmEmployee(UUID id,SessionPrincipal actor,boolean confirmed) {
+        var order=get(id,actor);
+        if (!confirmed) throw new SaleValidationException("Nhân viên cần xác nhận đã nhận đủ tiền.");
+        if (!order.pending()) return order;
+        holds.complete(new StoreScope(order.organizationId(),order.storeId()),orders.allocations(order,actor.userId()));
+        orders.complete(order,actor.userId(),null,clock.instant());
         carts.advance(order.cartId(),true);
         return orders.find(id,false).orElseThrow();
     }

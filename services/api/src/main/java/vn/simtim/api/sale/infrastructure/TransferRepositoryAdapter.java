@@ -87,7 +87,7 @@ class TransferRepositoryAdapter implements TransferRepository {
                 insert into sales.payments(id,organization_id,store_id,invoice_id,method,status,amount,reference_code,paid_at)
                 values(?,?,?,?,'TRANSFER','COMPLETED',?,?,?)
                 """,UUID.randomUUID(),o.organizationId(),o.storeId(),o.invoiceId(),o.amount(),ref,Timestamp.from(now));
-        resolve(o,"COMPLETED",actor,ref,"Nhân viên xác nhận đã nhận tiền",now);
+        resolve(o,"COMPLETED",actor,ref,"Nhân viên xác nhận đã nhận đủ tiền",now);
     }
     public void release(TransferOrder o, String status, UUID actor, String note, Instant now) {
         jdbc.update("update sales.invoices set status='VOIDED',voided_by=?,void_reason=?,version=version+1 where id=? and status='DRAFT'",
@@ -96,8 +96,10 @@ class TransferRepositoryAdapter implements TransferRepository {
     }
     private void resolve(TransferOrder o, String status, UUID actor, String ref, String note, Instant now) {
         jdbc.update("""
-                update sales.transfer_orders set status=?,resolved_at=?,resolved_by=?,bank_reference=?,resolution_note=? where id=?
-                """,status,Timestamp.from(now),actor,ref,note,o.id());
+                update sales.transfer_orders set status=?,resolved_at=?,resolved_by=?,bank_reference=?,resolution_note=?,
+                confirmation_method=? where id=?
+                """,status,Timestamp.from(now),actor,ref,note,
+                "COMPLETED".equals(status)?(ref==null?"EMPLOYEE":"BANK_RECEIPT"):null,o.id());
     }
     private TransferOrder map(ResultSet r, int index) throws SQLException {
         Timestamp resolved = r.getTimestamp("resolved_at");
@@ -107,6 +109,7 @@ class TransferRepositoryAdapter implements TransferRepository {
                 r.getString("reference"),r.getLong("amount"),r.getString("status"),r.getString("bank_bin"),
                 r.getString("account_number"),r.getString("account_name"),r.getTimestamp("created_at").toInstant(),
                 r.getTimestamp("expires_at").toInstant(),resolved==null?null:resolved.toInstant(),
-                r.getObject("resolved_by",UUID.class),r.getString("bank_reference"),r.getString("resolution_note"));
+                r.getObject("resolved_by",UUID.class),r.getString("bank_reference"),r.getString("resolution_note"),
+                r.getString("confirmation_method"));
     }
 }

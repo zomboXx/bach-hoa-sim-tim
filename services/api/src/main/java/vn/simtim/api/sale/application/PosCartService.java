@@ -80,6 +80,37 @@ public class PosCartService {
         return carts.read(scope, true);
     }
 
+    public PosCart setQuantity(PosCart.Scope scope, UUID operationId, long generation, long expectedVersion,
+                               UUID productId, BigDecimal quantity) {
+        if (operationId==null || productId==null || quantity==null || quantity.signum()<0
+                || quantity.compareTo(new BigDecimal("99999999999.999"))>0) {
+            throw new SaleValidationException("Số lượng không hợp lệ");
+        }
+        var cart=carts.read(scope,true);
+        String operationHash=hash("SET|"+generation+"|"+expectedVersion+"|"+productId+"|"+decimal(quantity));
+        var previous=carts.operation(cart.id(),operationId);
+        if (previous.isPresent()) {
+            requireSameHash(previous.get(),operationHash);
+            return cart;
+        }
+        requireUnlocked(cart);
+        if (generation!=cart.generation() || expectedVersion!=cart.version())
+            throw new SaleConflictException("CART_CHANGED","Giỏ đã thay đổi trên thiết bị khác. Hãy nhập lại số lượng.");
+        var product=products.findById(scope.organizationId(),productId).filter(p->p.isActive())
+                .orElseThrow(()->new SaleNotFoundException("Sản phẩm không đang bán"));
+        var unit=units.findById(scope.organizationId(),product.baseUnitId())
+                .orElseThrow(()->new SaleNotFoundException("Không tìm thấy đơn vị sản phẩm"));
+        if (quantity.stripTrailingZeros().scale()>unit.precisionScale())
+            throw new SaleValidationException("QUANTITY_PRECISION","Số lượng không đúng độ chính xác của đơn vị");
+        boolean exists=cart.items().stream().anyMatch(l->l.productId().equals(productId));
+        if (!exists && quantity.signum()>0 && cart.items().size()>=100)
+            throw new SaleValidationException("Giỏ hàng tối đa 100 sản phẩm");
+        carts.setQuantity(cart.id(),productId,quantity);
+        carts.advance(cart.id(),false);
+        carts.record(cart.id(),operationId,operationHash,null);
+        return carts.read(scope,true);
+    }
+
     public Invoice checkout(PosCart.Scope scope, long expectedVersion, List<CheckoutItem> requestedItems,
                             Long expectedTotal, long cashAmount, UUID operationId) {
         if (operationId == null || expectedVersion < 0 || expectedTotal == null) {

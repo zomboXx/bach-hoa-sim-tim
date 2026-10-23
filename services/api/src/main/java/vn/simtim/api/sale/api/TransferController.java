@@ -45,19 +45,25 @@ public class TransferController {
     public ResponseEntity<Response> cancel(@PathVariable UUID id,@Valid @RequestBody Cancel request,Authentication auth) {
         return noStore(Response.from(service.cancel(id,principal(auth),request.reason())));
     }
+    @PostMapping("/{id}/confirm-manual")
+    public ResponseEntity<Response> confirmManual(@PathVariable UUID id,@RequestBody ManualConfirm request,Authentication auth) {
+        return noStore(Response.from(service.confirmEmployee(id,principal(auth),request.confirmed())));
+    }
     private static SessionPrincipal principal(Authentication auth) { return (SessionPrincipal)auth.getPrincipal(); }
     private static <T> ResponseEntity<T> noStore(T body) { return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body); }
     public record Create(@NotNull UUID operationId,@Min(0) long cartVersion,@Positive long expectedTotal) {}
     public record Confirm(@Min(1) long receivedAmount,@NotBlank @Size(max=100) String bankReference,boolean checkedBankReceipt) {}
     public record Cancel(@NotBlank @Size(max=500) String reason) {}
+    public record ManualConfirm(boolean confirmed) {}
     public record History(List<Response> items,TransferRepository.Summary summary,int page,int size) {}
     public record Response(UUID id,UUID invoiceId,UUID ownerId,String reference,long amount,String status,
             String bankBin,String accountNumber,String accountName,Instant createdAt,Instant expiresAt,Instant resolvedAt,
-            UUID resolvedBy,String bankReference,String resolutionNote,String qrPayload) {
+            UUID resolvedBy,String bankReference,String resolutionNote,String qrPayload,String confirmationMethod) {
         static Response from(TransferOrder o) {
             return new Response(o.id(),o.invoiceId(),o.ownerId(),o.reference(),o.amount(),o.status(),o.bankBin(),
                     o.accountNumber(),o.accountName(),o.createdAt(),o.expiresAt(),o.resolvedAt(),o.resolvedBy(),o.bankReference(),
-                    o.resolutionNote(),o.pending()?VietQr.encode(o.bankBin(),o.accountNumber(),o.amount(),o.reference()):null);
+                    o.resolutionNote(),o.pending()?VietQr.encode(o.bankBin(),o.accountNumber(),o.amount(),o.reference()):null,
+                    o.confirmationMethod());
         }
     }
 }

@@ -7,6 +7,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 - Khi tạo hoặc sửa sản phẩm trong API mode, lưu giá bán theo cửa hàng cùng transaction với sản phẩm; trả giá hiện hành về catalog, hiển thị giá tại Danh mục/Bán hàng và chặn đưa sản phẩm cũ chưa có giá vào giỏ thay vì để báo giá thất bại.
 
 - Loại bỏ kho lưu trữ phụ bên ngoài (`packages.microsoft.com`) bị lỗi 403 Forbidden trên GitHub Actions runner Ubuntu 24.04 trước khi cài đặt phụ thuộc Playwright; đồng thời dọn cache apt để `playwright install --with-deps` tải gói trơn tru.
+- Quầy bán hàng cho nhập trực tiếp số lượng bằng số theo đơn vị, có kiểm version để tránh ghi đè từ thiết bị khác. Chuyển lịch sử chuyển khoản sang Hóa đơn; xác nhận nhận đủ tiền bằng một nút, lưu nhân viên/thời điểm và loại xác nhận, không tạo mã ngân hàng giả. V20 giữ nguyên chứng từ của giao dịch cũ và API nhập chứng từ vẫn tương thích.
+
 - Kiểm thử live cho phép chọn cổng bằng `SIMTIM_LIVE_TEST_PORT` và yêu cầu strictPort, tránh đụng server đang chạy trên máy hoặc kiểm nhầm một bản khác.
 
 - PWA khôi phục phiên sau F5 bằng cookie HttpOnly/Secure/SameSite Strict chỉ dành cho bootstrap; token API vẫn ở bộ nhớ, quyền được kiểm tra lại và thời hạn phiên không tự kéo dài. Đăng xuất thu hồi phiên và xóa cookie; giữ khả năng thử khôi phục lại sau lỗi mạng tạm thời.
