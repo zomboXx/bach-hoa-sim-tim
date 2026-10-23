@@ -62,7 +62,14 @@ async function fixture(page: Page, enabled: boolean) {
       body = cart();
     } else if (path.endsWith("/products"))
       body = [
-        { id: productId, sku: "TEST", name: "Hàng thử", status: "ACTIVE", baseUnitId: "unit-test" },
+        {
+          id: productId,
+          sku: "TEST",
+          name: "Hàng thử",
+          status: "ACTIVE",
+          baseUnitId: "unit-test",
+          salePrice: 1000,
+        },
       ];
     else if (path.endsWith("/units"))
       body = [{ id: "unit-test", code: "CAI", name: "Cái", precisionScale: 0 }];
