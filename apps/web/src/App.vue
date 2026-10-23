@@ -392,19 +392,95 @@ function notify(message: string) {
   clearTimeout(timer);
   timer = setTimeout(() => (toast.value = ""), 4000);
 }
-function businessDay() {
+function businessDay(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(new Date());
+  }).formatToParts(date);
   const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 const reportPeriod = reactive({ from: businessDay(), to: businessDay() });
 const reportStatus = ref<"loading" | "error" | "ready" | "empty">("ready");
-const apiReport = ref<{ revenue: number; invoiceCount: number; inventory: any[] }>();
+interface ApiInventoryReportItem {
+  productId: string;
+  sku: string;
+  name: string;
+  quantity: number;
+  expiryDate?: string;
+  status: "NO_EXPIRY" | "EXPIRED" | "NEAR_EXPIRY" | "VALID";
+}
+const apiReport = ref<{
+  revenue: number;
+  invoiceCount: number;
+  inventory: ApiInventoryReportItem[];
+}>();
+const apiTodayInvoices = computed(() =>
+  apiInvoices.value.filter(
+    (invoice) =>
+      invoice.status === "COMPLETED" && businessDay(new Date(invoice.soldAt)) === businessDay(),
+  ),
+);
+const dashboardRevenue = computed(() =>
+  isDemoMode
+    ? revenue.value
+    : (apiReport.value?.revenue ??
+      apiTodayInvoices.value.reduce((total, invoice) => total + invoice.grandTotal, 0)),
+);
+const dashboardInvoiceCount = computed(() =>
+  isDemoMode
+    ? sales.value.length
+    : (apiReport.value?.invoiceCount ?? apiTodayInvoices.value.length),
+);
+const dashboardProductCount = computed(() =>
+  isDemoMode
+    ? state.value?.products.length || 0
+    : apiSaleProducts.value.length || apiReport.value?.inventory.length || 0,
+);
+const dashboardBatchCount = computed(() =>
+  isDemoMode ? state.value?.batches.length || 0 : apiReport.value?.inventory.length || 0,
+);
+const dashboardSales = computed(() =>
+  isDemoMode
+    ? sales.value.map((invoice) => ({
+        id: invoice.id,
+        at: invoice.at,
+        detail: invoice.method,
+        total: invoice.total,
+      }))
+    : apiTodayInvoices.value.map((invoice) => ({
+        id: invoice.invoiceNo,
+        at: invoice.soldAt,
+        detail: invoice.status,
+        total: invoice.grandTotal,
+      })),
+);
+const dashboardAlerts = computed(() =>
+  isDemoMode
+    ? alerts.value.map((batch) => ({
+        id: batch.id,
+        productId: batch.productId,
+        name: name(batch.productId),
+        quantity: batch.quantity,
+        expiry: batch.expiry,
+        expired: batch.expiry < today(),
+        emoji:
+          state.value?.products.find((product) => product.id === batch.productId)?.emoji || "📦",
+      }))
+    : (apiReport.value?.inventory || [])
+        .filter((item) => item.status === "EXPIRED" || item.status === "NEAR_EXPIRY")
+        .map((item) => ({
+          id: `${item.productId}-${item.expiryDate || item.status}`,
+          productId: item.productId,
+          name: item.name,
+          quantity: item.quantity,
+          expiry: item.expiryDate || "—",
+          expired: item.status === "EXPIRED",
+          emoji: "📦",
+        })),
+);
 async function loadReports() {
   if (isDemoMode) {
     reportStatus.value = "ready";
@@ -436,6 +512,14 @@ async function loadReports() {
     reportStatus.value = "error";
   }
 }
+async function loadDashboard() {
+  if (isDemoMode || !user.value) return;
+  const tasks: Promise<void>[] = [];
+  if (canGo("reports")) tasks.push(loadReports());
+  if (canGo("invoices")) tasks.push(loadInvoices());
+  if (canGo("products")) tasks.push(loadSaleProducts());
+  await Promise.allSettled(tasks);
+}
 function go(id: string) {
   if (!canGo(id)) return;
   route.value = id;
@@ -444,6 +528,9 @@ function go(id: string) {
   menu.value = false;
   error.value = "";
   window.scrollTo(0, 0);
+  if (id === "dashboard") {
+    void loadDashboard();
+  }
   if (id === "reports") {
     reportPeriod.from = businessDay();
     reportPeriod.to = businessDay();
@@ -728,6 +815,9 @@ onMounted(async () => {
     }
   } else clearSessionMarkers();
   if (revision === authRevision) authPending.value = undefined;
+  if (!isTrainingRoute.value && user.value && route.value === "dashboard") {
+    await loadDashboard();
+  }
   if (!isTrainingRoute.value) {
     try {
       await refreshStocktakeQueue();
@@ -1472,22 +1562,22 @@ async function approveCount(record: StocktakeRecord) {
           <div class="metrics">
             <article>
               <div><span>Doanh thu hôm nay</span><i>↗</i></div>
-              <strong>{{ money(revenue) }}</strong
+              <strong>{{ money(dashboardRevenue) }}</strong
               ><small>Từ các hóa đơn đã hoàn tất</small>
             </article>
             <article>
               <div><span>Đơn hàng hôm nay</span><i>▤</i></div>
-              <strong>{{ sales.length.toString().padStart(2, "0") }}</strong
+              <strong>{{ dashboardInvoiceCount.toString().padStart(2, "0") }}</strong
               ><small>Cập nhật sau mỗi lần thanh toán</small>
             </article>
             <article>
               <div><span>Sản phẩm đang bán</span><i>▦</i></div>
-              <strong>{{ state.products.length.toString().padStart(2, "0") }}</strong
-              ><small>{{ state.batches.length }} lô hàng đang theo dõi</small>
+              <strong>{{ dashboardProductCount.toString().padStart(2, "0") }}</strong
+              ><small>{{ dashboardBatchCount }} lô hàng đang theo dõi</small>
             </article>
             <article class="attention">
               <div><span>Lô hàng cần chú ý</span><i>!</i></div>
-              <strong>{{ alerts.length.toString().padStart(2, "0") }}</strong
+              <strong>{{ dashboardAlerts.length.toString().padStart(2, "0") }}</strong
               ><small>Cận hạn trong 7 ngày hoặc hết hạn</small>
             </article>
           </div>
@@ -1500,7 +1590,7 @@ async function approveCount(record: StocktakeRecord) {
                 </div>
                 <span class="pill">Hôm nay</span>
               </div>
-              <div v-if="!sales.length" class="empty">
+              <div v-if="!dashboardSales.length" class="empty">
                 <div class="empty-icon">▤</div>
                 <h3>Ca mới, khởi đầu mới.</h3>
                 <p>
@@ -1512,11 +1602,11 @@ async function approveCount(record: StocktakeRecord) {
                 </button>
               </div>
               <div v-else class="activity-list">
-                <div v-for="i in sales.slice(0, 5)" :key="i.id">
+                <div v-for="i in dashboardSales.slice(0, 5)" :key="i.id">
                   <span class="activity-icon">✓</span>
                   <div>
                     <b>{{ i.id }}</b
-                    ><small>{{ time(i.at) }} · {{ i.method }}</small>
+                    ><small>{{ time(i.at) }} · {{ i.detail }}</small>
                   </div>
                   <strong>{{ money(i.total) }}</strong>
                 </div>
@@ -1531,18 +1621,16 @@ async function approveCount(record: StocktakeRecord) {
                   <p class="eyebrow">CẦN CHÚ Ý</p>
                   <h2>Đừng để hàng quá hạn</h2>
                 </div>
-                <span class="alert-dot">{{ alerts.length }}</span>
+                <span class="alert-dot">{{ dashboardAlerts.length }}</span>
               </div>
               <div class="alerts">
-                <div v-for="b in alerts.slice(0, 3)" :key="b.id">
-                  <span class="product-emoji">{{
-                    state.products.find((p) => p.id === b.productId)?.emoji
-                  }}</span>
+                <div v-for="b in dashboardAlerts.slice(0, 3)" :key="b.id">
+                  <span class="product-emoji">{{ b.emoji }}</span>
                   <div>
-                    <b>{{ name(b.productId) }}</b
+                    <b>{{ b.name }}</b
                     ><small>{{ b.id }} · {{ b.quantity }} sản phẩm</small
-                    ><span :class="['status', b.expiry < today() ? 'danger' : 'amber']"
-                      >{{ b.expiry < today() ? "Đã hết hạn" : "Cận hạn" }} · {{ b.expiry }}</span
+                    ><span :class="['status', b.expired ? 'danger' : 'amber']"
+                      >{{ b.expired ? "Đã hết hạn" : "Cận hạn" }} · {{ b.expiry }}</span
                     >
                   </div>
                 </div>

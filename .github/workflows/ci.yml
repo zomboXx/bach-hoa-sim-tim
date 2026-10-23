@@ -49,11 +49,14 @@ jobs:
       - run: npm ci
       - name: Configure browser dependency downloads
         run: |
-          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do
+          sudo rm -f /etc/apt/sources.list.d/*microsoft* /etc/apt/sources.list.d/*azure*
+          sudo grep -l "packages.microsoft.com" /etc/apt/sources.list.d/* 2>/dev/null | xargs -r sudo rm -f
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list /etc/apt/apt-mirrors.txt; do
             if [ -f "$source" ]; then
               sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
             fi
           done
+          sudo rm -rf /var/lib/apt/lists/*
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-browser-ci-network >/dev/null
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
@@ -109,11 +112,14 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Configure browser dependency downloads
         run: |
-          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do
+          sudo rm -f /etc/apt/sources.list.d/*microsoft* /etc/apt/sources.list.d/*azure*
+          sudo grep -l "packages.microsoft.com" /etc/apt/sources.list.d/* 2>/dev/null | xargs -r sudo rm -f
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list /etc/apt/apt-mirrors.txt; do
             if [ -f "$source" ]; then
               sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
             fi
           done
+          sudo rm -rf /var/lib/apt/lists/*
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80-browser-ci-network >/dev/null
       - name: Install web and browser dependencies
         working-directory: apps/web

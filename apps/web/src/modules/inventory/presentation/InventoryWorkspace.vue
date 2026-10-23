@@ -62,6 +62,9 @@ const productNames = computed(() =>
 const supplierNames = computed(() =>
   Object.fromEntries(suppliers.value.map((supplier) => [supplier.id, supplier.name])),
 );
+const productById = computed(
+  () => new Map(inventory.value.products.map((product) => [product.productId, product])),
+);
 
 onMounted(async () => {
   await loadCurrentView();
@@ -265,6 +268,18 @@ function dateTime(value: string) {
 function money(value: number) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 }
+
+function formatQuantity(value: number | string, unitCode?: string): string {
+  const s = String(value ?? "").trim();
+  if (!s) return "0";
+  if (unitCode && unitCode.trim().toLocaleUpperCase("vi") !== "KG") {
+    return s.replace(/[,.]\d+$/, "");
+  }
+  if (/[,.]0+$/.test(s)) {
+    return s.replace(/[,.]0+$/, "");
+  }
+  return s;
+}
 </script>
 
 <template>
@@ -463,8 +478,11 @@ function money(value: number) {
           <div v-for="line in receipt.lines" :key="line.id" class="receipt-item-line">
             <p>
               <b>{{ productNames[line.productId] || line.productId }}</b> · Nhận
-              <strong>{{ line.acceptedQuantity }}</strong> · Từ chối
-              {{ line.rejectedQuantity }}
+              <strong>{{
+                formatQuantity(line.acceptedQuantity, productById.get(line.productId)?.unitCode)
+              }}</strong>
+              · Từ chối
+              {{ formatQuantity(line.rejectedQuantity, productById.get(line.productId)?.unitCode) }}
             </p>
             <small
               >Lô {{ line.supplierLotNumber || "—" }} · Giá nhập {{ money(line.unitCost) }}</small
@@ -504,11 +522,11 @@ function money(value: number) {
           <dl>
             <div>
               <dt>On-hand</dt>
-              <dd>{{ product.onHandQuantity }}</dd>
+              <dd>{{ formatQuantity(product.onHandQuantity, product.unitCode) }}</dd>
             </div>
             <div>
               <dt>Available</dt>
-              <dd>{{ product.availableQuantity }}</dd>
+              <dd>{{ formatQuantity(product.availableQuantity, product.unitCode) }}</dd>
             </div>
           </dl>
         </article>
@@ -554,8 +572,19 @@ function money(value: number) {
                   >
                 </td>
                 <td data-label="Hạn">{{ batch.expiryDate || "Không có" }}</td>
-                <td data-label="On-hand">{{ batch.onHandQuantity }}</td>
-                <td data-label="Available">{{ batch.availableQuantity }}</td>
+                <td data-label="On-hand">
+                  {{
+                    formatQuantity(batch.onHandQuantity, productById.get(batch.productId)?.unitCode)
+                  }}
+                </td>
+                <td data-label="Available">
+                  {{
+                    formatQuantity(
+                      batch.availableQuantity,
+                      productById.get(batch.productId)?.unitCode,
+                    )
+                  }}
+                </td>
                 <td data-label="Trạng thái">
                   <span
                     :class="[
@@ -596,7 +625,10 @@ function money(value: number) {
             >
           </div>
           <strong :class="Number(movement.quantityDelta) >= 0 ? 'positive' : 'negative'"
-            >{{ Number(movement.quantityDelta) > 0 ? "+" : "" }}{{ movement.quantityDelta }}</strong
+            >{{ Number(movement.quantityDelta) > 0 ? "+" : ""
+            }}{{
+              formatQuantity(movement.quantityDelta, productById.get(movement.productId)?.unitCode)
+            }}</strong
           >
         </article>
       </section>

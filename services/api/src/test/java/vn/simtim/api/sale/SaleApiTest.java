@@ -278,8 +278,12 @@ class SaleApiTest {
         assertThat(inv.get("paidTotal")).isEqualTo(75000);
         assertThat(inv.get("changeAmount")).isEqualTo(25000); // 100000 - 75000
         @SuppressWarnings("unchecked")
-        var lines = (List<?>) inv.get("lines");
+        var lines = (List<Map<String, Object>>) inv.get("lines");
         assertThat(lines).hasSize(1);
+        assertThat(lines.get(0))
+                .containsEntry("sku", "ST-RICE-01")
+                .containsEntry("productName", "Gạo gói 1 kg")
+                .doesNotContainKeys("skuSnapshot", "productNameSnapshot");
         @SuppressWarnings("unchecked")
         var payments = (List<Map<String, Object>>) inv.get("payments");
         assertThat(payments).hasSize(1);

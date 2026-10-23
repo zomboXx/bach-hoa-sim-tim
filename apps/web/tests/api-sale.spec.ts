@@ -360,6 +360,8 @@ test("happy path: quote → CASH checkout → invoice list shows new invoice row
   // After checkout, navigate to invoices route; invoice-row must appear
   await expect(page.locator(".invoice-row").first()).toBeVisible();
   await expect(page.locator(".invoice-row").first()).toContainText("INV-ABCD1234");
+  await page.locator(".invoice-row").first().click();
+  await expect(page.getByRole("dialog")).toContainText("Gạo thơm 5kg × 1");
 });
 
 test("quote network error shows user-friendly message", async ({ page }) => {
