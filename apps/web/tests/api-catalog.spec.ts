@@ -37,6 +37,7 @@ async function setup(page: Page, write = true) {
         name: "Gạo thơm",
         categoryId,
         baseUnitId: unitId,
+        salePrice: 32_000,
         tracksExpiry: false,
         status: "ACTIVE",
       },
@@ -167,6 +168,7 @@ test("API catalog creates, updates and deletes a product and its barcode", async
   await page.getByLabel("Tên *").fill("Cà phê rang");
   await page.getByLabel("Danh mục *").selectOption(categoryId);
   await page.getByLabel("Đơn vị tính *").selectOption(unitId);
+  await page.getByLabel("Giá bán (đ) *").fill("85000");
   await page.getByLabel("Theo dõi hạn sử dụng").check();
   await page.getByRole("button", { name: "Lưu thay đổi" }).click();
   const row = page.getByRole("row").filter({ hasText: "Cà phê rang" });
@@ -175,7 +177,9 @@ test("API catalog creates, updates and deletes a product and its barcode", async
     tracksExpiry: true,
     categoryId,
     baseUnitId: unitId,
+    salePrice: 85_000,
   });
+  await expect(row).toContainText("85.000 đ");
 
   await row.getByRole("button", { name: "Mã vạch" }).click();
   const panel = page.getByRole("region", { name: "Mã vạch sản phẩm" });
@@ -195,8 +199,11 @@ test("API catalog creates, updates and deletes a product and its barcode", async
 
   await row.getByRole("button", { name: "Sửa" }).click();
   await page.getByLabel("Tên *").fill("Cà phê rang mới");
+  await page.getByLabel("Giá bán (đ) *").fill("92000");
   await page.getByRole("button", { name: "Lưu thay đổi" }).click();
-  await expect(page.getByRole("row").filter({ hasText: "Cà phê rang mới" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "Cà phê rang mới" })).toContainText(
+    "92.000 đ",
+  );
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("row")

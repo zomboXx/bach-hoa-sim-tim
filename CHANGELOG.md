@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Khi tạo hoặc sửa sản phẩm trong API mode, lưu giá bán theo cửa hàng cùng transaction với sản phẩm; trả giá hiện hành về catalog, hiển thị giá tại Danh mục/Bán hàng và chặn đưa sản phẩm cũ chưa có giá vào giỏ thay vì để báo giá thất bại.
+
 - Loại bỏ kho lưu trữ phụ bên ngoài (`packages.microsoft.com`) bị lỗi 403 Forbidden trên GitHub Actions runner Ubuntu 24.04 trước khi cài đặt phụ thuộc Playwright; đồng thời dọn cache apt để `playwright install --with-deps` tải gói trơn tru.
 - CI dùng Ubuntu archive qua HTTPS và giới hạn thời gian chờ/retry khi cài phụ thuộc trình duyệt, tránh treo ở mirror Azure trước khi chạy kiểm thử.
 

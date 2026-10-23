@@ -11,13 +11,14 @@ public record ProductResponse(
         UUID baseUnitId,
         String sku,
         String name,
+        Long salePrice,
         boolean tracksExpiry,
         String status,
         long version,
         String imageUrl) {
 
-    public static ProductResponse from(Product p) {
+    public static ProductResponse from(Product p, Long salePrice) {
         return new ProductResponse(p.id(), p.organizationId(), p.categoryId(), p.baseUnitId(),
-                p.sku(), p.name(), p.tracksExpiry(), p.status(), p.version(), p.imageUrl());
+                p.sku(), p.name(), salePrice, p.tracksExpiry(), p.status(), p.version(), p.imageUrl());
     }
 }

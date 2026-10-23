@@ -18,6 +18,10 @@ public record ProductRequest(
         @Size(max = 200, message = "name tối đa 200 ký tự")
         String name,
 
+        @NotNull(message = "salePrice không được null")
+        @PositiveOrZero(message = "salePrice phải lớn hơn hoặc bằng 0")
+        Long salePrice,
+
         boolean tracksExpiry,
 
         @Pattern(regexp = "ACTIVE|INACTIVE", message = "status phải là ACTIVE hoặc INACTIVE")

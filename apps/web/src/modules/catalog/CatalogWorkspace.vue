@@ -57,6 +57,7 @@ const form = reactive({
   parentId: "",
   categoryId: "",
   baseUnitId: "",
+  salePrice: null as number | null,
   precisionScale: 0,
   tracksExpiry: false,
   status: "ACTIVE" as CatalogStatus,
@@ -86,6 +87,8 @@ const rows = computed(() => {
 const categoryName = (id: string | null) =>
   id ? categories.value.find((item) => item.id === id)?.name || id : "—";
 const unitCode = (id: string) => units.value.find((item) => item.id === id)?.code || id;
+const formatPrice = (value: number | null) =>
+  value === null ? "Chưa thiết lập" : `${new Intl.NumberFormat("vi-VN").format(value)} đ`;
 const canAct = computed(() => props.canWrite && props.online && !saving.value);
 
 function clearMessages() {
@@ -265,6 +268,7 @@ function startCreate() {
     parentId: "",
     categoryId: "",
     baseUnitId: "",
+    salePrice: null,
     precisionScale: 0,
     tracksExpiry: false,
     status: "ACTIVE",
@@ -291,6 +295,7 @@ async function startEdit(id: string) {
       parentId: "",
       categoryId: "",
       baseUnitId: "",
+      salePrice: null,
       precisionScale: 0,
       tracksExpiry: false,
       status: "ACTIVE",
@@ -330,6 +335,7 @@ async function save() {
           name,
           categoryId: form.categoryId,
           baseUnitId: form.baseUnitId,
+          salePrice: Number(form.salePrice),
           tracksExpiry: form.tracksExpiry,
           status: form.status,
         });
@@ -600,7 +606,7 @@ async function removeBarcode(barcode: Barcode) {
               <td class="catalog-code">{{ (record as Product).sku }}</td>
               <td>{{ categoryName((record as Product).categoryId) }}</td>
               <td>{{ unitCode((record as Product).baseUnitId) }}</td>
-              <td>Theo báo giá</td>
+              <td>{{ formatPrice((record as Product).salePrice) }}</td>
               <td><span class="status">—</span></td>
               <td>{{ (record as Product).status === "ACTIVE" ? "Đang bán" : "Ngừng bán" }}</td>
             </template>
@@ -738,6 +744,14 @@ async function removeBarcode(barcode: Barcode) {
                   </option>
                 </select>
               </label>
+              <label v-if="section === 'products'"
+                >Giá bán (đ) *<input
+                  v-model.number="form.salePrice"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+              /></label>
               <label v-if="section === 'categories'"
                 >Danh mục cha
                 <select v-model="form.parentId">

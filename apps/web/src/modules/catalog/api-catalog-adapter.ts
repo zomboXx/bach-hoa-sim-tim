@@ -22,6 +22,7 @@ export interface Product {
   baseUnitId: string;
   sku: string;
   name: string;
+  salePrice: number | null;
   tracksExpiry: boolean;
   status: CatalogStatus;
   /** URL ảnh đại diện sản phẩm; undefined nếu chưa có ảnh. */

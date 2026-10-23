@@ -70,6 +70,7 @@ const sampleProduct = {
   id: productId,
   sku: "GAO-001",
   name: "Gạo thơm 5kg",
+  salePrice: 125_000,
   status: "ACTIVE",
   baseUnitId: "10000000-0000-0000-0000-000000000032",
 };
@@ -209,7 +210,9 @@ test("API sale finds a product by barcode on Enter", async ({ page }) => {
   await expect(page.locator(".cart")).toContainText(sampleProduct.name);
 });
 
-test("API catalog shows the server unit without invented price or stock", async ({ page }) => {
+test("API catalog shows the store price and server unit without invented stock", async ({
+  page,
+}) => {
   await installLogin(page);
   await installCatalog(page);
   await signIn(page);
@@ -219,9 +222,22 @@ test("API catalog shows the server unit without invented price or stock", async 
     .click();
   const row = page.locator("tbody tr").filter({ hasText: sampleProduct.name });
   await expect(row).toContainText("KG");
-  await expect(row).toContainText("Theo báo giá");
-  await expect(row).not.toContainText("0 ₫");
+  await expect(row).toContainText("125.000 đ");
   await expect(row.locator(".status")).toHaveText("—");
+});
+
+test("API sale blocks a legacy product that has no store price", async ({ page }) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await page.route("**/api/v1/products", (route) =>
+    json(route, 200, [{ ...sampleProduct, salePrice: null }]),
+  );
+  await signIn(page);
+  await openSale(page);
+  const card = page.getByRole("button", { name: new RegExp(sampleProduct.name) });
+  await expect(card).toBeDisabled();
+  await expect(card).toContainText("Chưa có giá bán");
+  await expect(card).toContainText("Cập nhật giá trong Sản phẩm");
 });
 
 test("sample catalog loads ten local product photos in sale and catalog views", async ({
