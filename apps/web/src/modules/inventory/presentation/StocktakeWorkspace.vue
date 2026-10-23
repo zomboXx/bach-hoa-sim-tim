@@ -19,6 +19,7 @@ const props = defineProps<{
   save?: (submission: StocktakeSubmission) => Promise<void>;
   approve?: (record: StocktakeRecord) => Promise<void>;
   sync?: () => Promise<void>;
+  loadRecords?: () => Promise<void>;
 }>();
 
 const inventory = ref<InventorySnapshot>({ products: [], batches: [], movements: [] });
@@ -32,6 +33,7 @@ const note = ref("");
 const submitting = ref(false);
 const syncing = ref(false);
 const approvingId = ref("");
+const approvalError = ref("");
 
 const productById = computed(
   () => new Map(inventory.value.products.map((product) => [product.productId, product])),
@@ -69,6 +71,7 @@ async function loadInventory() {
   pageError.value = "";
   try {
     inventory.value = await props.adapter.loadInventory();
+    await props.loadRecords?.();
     if (
       !selectedBatchId.value ||
       !inventory.value.batches.some((batch) => batch.batchId === selectedBatchId.value)
@@ -139,14 +142,14 @@ async function syncPending() {
 async function approveRecord(record: StocktakeRecord) {
   if (!props.approve || approvingId.value) return;
   approvingId.value = record.id;
-  pageError.value = "";
+  approvalError.value = "";
   statusMessage.value = "";
   try {
     await props.approve(record);
     statusMessage.value = "Đã kiểm tra trạng thái duyệt của phiếu.";
     await loadInventory();
   } catch (error) {
-    pageError.value = (error as Error).message || "Không duyệt được phiếu kiểm kê.";
+    approvalError.value = (error as Error).message || "Không duyệt được phiếu kiểm kê.";
   } finally {
     approvingId.value = "";
   }
@@ -350,6 +353,7 @@ const statusLabels: Record<StocktakeStatus, string> = {
           <span>{{ records.length }}</span>
         </div>
 
+        <p v-if="approvalError" class="stocktake-error" role="alert">{{ approvalError }}</p>
         <div v-if="!records.length" class="stocktake-empty">
           <b>Chưa có phiếu kiểm kê</b>
           <p>Phiếu vừa lưu sẽ xuất hiện ở đây cùng trạng thái tiếp theo.</p>

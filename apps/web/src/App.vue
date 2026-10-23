@@ -31,6 +31,7 @@ import {
   ApiStocktakeAdapter,
   StocktakeApiError,
   type ApiStocktakeLine,
+  type ApiStocktakeSession,
 } from "./modules/inventory/infrastructure/api-stocktake-adapter";
 import { DemoInventoryAdapter } from "./modules/inventory/infrastructure/demo-inventory-adapter";
 import type { InventoryPort } from "./modules/inventory/domain/inventory";
@@ -294,6 +295,30 @@ const canWriteStocktake = computed(
     (isDemoMode && canGo("count")) ||
     !!user.value?.session?.permissions.includes("stocktakes.write"),
 );
+const canApproveStocktake = computed(() =>
+  isDemoMode
+    ? user.value?.role === "manager"
+    : !!user.value?.session?.permissions.includes("stocktakes.approve"),
+);
+watch(user, () => {
+  apiStocktakeRecords.value = [];
+});
+
+function updateStocktakeSession(session: ApiStocktakeSession) {
+  apiStocktakeRecords.value = [
+    ...session.lines.map(toStocktakeRecord),
+    ...apiStocktakeRecords.value.filter((record) => record.stocktakeId !== session.id),
+  ];
+}
+
+async function loadStocktakeRecords() {
+  if (!apiStocktakeAdapter || !connected.value || !canWriteStocktake.value) return;
+  const revision = authRevision;
+  const session = await apiStocktakeAdapter.openSession();
+  if (revision !== authRevision) return;
+  const detail = await apiStocktakeAdapter.getSession(session.id);
+  if (revision === authRevision) updateStocktakeSession(detail);
+}
 function stocktakeRetryContext(): StocktakeRetryContext | undefined {
   if (!user.value) return undefined;
   return {
@@ -737,7 +762,7 @@ async function syncApiStocktakes(operations: StocktakeQueueItem[]) {
       apiStocktakeRecords.value = [
         toStocktakeRecord(line),
         ...apiStocktakeRecords.value.filter(
-          (record) => record.clientOperationId !== line.clientOperationId,
+          (record) => record.id !== line.id && record.clientOperationId !== line.clientOperationId,
         ),
       ];
       completed.push(operation.clientOperationId);
@@ -774,6 +799,7 @@ async function syncApiStocktakes(operations: StocktakeQueueItem[]) {
 function toStocktakeRecord(line: ApiStocktakeLine): StocktakeRecord {
   return {
     id: line.id,
+    stocktakeId: line.stocktakeId,
     clientOperationId: line.clientOperationId,
     countedAt: line.countedAt,
     productId: line.productId,
@@ -1361,6 +1387,40 @@ async function saveCount(submission: StocktakeSubmission) {
 }
 
 async function approveCount(record: StocktakeRecord) {
+  if (!canApproveStocktake.value) throw Error("Bạn không có quyền duyệt kiểm kê.");
+  if (!connected.value) throw Error("Cần kết nối để duyệt điều chỉnh tồn.");
+  if (apiStocktakeAdapter) {
+    if (!record.stocktakeId) throw Error("Thiếu mã phiên kiểm kê. Hãy tải lại dữ liệu.");
+    const revision = authRevision;
+    if (stocktakeSyncPromise) await stocktakeSyncPromise;
+    const session = await apiStocktakeAdapter.getSession(record.stocktakeId);
+    if (revision !== authRevision) throw Error("Phiên đăng nhập đã thay đổi.");
+    if (session.status === "APPROVED") {
+      updateStocktakeSession(session);
+      return;
+    }
+    if (
+      session.lines.length > 1 &&
+      !window.confirm(
+        `Phiên này có ${session.lines.length} lô. Duyệt sẽ điều chỉnh tồn của tất cả các lô trong phiên. Tiếp tục?`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const approved = await apiStocktakeAdapter.approveSession(session.id);
+      if (revision === authRevision) updateStocktakeSession(approved);
+    } catch (approvalError) {
+      if (approvalError instanceof StocktakeApiError && approvalError.code === "ALREADY_APPROVED") {
+        const latest = await apiStocktakeAdapter.getSession(session.id);
+        if (latest.status !== "APPROVED") throw approvalError;
+        if (revision === authRevision) updateStocktakeSession(latest);
+        return;
+      }
+      throw approvalError;
+    }
+    return;
+  }
   const approved = await change((s) => {
     if (user.value?.role !== "manager") throw Error("Chỉ quản lý được duyệt.");
     const row = s.counts.find((candidate) => candidate.id === record.id);
@@ -2048,7 +2108,8 @@ async function approveCount(record: StocktakeRecord) {
           :can-write="canWriteStocktake"
           :write-unavailable-reason="stocktakeWriteUnavailableReason"
           :save="saveCount"
-          :approve="isDemoMode && user.role === 'manager' ? approveCount : undefined"
+          :approve="canApproveStocktake ? approveCount : undefined"
+          :load-records="loadStocktakeRecords"
           :sync="sync"
         />
 
