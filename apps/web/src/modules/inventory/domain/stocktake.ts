@@ -2,6 +2,7 @@ export type StocktakeStatus = "PENDING" | "REVIEW" | "APPROVED" | "CONFLICT";
 
 export interface StocktakeRecord {
   id: string;
+  stocktakeId?: string;
   clientOperationId?: string;
   countedAt: string;
   productId: string;

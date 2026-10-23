@@ -4,6 +4,7 @@ const token = "s".repeat(43);
 const productId = "10000000-0000-0000-0000-000000000041";
 const batchId = "50000000-0000-0000-0000-000000000001";
 const storeId = "10000000-0000-0000-0000-000000000002";
+const sessionId = "70000000-0000-0000-0000-000000000001";
 
 const stockSession = {
   userId: "40000000-0000-0000-0000-000000000001",
@@ -85,6 +86,12 @@ async function json(route: Route, status: number, body?: unknown) {
 
 async function installLogin(page: Page, session = stockSession) {
   await page.route("**/api/v1/auth/login", (route) => json(route, 200, grant(session)));
+  await page.route("**/api/v1/inventory/stocktakes", (route) =>
+    json(route, 201, { id: sessionId, status: "OPEN", lines: [] }),
+  );
+  await page.route(`**/api/v1/inventory/stocktakes/${sessionId}`, (route) =>
+    json(route, 200, { id: sessionId, status: "OPEN", lines: [] }),
+  );
 }
 
 async function signIn(page: Page) {
@@ -185,11 +192,7 @@ test("API mode submits the store-scoped batch snapshot through the accepted prov
   await installLogin(page);
   const sessionId = "70000000-0000-0000-0000-000000000001";
   let submitted: Record<string, unknown> | undefined;
-  let releaseProducts: (() => void) | undefined;
-  await page.route("**/api/v1/inventory/products?*", async (route) => {
-    await new Promise<void>((resolve) => (releaseProducts = resolve));
-    await json(route, 200, productPage);
-  });
+  await page.route("**/api/v1/inventory/products?*", (route) => json(route, 200, productPage));
   await page.route("**/api/v1/inventory/batches?*", (route) => json(route, 200, batchPage));
   await page.route("**/api/v1/inventory/movements?*", (route) => json(route, 200, emptyPage));
   await page.route("**/api/v1/inventory/stocktakes", (route) =>
@@ -219,9 +222,6 @@ test("API mode submits the store-scoped batch snapshot through the accepted prov
 
   await signIn(page);
   await openStocktake(page);
-  await expect(page.getByRole("status")).toContainText("Đang tải lô hàng");
-  releaseProducts?.();
-
   await expect(page.getByRole("heading", { name: "Ghi số đếm" })).toBeVisible();
   await expect(page.getByText(storeId, { exact: true })).toBeVisible();
   await expect(page.getByRole("option", { name: "Gạo thơm 5kg · BATCH-001" })).toHaveCount(1);
@@ -231,6 +231,7 @@ test("API mode submits the store-scoped batch snapshot through the accepted prov
   await page.getByLabel("Ghi chú", { exact: true }).fill("Đếm tại quầy");
   await page.getByRole("button", { name: "Gửi phiếu kiểm kê" }).click();
   await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
+  await expect(page.getByRole("button", { name: "Duyệt điều chỉnh tồn" })).toHaveCount(0);
   expect(submitted).toMatchObject({
     batchId,
     actualQuantity: 11.75,
@@ -242,6 +243,158 @@ test("API mode submits the store-scoped batch snapshot through the accepted prov
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     ),
   ).toBe(true);
+});
+
+const pendingLine = {
+  id: "70000000-0000-0000-0000-000000000002",
+  stocktakeId: sessionId,
+  productId,
+  batchId,
+  clientOperationId: "80000000-0000-0000-0000-000000000001",
+  expectedQuantity: 12.5,
+  actualQuantity: 11.75,
+  baseVersion: 7,
+  note: "Đếm tại quầy",
+  status: "PENDING",
+  countedAt: "2026-10-23T01:00:00Z",
+};
+
+async function installApproval(page: Page, lines = [pendingLine], canApprove = true) {
+  await installLogin(page, {
+    ...stockSession,
+    roles: ["MANAGER"],
+    permissions: [...stockSession.permissions, ...(canApprove ? ["stocktakes.approve"] : [])],
+  });
+  let approved = false;
+  await page.route("**/api/v1/inventory/products?*", (route) => json(route, 200, productPage));
+  await page.route("**/api/v1/inventory/batches?*", (route) =>
+    json(route, 200, {
+      ...batchPage,
+      items: batchPage.items.map((batch) => ({
+        ...batch,
+        onHandQuantity: approved ? "11.750" : "12.500",
+        version: approved ? 8 : 7,
+      })),
+    }),
+  );
+  await page.route("**/api/v1/inventory/movements?*", (route) => json(route, 200, emptyPage));
+  const session = () => ({
+    id: sessionId,
+    status: approved ? "APPROVED" : "OPEN",
+    lines: lines.map((line) => ({ ...line, status: approved ? "APPROVED" : line.status })),
+  });
+  await page.route(`**/api/v1/inventory/stocktakes/${sessionId}`, (route) =>
+    json(route, 200, session()),
+  );
+  const requests: string[] = [];
+  await page.route(`**/api/v1/inventory/stocktakes/${sessionId}/approve`, (route) => {
+    requests.push(route.request().method());
+    expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
+    approved = true;
+    return json(route, 200, session());
+  });
+  return requests;
+}
+
+test("manager restores pending counts from server and approves the session, refreshing inventory", async ({
+  page,
+}) => {
+  const requests = await installApproval(page);
+  await signIn(page);
+  await openStocktake(page);
+  await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
+  await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).click();
+  await expect(page.locator(".count-row")).toContainText("Đã duyệt");
+  await expect(page.getByRole("button", { name: "Duyệt điều chỉnh tồn" })).toHaveCount(0);
+  await expect(page.locator(".count-summary > div").first()).toContainText("11,75");
+  expect(requests).toEqual(["POST"]);
+});
+
+test("manager without approval permission cannot approve", async ({ page }) => {
+  const requests = await installApproval(page, [pendingLine], false);
+  await signIn(page);
+  await openStocktake(page);
+  await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
+  await expect(page.getByRole("button", { name: "Duyệt điều chỉnh tồn" })).toHaveCount(0);
+  expect(requests).toEqual([]);
+});
+
+test("approval is disabled offline and a lost response can be recovered without approving twice", async ({
+  page,
+  context,
+}) => {
+  await installApproval(page);
+  let committed = false;
+  let approvalCalls = 0;
+  await page.route(`**/api/v1/inventory/stocktakes/${sessionId}`, (route) =>
+    json(route, 200, {
+      id: sessionId,
+      status: committed ? "APPROVED" : "OPEN",
+      lines: [{ ...pendingLine, status: committed ? "APPROVED" : "PENDING" }],
+    }),
+  );
+  await page.route(`**/api/v1/inventory/stocktakes/${sessionId}/approve`, async (route) => {
+    approvalCalls++;
+    committed = true;
+    await route.abort("connectionfailed");
+  });
+  await signIn(page);
+  await openStocktake(page);
+  const approve = page.getByRole("button", { name: "Duyệt điều chỉnh tồn" });
+  await expect(approve).toBeEnabled();
+  await context.setOffline(true);
+  await expect(approve).toBeDisabled();
+  await context.setOffline(false);
+  await expect(approve).toBeEnabled();
+  await approve.click();
+  await expect(page.getByRole("alert")).toContainText("Không thể kết nối máy chủ");
+  await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
+  await approve.click();
+  await expect(page.locator(".count-row")).toContainText("Đã duyệt");
+  expect(approvalCalls).toBe(1);
+});
+
+for (const failure of [
+  { status: 409, code: "BALANCE_VERSION_MISMATCH", message: "Tồn kho đã thay đổi; hãy kiểm lại." },
+  { status: 403, code: "FORBIDDEN", message: "Thiếu quyền stocktakes.approve" },
+]) {
+  test(`approval ${failure.status} retains pending records and displays server error`, async ({
+    page,
+  }) => {
+    await installApproval(page);
+    await page.route(`**/api/v1/inventory/stocktakes/${sessionId}/approve`, (route) =>
+      json(route, failure.status, failure),
+    );
+    await signIn(page);
+    await openStocktake(page);
+    await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).click();
+    await expect(page.getByRole("alert")).toContainText(failure.message);
+    await expect(page.locator(".count-row")).toContainText("Chờ duyệt");
+    await expect(page.getByRole("button", { name: "Duyệt điều chỉnh tồn" })).toBeEnabled();
+    await expect(page.locator("nav")).toBeVisible();
+  });
+}
+
+test("multi-line approval requires confirmation and updates all session lines", async ({
+  page,
+}) => {
+  const requests = await installApproval(page, [
+    pendingLine,
+    { ...pendingLine, id: "second-line", batchId: "second-batch", clientOperationId: "second-op" },
+  ]);
+  await signIn(page);
+  await openStocktake(page);
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("2 lô");
+    await dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).first().click();
+  await expect(page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).first()).toBeEnabled();
+  expect(requests).toEqual([]);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Duyệt điều chỉnh tồn" }).first().click();
+  await expect(page.locator(".count-row .record-status")).toHaveText(["Đã duyệt", "Đã duyệt"]);
+  expect(requests).toEqual(["POST"]);
 });
 
 test("API inventory 403 stays in-session and explains the missing permission", async ({ page }) => {

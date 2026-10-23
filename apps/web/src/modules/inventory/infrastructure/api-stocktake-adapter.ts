@@ -42,6 +42,20 @@ export class ApiStocktakeAdapter {
     });
   }
 
+  getSession(sessionId: string) {
+    return this.request<ApiStocktakeSession>(
+      `/api/v1/inventory/stocktakes/${encodeURIComponent(sessionId)}`,
+      { method: "GET" },
+    );
+  }
+
+  approveSession(sessionId: string) {
+    return this.request<ApiStocktakeSession>(
+      `/api/v1/inventory/stocktakes/${encodeURIComponent(sessionId)}/approve`,
+      { method: "POST" },
+    );
+  }
+
   submitCount(sessionId: string, operation: StocktakeQueueItem) {
     return this.request<ApiStocktakeLine>(
       `/api/v1/inventory/stocktakes/${encodeURIComponent(sessionId)}/counts`,

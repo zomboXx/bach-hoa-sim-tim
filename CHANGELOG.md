@@ -4,6 +4,8 @@ Các thay đổi đáng chú ý của dự án được ghi tại đây. Tài li
 
 ## Unreleased
 
+- Nối duyệt kiểm kê API với quyền `stocktakes.approve`, giữ mã phiên, cập nhật trạng thái và tải lại tồn sau duyệt; khôi phục các phiếu trong phiên đang mở của tài khoản từ máy chủ, xác nhận khi duyệt nhiều lô và hiển thị lỗi duyệt để thử lại.
+
 - Khi tạo hoặc sửa sản phẩm trong API mode, lưu giá bán theo cửa hàng cùng transaction với sản phẩm; trả giá hiện hành về catalog, hiển thị giá tại Danh mục/Bán hàng và chặn đưa sản phẩm cũ chưa có giá vào giỏ thay vì để báo giá thất bại.
 
 - Loại bỏ kho lưu trữ phụ bên ngoài (`packages.microsoft.com`) bị lỗi 403 Forbidden trên GitHub Actions runner Ubuntu 24.04 trước khi cài đặt phụ thuộc Playwright; đồng thời dọn cache apt để `playwright install --with-deps` tải gói trơn tru.
