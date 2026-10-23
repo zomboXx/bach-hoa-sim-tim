@@ -5,7 +5,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import vn.simtim.api.auth.domain.SessionPrincipal;
 import vn.simtim.api.catalog.application.ProductService;
 
 /**
@@ -23,42 +25,53 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<ProductResponse> list(@RequestHeader("X-Organization-Id") UUID orgId) {
-        return service.listByOrg(orgId).stream().map(ProductResponse::from).toList();
+    public List<ProductResponse> list(@RequestHeader("X-Organization-Id") UUID orgId,
+                                      Authentication auth) {
+        UUID storeId = principal(auth).storeId();
+        return service.listByOrg(orgId).stream().map(product -> response(orgId, storeId, product)).toList();
     }
 
     @GetMapping("/search")
     public List<ProductResponse> search(@RequestHeader("X-Organization-Id") UUID orgId,
                                         @RequestParam(required = false) String sku,
                                         @RequestParam(required = false) String barcode,
-                                        @RequestParam(required = false) String name) {
-        return service.search(orgId, sku, barcode, name).stream().map(ProductResponse::from).toList();
+                                        @RequestParam(required = false) String name,
+                                        Authentication auth) {
+        UUID storeId = principal(auth).storeId();
+        return service.search(orgId, sku, barcode, name).stream()
+                .map(product -> response(orgId, storeId, product)).toList();
     }
 
     @GetMapping("/{id}")
     public ProductResponse get(@RequestHeader("X-Organization-Id") UUID orgId,
-                               @PathVariable UUID id) {
-        return ProductResponse.from(service.getById(orgId, id));
+                               @PathVariable UUID id,
+                               Authentication auth) {
+        return response(orgId, principal(auth).storeId(), service.getById(orgId, id));
     }
 
     @PostMapping
     public ResponseEntity<ProductResponse> create(@RequestHeader("X-Organization-Id") UUID orgId,
-                                                  @Valid @RequestBody ProductRequest req) {
+                                                  @Valid @RequestBody ProductRequest req,
+                                                  Authentication auth) {
+        UUID storeId = principal(auth).storeId();
         var created = service.create(orgId, req.categoryId(), req.baseUnitId(),
-                req.sku(), req.name(), req.tracksExpiry(),
+                storeId, req.sku(), req.name(), req.salePrice(), req.tracksExpiry(),
                 req.status() != null ? req.status() : "ACTIVE");
         return ResponseEntity
                 .created(URI.create("/api/v1/products/" + created.id()))
-                .body(ProductResponse.from(created));
+                .body(response(orgId, storeId, created));
     }
 
     @PutMapping("/{id}")
     public ProductResponse update(@RequestHeader("X-Organization-Id") UUID orgId,
                                   @PathVariable UUID id,
-                                  @Valid @RequestBody ProductRequest req) {
-        return ProductResponse.from(service.update(orgId, id, req.categoryId(), req.baseUnitId(),
-                req.sku(), req.name(), req.tracksExpiry(),
-                req.status() != null ? req.status() : "ACTIVE"));
+                                  @Valid @RequestBody ProductRequest req,
+                                  Authentication auth) {
+        UUID storeId = principal(auth).storeId();
+        return response(orgId, storeId,
+                service.update(orgId, id, req.categoryId(), req.baseUnitId(), storeId,
+                        req.sku(), req.name(), req.salePrice(), req.tracksExpiry(),
+                        req.status() != null ? req.status() : "ACTIVE"));
     }
 
     @DeleteMapping("/{id}")
@@ -89,7 +102,8 @@ public class ProductController {
     public ProductResponse uploadImage(
             @RequestHeader("X-Organization-Id") UUID orgId,
             @PathVariable UUID id,
-            @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+            @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile file,
+            Authentication auth) throws java.io.IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Tệp hình ảnh không được để trống");
         }
@@ -98,15 +112,16 @@ public class ProductController {
             throw new IllegalArgumentException("Tệp tải lên phải là định dạng hình ảnh (JPEG, PNG, WEBP...)");
         }
         var updated = service.uploadImage(orgId, id, file.getBytes(), contentType);
-        return ProductResponse.from(updated);
+        return response(orgId, principal(auth).storeId(), updated);
     }
 
     @DeleteMapping("/{id}/image")
     public ProductResponse deleteImage(
             @RequestHeader("X-Organization-Id") UUID orgId,
-            @PathVariable UUID id) {
+            @PathVariable UUID id,
+            Authentication auth) {
         var updated = service.deleteImage(orgId, id);
-        return ProductResponse.from(updated);
+        return response(orgId, principal(auth).storeId(), updated);
     }
 
     @GetMapping("/{id}/barcodes")
@@ -147,5 +162,14 @@ public class ProductController {
                                               @PathVariable UUID barcodeId) {
         service.deleteBarcode(orgId, id, barcodeId);
         return ResponseEntity.noContent().build();
+    }
+
+    private ProductResponse response(UUID orgId, UUID storeId, vn.simtim.api.catalog.domain.Product product) {
+        var price = service.currentSalePrice(orgId, storeId, product.id());
+        return ProductResponse.from(product, price.isPresent() ? price.getAsLong() : null);
+    }
+
+    private static SessionPrincipal principal(Authentication auth) {
+        return (SessionPrincipal) auth.getPrincipal();
     }
 }

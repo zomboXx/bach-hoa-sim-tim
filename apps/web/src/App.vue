@@ -203,7 +203,15 @@ async function loadInvoices() {
 }
 // API-mode product catalog for the sale page (loaded from /api/v1/products)
 const apiSaleProducts = ref<
-  Array<{ id: string; name: string; sku: string; category: string; unit: string; emoji: string }>
+  Array<{
+    id: string;
+    name: string;
+    sku: string;
+    category: string;
+    unit: string;
+    emoji: string;
+    price: number | null;
+  }>
 >([]);
 async function loadSaleProducts() {
   if (isDemoMode) return;
@@ -219,6 +227,7 @@ async function loadSaleProducts() {
       sku?: string;
       status?: string;
       baseUnitId?: string;
+      salePrice?: number | null;
     }>;
     const units = unitsRes.ok
       ? ((await unitsRes.json()) as Array<{ id: string; code: string }>)
@@ -233,6 +242,7 @@ async function loadSaleProducts() {
         category: "Sản phẩm",
         unit: unitCode.get(p.baseUnitId ?? "") ?? "—",
         emoji: "📦",
+        price: typeof p.salePrice === "number" ? p.salePrice : null,
       }));
   } catch {
     // silently ignore — sale page will show empty grid
@@ -851,8 +861,13 @@ const categories = computed(() => [
 ]);
 const filtered = computed(() => {
   const products = isDemoMode
-    ? (state.value?.products ?? []).map((p) => ({ ...p, sku: "" }))
-    : apiSaleProducts.value.map((p) => ({ ...p, price: 0, barcode: "" }));
+    ? (state.value?.products ?? []).map((p) => ({ ...p, sku: "", hasSalePrice: true }))
+    : apiSaleProducts.value.map((p) => ({
+        ...p,
+        price: p.price ?? 0,
+        hasSalePrice: p.price !== null,
+        barcode: "",
+      }));
   return products.filter(
     (p) =>
       (category.value === "Tất cả" || p.category === category.value) &&
@@ -887,9 +902,18 @@ async function scanBarcode(value: string) {
       `/api/v1/products/search?barcode=${encodeURIComponent(value)}`,
     );
     if (!res.ok) throw new Error("Barcode lookup failed");
-    const matches = (await res.json()) as Array<{ id: string; name: string; status?: string }>;
+    const matches = (await res.json()) as Array<{
+      id: string;
+      name: string;
+      status?: string;
+      salePrice?: number | null;
+    }>;
     const active = matches.filter((p) => !p.status || p.status === "ACTIVE");
     if (active.length === 1) {
+      if (typeof active[0].salePrice !== "number") {
+        notifyScan("Sản phẩm chưa có giá bán tại cửa hàng này. Hãy cập nhật trong Sản phẩm.");
+        return;
+      }
       if (await add(active[0].id)) notifyScan("Đã thêm " + active[0].name + " vào giỏ chung.");
       else notifyScan("Chưa xác nhận thêm hàng. Hãy kiểm tra trạng thái đồng bộ giỏ.");
       query.value = "";
@@ -1079,6 +1103,9 @@ async function add(id: string) {
   if (pendingApiCheckout.value)
     return notify("Giao dịch đang chờ đối soát. Hãy thử lại cùng mã trước khi sửa giỏ hàng.");
   if (!isDemoMode) {
+    const product = apiSaleProducts.value.find((item) => item.id === id);
+    if (product?.price === null)
+      return notify("Sản phẩm chưa có giá bán tại cửa hàng này. Hãy cập nhật trong Sản phẩm.");
     if (!posCartReady.value || posCartPending.value || posCartSaving.value)
       return notify("Đợi giỏ chung đồng bộ xong trước khi thêm hàng.");
     return sharedCart.adjust(id, 1);
@@ -1734,6 +1761,7 @@ async function approveCount(record: StocktakeRecord) {
                     apiCheckoutPending ||
                     transferLocked ||
                     (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending)) ||
+                    (!isDemoMode && !p.hasSalePrice) ||
                     (isDemoMode && available(state!, p.id) === 0)
                   "
                   @click="add(p.id)"
@@ -1748,11 +1776,13 @@ async function approveCount(record: StocktakeRecord) {
                     {{ money(price(state, p))
                     }}<del v-if="price(state, p) < p.price">{{ money(p.price) }}</del>
                   </p>
-                  <p v-else>Thêm vào giỏ để lấy báo giá</p>
+                  <p v-else-if="p.hasSalePrice">{{ money(p.price) }}</p>
+                  <p v-else>Chưa có giá bán</p>
                   <footer>
                     <span v-if="isDemoMode"
                       >Còn {{ available(state!, p.id) }} {{ p.unit.toLowerCase() }}</span
-                    ><span v-else>Giá và tồn do máy chủ xác nhận</span><b>＋</b>
+                    ><span v-else-if="p.hasSalePrice">Giá và tồn do máy chủ xác nhận</span
+                    ><span v-else>Cập nhật giá trong Sản phẩm</span><b>＋</b>
                   </footer>
                 </button>
               </div>

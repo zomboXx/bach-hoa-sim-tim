@@ -106,7 +106,8 @@ class CatalogApiTest {
     private String createProductFixture() {
         return createFixture("/api/v1/products", Map.of(
                 "categoryId", CATEGORY_ID, "baseUnitId", UNIT_EA_ID,
-                "sku", "CRUD-" + UUID.randomUUID(), "name", "CRUD fixture", "tracksExpiry", false));
+                "sku", "CRUD-" + UUID.randomUUID(), "name", "CRUD fixture",
+                "salePrice", 25_000, "tracksExpiry", false));
     }
 
     @Test
@@ -239,7 +240,8 @@ class CatalogApiTest {
         for (String resource : List.of("categories", "units", "products", "suppliers")) {
             String path = "/api/v1/" + resource + "/" + UUID.randomUUID();
             Object body = resource.equals("products")
-                    ? Map.of("sku", "MISSING", "name", "Missing", "categoryId", CATEGORY_ID, "baseUnitId", UNIT_EA_ID)
+                    ? Map.of("sku", "MISSING", "name", "Missing", "categoryId", CATEGORY_ID,
+                            "baseUnitId", UNIT_EA_ID, "salePrice", 25_000)
                     : Map.of("code", "MISSING", "name", "Missing");
             for (HttpMethod method : List.of(HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)) {
                 assertThat(call(path, method, body).getStatusCode().value()).isEqualTo(404);
@@ -519,7 +521,7 @@ class CatalogApiTest {
     void createProduct_conflict_on_duplicateSku() {
         var body = """
                 {"categoryId":"%s","baseUnitId":"%s","sku":"ST-RICE-01",
-                 "name":"Trùng SKU","tracksExpiry":false,"status":"ACTIVE"}"""
+                 "name":"Trùng SKU","salePrice":25000,"tracksExpiry":false,"status":"ACTIVE"}"""
                 .formatted(CATEGORY_ID, UNIT_EA_ID);
         var res = rest.exchange("/api/v1/products", HttpMethod.POST,
                 new HttpEntity<>(body, orgHeaders()), Map.class);
@@ -549,27 +551,56 @@ class CatalogApiTest {
     void createProduct_then_updateAndDelete() {
         var createBody = """
                 {"categoryId":"%s","baseUnitId":"%s","sku":"ST-TEST-99",
-                 "name":"Sản phẩm test","tracksExpiry":false,"status":"ACTIVE"}"""
+                 "name":"Sản phẩm test","salePrice":42000,
+                 "tracksExpiry":false,"status":"ACTIVE"}"""
                 .formatted(CATEGORY_ID, UNIT_EA_ID);
         var created = rest.exchange("/api/v1/products", HttpMethod.POST,
                 new HttpEntity<>(createBody, orgHeaders()), Map.class);
         assertThat(created.getStatusCode().value()).isEqualTo(201);
         var id = created.getBody().get("id").toString();
+        assertThat(created.getBody()).containsEntry("salePrice", 42000);
+        assertThat(jdbc.queryForObject("""
+                select sale_price from catalog.product_prices
+                where organization_id=?::uuid and store_id=?::uuid and product_id=?::uuid
+                  and effective_to is null
+                """, Long.class, ORG_ID, STORE_ID, id)).isEqualTo(42_000L);
 
         // Cập nhật
         var updateBody = """
                 {"categoryId":"%s","baseUnitId":"%s","sku":"ST-TEST-99",
-                 "name":"Đã sửa","tracksExpiry":true,"status":"INACTIVE"}"""
+                 "name":"Đã sửa","salePrice":45000,
+                 "tracksExpiry":true,"status":"INACTIVE"}"""
                 .formatted(CATEGORY_ID, UNIT_EA_ID);
         var updated = rest.exchange("/api/v1/products/" + id, HttpMethod.PUT,
                 new HttpEntity<>(updateBody, orgHeaders()), Map.class);
         assertThat(updated.getStatusCode().value()).isEqualTo(200);
-        assertThat(updated.getBody()).containsEntry("tracksExpiry", true);
+        assertThat(updated.getBody()).containsEntry("tracksExpiry", true).containsEntry("salePrice", 45000);
+        assertThat(jdbc.queryForObject("""
+                select sale_price from catalog.product_prices
+                where organization_id=?::uuid and store_id=?::uuid and product_id=?::uuid
+                  and effective_to is null
+                """, Long.class, ORG_ID, STORE_ID, id)).isEqualTo(45_000L);
 
         // Xóa
         var del = rest.exchange("/api/v1/products/" + id, HttpMethod.DELETE,
                 new HttpEntity<>(orgHeaders()), Void.class);
         assertThat(del.getStatusCode().value()).isEqualTo(204);
+        assertThat(jdbc.queryForObject("select count(*) from catalog.product_prices where product_id=?::uuid",
+                Long.class, id)).isZero();
+    }
+
+    @Test
+    void createProduct_requiresNonNegativeSalePrice() {
+        for (String priceField : List.of("", ",\"salePrice\":-1")) {
+            var body = """
+                    {"categoryId":"%s","baseUnitId":"%s","sku":"PRICE-%s",
+                     "name":"Thiếu giá","tracksExpiry":false%s}"""
+                    .formatted(CATEGORY_ID, UNIT_EA_ID, UUID.randomUUID(), priceField);
+            var response = rest.exchange("/api/v1/products", HttpMethod.POST,
+                    new HttpEntity<>(body, orgHeaders()), Map.class);
+            assertThat(response.getStatusCode().value()).isEqualTo(422);
+            assertThat(((Map<?, ?>) response.getBody().get("errors")).containsKey("salePrice")).isTrue();
+        }
     }
 
     // ===== Suppliers =====

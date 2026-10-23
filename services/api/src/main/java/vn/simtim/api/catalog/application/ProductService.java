@@ -1,5 +1,7 @@
 package vn.simtim.api.catalog.application;
 
+import java.time.Clock;
+import java.util.OptionalLong;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -15,15 +17,21 @@ public class ProductService {
     private final CategoryRepository categoryRepo;
     private final UnitRepository unitRepo;
     private final ProductBarcodeRepository barcodeRepo;
+    private final ProductPriceRepository priceRepo;
+    private final Clock clock;
 
     public ProductService(ProductRepository repo,
                           CategoryRepository categoryRepo,
                           UnitRepository unitRepo,
-                          ProductBarcodeRepository barcodeRepo) {
+                          ProductBarcodeRepository barcodeRepo,
+                          ProductPriceRepository priceRepo,
+                          Clock clock) {
         this.repo = repo;
         this.categoryRepo = categoryRepo;
         this.unitRepo = unitRepo;
         this.barcodeRepo = barcodeRepo;
+        this.priceRepo = priceRepo;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +61,8 @@ public class ProductService {
     }
 
     public Product create(UUID organizationId, UUID categoryId, UUID baseUnitId,
-                          String sku, String name, boolean tracksExpiry, String status) {
+                          UUID storeId, String sku, String name, long salePrice,
+                          boolean tracksExpiry, String status) {
         if (repo.existsBySku(organizationId, sku)) {
             throw new CatalogConflictException("SKU đã tồn tại: " + sku);
         }
@@ -63,11 +72,14 @@ public class ProductService {
                 .orElseThrow(() -> new CatalogNotFoundException("Đơn vị không tồn tại: " + baseUnitId));
         var product = new Product(UUID.randomUUID(), organizationId, categoryId, baseUnitId,
                 sku, name, tracksExpiry, status, 0L);
-        return repo.save(product);
+        Product saved = repo.save(product);
+        priceRepo.setCurrent(organizationId, storeId, saved.id(), salePrice, clock.instant());
+        return saved;
     }
 
     public Product update(UUID organizationId, UUID id, UUID categoryId, UUID baseUnitId,
-                          String sku, String name, boolean tracksExpiry, String status) {
+                          UUID storeId, String sku, String name, long salePrice,
+                          boolean tracksExpiry, String status) {
         var existing = repo.findById(organizationId, id)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + id));
         if (repo.existsBySkuExcluding(organizationId, sku, id)) {
@@ -79,12 +91,20 @@ public class ProductService {
                 .orElseThrow(() -> new CatalogNotFoundException("Đơn vị không tồn tại: " + baseUnitId));
         var updated = new Product(id, organizationId, categoryId, baseUnitId,
                 sku, name, tracksExpiry, status, existing.version());
-        return repo.save(updated);
+        Product saved = repo.save(updated);
+        priceRepo.setCurrent(organizationId, storeId, saved.id(), salePrice, clock.instant());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public OptionalLong currentSalePrice(UUID organizationId, UUID storeId, UUID productId) {
+        return priceRepo.findCurrent(organizationId, storeId, productId, clock.instant());
     }
 
     public void delete(UUID organizationId, UUID id) {
         repo.findById(organizationId, id)
                 .orElseThrow(() -> new CatalogNotFoundException("Sản phẩm không tồn tại: " + id));
+        priceRepo.deleteByProduct(organizationId, id);
         repo.deleteById(organizationId, id);
     }
 
