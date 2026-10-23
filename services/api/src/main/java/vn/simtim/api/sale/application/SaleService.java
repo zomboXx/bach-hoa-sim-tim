@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.simtim.api.inventory.application.FefoAllocation;
 import vn.simtim.api.inventory.application.FefoPlan;
 import vn.simtim.api.inventory.application.InventoryPort;
+import vn.simtim.api.inventory.application.InventoryHoldPort;
 import vn.simtim.api.inventory.application.InventorySalePort;
 import vn.simtim.api.inventory.application.SaleIssue;
 import vn.simtim.api.inventory.application.StockDemand;
@@ -39,16 +40,18 @@ public class SaleService {
     private final InventoryPort quoteInventory;
     private final InventorySalePort checkoutInventory;
     private final PromotionRepository promotions;
+    private final InventoryHoldPort holds;
 
     public SaleService(
             SaleRepository repo,
             InventoryPort quoteInventory,
             InventorySalePort checkoutInventory,
-            PromotionRepository promotions) {
+            PromotionRepository promotions, InventoryHoldPort holds) {
         this.repo = repo;
         this.quoteInventory = quoteInventory;
         this.checkoutInventory = checkoutInventory;
         this.promotions = promotions;
+        this.holds = holds;
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +85,15 @@ public class SaleService {
     public Invoice checkout(
             UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items,
             Long expectedTotal, long cashAmount, UUID idempotencyKey) {
+        return createSale(orgId, storeId, soldByUserId, items, expectedTotal, cashAmount, idempotencyKey, false);
+    }
+
+    public Invoice prepareTransfer(UUID orgId, UUID storeId, UUID soldBy, List<CheckoutItem> items, long expectedTotal) {
+        return createSale(orgId, storeId, soldBy, items, expectedTotal, 0, null, true);
+    }
+
+    private Invoice createSale(UUID orgId, UUID storeId, UUID soldByUserId, List<CheckoutItem> items,
+                               Long expectedTotal, long cashAmount, UUID idempotencyKey, boolean transfer) {
 
         // --- Idempotency guard ---
         if (idempotencyKey != null) {
@@ -134,7 +146,7 @@ public class SaleService {
                     "Giá sản phẩm đã thay đổi kể từ khi báo giá. Tổng mới: " + grandTotal
                     + ", tổng kỳ vọng: " + expectedTotal);
         }
-        if (cashAmount < grandTotal) {
+        if (!transfer && cashAmount < grandTotal) {
             throw new SaleValidationException(
                     "Số tiền nhận (" + cashAmount + ") nhỏ hơn tổng hoá đơn (" + grandTotal + ")");
         }
@@ -142,9 +154,9 @@ public class SaleService {
         Instant now = plan.capturedAt();
         Invoice invoice = repo.saveInvoice(new Invoice(
                 UUID.randomUUID(), orgId, storeId,
-                "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(), "COMPLETED",
-                soldByUserId, now, subtotal, discountTotal, grandTotal, grandTotal,
-                cashAmount - grandTotal, List.of(), List.of(), 0L, idempotencyKey));
+                "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(), transfer ? "DRAFT" : "COMPLETED",
+                soldByUserId, now, subtotal, discountTotal, grandTotal, transfer ? 0 : grandTotal,
+                transfer ? 0 : cashAmount - grandTotal, List.of(), List.of(), 0L, idempotencyKey));
 
         List<SaleIssue> issues = new ArrayList<>();
         for (LineData data : lineData) {
@@ -161,9 +173,14 @@ public class SaleService {
             issues.add(new SaleIssue(UUID.randomUUID(), saved.id(), data.allocation().productId(),
                     data.allocation().batchId(), data.allocation().quantity(), soldByUserId));
         }
-        repo.savePayment(new Payment(UUID.randomUUID(), orgId, storeId, invoice.id(),
-                "CASH", "COMPLETED", grandTotal, now));
-        checkoutInventory.postSale(plan, issues);
+        if (transfer) {
+            if (grandTotal <= 0) throw new SaleValidationException("Đơn 0 VND dùng thanh toán tiền mặt, không tạo QR.");
+            holds.reserve(plan);
+        } else {
+            repo.savePayment(new Payment(UUID.randomUUID(), orgId, storeId, invoice.id(),
+                    "CASH", "COMPLETED", grandTotal, now));
+            checkoutInventory.postSale(plan, issues);
+        }
         return getInvoice(orgId, storeId, invoice.id());
     }
 
@@ -202,7 +219,8 @@ public class SaleService {
         List<Invoice> invoices = sellerId == null
                 ? repo.listInvoices(orgId, storeId)
                 : repo.listInvoicesBySeller(orgId, storeId, sellerId);
-        return invoices.stream().map(invoice -> withDetails(orgId, invoice)).toList();
+        return invoices.stream().filter(invoice -> "COMPLETED".equals(invoice.status()))
+                .map(invoice -> withDetails(orgId, invoice)).toList();
     }
 
     @Transactional(readOnly = true)

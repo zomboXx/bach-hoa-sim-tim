@@ -43,4 +43,11 @@ public class CatalogExceptionHandler {
         detail.setProperty("timestamp", Instant.now());
         return detail;
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        var detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setProperty("timestamp", Instant.now());
+        return detail;
+    }
 }

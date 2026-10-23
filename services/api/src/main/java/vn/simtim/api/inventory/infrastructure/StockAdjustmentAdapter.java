@@ -54,6 +54,14 @@ class StockAdjustmentAdapter implements StockAdjustmentPort {
     public void updateBalance(UUID orgId, UUID storeId, UUID batchId, BigDecimal newOnHandQuantity) {
         var jpa = balanceRepo.findAndLockByBatchId(orgId, storeId, batchId)
                 .orElseThrow(() -> new IllegalStateException("Balance không tồn tại khi cập nhật: " + batchId));
+        var held = jdbc.queryForObject("""
+                select reserved_quantity from inventory.inventory_balances
+                where organization_id=? and store_id=? and batch_id=?
+                """, BigDecimal.class, orgId, storeId, batchId);
+        if (held != null && newOnHandQuantity.compareTo(held) < 0) {
+            throw new vn.simtim.api.inventory.domain.StocktakeException("STOCK_RESERVED",
+                    "Tồn kiểm kê nhỏ hơn số đang giữ cho chuyển khoản; hãy đối chiếu giao dịch trước.");
+        }
         jpa.setQuantityOnHand(newOnHandQuantity);
         balanceRepo.save(jpa);
     }

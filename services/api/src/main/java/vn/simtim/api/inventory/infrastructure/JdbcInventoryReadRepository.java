@@ -42,7 +42,7 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                            WHEN pb.status = 'AVAILABLE'
                             AND (pb.expiry_date IS NULL OR pb.expiry_date >= :businessDate)
                             AND ib.on_hand_quantity > 0
-                           THEN ib.on_hand_quantity ELSE 0 END), 0) AS available_quantity
+                           THEN ib.on_hand_quantity - ib.reserved_quantity ELSE 0 END), 0) AS available_quantity
                 FROM catalog.products p
                  JOIN catalog.units u
                    ON u.organization_id = p.organization_id
@@ -100,7 +100,7 @@ class JdbcInventoryReadRepository implements InventoryReadRepository {
                        CASE WHEN pb.status = 'AVAILABLE'
                               AND (pb.expiry_date IS NULL OR pb.expiry_date >= :businessDate)
                               AND ib.on_hand_quantity > 0
-                            THEN ib.on_hand_quantity ELSE 0 END AS available_quantity,
+                            THEN ib.on_hand_quantity - ib.reserved_quantity ELSE 0 END AS available_quantity,
                        """ + expiryCase + " AS expiry_status " + """
                 FROM inventory.product_batches pb
                 JOIN inventory.inventory_balances ib

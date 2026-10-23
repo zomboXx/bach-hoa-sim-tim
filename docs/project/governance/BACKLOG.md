@@ -103,6 +103,10 @@ Project Owner yêu cầu bổ sung camera điện thoại để quét mã sản 
 
 Ngày 21/10/2026, Project Owner yêu cầu tích hợp lên `main`, triển khai bản chính thức và chuẩn bị tối thiểu 10 mặt hàng có tồn trong kho demo. [PR #75](https://github.com/zomboXx/bach-hoa-sim-tim/pull/75) gom phần POS và mở rộng seed tương ứng; vẫn cần approval trên GitHub theo ruleset trước khi merge. Không coi yêu cầu triển khai là bằng chứng đã merge/deploy; tình trạng cuối ghi tại PR. Dữ liệu bổ sung không đặt lại tồn, giá hoặc giao dịch đã có.
 
+## Bổ sung chuyển khoản ngày 22/10/2026
+
+Project Owner Nguyễn Đức Phát duyệt QR chuyển khoản với xác nhận tiền về thủ công: mã giao dịch riêng, lịch sử/trạng thái trên PostgreSQL, giữ hàng và khóa giỏ khi chờ, ghi người/thời gian/mã chứng từ khi xác nhận; chỉ hoàn tất hóa đơn, xuất tồn và doanh thu một lần. Không chờ đăng ký merchant payOS/VNPAY; không tự xác nhận ngân hàng và không tự hoàn tiền. Đây là quyết định bổ sung sau phạm vi CASH lịch sử, chưa tự gán mã issue hoặc sprint. [Contract](../../../contracts/MANUAL_TRANSFER.md) và [hướng dẫn thử](../../testing/MANUAL_TRANSFER_SETUP.md) ghi ranh giới, cấu hình và bằng chứng. Project Owner đã review và duyệt bốn commit triển khai ngày 23/10/2026; trạng thái CI/tích hợp/triển khai theo dõi tại [PR #84](https://github.com/zomboXx/bach-hoa-sim-tim/pull/84).
+
 ## Icebox — Không cam kết cuối kỳ
 
 - Bán hàng offline hoàn chỉnh trên nhiều thiết bị.

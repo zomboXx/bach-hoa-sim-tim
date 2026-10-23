@@ -1,5 +1,5 @@
 param(
-  [ValidateSet('Fe02', 'Qa02Gap05', 'Qa02Gap06', 'Pos')]
+  [ValidateSet('Fe02', 'Qa02Gap05', 'Qa02Gap06', 'Pos', 'Transfer')]
   [string]$Suite = 'Fe02'
 )
 
@@ -21,6 +21,7 @@ $webTestScript = switch ($Suite) {
   'Qa02Gap05' { 'test:e2e:live:qa02-gap05' }
   'Qa02Gap06' { 'test:e2e:live:qa02-gap06' }
   'Pos' { 'test:e2e:live:pos' }
+  'Transfer' { 'test:e2e:live:transfer' }
   default { 'test:e2e:live' }
 }
 
@@ -81,6 +82,14 @@ try {
     SIMTIM_DEMO_PASSWORD = $demoPassword
     SERVER_PORT = "$apiPort"
   }
+  if ($Suite -eq 'Transfer') {
+    $apiEnvironment.TRANSFER_ENABLED = 'true'
+    $apiEnvironment.TRANSFER_ORGANIZATION_ID = '10000000-0000-0000-0000-000000000001'
+    $apiEnvironment.TRANSFER_STORE_ID = '10000000-0000-0000-0000-000000000002'
+    $apiEnvironment.TRANSFER_BANK_BIN = '970436'
+    $apiEnvironment.TRANSFER_ACCOUNT_NUMBER = '0000000000'
+    $apiEnvironment.TRANSFER_ACCOUNT_NAME = 'TEST ONLY - DO NOT TRANSFER'
+  }
   $apiProcess = Start-Process -FilePath $cmdExe `
     -ArgumentList @('/d', '/c', 'mvnw.cmd spring-boot:run') `
     -WorkingDirectory $apiDir `
@@ -106,7 +115,7 @@ try {
   }
 
   $qaBaseline = $null
-  if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos')) {
+  if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos', 'Transfer')) {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
       $qaBaseline = Get-QaDatabaseSummary -ContainerName $containerName
       if ($qaBaseline.Receipts -ge 1) { break }
@@ -123,7 +132,7 @@ try {
     $env:SIMTIM_BUILD_OUT_DIR = $webBuildOutput
     & npm run $webTestScript
     if ($LASTEXITCODE -ne 0) { throw "$Suite live backend test failed." }
-    if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos')) {
+    if ($Suite -in @('Qa02Gap05', 'Qa02Gap06', 'Pos', 'Transfer')) {
       $qaAfter = Get-QaDatabaseSummary -ContainerName $containerName
       $receiptDelta = $qaAfter.Receipts - $qaBaseline.Receipts
       $invoiceDelta = $qaAfter.Invoices - $qaBaseline.Invoices
@@ -148,9 +157,17 @@ try {
       if ($qaAfter.BalanceMismatches -ne 0) {
         throw "Inventory balance differs from movement ledger for $($qaAfter.BalanceMismatches) batch(es)."
       }
+      if ($Suite -eq 'Transfer') {
+        $transferOracle = & docker exec $containerName psql --username simtim --dbname simtim --tuples-only --no-align --command "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and bank_reference='LIVE-TRANSFER-001') from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;"
+        if ($LASTEXITCODE -ne 0 -or @($transferOracle | Where-Object { $_.Trim() -eq 't' }).Count -ne 2) {
+          throw 'Transfer audit or released-reservation database oracle failed.'
+        }
+        Write-Output 'Transfer DB oracle: one completed order, staff and bank reference recorded, no remaining stock hold.'
+      }
       Write-Output "QA-02 $Suite DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; sale_movement_delta=$saleMovementDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
     }
     $livePassed = $true
+    Write-Output "Live browser evidence: $playwrightOutput"
   } finally {
     Remove-Item Env:API_PROXY_TARGET -ErrorAction SilentlyContinue
     Remove-Item Env:SIMTIM_LIVE_PASSWORD -ErrorAction SilentlyContinue
@@ -170,7 +187,7 @@ try {
   }
   $resolvedLiveArtifacts = [System.IO.Path]::GetFullPath($liveArtifacts)
   $resolvedTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-  if ($livePassed -and $resolvedLiveArtifacts.StartsWith($resolvedTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+  if ($livePassed -and $Suite -ne 'Transfer' -and $resolvedLiveArtifacts.StartsWith($resolvedTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     Remove-Item -LiteralPath $resolvedLiveArtifacts -Recurse -Force -ErrorAction SilentlyContinue
   }
 }

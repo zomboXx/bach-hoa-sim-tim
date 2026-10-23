@@ -41,10 +41,10 @@ public class PosCartController {
 
     public record Adjustment(@NotNull UUID operationId, @Min(0) long generation,
                              @NotNull UUID productId, @NotNull BigDecimal delta) {}
-    public record CartResponse(UUID id, long version, long generation, List<Line> items) {
+    public record CartResponse(UUID id, long version, long generation, List<Line> items, UUID pendingTransferId) {
         static CartResponse from(PosCart cart) {
             return new CartResponse(cart.id(), cart.version(), cart.generation(),
-                    cart.items().stream().map(l -> new Line(l.productId(), l.productName(), l.quantity().toPlainString())).toList());
+                    cart.items().stream().map(l -> new Line(l.productId(), l.productName(), l.quantity().toPlainString())).toList(),cart.pendingTransferId());
         }
     }
     public record Line(UUID productId, String productName, String quantity) {}

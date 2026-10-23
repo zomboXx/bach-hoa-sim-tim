@@ -188,14 +188,15 @@ test("API catalog creates, updates and deletes a product and its barcode", async
   await panel.getByLabel("Mã vạch *").fill("001234567891");
   await panel.getByRole("button", { name: "Lưu mã vạch" }).click();
   await expect(panel).toContainText("001234567891");
+  page.once("dialog", (dialog) => dialog.accept());
+  await panel.getByRole("button", { name: "Xóa" }).click();
+  await expect(panel).not.toContainText("001234567891");
+  await panel.getByRole("button", { name: "Đóng", exact: true }).click();
 
   await row.getByRole("button", { name: "Sửa" }).click();
   await page.getByLabel("Tên *").fill("Cà phê rang mới");
   await page.getByRole("button", { name: "Lưu thay đổi" }).click();
   await expect(page.getByRole("row").filter({ hasText: "Cà phê rang mới" })).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
-  await panel.getByRole("button", { name: "Xóa" }).click();
-  await expect(panel).not.toContainText("001234567891");
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("row")
@@ -279,7 +280,16 @@ test("catalog read permission shows data without write controls and recovers fro
   page,
 }) => {
   const api = await setup(page, false);
+  const dashboardCatalogLoaded = Promise.all(
+    ["/api/v1/products", "/api/v1/units"].map((path) =>
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === path && response.request().method() === "GET",
+      ),
+    ),
+  );
   await signIn(page);
+  await dashboardCatalogLoaded;
   api.failList();
   await openCatalog(page);
   await expect(page.getByRole("alert")).toContainText("Máy chủ tạm thời không phản hồi");

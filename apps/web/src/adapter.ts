@@ -47,7 +47,7 @@ export interface AuthAdapter {
   login(id: string, password: string): Promise<AuthUser>;
   restoreSession(): Promise<AuthUser | undefined>;
   logout(): Promise<void>;
-  fetchApi(path: string, init?: RequestInit): Promise<Response>;
+  fetchApi(path: string, init?: RequestInit, options?: { silentAuth?: boolean }): Promise<Response>;
 }
 
 export class DemoAuthAdapter implements AuthAdapter {
@@ -68,8 +68,14 @@ export class DemoAuthAdapter implements AuthAdapter {
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
+  async fetchApi(
+    _path: string,
+    _init?: RequestInit,
+    _options?: { silentAuth?: boolean },
+  ): Promise<Response> {
+    void _path;
+    void _init;
+    void _options;
     throw new Error("API not available in demo mode");
   }
 }
@@ -178,7 +184,11 @@ export class ApiAuthAdapter implements AuthAdapter {
     }
   }
 
-  async fetchApi(path: string, init?: RequestInit): Promise<Response> {
+  async fetchApi(
+    path: string,
+    init?: RequestInit,
+    options?: { silentAuth?: boolean },
+  ): Promise<Response> {
     const headers = new Headers(init?.headers);
     const requestToken = this.accessToken;
     if (requestToken) {
@@ -189,7 +199,7 @@ export class ApiAuthAdapter implements AuthAdapter {
       headers.set("X-Store-Id", this.session.storeId);
     }
     const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
-    if (response.status === 401 && requestToken === this.accessToken) {
+    if (!options?.silentAuth && response.status === 401 && requestToken === this.accessToken) {
       this.accessToken = undefined;
       this.session = undefined;
       if (typeof window !== "undefined") {

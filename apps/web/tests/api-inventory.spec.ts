@@ -127,6 +127,7 @@ async function installLogin(page: Page, session = stockSession) {
 
 async function installCatalog(page: Page) {
   await page.route("**/api/v1/suppliers", (route) => json(route, 200, [supplier]));
+  await page.route("**/api/v1/units", (route) => json(route, 200, []));
   await page.route("**/api/v1/products", (route) =>
     json(route, 200, [product, { ...product, id: crypto.randomUUID(), status: "INACTIVE" }]),
   );
@@ -190,6 +191,11 @@ function receiptResponse(clientOperationId: string) {
     ],
   };
 }
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/products", (route) => json(route, 200, []));
+  await page.route("**/api/v1/units", (route) => json(route, 200, []));
+});
 
 test("valid receipt uses the real contract, stable key, active catalog and refreshes inventory", async ({
   page,
@@ -507,4 +513,85 @@ test("SALES reads quantities, expiry and movement source without purchase cost o
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(hasPageOverflow).toBe(false);
+});
+
+test("inventory quantities omit decimal digits for integer data types and whole numbers", async ({
+  page,
+}) => {
+  await installLogin(page);
+  await installCatalog(page);
+  await page.route("**/api/v1/inventory/receipts?*", (route) => json(route, 200, []));
+  await page.route("**/api/v1/inventory/products?*", (route) =>
+    json(route, 200, {
+      items: [
+        {
+          productId: "10000000-0000-0000-0000-000000000042",
+          sku: "ST-APPLE-01",
+          productName: "Táo cân ký",
+          unitCode: "KG",
+          productStatus: "ACTIVE",
+          onHandQuantity: "57.000",
+          availableQuantity: "47.000",
+          businessDate: "2026-10-03",
+        },
+        {
+          productId: "10000000-0000-0000-0000-000000000041",
+          sku: "ST-RICE-01",
+          productName: "Gạo gói 1 kg",
+          unitCode: "EA",
+          productStatus: "ACTIVE",
+          onHandQuantity: "100.000",
+          availableQuantity: "100.000",
+          businessDate: "2026-10-03",
+        },
+      ],
+      page: 0,
+      size: 100,
+      totalElements: 2,
+      totalPages: 1,
+    }),
+  );
+  await page.route("**/api/v1/inventory/batches?*", (route) =>
+    json(route, 200, {
+      items: [
+        {
+          batchId: "50000000-0000-0000-0000-000000000002",
+          productId: "10000000-0000-0000-0000-000000000042",
+          batchNumber: "APPLE-01",
+          supplierLotNumber: "LOT-APPLE",
+          status: "AVAILABLE",
+          expiryStatus: "VALID",
+          expiryDate: "2026-12-31",
+          receivedDate: "2026-10-03",
+          onHandQuantity: "57.000",
+          availableQuantity: "47.000",
+          version: 1,
+          businessDate: "2026-10-03",
+        },
+      ],
+      page: 0,
+      size: 100,
+      totalElements: 1,
+      totalPages: 1,
+    }),
+  );
+  await page.route("**/api/v1/inventory/movements?*", (route) =>
+    json(route, 200, { items: [], page: 0, size: 100, totalElements: 0, totalPages: 0 }),
+  );
+
+  await signIn(page);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Tồn kho/ })
+    .click();
+
+  const appleCard = page.locator(".stock-summary", { hasText: "Táo cân ký" });
+  await expect(appleCard.getByText("57")).toBeVisible();
+  await expect(appleCard.getByText("47")).toBeVisible();
+  await expect(appleCard.getByText("57.000")).toHaveCount(0);
+  await expect(appleCard.getByText("47.000")).toHaveCount(0);
+
+  const riceCard = page.locator(".stock-summary", { hasText: "Gạo gói 1 kg" });
+  await expect(riceCard.getByText("100").first()).toBeVisible();
+  await expect(riceCard.getByText("100.000")).toHaveCount(0);
 });
