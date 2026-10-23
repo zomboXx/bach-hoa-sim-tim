@@ -186,7 +186,7 @@ jobs:
           test "$mismatches" -eq 0
           if [ "${{ matrix.suite }}" = transfer ]; then
             transfer_oracle=$(docker compose -f infra/compose.demo.yml exec -T postgres \
-              psql -U simtim -d simtim -Atc "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and bank_reference='LIVE-TRANSFER-001') from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;")
+              psql -U simtim -d simtim -Atc "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and confirmation_method='EMPLOYEE' and bank_reference is null) from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;")
             test "$transfer_oracle" = $'t\nt'
           fi
           printf 'QA-02 %s DB oracle: receipt_delta=%s; invoice_delta=%s; payment_delta=%s; sale_movement_delta=%s; revenue_delta=%s; balance_mismatches=0\n' \

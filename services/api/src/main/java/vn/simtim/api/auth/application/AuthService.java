@@ -69,6 +69,15 @@ public class AuthService {
     @Transactional
     public void logout(String token) { repository.revokeSession(digest(token), clock.instant()); }
 
+    /** Restores the existing grant without rotating its token or extending its lifetime. */
+    @Transactional(readOnly = true)
+    public Optional<Grant> restore(String token) {
+        if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) return Optional.empty();
+        return repository.session(digest(token), clock.instant())
+                .filter(s -> !s.principal().roles().isEmpty())
+                .map(s -> new Grant(token, "Bearer", s.expiresAt(), s.principal()));
+    }
+
     private static boolean bounded(String value, int max) {
         return value != null && !value.isBlank() && value.length() <= max;
     }

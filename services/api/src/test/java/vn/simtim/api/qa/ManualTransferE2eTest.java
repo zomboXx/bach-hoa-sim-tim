@@ -128,6 +128,53 @@ class ManualTransferE2eTest {
 
 
     @Test
+    void employeeConfirmationIsAuditedWithoutFakeBankReceiptAndConcurrentRetriesPayOnce() throws Exception {
+        receive(RICE_ID,"3","3","0",null);
+        String id=begin().get("id").toString();
+        String path="/api/v1/sales/transfers/"+id+"/confirm-manual";
+        assertThat(post(path,Map.of("confirmed",false),salesToken).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(post(path,Map.of("confirmed",true),stockToken).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        String other=createActor("SALES");
+        assertThat(post(path,Map.of("confirmed",true),other).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        try(var workers=Executors.newFixedThreadPool(2)) {
+            var latch=new CountDownLatch(1);
+            var first=workers.submit(()->{latch.await();return post(path,Map.of("confirmed",true),salesToken);});
+            var second=workers.submit(()->{latch.await();return post(path,Map.of("confirmed",true),managerToken);});
+            latch.countDown();
+            assertThat(body(first.get(15,TimeUnit.SECONDS))).containsEntry("status","COMPLETED").containsEntry("confirmationMethod","EMPLOYEE").containsEntry("bankReference",null);
+            assertThat(body(second.get(15,TimeUnit.SECONDS))).containsEntry("status","COMPLETED");
+        }
+        assertThat(post(path,Map.of("confirmed",true),salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(count("select count(*) from sales.payments")).isEqualTo(1);
+        assertThat(count("select count(*) from inventory.stock_movements where movement_type='SALE'")).isEqualTo(1);
+        assertThat(count("select count(*) from sales.transfer_orders where confirmation_method='EMPLOYEE' and bank_reference is null and resolved_by is not null and resolved_at is not null")).isEqualTo(1);
+        assertThat(count("select count(*) from sales.payments where reference_code is null and amount=25000")).isEqualTo(1);
+        assertThat(held()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void absoluteQuantityRetriesDoNotOverwriteAnotherDeviceAndUnitsRejectInvalidPrecision() {
+        var cart=body(get("/api/v1/sales/cart",salesToken));
+        var request=Map.of("operationId",UUID.randomUUID(),"generation",cart.get("generation"),
+                "expectedVersion",cart.get("version"),"productId",RICE_ID,"quantity","2");
+        assertThat(post("/api/v1/sales/cart/quantities",request,salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(post("/api/v1/sales/cart/quantities",request,salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body(get("/api/v1/sales/cart",salesToken))).containsEntry("version",1);
+        var stale=Map.of("operationId",UUID.randomUUID(),"generation",cart.get("generation"),
+                "expectedVersion",cart.get("version"),"productId",RICE_ID,"quantity","9");
+        assertThat(body(post("/api/v1/sales/cart/quantities",stale,salesToken))).containsEntry("code","CART_CHANGED");
+        cart=body(get("/api/v1/sales/cart",salesToken));
+        for(String quantity:List.of("-1","1.5")) {
+            assertThat(post("/api/v1/sales/cart/quantities",Map.of("operationId",UUID.randomUUID(),
+                    "generation",cart.get("generation"),"expectedVersion",cart.get("version"),
+                    "productId",RICE_ID,"quantity",quantity),salesToken).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        assertThat(post("/api/v1/sales/cart/quantities",Map.of("operationId",UUID.randomUUID(),
+                "generation",cart.get("generation"),"expectedVersion",cart.get("version"),
+                "productId",APPLE_ID,"quantity","0.125"),salesToken).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void holdsCartAndStockWithoutRecordingRevenueThenConfirmsExactlyOnce() throws Exception {
         receive(RICE_ID,"3","3","0",null);
         var order=begin();

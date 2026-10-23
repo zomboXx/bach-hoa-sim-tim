@@ -6,9 +6,11 @@ import java.util.UUID;
 
 public interface AuthRepository {
     record LoginAccount(UUID userId, UUID storeId, String passwordHash) {}
+    record SessionRecord(SessionPrincipal principal, Instant expiresAt) {}
     Optional<LoginAccount> findAccount(String organizationCode, String storeCode, String username);
     Optional<SessionPrincipal> principal(UUID userId, UUID storeId);
     void createSession(UUID id, SessionPrincipal principal, byte[] tokenHash, Instant issuedAt, Instant expiresAt);
     Optional<SessionPrincipal> resolveSession(byte[] tokenHash, Instant now);
+    Optional<SessionRecord> session(byte[] tokenHash, Instant now);
     void revokeSession(byte[] tokenHash, Instant now);
 }

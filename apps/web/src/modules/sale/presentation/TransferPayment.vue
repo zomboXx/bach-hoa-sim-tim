@@ -18,6 +18,7 @@ const props = defineProps<{
   expectedTotal: number;
   canCreate: boolean;
   pendingTransferId?: string | null;
+  historyOnly?: boolean;
 }>();
 const emit = defineEmits<{
   lock: [locked: boolean];
@@ -34,9 +35,6 @@ const page = ref(0);
 const busy = ref(false);
 const error = ref("");
 const qrError = ref("");
-const bankReference = ref("");
-const receivedAmount = ref<number>();
-const checked = ref(false);
 const reason = ref("");
 const qr = ref<HTMLElement>();
 const pendingCreation = ref<TransferCreation>();
@@ -75,9 +73,6 @@ function accept(next: TransferOrder) {
   const previous = order.value;
   order.value = next;
   if (previous?.id !== next.id) {
-    bankReference.value = "";
-    receivedAmount.value = undefined;
-    checked.value = false;
     reason.value = "";
   }
   if (next.id === props.pendingTransferId || pendingCreation.value) saveCreation();
@@ -92,6 +87,7 @@ function accept(next: TransferOrder) {
   }
 }
 async function loadHistory() {
+  if (!props.historyOnly) return;
   const current = revision;
   try {
     const result = await api.history(page.value);
@@ -125,6 +121,7 @@ async function setup() {
   page.value = 0;
   error.value = "";
   emit("amount", undefined);
+  if (props.historyOnly) return;
   try {
     const raw = sessionStorage.getItem(storageKey());
     if (raw) {
@@ -195,12 +192,7 @@ async function resolve(action: "confirm" | "cancel") {
   try {
     const result =
       action === "confirm"
-        ? await api.confirm(
-            order.value.id,
-            receivedAmount.value ?? 0,
-            bankReference.value,
-            checked.value,
-          )
+        ? await api.confirmManual(order.value.id)
         : await api.cancel(order.value.id, reason.value);
     if (disposed || current !== revision) return;
     accept(result);
@@ -272,8 +264,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="transfer-payment" aria-label="Thanh toán chuyển khoản">
-    <template v-if="(selected || pendingCreation) && !pendingTransferId && !pending">
+  <section
+    class="transfer-payment"
+    :aria-label="historyOnly ? 'Lịch sử chuyển khoản' : 'Thanh toán chuyển khoản'"
+  >
+    <template
+      v-if="!historyOnly && (selected || pendingCreation) && !pendingTransferId && !pending"
+    >
       <p v-if="!config" role="status">Đang đọc cấu hình chuyển khoản…</p>
       <p v-else-if="!config.enabled && !pendingCreation" role="status">
         Cửa hàng chưa cấu hình tài khoản nhận chuyển khoản. Bạn vẫn có thể thanh toán tiền mặt.
@@ -319,7 +316,7 @@ onUnmounted(() => {
         {{ order.bankBin === "970436" ? "Vietcombank" : "Ngân hàng BIN " + order.bankBin }} ·
         {{ order.accountNumber }}<br />{{ order.accountName }}
       </p>
-      <template v-if="pending">
+      <template v-if="pending && !historyOnly">
         <div
           v-if="!expiredLocally"
           ref="qr"
@@ -339,38 +336,14 @@ onUnmounted(() => {
           Quét QR không tự xác nhận thanh toán. Kiểm tra đúng người nhận, số tiền và nội dung trong
           ứng dụng ngân hàng.
         </p>
-        <form v-if="!expiredLocally" @submit.prevent="resolve('confirm')">
-          <label
-            >Số tiền thực nhận (VND)<input
-              v-model.number="receivedAmount"
-              type="number"
-              min="1"
-              step="1"
-              required
-              :disabled="busy"
-          /></label>
-          <label
-            >Mã giao dịch ngân hàng<input
-              v-model="bankReference"
-              minlength="3"
-              maxlength="100"
-              autocomplete="off"
-              required
-              :disabled="busy"
-          /></label>
-          <label class="receipt-check"
-            ><input v-model="checked" type="checkbox" :disabled="busy" required />Tôi đã kiểm tra
-            tiền về đúng tài khoản, số tiền và nội dung của đơn này.</label
-          >
-          <button
-            class="primary wide"
-            :disabled="
-              busy || !checked || receivedAmount !== order.amount || bankReference.trim().length < 3
-            "
-          >
-            Xác nhận đã nhận tiền
-          </button>
-        </form>
+        <button
+          v-if="!expiredLocally"
+          class="primary wide"
+          :disabled="busy"
+          @click="resolve('confirm')"
+        >
+          {{ busy ? "Đang xác nhận…" : "Xác nhận đã nhận tiền" }}
+        </button>
         <details>
           <summary>Hủy giao dịch chờ</summary>
           <p>
@@ -385,6 +358,9 @@ onUnmounted(() => {
           </form>
         </details>
       </template>
+      <template v-else-if="historyOnly && pending">
+        <p>Giao dịch đang chờ thanh toán. Mở Bán hàng để xử lý giỏ hiện tại.</p>
+      </template>
       <template v-else>
         <p>{{ order.resolutionNote }}</p>
         <p v-if="order.bankReference">Mã ngân hàng: {{ order.bankReference }}</p>
@@ -397,7 +373,7 @@ onUnmounted(() => {
         </p>
       </template>
     </article>
-    <details class="transfer-history" @toggle="toggleHistory">
+    <details v-if="historyOnly" class="transfer-history" @toggle="toggleHistory">
       <summary>Lịch sử chuyển khoản</summary>
       <p v-if="history">
         Toàn bộ lịch sử được phép xem: {{ history.summary.completed }} đã nhận ·

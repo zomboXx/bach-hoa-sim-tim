@@ -46,9 +46,29 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
   }
   try {
     await Promise.all([login(phone), login(desktop)]);
+    const restoreCookie = (await phoneContext.cookies()).find(
+      (c) => c.name === "__Secure-simtim-restore",
+    );
+    expect(restoreCookie).toMatchObject({
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      path: "/api/v1/auth/restore",
+    });
+    expect(await phone.evaluate(() => document.cookie)).not.toContain("simtim-restore");
     await phone.getByLabel("Tìm sản phẩm bán hàng").fill("8930000000001");
     await phone.getByLabel("Tìm sản phẩm bán hàng").press("Enter");
-    await expect(desktop.locator(".cart-row .stepper span")).toHaveText("1");
+    await expect(desktop.locator(".cart-row .stepper input")).toHaveValue("1");
+    await expect(desktop.locator(".transfer-history")).toHaveCount(0);
+    const quantityInput = phone.getByLabel("Số lượng Gạo gói 1 kg", { exact: true });
+    await quantityInput.fill("2");
+    await quantityInput.press("Enter");
+    await expect(desktop.locator(".cart-row .stepper input")).toHaveValue("2");
+    await expect(quantityInput).toHaveValue("2");
+    const desktopQuantity = desktop.getByLabel("Số lượng Gạo gói 1 kg", { exact: true });
+    await desktopQuantity.fill("1");
+    await desktopQuantity.press("Enter");
+    await expect(quantityInput).toHaveValue("1");
     await expect(desktop.locator(".total b")).toContainText("22.500");
     await desktop.getByLabel("Phương thức").selectOption("Chuyển khoản QR");
     const creation = desktop.waitForResponse(
@@ -85,8 +105,7 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
     expect(decoded.getText()).toContain(order.reference);
     expect(decoded.getText()).toContain("540522500");
     await phone.reload();
-    // Bearer tokens intentionally stay in memory; authenticate again after a full reload.
-    await login(phone);
+    await openSale(phone);
     await expect(phone.locator(".transfer-detail")).toContainText(order.reference);
     await expect(phone.getByLabel("Phương thức")).toHaveValue("Chuyển khoản QR");
     await expect(phone.getByLabel("Khách đưa")).toHaveCount(0);
@@ -100,7 +119,7 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
     });
 
     let confirmations = 0;
-    await desktop.route("**/api/v1/sales/transfers/*/confirm", async (route) => {
+    await desktop.route("**/api/v1/sales/transfers/*/confirm-manual", async (route) => {
       confirmations++;
       const response = await route.fetch();
       if (confirmations === 1)
@@ -111,19 +130,32 @@ test("@transfer QR survives reload and two devices complete one persisted sale a
         });
       else await route.fulfill({ response });
     });
-    await desktop.getByLabel("Số tiền thực nhận (VND)").fill("22500");
-    await desktop.getByLabel("Mã giao dịch ngân hàng", { exact: true }).fill("LIVE-TRANSFER-001");
-    await desktop.getByRole("checkbox", { name: /Tôi đã kiểm tra tiền về/ }).check();
+    await expect(desktop.getByLabel("Số tiền thực nhận (VND)")).toHaveCount(0);
+    await expect(desktop.getByLabel("Mã giao dịch ngân hàng", { exact: true })).toHaveCount(0);
     await desktop.getByRole("button", { name: "Xác nhận đã nhận tiền" }).click();
     await expect(phone.locator(".transfer-detail h3")).toHaveText("Đã nhận tiền");
     await expect(desktop.locator(".transfer-detail h3")).toHaveText("Đã nhận tiền");
     await expect(phone.locator(".cart-row")).toHaveCount(0);
     await expect(desktop.locator(".cart-row")).toHaveCount(0);
     await expect(desktop.locator(".transfer-qr svg")).toHaveCount(0);
+    await desktop
+      .locator("nav")
+      .getByRole("button", { name: /Hóa đơn/ })
+      .click();
     await desktop.getByText("Lịch sử chuyển khoản", { exact: true }).click();
     await expect(desktop.locator(".transfer-history")).toContainText("1 đã nhận");
     await expect(desktop.locator(".transfer-history")).toContainText("22.500");
     expect(confirmations).toBe(1);
+    await desktop.getByRole("button", { name: /Đăng xuất/ }).click();
+    await expect(desktop.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+    expect((await desktopContext.cookies()).some((c) => c.name === "__Secure-simtim-restore")).toBe(
+      false,
+    );
+    await desktop.reload();
+    await expect(desktop.getByRole("button", { name: "Vào không gian làm việc" })).toBeEnabled();
+    await expect(desktop.locator("nav")).toHaveCount(0);
+    await phone.reload();
+    await openSale(phone);
     console.log(
       "Manual transfer",
       order.id,

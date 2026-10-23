@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
   title: Sim Tim authentication and session
-  version: 0.1.0
+  version: 0.2.0
   x-status: Accepted
   x-accepted-date: '2026-09-29'
   description: >-
     Accepted for BE-02/FE-01 following provider review in PR 14 and consumer review
     in PR 12. Owner API TV1; reviewers API TV2 and web TV1 for TV3's implementation.
     Provider is integrated; consumer awaits PR 12 integration. Bearer tokens are opaque, not JWTs.
+    Browser reload extension requested by Project Owner on 2026-10-23 is implemented locally,
+    with publication/integration authorized after CI. Existing Bearer endpoints remain compatible.
 servers:
   - url: /
 security:
@@ -17,10 +19,16 @@ paths:
     post:
       operationId: login
       security: []
+      parameters:
+        - in: header
+          name: X-SimTim-Browser
+          required: false
+          schema: {type: string, enum: ['1']}
+          description: Opt into the Secure HttpOnly SameSite Strict restore cookie, scoped to /api/v1/auth/restore.
       description: >-
         Organization/store codes select the account scope. Username is trimmed and
         matched without case sensitivity. Password is not trimmed and must fit
-        72 UTF-8 bytes. Returns the raw token once; the DB stores only its SHA-256
+        72 UTF-8 bytes. Returns the raw token; the DB stores only its SHA-256
         hash. Default lifetime is 8 hours. Responses are Cache-Control no-store.
       requestBody:
         required: true
@@ -71,6 +79,36 @@ paths:
               schema: {$ref: '#/components/schemas/Session'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/auth/restore:
+    post:
+      operationId: restoreBrowserSession
+      security:
+        - browserRestore: []
+      description: >-
+        Browser bootstrap only. Checks the existing session, current roles and account state,
+        returning the original grant without extending expiry. Requires X-SimTim-Browser: 1;
+        rejects Sec-Fetch-Site other than same-origin when present. CORS remains denied.
+        Credentials are not accepted from this cookie on operational APIs. Responses are no-store.
+      parameters:
+        - in: header
+          name: X-SimTim-Browser
+          required: true
+          schema: {type: string, enum: ['1']}
+      responses:
+        '200':
+          description: Existing Bearer grant, with original stored expiry
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, tokenType, expiresAt, session]
+                properties:
+                  accessToken: {type: string, minLength: 43, maxLength: 43}
+                  tokenType: {type: string, const: Bearer}
+                  expiresAt: {type: string, format: date-time}
+                  session: {$ref: '#/components/schemas/Session'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/auth/logout:
     post:
       operationId: logout
@@ -81,6 +119,10 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
 components:
   securitySchemes:
+    browserRestore:
+      type: apiKey
+      in: cookie
+      name: __Secure-simtim-restore
     bearerSession:
       type: http
       scheme: bearer

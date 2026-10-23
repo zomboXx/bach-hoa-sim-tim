@@ -22,11 +22,23 @@ Roles and permission grants live in IAM tables; every request reloads them for t
 
 ## Accepted decisions
 
+### Browser reload decision — 23/10/2026
+
+Project Owner Nguyễn Đức Phát requested preserving login after F5 and reducing online request latency, and authorized publication/integration after CI on 23/10/2026. This supersedes the reload-only limitation of the 29/09 acceptance below; the original Bearer endpoints and authorization boundaries remain compatible. Local verification is recorded in [the test report](../docs/testing/SESSION_RESTORE_TEST_REPORT.md); PR records track integration/deployment.
+
+- The PWA opts in at login with `X-SimTim-Browser: 1`. The server sets a host-only `__Secure-simtim-restore` cookie: `HttpOnly`, `Secure`, `SameSite=Strict`, path `/api/v1/auth/restore`, lifetime bounded by the existing session expiry (8 hours by default).
+- `POST /api/v1/auth/restore` requires that same non-simple header and rejects Fetch Metadata other than `same-origin` when present. CORS/preflight remains denied. The cookie is accepted only by this bootstrap endpoint; operational APIs still require explicit Bearer credentials. Its no-store response returns the existing grant after checking current session/account/store/role state; it does not rotate or extend the session.
+- Tokens stay in JS memory, never localStorage/sessionStorage. A non-secret per-tab marker only asks the server to attempt restoration; it cannot grant a role or authenticate. Logout revokes the Bearer session and expires the restore cookie. Expired, revoked and role-less sessions cannot be restored.
+- Normal session authentication now loads session, active identity, roles and permissions in one SQL statement instead of four sequential reads. Roles are not cached; changes are checked on every request.
+- The cookie requires HTTPS outside localhost. Browser extensions and non-browser clients must not add permissive CORS rules around the restore endpoint.
+
+### Original baseline — 29/09/2026
+
 - Use a 32-byte random opaque Bearer token, store only SHA-256 hash, default 8-hour expiry (configurable up to one day). No JWT, refresh token, cookie session or Basic authentication.
 - Login takes organizationCode/storeCode/username/password. MVP UI can configure SIMTIM/MAIN; server does not infer tenant from a client-supplied UUID alone.
 - ADMIN is store-scoped through user_roles like the other roles. Organization-wide administration is outside this API.
 - Login failure is generic for wrong password, missing user, disabled/locked account or missing store assignment. BCrypt cost 12 hashes passwords; passwords are limited to 72 UTF-8 bytes to avoid truncation.
-- Login/session/logout use no-store responses. Transport must use HTTPS outside local development. Client keeps tokens in memory, never in logs or URLs; FE-01 requires login again after reload, as accepted in the consumer review.
+- Login/session/logout use no-store responses. Transport must use HTTPS outside local development. Client keeps tokens in memory, never in logs or URLs; the original FE-01 required login again after reload. The browser reload decision above replaces this limitation.
 - CSRF is disabled because no credentials are accepted from cookies or browser Basic authentication. Cross-origin access remains disabled; use a same-origin deployment or development proxy. CORS changes require a separate explicit origin policy.
 - Login is limited per server instance to 20 requests/minute per socket peer IP, with bounded memory and Retry-After 60. Forwarded headers are not trusted. A shared limit for multiple API instances belongs to deployment work.
 

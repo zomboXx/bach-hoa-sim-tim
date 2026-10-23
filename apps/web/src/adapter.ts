@@ -84,6 +84,8 @@ export class ApiAuthAdapter implements AuthAdapter {
   readonly mode = "api" as const;
   private accessToken?: string;
   private session?: ServerSession;
+  private revision = 0;
+  private restoreDisabled = false;
 
   constructor(
     private readonly organizationCode = "SIMTIM",
@@ -91,10 +93,12 @@ export class ApiAuthAdapter implements AuthAdapter {
   ) {}
 
   async login(id: string, password: string): Promise<AuthUser> {
+    const revision = ++this.revision;
     try {
       const res = await fetch("/api/v1/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-SimTim-Browser": "1" },
+        signal: AbortSignal.timeout(15000),
         // Hosting protection may use a same-origin cookie; the API still requires Bearer.
         credentials: "same-origin",
         cache: "no-store",
@@ -111,22 +115,16 @@ export class ApiAuthAdapter implements AuthAdapter {
         }
         throw new Error(`Lỗi kết nối máy chủ (${res.status})`);
       }
-      const value = await readJson(res);
-      if (!value || typeof value !== "object") throw invalidSession();
-      const grant = value as Record<string, unknown>;
-      if (
-        typeof grant.accessToken !== "string" ||
-        !/^[A-Za-z0-9_-]{43}$/.test(grant.accessToken) ||
-        grant.tokenType !== "Bearer" ||
-        typeof grant.expiresAt !== "string" ||
-        !(Date.parse(grant.expiresAt) > Date.now())
-      )
-        throw invalidSession();
-      const user = parseSession(grant.session);
-      this.accessToken = grant.accessToken;
+      const { accessToken, user } = parseGrant(await readJson(res));
+      if (revision !== this.revision) throw invalidSession();
+      this.accessToken = accessToken;
       this.session = user.session;
+      this.restoreDisabled = false;
       return user;
     } catch (e) {
+      if (e instanceof DOMException && e.name === "TimeoutError") {
+        throw new Error("Máy chủ phản hồi chậm. Vui lòng thử đăng nhập lại.", { cause: e });
+      }
       if (e instanceof TypeError) {
         throw new Error("Lỗi mạng: Không thể kết nối đến máy chủ.", { cause: e });
       }
@@ -136,24 +134,41 @@ export class ApiAuthAdapter implements AuthAdapter {
 
   async restoreSession(): Promise<AuthUser | undefined> {
     const token = this.accessToken;
-    if (!token) return undefined;
+    if (!token && this.restoreDisabled) return undefined;
+    const revision = this.revision;
     try {
-      const res = await fetch("/api/v1/auth/session", {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(token ? "/api/v1/auth/session" : "/api/v1/auth/restore", {
+        method: token ? "GET" : "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : { "X-SimTim-Browser": "1" },
+        signal: AbortSignal.timeout(15000),
         credentials: "same-origin",
         cache: "no-store",
       });
-      if (token !== this.accessToken) return undefined;
+      if (revision !== this.revision) return undefined;
       if (res.status === 401) {
         this.accessToken = undefined;
         this.session = undefined;
+        this.restoreDisabled = true;
         return undefined;
       }
       if (!res.ok) throw new Error(`Không thể khôi phục phiên đăng nhập (${res.status}).`);
-      const user = parseSession(await readJson(res));
-      if (token === this.accessToken) this.session = user.session;
-      return token === this.accessToken ? user : undefined;
+      const value = await readJson(res);
+      if (revision !== this.revision) return undefined;
+      if (!token) {
+        const restored = parseGrant(value);
+        this.accessToken = restored.accessToken;
+        this.session = restored.user.session;
+        return restored.user;
+      }
+      const user = parseSession(value);
+      this.session = user.session;
+      return user;
     } catch (e) {
+      if (e instanceof DOMException && e.name === "TimeoutError") {
+        throw new Error("Máy chủ phản hồi chậm. Tải lại trang để thử khôi phục phiên.", {
+          cause: e,
+        });
+      }
       if (e instanceof TypeError) {
         throw new Error("Lỗi mạng: Không thể khôi phục phiên đăng nhập.", { cause: e });
       }
@@ -162,6 +177,8 @@ export class ApiAuthAdapter implements AuthAdapter {
   }
 
   async logout(): Promise<void> {
+    this.revision++;
+    this.restoreDisabled = true;
     const token = this.accessToken;
     this.accessToken = undefined;
     this.session = undefined;
@@ -172,11 +189,17 @@ export class ApiAuthAdapter implements AuthAdapter {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "same-origin",
         cache: "no-store",
+        signal: AbortSignal.timeout(15000),
       });
       if (!res.ok && res.status !== 401) {
         throw new Error(`Không thể thu hồi phiên trên máy chủ (${res.status}).`);
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "TimeoutError") {
+        throw new Error("Chưa xác nhận được thu hồi phiên trên máy chủ do phản hồi chậm.", {
+          cause: e,
+        });
+      }
       if (e instanceof TypeError) {
         throw new Error("Lỗi mạng: Không thể thu hồi phiên trên máy chủ.", { cause: e });
       }
@@ -200,6 +223,8 @@ export class ApiAuthAdapter implements AuthAdapter {
     }
     const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
     if (!options?.silentAuth && response.status === 401 && requestToken === this.accessToken) {
+      this.revision++;
+      this.restoreDisabled = true;
       this.accessToken = undefined;
       this.session = undefined;
       if (typeof window !== "undefined") {
@@ -208,6 +233,20 @@ export class ApiAuthAdapter implements AuthAdapter {
     }
     return response;
   }
+}
+
+function parseGrant(value: unknown): { accessToken: string; user: AuthUser } {
+  if (!value || typeof value !== "object") throw invalidSession();
+  const grant = value as Record<string, unknown>;
+  if (
+    typeof grant.accessToken !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/.test(grant.accessToken) ||
+    grant.tokenType !== "Bearer" ||
+    typeof grant.expiresAt !== "string" ||
+    !(Date.parse(grant.expiresAt) > Date.now())
+  )
+    throw invalidSession();
+  return { accessToken: grant.accessToken, user: parseSession(grant.session) };
 }
 
 function invalidSession() {

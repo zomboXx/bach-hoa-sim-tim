@@ -44,9 +44,6 @@ test("real backend recovers a committed receipt after the POST response is lost"
   expect(posts).toBe(1);
 
   await page.reload();
-  await page.getByLabel("Mã nhân viên", { exact: true }).fill("stock");
-  await page.getByLabel("Mật khẩu", { exact: true }).fill(password!);
-  await page.getByRole("button", { name: "Vào không gian làm việc" }).click();
   await openReceive(page);
 
   await expect(page.getByRole("status")).toContainText("Máy chủ đã ghi phiếu");

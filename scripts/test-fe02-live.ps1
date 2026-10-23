@@ -158,11 +158,11 @@ try {
         throw "Inventory balance differs from movement ledger for $($qaAfter.BalanceMismatches) batch(es)."
       }
       if ($Suite -eq 'Transfer') {
-        $transferOracle = & docker exec $containerName psql --username simtim --dbname simtim --tuples-only --no-align --command "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and bank_reference='LIVE-TRANSFER-001') from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;"
+        $transferOracle = & docker exec $containerName psql --username simtim --dbname simtim --tuples-only --no-align --command "select count(*)=1 and bool_and(status='COMPLETED' and resolved_by is not null and confirmation_method='EMPLOYEE' and bank_reference is null) from sales.transfer_orders; select coalesce(sum(reserved_quantity),0)=0 from inventory.inventory_balances;"
         if ($LASTEXITCODE -ne 0 -or @($transferOracle | Where-Object { $_.Trim() -eq 't' }).Count -ne 2) {
           throw 'Transfer audit or released-reservation database oracle failed.'
         }
-        Write-Output 'Transfer DB oracle: one completed order, staff and bank reference recorded, no remaining stock hold.'
+        Write-Output 'Transfer DB oracle: one completed order, staff/EMPLOYEE confirmation recorded with no invented bank reference, no remaining stock hold.'
       }
       Write-Output "QA-02 $Suite DB oracle: receipt_delta=$receiptDelta; invoice_delta=$invoiceDelta; payment_delta=$paymentDelta; sale_movement_delta=$saleMovementDelta; revenue_delta=$revenueDelta; balance_mismatches=$($qaAfter.BalanceMismatches)"
     }

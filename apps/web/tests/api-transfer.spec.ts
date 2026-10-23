@@ -48,7 +48,7 @@ async function fixture(page: Page, enabled: boolean) {
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     let body: unknown = [];
-    if (path.endsWith("/auth/login"))
+    if (path.endsWith("/auth/login") || path.endsWith("/auth/restore"))
       body = {
         accessToken: "a".repeat(43),
         tokenType: "Bearer",
@@ -152,7 +152,10 @@ test("API transfer preserves its creation operation across reload and unlocks ca
   await page.getByRole("button", { name: "Tạo QR và giữ hàng" }).click();
   await expect(page.getByRole("button", { name: "Thử lại tạo QR cùng mã" })).toBeEnabled();
   await page.reload();
-  await login(page);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: /Bán hàng/ })
+    .click();
   await expect(page.getByLabel("Phương thức")).toBeDisabled();
   await expect(page.getByRole("button", { name: "Tăng Hàng thử" })).toBeDisabled();
   await page.getByRole("button", { name: "Thử lại tạo QR cùng mã" }).click();
@@ -167,7 +170,7 @@ test("API transfer preserves its creation operation across reload and unlocks ca
   await page.getByRole("button", { name: "Hủy QR và trả hàng giữ" }).click();
   await expect(page.locator(".transfer-detail h3")).toHaveText("Đã hủy");
   await expect(page.getByRole("button", { name: "Tăng Hàng thử" })).toBeEnabled();
-  await expect(page.locator(".cart-row .stepper span")).toHaveText("1");
+  await expect(page.locator(".cart-row .stepper input")).toHaveValue("1");
   await expect(page.locator(".transfer-qr svg")).toHaveCount(0);
 });
 

@@ -34,6 +34,12 @@ public class PosCartController {
                 request.generation(), request.productId(), request.delta()));
     }
 
+    @PostMapping("/quantities")
+    public CartResponse setQuantity(@Valid @RequestBody Quantity request, Authentication auth) {
+        return CartResponse.from(carts.setQuantity(scope(auth),request.operationId(),request.generation(),
+                request.expectedVersion(),request.productId(),request.quantity()));
+    }
+
     public static PosCart.Scope scope(Authentication auth) {
         var principal = (SessionPrincipal) auth.getPrincipal();
         return new PosCart.Scope(principal.organizationId(), principal.storeId(), principal.userId());
@@ -41,6 +47,8 @@ public class PosCartController {
 
     public record Adjustment(@NotNull UUID operationId, @Min(0) long generation,
                              @NotNull UUID productId, @NotNull BigDecimal delta) {}
+    public record Quantity(@NotNull UUID operationId,@Min(0) long generation,@Min(0) long expectedVersion,
+                           @NotNull UUID productId,@NotNull BigDecimal quantity) {}
     public record CartResponse(UUID id, long version, long generation, List<Line> items, UUID pendingTransferId) {
         static CartResponse from(PosCart cart) {
             return new CartResponse(cart.id(), cart.version(), cart.generation(),

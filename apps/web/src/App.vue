@@ -51,6 +51,7 @@ import { useSharedPosCart } from "./modules/sale/infrastructure/shared-pos-cart"
 import BarcodeScanner from "./modules/sale/presentation/BarcodeScanner.vue";
 import ProductImage from "./modules/sale/presentation/ProductImage.vue";
 import TransferPayment from "./modules/sale/presentation/TransferPayment.vue";
+import CartQuantityInput from "./modules/sale/presentation/CartQuantityInput.vue";
 import { DemoSaleAdapter } from "./modules/sale/infrastructure/demo-sale-adapter";
 import {
   SaleApiError,
@@ -212,6 +213,7 @@ const apiSaleProducts = ref<
     unit: string;
     emoji: string;
     price: number | null;
+    precision: number;
   }>
 >([]);
 async function loadSaleProducts() {
@@ -231,7 +233,7 @@ async function loadSaleProducts() {
       salePrice?: number | null;
     }>;
     const units = unitsRes.ok
-      ? ((await unitsRes.json()) as Array<{ id: string; code: string }>)
+      ? ((await unitsRes.json()) as Array<{ id: string; code: string; precisionScale?: number }>)
       : [];
     const unitCode = new Map(units.map((unit) => [unit.id, unit.code]));
     apiSaleProducts.value = raw
@@ -244,6 +246,9 @@ async function loadSaleProducts() {
         unit: unitCode.get(p.baseUnitId ?? "") ?? "—",
         emoji: "📦",
         price: typeof p.salePrice === "number" ? p.salePrice : null,
+        precision:
+          units.find((unit) => unit.id === p.baseUnitId)?.precisionScale ??
+          (unitCode.get(p.baseUnitId ?? "") === "KG" ? 3 : 0),
       }));
   } catch {
     // silently ignore — sale page will show empty grid
@@ -593,7 +598,11 @@ async function signIn() {
     if (isDemoMode) {
       sessionStorage.setItem("simtim-v2-user", signedIn.id);
       sessionStorage.setItem("simtim-v2-auth-mode", "demo");
-    } else clearSessionMarkers();
+    } else {
+      clearSessionMarkers();
+      // Only a hint to try restoring; the HttpOnly cookie and server decide authentication.
+      sessionStorage.setItem("simtim-v2-auth-mode", "api");
+    }
     credentials.password = "";
     go("dashboard");
     error.value = "";
@@ -845,7 +854,7 @@ onMounted(async () => {
       }
     } catch (e) {
       if (revision === authRevision) {
-        clearSessionMarkers();
+        if (isDemoMode) clearSessionMarkers();
         error.value = (e as Error).message;
       }
     }
@@ -1160,6 +1169,22 @@ async function quantity(id: string, delta: number) {
     if (row.quantity > 1) row.quantity--;
     else cart.value = cart.value.filter((l) => l.id !== id);
   }
+}
+function quantityPrecision(id: string) {
+  if (!isDemoMode) return apiSaleProducts.value.find((p) => p.id === id)?.precision ?? 0;
+  return 0;
+}
+async function setCartQuantity(id: string, value: number, version: number) {
+  if (transferLocked.value || pendingApiCheckout.value || !connected.value) return;
+  if (!isDemoMode) {
+    await sharedCart.setQuantity(id, value, version);
+    return;
+  }
+  const row = cart.value.find((line) => line.id === id);
+  if (!row) return;
+  if (value > available(state.value!, id)) return notify("Không đủ tồn còn hạn để bán.");
+  if (value === 0) cart.value = cart.value.filter((line) => line.id !== id);
+  else row.quantity = value;
 }
 async function pay() {
   if (transferLocked.value) return notify("Giỏ đang chờ chuyển khoản. Hãy xử lý giao dịch trước.");
@@ -1903,8 +1928,19 @@ async function approveCount(record: StocktakeRecord) {
                     @click="quantity(l.id, -1)"
                   >
                     −</button
-                  ><span>{{ l.quantity }}</span
-                  ><button
+                  ><CartQuantityInput
+                    :quantity="l.quantity"
+                    :precision="quantityPrecision(l.id)"
+                    :version="sharedCart.snapshot.value?.version ?? 0"
+                    :label="'Số lượng ' + name(l.id)"
+                    :disabled="
+                      apiCheckoutPending ||
+                      transferLocked ||
+                      (!isDemoMode && (!posCartReady || posCartSaving || !!posCartPending))
+                    "
+                    @commit="(value, version) => setCartQuantity(l.id, value, version)"
+                  />
+                  <button
                     :aria-label="'Tăng ' + name(l.id)"
                     :disabled="
                       apiCheckoutPending ||
@@ -2180,8 +2216,15 @@ async function approveCount(record: StocktakeRecord) {
                 ><span class="status">Hoàn tất</span><span>→</span>
               </button>
             </section>
-          </template></template
-        >
+            <TransferPayment
+              :fetch-api="(path, init) => authAdapter.fetchApi(path, init)"
+              :scope="saleScope()"
+              history-only
+              :selected="false"
+              :expected-total="0"
+              :can-create="false"
+            /> </template
+        ></template>
 
         <PromotionWorkspace
           v-else-if="route === 'promotions' && !isDemoMode"

@@ -18,6 +18,7 @@ export interface TransferOrder {
   bankReference: string | null;
   resolutionNote: string | null;
   qrPayload: string | null;
+  confirmationMethod?: "EMPLOYEE" | "BANK_RECEIPT" | null;
 }
 export interface TransferConfig {
   enabled: boolean;
@@ -102,5 +103,10 @@ export class ApiTransferAdapter {
   }
   cancel(id: string, reason: string) {
     return this.request<TransferOrder>("/" + encodeURIComponent(id) + "/cancel", { reason });
+  }
+  confirmManual(id: string) {
+    return this.request<TransferOrder>("/" + encodeURIComponent(id) + "/confirm-manual", {
+      confirmed: true,
+    });
   }
 }

@@ -10,6 +10,8 @@ Bạn có thể [mở bộ mã vạch mẫu](https://bach-hoa-sim-tim-demo.verce
 
 **Lưu ý:** Bản trực tuyến dùng chung một cơ sở dữ liệu Neon cho người thử nghiệm. Giao dịch có thể làm thay đổi dữ liệu demo và không đồng bộ với dữ liệu chạy trên máy bạn. Không nhập thông tin khách hàng thật.
 
+PWA hỗ trợ giữ phiên khi F5 trong cùng tab, tối đa theo thời hạn đăng nhập (mặc định 8 giờ); đăng xuất hoặc phiên hết hạn cần đăng nhập lại. Khi bản cập nhật được triển khai, hãy đăng nhập lại một lần để kích hoạt khôi phục phiên cho tab đang dùng.
+
 ## Chạy trên máy bằng Docker
 
 Cần Docker Desktop hoặc Docker Engine có Compose. Tại thư mục gốc của dự án, chạy:
@@ -24,7 +26,7 @@ Trong `infra/.env`, đặt hai mật khẩu **khác nhau** cho `POSTGRES_PASSWOR
 
 Compose chạy web, API và PostgreSQL cùng nhau. Xem [hướng dẫn Docker chi tiết](infra/README.md) để thử các luồng nghiệp vụ, xem log, đổi cổng và dừng dịch vụ. Lần chạy đầu cần thêm thời gian tải image và build.
 
-QR chuyển khoản cần [cấu hình tài khoản nhận trên backend](docs/testing/MANUAL_TRANSFER_SETUP.md). Trong **Bán hàng**, chọn **Chuyển khoản QR → Tạo QR và giữ hàng**; nhân viên kiểm tra tiền về rồi xác nhận thủ công. Giao dịch được lưu cùng hóa đơn; lịch sử chuyển khoản cho biết số giao dịch và tổng tiền đã xác nhận. Tính năng được bật theo cấu hình riêng của từng môi trường.
+QR chuyển khoản cần [cấu hình tài khoản nhận trên backend](docs/testing/MANUAL_TRANSFER_SETUP.md). Trong **Bán hàng**, chọn **Chuyển khoản QR → Tạo QR và giữ hàng**; kiểm tra đã nhận đủ tiền rồi bấm **Xác nhận đã nhận tiền**. Không cần nhập lại số tiền/mã ngân hàng. Lịch sử chuyển khoản nằm ở **Hóa đơn**, cho biết số giao dịch và tổng tiền đã xác nhận. Có thể nhập số lượng trực tiếp giữa nút +/-; số lẻ theo đơn vị hàng. Tính năng được bật theo cấu hình riêng của từng môi trường.
 
 ## Phát triển và kiểm thử
 

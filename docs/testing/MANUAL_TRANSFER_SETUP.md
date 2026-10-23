@@ -32,10 +32,11 @@ Trên môi trường triển khai, cấu hình nằm ở dịch vụ backend; ch
 1. Đăng nhập cùng nhân viên/cửa hàng trên điện thoại và máy tính, mở **Bán hàng**, thêm một sản phẩm.
 2. Chọn **Chuyển khoản QR → Tạo QR và giữ hàng**. Hai máy cùng thấy giao dịch chờ và không sửa giỏ được.
 3. Đối chiếu người nhận/số tiền/nội dung trên QR. Có thể chỉ quét để xem thông tin rồi thoát app ngân hàng; chưa cần chuyển tiền thật.
-4. Khi thử nghiệm trên CSDL disposable, nhập tiền và mã chứng từ giả để kiểm tra UI. Trên dữ liệu vận hành, chỉ xác nhận sau khi đã kiểm tra tiền thực vào tài khoản.
-5. Bấm **Xác nhận đã nhận tiền**. Hai máy xóa giỏ; lịch sử có mã giao dịch, người và thời gian xác nhận. Hóa đơn/doanh thu/tồn chỉ thay đổi một lần.
+4. Kiểm tra đã nhận đủ tiền cho đúng đơn. Luồng mới không cần điền lại số tiền, mã ngân hàng hoặc checkbox.
+5. Bấm **Xác nhận đã nhận tiền**. Hai máy xóa giỏ; **Hóa đơn → Lịch sử chuyển khoản** lưu mã đơn, người và thời gian xác nhận thủ công. Hóa đơn/doanh thu/tồn chỉ thay đổi một lần. Không tự sinh mã chứng từ ngân hàng.
 6. Tạo giao dịch khác rồi hủy/hết hạn: giỏ giữ sản phẩm, hàng giữ được trả, không có bán thành công. Tiền đến muộn cần đối chiếu riêng; không xác nhận lại giao dịch kết thúc.
-7. Tải lại trang, đăng nhập lại; tìm giao dịch trong giỏ chờ hoặc **Lịch sử chuyển khoản**. Thu ngân thấy của mình, quản lý thấy phạm vi cửa hàng.
+7. F5 trong tab đang đăng nhập để khôi phục phiên; giao dịch chờ vẫn ở Bán hàng, lịch sử nằm ở Hóa đơn. Thu ngân thấy của mình, quản lý thấy phạm vi cửa hàng.
+8. Nhấp ô số lượng giữa nút +/- để nhập số, Enter hoặc rời ô để lưu. Đơn vị đếm chỉ nhận số nguyên, đơn vị lẻ theo precision (tối đa 3 số); nhập 0 bỏ dòng. Thử hai máy sửa cùng lúc: giá trị cũ phải báo xung đột thay vì ghi đè giỏ mới.
 
 ## Kiểm thử tự động
 
@@ -45,6 +46,6 @@ pwsh -File scripts/verify.ps1
 pwsh -File scripts/test-transfer-live.ps1
 ```
 
-Gate backend chạy `ManualTransferE2eTest` và `VietQrTest`: migration từ PostgreSQL 17 sạch, giữ hàng/khóa giỏ, retry, xác nhận đồng thời, quyền, mã ngân hàng trùng, hủy/hết hạn và rollback.
+Gate backend chạy `ManualTransferE2eTest`, `VietQrTest` và `TransferMigrationTest`: PostgreSQL 17 sạch, nâng cấp V19 giữ chứng từ cũ, giữ hàng/khóa giỏ, retry, xác nhận đồng thời, quyền, mã ngân hàng trùng cho endpoint cũ, hủy/hết hạn và rollback.
 
-Bài live dựng PostgreSQL/API/web riêng; tài khoản nhận giả có nhãn `TEST ONLY - DO NOT TRANSFER`. Hai browser context desktop/mobile dùng HTTP API thật; giải mã lại SVG QR được render, tải lại và đăng nhập để khôi phục giao dịch, giả lập mất response sau khi server đã xác nhận. Cuối bài kiểm tra SQL: một giao dịch hoàn tất có người/mã ngân hàng, một hóa đơn/payment/movement, không giữ hàng dư và ledger khớp tồn. Bài kiểm thử không gọi ngân hàng hoặc chuyển tiền.
+Bài live dựng PostgreSQL/API/web riêng; tài khoản nhận giả có nhãn `TEST ONLY - DO NOT TRANSFER`. Hai browser context dùng HTTP API thật; giải mã SVG QR, nhập số lượng đồng bộ, F5 giữ phiên, xác nhận một nút và giả lập mất response sau commit. SQL kiểm tra `confirmation_method=EMPLOYEE`, có người xác nhận, không mã ngân hàng giả, đúng một hóa đơn/payment/movement, không giữ hàng dư và ledger khớp tồn. Nếu cổng mặc định bị dùng, đặt `SIMTIM_LIVE_TEST_PORT` thành cổng trống. Bài kiểm thử không gọi ngân hàng hoặc chuyển tiền.

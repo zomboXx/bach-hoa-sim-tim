@@ -22,6 +22,89 @@ Nếu công việc không tạo ra diff dòng, ghi tên đầu ra và `N/A`, ví
 <!-- Thêm nội dung điểm danh mới ngay dưới dòng này. -->
 
 ---
+TV1 — Nguyễn Đức Phát - 2026-10-23 08:14:28
+
+Chuyển lịch sử chuyển khoản sang Hóa đơn; cho nhập số lượng trực tiếp với precision đơn vị, kiểm xung đột thiết bị và giữ retry. Rút biểu mẫu tiền về thành một nút xác nhận. Cập nhật CI/live oracle và hồ sơ hướng dẫn theo quyết định mới. Gate đạt demo 51/51, consumer 73/73, backend 216/216; live hai thiết bị đạt, gồm F5, logout và mất phản hồi xác nhận; DB đúng +1 hóa đơn/payment/SALE movement, +22.500 VND, không tồn giữ hàng hoặc lệch ledger. Project Owner đã cho phép push/merge/triển khai sau CI; trạng thái tích hợp theo PR.
+
+- `.github/workflows/ci.yml`: +1 -1
+- `README.md`: +1 -1
+- `apps/web/live-tests/pos-shared-cart.live.spec.ts`: +1 -1
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +18 -5
+- `apps/web/src/App.vue`: +52 -6
+- `apps/web/src/modules/sale/infrastructure/api-transfer-adapter.ts`: +6 -0
+- `apps/web/src/modules/sale/infrastructure/shared-pos-cart.ts`: +45 -10
+- `apps/web/src/modules/sale/presentation/CartQuantityInput.vue`: +85 -0
+- `apps/web/src/modules/sale/presentation/TransferPayment.vue`: +24 -48
+- `apps/web/tests/api-sale.spec.ts`: +81 -2
+- `apps/web/tests/api-transfer.spec.ts`: +1 -1
+- `apps/web/tests/barcode-camera.spec.ts`: +1 -1
+- `contracts/AUTH_SESSION_REVIEW.md`: +1 -1
+- `contracts/auth-session.openapi.yaml`: +1 -1
+- `docs/project/governance/BACKLOG.md`: +2 -0
+- `docs/testing/CHECKOUT_FLOW_TEST_REPORT.md`: +24 -0
+- `docs/testing/MANUAL_TRANSFER_SETUP.md`: +6 -5
+- `docs/testing/README.md`: +1 -0
+- `docs/testing/SESSION_RESTORE_TEST_REPORT.md`: +1 -1
+- `scripts/test-fe02-live.ps1`: +2 -2
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 08:13:43
+
+Bổ sung API đặt số lượng tuyệt đối có kiểm phiên bản và retry; xác nhận chuyển khoản bằng quyết định của nhân viên, lưu đúng người/thời gian và phương thức EMPLOYEE, không tạo mã ngân hàng giả. V20 giữ chứng từ cũ và tương thích API cũ trong rollout. Gate PostgreSQL đạt 216/216, gồm nâng cấp V19/V20, quyền, xác nhận đồng thời và rollback; endpoint chứng từ cũ tiếp tục được kiểm thử.
+
+- `CHANGELOG.md`: +2 -0
+- `contracts/MANUAL_TRANSFER.md`: +11 -2
+- `services/api/src/main/java/vn/simtim/api/sale/api/PosCartController.java`: +8 -0
+- `services/api/src/main/java/vn/simtim/api/sale/api/TransferController.java`: +8 -2
+- `services/api/src/main/java/vn/simtim/api/sale/application/PosCartService.java`: +31 -0
+- `services/api/src/main/java/vn/simtim/api/sale/application/TransferService.java`: +10 -1
+- `services/api/src/main/java/vn/simtim/api/sale/domain/TransferOrder.java`: +1 -1
+- `services/api/src/main/java/vn/simtim/api/sale/infrastructure/TransferRepositoryAdapter.java`: +7 -4
+- `services/api/src/main/resources/db/migration/V20__employee_transfer_confirmation.sql`: +37 -0
+- `services/api/src/test/java/vn/simtim/api/qa/ManualTransferE2eTest.java`: +47 -0
+- `services/api/src/test/java/vn/simtim/api/qa/TransferMigrationTest.java`: +44 -0
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:30:37
+
+Nối PWA với bootstrap cookie để F5 giữ phiên trong cùng tab, không lưu token vào web storage; chặn phản hồi cũ ghi đè phiên mới, cho phép thử lại sau lỗi mạng và giới hạn chờ auth 15 giây. Cập nhật kiểm thử nhận hàng/chuyển khoản để khôi phục phiên thay vì nhập lại mật khẩu. Gate gốc đạt demo 51/51, consumer 70/70, backend PostgreSQL 213/213. Bài live hai thiết bị đạt: cookie thật bảo mật, F5 giữ giao dịch, logout/F5 không hồi sinh phiên và không đăng xuất thiết bị khác; SQL đối soát đúng một hóa đơn/payment/movement, +22.500 VND, không còn giữ hàng hoặc lệch ledger. Lượt live đầu vướng cổng 4176 đang dùng; thêm cổng tùy chọn/strictPort và chạy lại đạt, không dừng tiến trình có sẵn. Ghi hồ sơ kiểm chứng và giới hạn: chưa đo latency sau sửa trên production, chưa push/deploy.
+
+- `CHANGELOG.md`: +2 -0
+- `README.md`: +2 -0
+- `apps/web/live-tests/inventory-recovery.live.spec.ts`: +0 -3
+- `apps/web/live-tests/transfer-payment.live.spec.ts`: +21 -2
+- `apps/web/playwright.live.config.ts`: +6 -3
+- `apps/web/src/App.vue`: +6 -2
+- `apps/web/src/adapter.ts`: +60 -21
+- `apps/web/tests/api-auth.spec.ts`: +77 -2
+- `apps/web/tests/api-inventory.spec.ts`: +1 -6
+- `apps/web/tests/api-transfer.spec.ts`: +5 -2
+- `docs/testing/README.md`: +4 -0
+- `docs/testing/SESSION_RESTORE_TEST_REPORT.md`: +30 -0
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:25:37
+
+Bổ sung bootstrap trình duyệt để giữ đăng nhập sau F5 theo yêu cầu Project Owner: cookie host-only HttpOnly/Secure/SameSite Strict, path riêng; header chống request đơn giản và kiểm Fetch Metadata, không mở CORS. API nghiệp vụ vẫn chỉ dùng Bearer; restore đọc quyền mới nhất, không gia hạn phiên; logout thu hồi phiên và xóa cookie. Giữ nguyên endpoint/payload Bearer cũ, không migration hoặc dependency mới. Cập nhật contract với quyết định thay thế giới hạn reload ngày 29/09. Backend auth PostgreSQL đạt 14/14, gồm cookie, CSRF, logout, expiry và role removal; gate toàn bộ đang tiếp tục.
+
+- `CHANGELOG.md`: +2 -0
+- `contracts/AUTH_SESSION_REVIEW.md`: +13 -1
+- `contracts/auth-session.openapi.yaml`: +44 -2
+- `services/api/src/main/java/vn/simtim/api/auth/api/AuthController.java`: +57 -4
+- `services/api/src/main/java/vn/simtim/api/auth/application/AuthService.java`: +9 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/AuthSecurity.java`: +2 -1
+- `services/api/src/test/java/vn/simtim/api/ApiBootstrapTest.java`: +65 -0
+
+---
+TV1 — Nguyễn Đức Phát - 2026-10-23 06:15:06
+
+Giảm số lượt đọc CSDL của xác thực Bearer từ bốn xuống một bằng truy vấn gộp phiên, tài khoản, vai trò và quyền. Không cache quyền; tiếp tục từ chối tài khoản khóa, phiên hết hạn/thu hồi và quyền đã gỡ ngay ở request tiếp theo. Chạy `mvnw.cmd -Dtest=ApiBootstrapTest test` trên PostgreSQL sạch: 11/11 đạt. Phép đo public production trước sửa: trang tĩnh 0,21 giây, API không đăng nhập 0,27–1,06 giây; chưa đo thời gian đăng nhập production bằng tài khoản người dùng.
+
+- `CHANGELOG.md`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/domain/AuthRepository.java`: +2 -0
+- `services/api/src/main/java/vn/simtim/api/auth/infrastructure/JdbcAuthRepository.java`: +36 -25
+
+---
 TV1 — Nguyễn Đức Phát - 2026-10-23 02:56:46
 
 Điều chỉnh tải phụ thuộc trình duyệt trong CI PR #84 sau khi hai runner chậm ở mirror Azure và job chuyển khoản lặp lại tình trạng này sau rerun. Chuyển nguồn Ubuntu sang archive qua HTTPS, đặt timeout 30 giây và retry ba lần; giữ nguyên toàn bộ bài kiểm thử và mã thanh toán đã duyệt. YAML, cú pháp Bash, policy, liên kết và whitespace đạt; kết quả thực thi trên runner theo PR.
